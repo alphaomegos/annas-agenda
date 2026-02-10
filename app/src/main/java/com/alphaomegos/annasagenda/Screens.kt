@@ -1,15 +1,17 @@
 package com.alphaomegos.annasagenda
 
-import android.os.Build
+import android.graphics.Paint
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
@@ -80,6 +83,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -88,11 +94,19 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -114,7 +128,7 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
-
+import kotlin.math.roundToInt
 
 /* ---------------------------
    Main menu + language
@@ -129,12 +143,13 @@ fun MainMenuScreen(
     onNewTask: () -> Unit,
     onSomeday: () -> Unit,
     onRecurring: () -> Unit,
+    onAnthropometry: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var dataMenuExpanded by remember { mutableStateOf(false) }
-    var confirmReset by remember { mutableStateOf(false) }
+    val dataMenuExpanded = remember { mutableStateOf(false) }
+    val confirmReset = remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -166,12 +181,14 @@ fun MainMenuScreen(
         scope.launch {
             val raw = withContext(Dispatchers.IO) {
                 runCatching {
-                    ctx.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+                    ctx.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)
+                        ?.use { it.readText() }
                 }.getOrNull()
             }
 
             if (raw.isNullOrBlank()) {
-                Toast.makeText(ctx, ctx.getString(R.string.toast_import_failed), Toast.LENGTH_SHORT).show()
+                Toast.makeText(ctx, ctx.getString(R.string.toast_import_failed), Toast.LENGTH_SHORT)
+                    .show()
                 return@launch
             }
 
@@ -184,6 +201,27 @@ fun MainMenuScreen(
         }
     }
 
+    val configuration = LocalConfiguration.current
+    val locale = remember(configuration) { configuration.locales[0] }
+
+    val langTag = remember(locale) {
+        val language = locale.language
+        when (language) {
+            "sr" -> "sr-Latn"
+            "gil" -> "gil"
+            "ru" -> "ru"
+            else -> "en"
+        }
+    }
+
+    val langIconRes = when (langTag) {
+        "ru" -> R.drawable.ic_langflag_ru
+        "sr-Latn" -> R.drawable.ic_langflag_sr_latn
+        "gil" -> R.drawable.ic_langflag_gil
+        else -> R.drawable.ic_langflag_en
+    }
+
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -191,38 +229,41 @@ fun MainMenuScreen(
                 actions = {
                     IconButton(onClick = onLanguage) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_menu_language),
+                            painter = painterResource(langIconRes),
                             contentDescription = stringResource(R.string.choose_language),
                             tint = Color.Unspecified
                         )
                     }
-                    IconButton(onClick = { dataMenuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.data_menu))
+                    IconButton(onClick = { dataMenuExpanded.value = true }) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.data_menu)
+                        )
                     }
 
                     DropdownMenu(
-                        expanded = dataMenuExpanded,
-                        onDismissRequest = { dataMenuExpanded = false }
+                        expanded = dataMenuExpanded.value,
+                        onDismissRequest = { dataMenuExpanded.value = false }
                     ) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.export_backup_json)) },
                             onClick = {
-                                dataMenuExpanded = false
+                                dataMenuExpanded.value = false
                                 exportLauncher.launch("annasagenda-backup.json")
                             }
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.import_backup_json)) },
                             onClick = {
-                                dataMenuExpanded = false
+                                dataMenuExpanded.value = false
                                 importLauncher.launch(arrayOf("application/json", "text/*"))
                             }
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.reset_data_menu)) },
                             onClick = {
-                                dataMenuExpanded = false
-                                confirmReset = true
+                                dataMenuExpanded.value = false
+                                confirmReset.value = true
                             }
                         )
                     }
@@ -284,17 +325,42 @@ fun MainMenuScreen(
                         .fillMaxHeight()
                 )
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MenuTile(
+                    iconRes = R.drawable.ic_menu_anthropometry,
+                    title = stringResource(R.string.anthropometry_title),
+                    onClick = onAnthropometry,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                MenuTile(
+                    iconRes = R.drawable.ic_menu_soon,
+                    title = stringResource(R.string.coming_soon),
+                    onClick = {},
+                    enabled = false,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
+
         }
     }
-    if (confirmReset) {
+    if (confirmReset.value) {
         AlertDialog(
-            onDismissRequest = { confirmReset = false },
+            onDismissRequest = { confirmReset.value = false },
             title = { Text(stringResource(R.string.reset_title)) },
             text = { Text(stringResource(R.string.reset_text)) },
             confirmButton = {
                 TextButton(onClick = {
                     vm.resetAllData()
-                    confirmReset = false
+                    confirmReset.value = false
                     Toast.makeText(
                         ctx,
                         ctx.getString(R.string.toast_reset_done),
@@ -305,7 +371,7 @@ fun MainMenuScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmReset = false }) {
+                TextButton(onClick = { confirmReset.value = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -314,48 +380,101 @@ fun MainMenuScreen(
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LanguageScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
     val activity = ctx.findActivity()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Button(onClick = {
-            setAppLanguage(ctx, "en")
-            activity?.recreate()
-            onBack()
-        }) {
-            Text(stringResource(R.string.language_english))
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.choose_language)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                }
+            )
         }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MenuTile(
+                    iconRes = R.drawable.ic_lang_en,
+                    title = stringResource(R.string.language_english),
+                    onClick = {
+                        setAppLanguage(ctx, "en")
+                        activity?.recreate()
+                        onBack()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                MenuTile(
+                    iconRes = R.drawable.ic_lang_ru,
+                    title = stringResource(R.string.language_russian),
+                    onClick = {
+                        setAppLanguage(ctx, "ru")
+                        activity?.recreate()
+                        onBack()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(onClick = {
-            setAppLanguage(ctx, "ru")
-            activity?.recreate()
-            onBack()
-        }) {
-            Text(stringResource(R.string.language_russian))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MenuTile(
+                    iconRes = R.drawable.ic_lang_sr_latn,
+                    title = stringResource(R.string.language_serbian),
+                    onClick = {
+                        setAppLanguage(ctx, "sr-Latn")
+                        activity?.recreate()
+                        onBack()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                MenuTile(
+                    iconRes = R.drawable.ic_lang_ki,
+                    title = stringResource(R.string.language_kiribati),
+                    onClick = {
+                        setAppLanguage(ctx, "gil")
+                        activity?.recreate()
+                        onBack()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(onClick = {
-            setAppLanguage(ctx, "sr-Latn")
-            activity?.recreate()
-            onBack()
-        }) {
-            Text(stringResource(R.string.language_serbian))
-        }
-
     }
 }
+
 
 @Composable
 fun RecurringTasksScreen(
@@ -394,8 +513,8 @@ fun RecurringTasksScreen(
             .sortedWith(compareBy({ it.second.id }, { it.first.id }))
     }
 
-    var confirmDeleteTaskId by remember { mutableStateOf<Long?>(null) }
-    var confirmDeleteSubtaskId by remember { mutableStateOf<Long?>(null) }
+    val confirmDeleteTaskId = remember { mutableStateOf<Long?>(null) }
+    val confirmDeleteSubtaskId = remember { mutableStateOf<Long?>(null) }
 
     Column(
         modifier = Modifier
@@ -463,7 +582,10 @@ fun RecurringTasksScreen(
                                 if (subs.isNotEmpty()) {
                                     Spacer(Modifier.height(8.dp))
                                     subs.forEach { s ->
-                                        Text("• ${s.description}", style = MaterialTheme.typography.bodyMedium)
+                                        Text(
+                                            "• ${s.description}",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
                                     }
                                 }
 
@@ -472,7 +594,7 @@ fun RecurringTasksScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
                                 ) {
-                                    TextButton(onClick = { confirmDeleteTaskId = t.id }) {
+                                    TextButton(onClick = { confirmDeleteTaskId.value = t.id }) {
                                         Text(stringResource(R.string.recurring_tasks_delete_from_today))
                                     }
                                 }
@@ -508,7 +630,10 @@ fun RecurringTasksScreen(
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(Modifier.padding(12.dp)) {
-                                Text(parent.description, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    parent.description,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
                                 Spacer(Modifier.height(4.dp))
                                 Text(
                                     text = stringResource(
@@ -520,14 +645,17 @@ fun RecurringTasksScreen(
                                 )
 
                                 Spacer(Modifier.height(8.dp))
-                                Text("• ${s.description}", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    "• ${s.description}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
 
                                 Spacer(Modifier.height(8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
                                 ) {
-                                    TextButton(onClick = { confirmDeleteSubtaskId = s.id }) {
+                                    TextButton(onClick = { confirmDeleteSubtaskId.value = s.id }) {
                                         Text(stringResource(R.string.recurring_tasks_delete_from_today))
                                     }
                                 }
@@ -544,29 +672,32 @@ fun RecurringTasksScreen(
         }
     }
 
-    if (confirmDeleteTaskId != null) {
+    if (confirmDeleteTaskId.value != null) {
         AlertDialog(
-            onDismissRequest = { confirmDeleteTaskId = null },
+            onDismissRequest = { confirmDeleteTaskId.value = null },
             title = { Text(stringResource(R.string.delete_repeating_task_title)) },
             text = {
                 Text(
-                    stringResource(R.string.delete_repeating_task_text))
+                    stringResource(R.string.delete_repeating_task_text)
+                )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    vm.deleteTaskSeriesFrom(confirmDeleteTaskId!!, today)
-                    confirmDeleteTaskId = null
+                    vm.deleteTaskSeriesFrom(confirmDeleteTaskId.value!!, today)
+                    confirmDeleteTaskId.value = null
                 }) { Text(stringResource(R.string.remove)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteTaskId = null }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = {
+                    confirmDeleteTaskId.value = null
+                }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
 
-    if (confirmDeleteSubtaskId != null) {
+    if (confirmDeleteSubtaskId.value != null) {
         AlertDialog(
-            onDismissRequest = { confirmDeleteSubtaskId = null },
+            onDismissRequest = { confirmDeleteSubtaskId.value = null },
             title = { Text(stringResource(R.string.delete_repeating_subtask_title)) },
             text = {
                 Text(
@@ -575,16 +706,654 @@ fun RecurringTasksScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    vm.deleteSubtaskSeriesFrom(confirmDeleteSubtaskId!!, today)
-                    confirmDeleteSubtaskId = null
+                    vm.deleteSubtaskSeriesFrom(confirmDeleteSubtaskId.value!!, today)
+                    confirmDeleteSubtaskId.value = null
                 }) { Text(stringResource(R.string.remove)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDeleteSubtaskId = null }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = { confirmDeleteSubtaskId.value = null }) {
+                    Text(
+                        stringResource(
+                            R.string.cancel
+                        )
+                    )
+                }
             }
         )
     }
 }
+
+
+/* ---------------------------
+   Anthropometry screen
+---------------------------- */
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AnthropometryDayInputDialog(
+    date: LocalDate,
+    initialEntry: AnthropometryEntry?,
+    onDismiss: () -> Unit,
+    onSave: (List<Double?>) -> Unit
+) {
+    fun init(v: Double?) = v?.let {
+        val s = String.format(Locale.US, "%.1f", it)
+        if (s.endsWith(".0")) s.dropLast(2) else s
+    } ?: ""
+
+    var t0 by remember { mutableStateOf(init(initialEntry?.armCm)) }
+    var t1 by remember { mutableStateOf(init(initialEntry?.chestCm)) }
+    var t2 by remember { mutableStateOf(init(initialEntry?.underChestCm)) }
+    var t3 by remember { mutableStateOf(init(initialEntry?.waistCm)) }
+    var t4 by remember { mutableStateOf(init(initialEntry?.bellyCm)) }
+    var t5 by remember { mutableStateOf(init(initialEntry?.hipsCm)) }
+    var t6 by remember { mutableStateOf(init(initialEntry?.thighCm)) }
+    var t7 by remember { mutableStateOf(init(initialEntry?.weightKg)) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.enter_data)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(text = date.toString(), style = MaterialTheme.typography.labelLarge)
+                Text(text = stringResource(R.string.anthropometry_hint))
+
+                OutlinedTextField(
+                    t0,
+                    { t0 = it },
+                    label = { Text(stringResource(R.string.anthro_arm_cm)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    t1,
+                    { t1 = it },
+                    label = { Text(stringResource(R.string.anthro_chest_cm)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    t2,
+                    { t2 = it },
+                    label = { Text(stringResource(R.string.anthro_under_chest_cm)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    t3,
+                    { t3 = it },
+                    label = { Text(stringResource(R.string.anthro_waist_cm)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    t4,
+                    { t4 = it },
+                    label = { Text(stringResource(R.string.anthro_belly_cm)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    t5,
+                    { t5 = it },
+                    label = { Text(stringResource(R.string.anthro_hips_cm)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    t6,
+                    { t6 = it },
+                    label = { Text(stringResource(R.string.anthro_thigh_cm)) },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    t7,
+                    { t7 = it },
+                    label = { Text(stringResource(R.string.anthro_weight_kg)) },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val values = listOf(t0, t1, t2, t3, t4, t5, t6, t7).map { parseDecimalOrNull(it) }
+                onSave(values)
+            }) { Text(stringResource(R.string.anthropometry_save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        }
+    )
+}
+
+private fun parseDecimalOrNull(text: String): Double? {
+    val t = text.trim()
+    if (t.isEmpty()) return null
+    return t.replace(',', '.').toDoubleOrNull()
+}
+
+
+private enum class AnthroAxis { CM, KG }
+
+private data class AnthroSeries(
+    val labelRes: Int,
+    val axis: AnthroAxis,
+    val color: Color,
+    val getValue: (AnthropometryEntry) -> Double?
+)
+
+private inline fun <T, R : Any> List<T>.lastNotNullOfOrNullCompat(transform: (T) -> R?): R? {
+    for (i in indices.reversed()) {
+        val v = transform(this[i])
+        if (v != null) return v
+    }
+    return null
+}
+
+private inline fun <T, R : Any> List<T>.firstNotNullOfOrNullCompat(transform: (T) -> R?): R? {
+    for (i in indices) {
+        val v = transform(this[i])
+        if (v != null) return v
+    }
+    return null
+}
+
+
+private val anthroSeries = listOf(
+    AnthroSeries(R.string.anthro_arm_cm, AnthroAxis.CM, Color(0xFF1E88E5)) { it.armCm },
+    AnthroSeries(R.string.anthro_chest_cm, AnthroAxis.CM, Color(0xFFE53935)) { it.chestCm },
+    AnthroSeries(
+        R.string.anthro_under_chest_cm,
+        AnthroAxis.CM,
+        Color(0xFF8E24AA)
+    ) { it.underChestCm },
+    AnthroSeries(R.string.anthro_waist_cm, AnthroAxis.CM, Color(0xFFFB8C00)) { it.waistCm },
+    AnthroSeries(R.string.anthro_belly_cm, AnthroAxis.CM, Color(0xFF43A047)) { it.bellyCm },
+    AnthroSeries(R.string.anthro_hips_cm, AnthroAxis.CM, Color(0xFF00ACC1)) { it.hipsCm },
+    AnthroSeries(R.string.anthro_thigh_cm, AnthroAxis.CM, Color(0xFF6D4C41)) { it.thighCm },
+    AnthroSeries(R.string.anthro_weight_kg, AnthroAxis.KG, Color(0xFF546E7A)) { it.weightKg },
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AnthropometryScreen(
+    vm: AppViewModel,
+    onBack: () -> Unit,
+) {
+    val ctx = LocalContext.current
+    val state by vm.state.collectAsState()
+
+    val allEntries = remember(state.anthropometry) {
+        state.anthropometry.sortedBy { it.date }
+    }
+    val entriesByDate = remember(allEntries) { allEntries.associateBy { it.date } }
+
+    val windowSize = 10
+    var windowEnd by remember(allEntries.size) {
+        mutableIntStateOf(
+            (allEntries.size - 1).coerceAtLeast(
+                0
+            )
+        )
+    }
+
+    LaunchedEffect(allEntries.size) {
+        windowEnd = (allEntries.size - 1).coerceAtLeast(0)
+    }
+
+    val window = remember(allEntries, windowEnd) {
+        if (allEntries.isEmpty()) emptyList()
+        else {
+            val end = windowEnd.coerceIn(0, allEntries.lastIndex)
+            val start = (end - windowSize + 1).coerceAtLeast(0)
+            allEntries.subList(start, end + 1)
+        }
+    }
+
+    val showInput = remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.anthropometry_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AnthropometryChart(
+                entries = window,
+                canGoOlder = allEntries.size > window.size && window.firstOrNull()?.date != allEntries.firstOrNull()?.date,
+                canGoNewer = allEntries.isNotEmpty() && window.lastOrNull()?.date != allEntries.lastOrNull()?.date,
+                onGoOlder = { windowEnd = (windowEnd - 1).coerceAtLeast(0) },
+                onGoNewer = { windowEnd = (windowEnd + 1).coerceAtMost(allEntries.lastIndex) },
+            )
+
+            Surface(
+                tonalElevation = 1.dp,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                if (allEntries.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(stringResource(R.string.anthropometry_empty))
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(anthroSeries) { s ->
+                            val first: Pair<LocalDate, Double>? =
+                                allEntries.firstNotNullOfOrNullCompat { e ->
+                                    s.getValue(e)?.let { v -> Pair(e.date, v) }
+                                }
+
+                            val last: Pair<LocalDate, Double>? =
+                                allEntries.lastNotNullOfOrNullCompat { e ->
+                                    s.getValue(e)?.let { v -> Pair(e.date, v) }
+                                }
+                            if (first == null || last == null) return@items
+
+                            val diff = last.second - first.second
+                            val unit =
+                                if (s.axis == AnthroAxis.KG) stringResource(R.string.kg_short) else stringResource(
+                                    R.string.cm_short
+                                )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(s.labelRes).substringBefore(','),
+                                    color = s.color,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = "${formatOneDecimal(last.second)} $unit (${
+                                        formatSignedOneDecimal(
+                                            diff
+                                        )
+                                    }) · ${last.first}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier.widthIn(min = 140.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button(
+                onClick = { showInput.value = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.enter_data))
+            }
+        }
+    }
+
+    if (showInput.value) {
+        AnthropometryInputDialog(
+            entriesByDate = entriesByDate,
+            onDismiss = { showInput.value = false },
+            onSave = { date, values ->
+                vm.saveAnthropometryForDate(
+                    date = date,
+                    armCm = values.getOrNull(0),
+                    chestCm = values.getOrNull(1),
+                    underChestCm = values.getOrNull(2),
+                    waistCm = values.getOrNull(3),
+                    bellyCm = values.getOrNull(4),
+                    hipsCm = values.getOrNull(5),
+                    thighCm = values.getOrNull(6),
+                    weightKg = values.getOrNull(7),
+                )
+                Toast.makeText(ctx, ctx.getString(R.string.anthropometry_saved), Toast.LENGTH_SHORT)
+                    .show()
+                showInput.value = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun AnthropometryChart(
+    entries: List<AnthropometryEntry>,
+    canGoOlder: Boolean,
+    canGoNewer: Boolean,
+    onGoOlder: () -> Unit,
+    onGoNewer: () -> Unit,
+) {
+    val density = LocalDensity.current
+    val dragAcc = remember { mutableFloatStateOf(0f) }
+    val thresholdPx = with(density) { 48.dp.toPx() }
+
+    val cmUnit = stringResource(R.string.cm_short)
+    val kgUnit = stringResource(R.string.kg_short)
+
+    Surface(
+        tonalElevation = 1.dp,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(240.dp)
+            .pointerInput(entries, canGoOlder, canGoNewer) {
+                detectHorizontalDragGestures(
+                    onDragEnd = { dragAcc.floatValue = 0f },
+                    onHorizontalDrag = { _, dragAmount ->
+                        dragAcc.floatValue += dragAmount
+                        if (dragAcc.floatValue <= -thresholdPx) {
+                            if (canGoOlder) onGoOlder()
+                            dragAcc.floatValue = 0f
+                        } else if (dragAcc.floatValue >= thresholdPx) {
+                            if (canGoNewer) onGoNewer()
+                            dragAcc.floatValue = 0f
+                        }
+                    }
+                )
+            }
+    ) {
+        if (entries.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(stringResource(R.string.anthropometry_empty))
+            }
+            return@Surface
+        }
+
+        Canvas(modifier = Modifier
+            .fillMaxSize()
+            .padding(12.dp)) {
+            val cmValues = anthroSeries.filter { it.axis == AnthroAxis.CM }
+                .flatMap { s -> entries.mapNotNull { e -> s.getValue(e) } }
+            val kgValues = anthroSeries.filter { it.axis == AnthroAxis.KG }
+                .flatMap { s -> entries.mapNotNull { e -> s.getValue(e) } }
+
+            fun bounds(vals: List<Double>): Pair<Double, Double> {
+                if (vals.isEmpty()) return 0.0 to 1.0
+                val min = vals.minOrNull()!!
+                val max = vals.maxOrNull()!!
+                if (min == max) return (min - 1.0) to (max + 1.0)
+                val pad = (max - min) * 0.10
+                return (min - pad) to (max + pad)
+            }
+
+            val (cmMin, cmMax) = bounds(cmValues)
+            val (kgMin, kgMax) = bounds(kgValues)
+
+            val minDay = entries.minOf { it.date.toEpochDay() }
+            val maxDayRaw = entries.maxOf { it.date.toEpochDay() }
+            val maxDay = if (maxDayRaw == minDay) minDay + 1 else maxDayRaw
+
+            val padLeft = 52f
+            val padRight = 52f
+            val padTop = 10f
+            val padBottom = 24f
+
+            val plotRight = size.width - padRight
+            val plotBottom = size.height - padBottom
+
+            fun xFor(date: LocalDate): Float {
+                val t = (date.toEpochDay() - minDay).toFloat() / (maxDay - minDay).toFloat()
+                return padLeft + t * (plotRight - padLeft)
+            }
+
+            fun yForCm(v: Double): Float {
+                val t = ((v - cmMin) / (cmMax - cmMin)).toFloat()
+                return plotBottom - t * (plotBottom - padTop)
+            }
+
+            fun yForKg(v: Double): Float {
+                val t = ((v - kgMin) / (kgMax - kgMin)).toFloat()
+                return plotBottom - t * (plotBottom - padTop)
+            }
+
+            // Grid lines (3)
+            val gridColor = Color.Black.copy(alpha = 0.08f)
+            for (i in 0..2) {
+                val t = i / 2f
+                val y = plotBottom - t * (plotBottom - padTop)
+                drawLine(gridColor, Offset(padLeft, y), Offset(plotRight, y), strokeWidth = 1f)
+            }
+
+            // Axis labels/ticks
+            val paint = Paint().apply {
+                isAntiAlias = true
+                textSize = 11.dp.toPx()
+                color = android.graphics.Color.argb(180, 0, 0, 0)
+            }
+
+            fun drawLabel(text: String, x: Float, y: Float) {
+                drawContext.canvas.nativeCanvas.drawText(text, x, y, paint)
+            }
+
+            drawLabel(cmUnit, 4f, 12.dp.toPx())
+            drawLabel(kgUnit, size.width - padRight + 6f, 12.dp.toPx())
+
+            val ticks = listOf(0f, 0.5f, 1f)
+            for (t in ticks) {
+                val y = plotBottom - t * (plotBottom - padTop)
+                val cm = cmMin + (cmMax - cmMin) * t
+                val kg = kgMin + (kgMax - kgMin) * t
+                drawLabel(formatOneDecimal(cm), 4f, y + 4f)
+                drawLabel(formatOneDecimal(kg), size.width - padRight + 6f, y + 4f)
+            }
+
+            // Date labels (start/end)
+            drawLabel(entries.first().date.toString(), padLeft, size.height - 6f)
+            drawLabel(entries.last().date.toString(), plotRight - 72f, size.height - 6f)
+
+            // Series lines
+            anthroSeries.forEach { s ->
+                val points = entries.mapNotNull { e ->
+                    val v = s.getValue(e) ?: return@mapNotNull null
+                    val x = xFor(e.date)
+                    val y = if (s.axis == AnthroAxis.CM) yForCm(v) else yForKg(v)
+                    Offset(x, y)
+                }
+                if (points.size < 2) return@forEach
+
+                val path = Path()
+                path.moveTo(points.first().x, points.first().y)
+                for (p in points.drop(1)) {
+                    path.lineTo(p.x, p.y)
+                }
+                drawPath(path, color = s.color, style = Stroke(width = 3f))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AnthropometryInputDialog(
+    entriesByDate: Map<LocalDate, AnthropometryEntry>,
+    onDismiss: () -> Unit,
+    onSave: (LocalDate, List<Double?>) -> Unit,
+) {
+    val zone = remember { ZoneId.systemDefault() }
+
+    var date by remember { mutableStateOf(LocalDate.now()) }
+
+    fun fillFromEntry(e: AnthropometryEntry?): List<String> = listOf(
+        e?.armCm?.let { formatOneDecimal(it) } ?: "",
+        e?.chestCm?.let { formatOneDecimal(it) } ?: "",
+        e?.underChestCm?.let { formatOneDecimal(it) } ?: "",
+        e?.waistCm?.let { formatOneDecimal(it) } ?: "",
+        e?.bellyCm?.let { formatOneDecimal(it) } ?: "",
+        e?.hipsCm?.let { formatOneDecimal(it) } ?: "",
+        e?.thighCm?.let { formatOneDecimal(it) } ?: "",
+        e?.weightKg?.let { formatOneDecimal(it) } ?: "",
+    )
+
+    var fields by remember { mutableStateOf(fillFromEntry(entriesByDate[date])) }
+
+    val showDatePicker = remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.enter_data)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = date.toString(), style = MaterialTheme.typography.titleMedium)
+                    OutlinedButton(onClick = { showDatePicker.value = true }) {
+                        Text(stringResource(R.string.pick_date))
+                    }
+                }
+
+                OutlinedTextField(
+                    value = fields[0],
+                    onValueChange = { newText ->
+                        fields = fields.toMutableList().also { it[0] = newText }
+                    },
+                    label = { Text(stringResource(R.string.anthro_arm_cm)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = fields[1],
+                    onValueChange = { newText ->
+                        fields = fields.toMutableList().also { it[1] = newText }
+                    },
+                    label = { Text(stringResource(R.string.anthro_chest_cm)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = fields[2],
+                    onValueChange = { newText ->
+                        fields = fields.toMutableList().also { it[2] = newText }
+                    },
+                    label = { Text(stringResource(R.string.anthro_under_chest_cm)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = fields[3],
+                    onValueChange = { newText ->
+                        fields = fields.toMutableList().also { it[3] = newText }
+                    },
+                    label = { Text(stringResource(R.string.anthro_waist_cm)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = fields[4],
+                    onValueChange = { newText ->
+                        fields = fields.toMutableList().also { it[4] = newText }
+                    },
+                    label = { Text(stringResource(R.string.anthro_belly_cm)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = fields[5],
+                    onValueChange = { newText ->
+                        fields = fields.toMutableList().also { it[5] = newText }
+                    },
+                    label = { Text(stringResource(R.string.anthro_hips_cm)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = fields[6],
+                    onValueChange = { newText ->
+                        fields = fields.toMutableList().also { it[6] = newText }
+                    },
+                    label = { Text(stringResource(R.string.anthro_thigh_cm)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = fields[7],
+                    onValueChange = { newText ->
+                        fields = fields.toMutableList().also { it[7] = newText }
+                    },
+                    label = { Text(stringResource(R.string.anthro_weight_kg)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val values = fields.map { parseOneDecimalOrNull(it) }
+                onSave(date, values)
+            }) { Text(stringResource(R.string.ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        }
+    )
+
+    if (showDatePicker.value) {
+        val initialMillis = remember(date) {
+            date.atStartOfDay(zone).toInstant().toEpochMilli()
+        }
+        val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker.value = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val millis = pickerState.selectedDateMillis
+                    if (millis != null) {
+                        date = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
+                        fields = fillFromEntry(entriesByDate[date])
+                    }
+                    showDatePicker.value = false
+                }) { Text(stringResource(R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker.value = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+}
+
+private fun parseOneDecimalOrNull(raw: String): Double? {
+    val t = raw.trim()
+    if (t.isEmpty()) return null
+    return t.replace(',', '.').toDoubleOrNull()
+}
+
+private fun formatOneDecimal(v: Double): String {
+    val r = (v * 10.0).roundToInt() / 10.0
+    val s = String.format(Locale.US, "%.1f", r)
+    return if (s.endsWith(".0")) s.dropLast(2) else s
+}
+
+private fun formatSignedOneDecimal(v: Double): String {
+    val r = (v * 10.0).roundToInt() / 10.0
+    val sign = if (r > 0) "+" else ""
+    val s = String.format(Locale.US, "%.1f", r)
+    val trimmed = if (s.endsWith(".0")) s.dropLast(2) else s
+    return sign + trimmed
+}
+
 
 @Composable
 private fun MenuTile(
@@ -592,22 +1361,24 @@ private fun MenuTile(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
-    ElevatedCard(
-        onClick = onClick,
-        modifier = modifier, // IMPORTANT: do not force fillMaxWidth() here
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
+    val shape = RoundedCornerShape(22.dp)
+    val colorsEnabled = CardDefaults.elevatedCardColors(
+        containerColor = MaterialTheme.colorScheme.surface
+    )
+    val colorsDisabled = CardDefaults.elevatedCardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+    )
+
+    val content: @Composable () -> Unit = {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(12.dp)
+                .alpha(if (enabled) 1f else 0.55f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Icon area takes all free space
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -636,8 +1407,22 @@ private fun MenuTile(
             )
         }
     }
-}
 
+    if (enabled) {
+        ElevatedCard(
+            onClick = onClick,
+            modifier = modifier,
+            shape = shape,
+            colors = colorsEnabled
+        ) { content() }
+    } else {
+        ElevatedCard(
+            modifier = modifier,
+            shape = shape,
+            colors = colorsDisabled
+        ) { content() }
+    }
+}
 
 
 /* ---------------------------
@@ -696,7 +1481,6 @@ fun SomedayScreen(
 }
 
 
-
 /* ---------------------------
    Task screen (with subtasks)
 ---------------------------- */
@@ -708,24 +1492,34 @@ fun NewTaskScreen(
     preselectedEpochDay: Long? = null,
     onBack: () -> Unit,
 ) {
-    val state by vm.state.collectAsState()
     var description by rememberSaveable { mutableStateOf("") }
     val maxSubtasks = 30
     val subtasksText = remember { mutableStateListOf<String>() }
     val subtasksColor = remember { mutableStateListOf<Long?>() }
+// Track whether user manually changed a draft subtask color (to avoid overwriting on task color change)
+    val subtasksColorOverridden = remember { mutableStateListOf<Boolean>() }
     val initialDate: LocalDate? = remember(preselectedEpochDay) {
         preselectedEpochDay?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.now()
     }
-    var selectedDate by rememberSaveable { mutableStateOf<LocalDate?>(initialDate) }
+    var selectedDate by rememberSaveable { mutableStateOf(initialDate) }
     var showDatePicker by remember { mutableStateOf(false) }
     var taskColor by rememberSaveable { mutableStateOf<Long?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize().systemBarsPadding().padding(16.dp), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(stringResource(R.string.new_task_title), style = MaterialTheme.typography.headlineSmall)
+            Text(
+                stringResource(R.string.new_task_title),
+                style = MaterialTheme.typography.headlineSmall
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(stringResource(R.string.when_label), style = MaterialTheme.typography.titleMedium)
@@ -763,7 +1557,11 @@ fun NewTaskScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "${stringResource(R.string.selected_label)} ${selectedDate?.toString() ?: stringResource(R.string.someday_tag)}",
+                text = "${stringResource(R.string.selected_label)} ${
+                    selectedDate?.toString() ?: stringResource(
+                        R.string.someday_tag
+                    )
+                }",
                 style = MaterialTheme.typography.labelMedium
             )
 
@@ -783,7 +1581,15 @@ fun NewTaskScreen(
             Spacer(modifier = Modifier.height(8.dp))
             ColorPickerRow(
                 selected = taskColor,
-                onSelect = { taskColor = it }
+                onSelect = { newColor ->
+                    taskColor = newColor
+                    // Apply the task color to draft subtasks unless the user manually changed that subtask's color.
+                    for (i in subtasksColor.indices) {
+                        if (i < subtasksColorOverridden.size && !subtasksColorOverridden[i]) {
+                            subtasksColor[i] = newColor
+                        }
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -792,8 +1598,14 @@ fun NewTaskScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(stringResource(R.string.subtasks_title), style = MaterialTheme.typography.titleMedium)
-                Text("${subtasksText.size}/$maxSubtasks", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    stringResource(R.string.subtasks_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    "${subtasksText.size}/$maxSubtasks",
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -801,7 +1613,9 @@ fun NewTaskScreen(
             if (subtasksText.isEmpty()) {
                 Text(stringResource(R.string.no_subtasks_yet))
             } else {
-                LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp)) {
+                LazyColumn(modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 260.dp)) {
                     items(subtasksText.size) { i ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -809,7 +1623,11 @@ fun NewTaskScreen(
                         ) {
                             ColorDot(
                                 colorArgb = subtasksColor[i],
-                                onClick = { subtasksColor[i] = nextPaletteColor(subtasksColor[i]) }
+                                onClick = {
+                                    // Cycle color for THIS draft subtask
+                                    subtasksColor[i] = nextPaletteColor(subtasksColor[i])
+                                    subtasksColorOverridden[i] = true
+                                }
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             OutlinedTextField(
@@ -823,6 +1641,7 @@ fun NewTaskScreen(
                             TextButton(onClick = {
                                 subtasksText.removeAt(i)
                                 subtasksColor.removeAt(i)
+                                subtasksColorOverridden.removeAt(i)
                             }) {
                                 Text(stringResource(R.string.remove))
                             }
@@ -842,7 +1661,8 @@ fun NewTaskScreen(
                     onClick = {
                         if (subtasksText.size < maxSubtasks) {
                             subtasksText.add("")
-                            subtasksColor.add(null)
+                            subtasksColor.add(taskColor)           // inherit task color by default
+                            subtasksColorOverridden.add(false)     // not overridden yet
                         }
                     },
                     enabled = subtasksText.size < maxSubtasks,
@@ -863,7 +1683,8 @@ fun NewTaskScreen(
                         )
                         cleanSubtasks.forEachIndexed { idx, txt ->
                             if (txt.isNotBlank()) {
-                                vm.createSubtask(taskId, txt, colorArgb = subtasksColor[idx])
+                                val subColor = subtasksColor.getOrNull(idx) ?: taskColor
+                                vm.createSubtask(taskId, txt, colorArgb = subColor)
                             }
                         }
                         onBack()
@@ -932,7 +1753,7 @@ fun CalendarDayScreen(
     val state by vm.state.collectAsState()
 
     val today = remember { LocalDate.now() }
-    var selectedEpochDay by rememberSaveable(initialEpochDay) { mutableStateOf(initialEpochDay) }
+    var selectedEpochDay by rememberSaveable(initialEpochDay) { mutableLongStateOf(initialEpochDay) }
     val selectedDate = remember(selectedEpochDay) { LocalDate.ofEpochDay(selectedEpochDay) }
 
     LaunchedEffect(selectedEpochDay) {
@@ -941,13 +1762,17 @@ fun CalendarDayScreen(
     }
 
     val dateText = remember(selectedEpochDay) {
-        val fmt = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.getDefault())
+        val fmt =
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.getDefault())
         selectedDate.format(fmt)
     }
 
     val dateTasksCount = remember(state.tasks, state.suppressedRecurrences, selectedDate) {
         state.tasks.count { t ->
-            t.date == selectedDate && !isSuppressedTemplateTaskOnItsDate(t, state.suppressedRecurrences)
+            t.date == selectedDate && !isSuppressedTemplateTaskOnItsDate(
+                t,
+                state.suppressedRecurrences
+            )
         }
     }
 
@@ -981,6 +1806,18 @@ fun CalendarDayScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        var showAnthroDialog by remember { mutableStateOf(false) }
+        val ctx = LocalContext.current
+        val savedMsg = stringResource(R.string.anthropometry_saved)
+
+
+        OutlinedButton(
+            onClick = { showAnthroDialog = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.anthropometry_title))
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -989,7 +1826,10 @@ fun CalendarDayScreen(
             OutlinedButton(onClick = { selectedEpochDay -= 1 }, modifier = Modifier.weight(1f)) {
                 Text(stringResource(R.string.prev_day))
             }
-            OutlinedButton(onClick = { selectedEpochDay = today.toEpochDay() }, modifier = Modifier.weight(1f)) {
+            OutlinedButton(
+                onClick = { selectedEpochDay = today.toEpochDay() },
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(stringResource(R.string.today))
             }
             OutlinedButton(onClick = { selectedEpochDay += 1 }, modifier = Modifier.weight(1f)) {
@@ -1011,11 +1851,39 @@ fun CalendarDayScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 item {
-                    Text(stringResource(R.string.tasks_header), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.tasks_header),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     DateTasksBlock(vm = vm, state = state, date = selectedDate)
                 }
             }
+        }
+
+        if (showAnthroDialog) {
+            val existing = state.anthropometry.firstOrNull { it.date == selectedDate }
+
+            AnthropometryDayInputDialog(
+                date = selectedDate,
+                initialEntry = existing,
+                onDismiss = { showAnthroDialog = false },
+                onSave = { values ->
+                    vm.saveAnthropometryForDate(
+                        date = selectedDate,
+                        armCm = values[0],
+                        chestCm = values[1],
+                        underChestCm = values[2],
+                        waistCm = values[3],
+                        bellyCm = values[4],
+                        hipsCm = values[5],
+                        thighCm = values[6],
+                        weightKg = values[7]
+                    )
+                    Toast.makeText(ctx, savedMsg, Toast.LENGTH_SHORT).show()
+                    showAnthroDialog = false
+                }
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -1038,8 +1906,8 @@ fun CalendarMonthScreen(
     val locale = remember { Locale.getDefault() }
     val today = remember { LocalDate.now() }
 
-    val baseIndex = remember { today.year * 12 + (today.monthValue - 1) }
-    var monthIndex by rememberSaveable { mutableStateOf(baseIndex) }
+    val baseIndex = today.year * 12 + (today.monthValue - 1)
+    var monthIndex by rememberSaveable { mutableIntStateOf(baseIndex) }
 
     val year = monthIndex / 12
     val month = (monthIndex % 12) + 1
@@ -1077,6 +1945,13 @@ fun CalendarMonthScreen(
         ((a - b) + 7) % 7
     }
 
+    val anthroDates = remember(state.anthropometry) {
+        state.anthropometry
+            .filter { it.hasAnyValue() }
+            .map { it.date }
+            .toSet()
+    }
+
     // Count tasks + subtasks by date for month cells (ignore suppressed template tasks on their own date).
     val visibleTasks = remember(state.tasks, state.suppressedRecurrences) {
         state.tasks.filterNot { isSuppressedTemplateTaskOnItsDate(it, state.suppressedRecurrences) }
@@ -1087,24 +1962,26 @@ fun CalendarMonthScreen(
     }
 
     val taskDateById = remember(visibleTasks) {
-        visibleTasks.associate { it.id to it.date }
+        // keep only tasks that actually have a date, so values are non-null
+        visibleTasks.mapNotNull { t -> t.date?.let { d -> t.id to d } }.toMap()
     }
 
-    val subtaskCountByDate = remember(state.subtasks, taskDateById) {
+    val subtaskCountByDate: Map<LocalDate, Int> = remember(state.subtasks, taskDateById) {
         val m = mutableMapOf<LocalDate, Int>()
         for (st in state.subtasks) {
             val d = taskDateById[st.taskId] ?: continue
-            if (d != null) m[d] = (m[d] ?: 0) + 1
+            m[d] = (m[d] ?: 0) + 1
         }
         m
     }
 
     val itemCountByDate = remember(taskCountByDate, subtaskCountByDate) {
         val m = mutableMapOf<LocalDate, Int>()
-        for ((d, c) in taskCountByDate) m[d] = (m[d] ?: 0) + c
-        for ((d, c) in subtaskCountByDate) m[d] = (m[d] ?: 0) + c
+        for ((d, c) in taskCountByDate.entries) m[d] = (m[d] ?: 0) + c
+        for ((d, c) in subtaskCountByDate.entries) m[d] = (m[d] ?: 0) + c
         m
     }
+
 
     val cells = remember(yearMonth, offset, daysInMonth) {
         val out = ArrayList<LocalDate?>(42)
@@ -1128,7 +2005,10 @@ fun CalendarMonthScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = stringResource(R.string.calendar_title), style = MaterialTheme.typography.headlineSmall)
+        Text(
+            text = stringResource(R.string.calendar_title),
+            style = MaterialTheme.typography.headlineSmall
+        )
         Spacer(modifier = Modifier.height(12.dp))
 
         Row(
@@ -1164,7 +2044,9 @@ fun CalendarMonthScreen(
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
-            modifier = Modifier.fillMaxWidth().heightIn(max = 460.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 460.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -1174,6 +2056,8 @@ fun CalendarMonthScreen(
                 } else {
                     val count = itemCountByDate[date] ?: 0
                     val isToday = date == today
+                    val hasAnthro = anthroDates.contains(date)
+
 
                     Surface(
                         tonalElevation = if (isToday) 4.dp else 0.dp,
@@ -1186,9 +2070,30 @@ fun CalendarMonthScreen(
                             modifier = Modifier.padding(8.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = date.dayOfMonth.toString(), style = MaterialTheme.typography.titleMedium)
+                            Box(
+                                modifier = Modifier.size(24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (hasAnthro) {
+                                    Canvas(modifier = Modifier.matchParentSize()) {
+                                        val stroke = 2.dp.toPx()
+                                        drawCircle(
+                                            color = Color(0xFFB7E6B0),
+                                            radius = (size.minDimension - stroke) / 2f,
+                                            style = Stroke(width = stroke)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = date.dayOfMonth.toString(),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
                             if (count > 0) {
-                                Text(text = count.toString(), style = MaterialTheme.typography.labelMedium)
+                                Text(
+                                    text = count.toString(),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
                         }
                     }
@@ -1202,7 +2107,10 @@ fun CalendarMonthScreen(
             Text(stringResource(R.string.someday_count, somedayCount))
         }
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.back)) }
+        Button(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(stringResource(R.string.back)) }
     }
 }
 
@@ -1213,7 +2121,7 @@ fun CalendarMonthScreen(
 @Composable
 private fun appLocale(): Locale {
     val cfg = LocalContext.current.resources.configuration
-    return if (Build.VERSION.SDK_INT >= 24) cfg.locales[0] else @Suppress("DEPRECATION") cfg.locale
+    return cfg.locales[0]
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -1231,7 +2139,7 @@ private fun RepeatPickerDialog(
     var enabled by remember { mutableStateOf(initial != null) }
     var freq by remember { mutableStateOf(initial?.freq ?: RepeatFreq.WEEKLY) }
 
-    var interval by remember { mutableStateOf((initial?.interval ?: 1).coerceAtLeast(1)) }
+    var interval by remember { mutableIntStateOf((initial?.interval ?: 1).coerceAtLeast(1)) }
 
     var weekDays by remember {
         mutableStateOf(
@@ -1240,7 +2148,7 @@ private fun RepeatPickerDialog(
     }
 
     var dayOfMonth by remember {
-        mutableStateOf((initial?.dayOfMonth ?: defaultDom).coerceIn(1, 31))
+        mutableIntStateOf((initial?.dayOfMonth ?: defaultDom).coerceIn(1, 31))
     }
 
     AlertDialog(
@@ -1281,7 +2189,10 @@ private fun RepeatPickerDialog(
                             selected = freq == f,
                             onClick = { freq = f },
                             enabled = enabled,
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = opts.size),
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = opts.size
+                            ),
                         ) {
                             Text(
                                 text = stringResource(labelRes),
@@ -1401,7 +2312,9 @@ private fun RepeatPickerDialog(
                 }
 
                 val safeWeekDays =
-                    if (freq == RepeatFreq.WEEKLY) weekDays.takeIf { it.isNotEmpty() } ?: setOf(defaultDow)
+                    if (freq == RepeatFreq.WEEKLY) weekDays.takeIf { it.isNotEmpty() } ?: setOf(
+                        defaultDow
+                    )
                     else emptySet()
 
                 onConfirm(
@@ -1409,7 +2322,10 @@ private fun RepeatPickerDialog(
                         freq = freq,
                         interval = interval.coerceAtLeast(1),
                         weekDays = safeWeekDays,
-                        dayOfMonth = if (freq == RepeatFreq.MONTHLY) dayOfMonth.coerceIn(1, 31) else null
+                        dayOfMonth = if (freq == RepeatFreq.MONTHLY) dayOfMonth.coerceIn(
+                            1,
+                            31
+                        ) else null
                     )
                 )
             }) { Text(stringResource(R.string.ok)) }
@@ -1431,37 +2347,37 @@ private fun DateTasksBlock(
         state.tasks
             .filter { it.date == date }
             .filterNot { isSuppressedTemplateTaskOnItsDate(it, state.suppressedRecurrences) }
-            .sortedWith(compareBy<Task>({ it.order }, { it.id }))
+            .sortedWith(compareBy({ it.order }, { it.id }))
     }
     if (tasks.isEmpty()) return
 
     var collapsedTaskIds by remember(date) { mutableStateOf<Set<Long>>(emptySet()) }
 
     var moveTaskId by remember { mutableStateOf<Long?>(null) }
-    var showMoveTaskDatePicker by remember { mutableStateOf(false) }
+    val showMoveTaskDatePicker = remember { mutableStateOf(false) }
     val ctx = LocalContext.current
 
     var copyTaskId by remember { mutableStateOf<Long?>(null) }
-    var showCopyTaskDatePicker by remember { mutableStateOf(false) }
+    val showCopyTaskDatePicker = remember { mutableStateOf(false) }
 
     var copySubtaskId by remember { mutableStateOf<Long?>(null) }
-    var showCopySubtaskDatePicker by remember { mutableStateOf(false) }
+    val showCopySubtaskDatePicker = remember { mutableStateOf(false) }
 
-    var moveSubtaskId by remember { mutableStateOf<Long?>(null) }
+    val moveSubtaskId = remember { mutableStateOf<Long?>(null) }
 
-    var addSubtaskToTaskId by remember { mutableStateOf<Long?>(null) }
+    val addSubtaskToTaskId = remember { mutableStateOf<Long?>(null) }
     var newSubtaskText by remember { mutableStateOf("") }
     var newSubtaskColor by remember { mutableStateOf<Long?>(null) }
 
     var editTaskId by remember { mutableStateOf<Long?>(null) }
-    var editTaskText by remember { mutableStateOf("") }
-    var editTaskRepeatRule by remember { mutableStateOf<RepeatRule?>(null) }
-    var showTaskRepeatPicker by remember { mutableStateOf(false) }
+    val editTaskText = remember { mutableStateOf("") }
+    val editTaskRepeatRule = remember { mutableStateOf<RepeatRule?>(null) }
+    val showTaskRepeatPicker = remember { mutableStateOf(false) }
 
     var editSubtaskId by remember { mutableStateOf<Long?>(null) }
-    var editSubtaskText by remember { mutableStateOf("") }
-    var editSubtaskRepeatRule by remember { mutableStateOf<RepeatRule?>(null) }
-    var showSubtaskRepeatPicker by remember { mutableStateOf(false) }
+    val editSubtaskText = remember { mutableStateOf("") }
+    val editSubtaskRepeatRule = remember { mutableStateOf<RepeatRule?>(null) }
+    val showSubtaskRepeatPicker = remember { mutableStateOf(false) }
 
     val markerShape = remember { RoundedCornerShape(10.dp) }
     val markerAlpha = 0.18f
@@ -1469,7 +2385,7 @@ private fun DateTasksBlock(
     tasks.forEach { task ->
         val subtasks = state.subtasks
             .filter { it.taskId == task.id }
-            .sortedWith(compareBy<Subtask>({ it.order }, { it.id }))
+            .sortedWith(compareBy({ it.order }, { it.id }))
 
         val taskBg = task.colorArgb
             ?.toInt()
@@ -1524,17 +2440,29 @@ private fun DateTasksBlock(
                         .fillMaxWidth()
                         .clickable {
                             editTaskId = task.id
-                            editTaskText = task.description
-                            editTaskRepeatRule = task.repeatRule
-                            showTaskRepeatPicker = false
+                            editTaskText.value = task.description
+                            editTaskRepeatRule.value = task.repeatRule
+                            showTaskRepeatPicker.value = false
                         },
                     style = MaterialTheme.typography.bodyLarge.copy(textDecoration = deco)
                 )
             }
 
-            TinyIconButton(onClick = { vm.moveTaskUp(task.id) }, icon = Icons.Default.KeyboardArrowUp, cd = "Move task up")
-            TinyIconButton(onClick = { vm.moveTaskDown(task.id) }, icon = Icons.Default.KeyboardArrowDown, cd = "Move task down")
-            TinyIconButton(onClick = { moveTaskId = task.id }, icon = Icons.AutoMirrored.Filled.ArrowForward, cd = "Move task")
+            TinyIconButton(
+                onClick = { vm.moveTaskUp(task.id) },
+                icon = Icons.Default.KeyboardArrowUp,
+                cd = "Move task up"
+            )
+            TinyIconButton(
+                onClick = { vm.moveTaskDown(task.id) },
+                icon = Icons.Default.KeyboardArrowDown,
+                cd = "Move task down"
+            )
+            TinyIconButton(
+                onClick = { moveTaskId = task.id },
+                icon = Icons.AutoMirrored.Filled.ArrowForward,
+                cd = "Move task"
+            )
             TinyIconButton(
                 onClick = { copyTaskId = task.id },
                 icon = Icons.Default.ContentCopy,
@@ -1555,9 +2483,9 @@ private fun DateTasksBlock(
         ) {
             if (!isTaskCollapsed) {
                 TextButton(onClick = {
-                    addSubtaskToTaskId = task.id
+                    addSubtaskToTaskId.value = task.id
                     newSubtaskText = ""
-                    newSubtaskColor = null
+                    newSubtaskColor = task.colorArgb
                 }) {
                     Text(stringResource(R.string.add_subtask))
                 }
@@ -1603,17 +2531,29 @@ private fun DateTasksBlock(
                                 .fillMaxWidth()
                                 .clickable {
                                     editSubtaskId = st.id
-                                    editSubtaskText = st.description
-                                    editSubtaskRepeatRule = st.repeatRule
-                                    showSubtaskRepeatPicker = false
+                                    editSubtaskText.value = st.description
+                                    editSubtaskRepeatRule.value = st.repeatRule
+                                    showSubtaskRepeatPicker.value = false
                                 },
                             style = MaterialTheme.typography.bodyMedium.copy(textDecoration = stDeco)
                         )
                     }
 
-                    TinyIconButton(onClick = { vm.moveSubtaskUp(st.id) }, icon = Icons.Default.KeyboardArrowUp, cd = "Move subtask up")
-                    TinyIconButton(onClick = { vm.moveSubtaskDown(st.id) }, icon = Icons.Default.KeyboardArrowDown, cd = "Move subtask down")
-                    TinyIconButton(onClick = { moveSubtaskId = st.id }, icon = Icons.AutoMirrored.Filled.ArrowForward, cd = "Move subtask")
+                    TinyIconButton(
+                        onClick = { vm.moveSubtaskUp(st.id) },
+                        icon = Icons.Default.KeyboardArrowUp,
+                        cd = "Move subtask up"
+                    )
+                    TinyIconButton(
+                        onClick = { vm.moveSubtaskDown(st.id) },
+                        icon = Icons.Default.KeyboardArrowDown,
+                        cd = "Move subtask down"
+                    )
+                    TinyIconButton(
+                        onClick = { moveSubtaskId.value = st.id },
+                        icon = Icons.AutoMirrored.Filled.ArrowForward,
+                        cd = "Move subtask"
+                    )
                     TinyIconButton(
                         onClick = { copySubtaskId = st.id },
                         icon = Icons.Default.ContentCopy,
@@ -1636,7 +2576,7 @@ private fun DateTasksBlock(
     }
 
     // Move task: choose date (Today / Tomorrow / Someday / Pick date)
-    if (moveTaskId != null && !showMoveTaskDatePicker) {
+    if (moveTaskId != null && !showMoveTaskDatePicker.value) {
         AlertDialog(
             onDismissRequest = { moveTaskId = null },
             title = { Text(stringResource(R.string.move_task)) },
@@ -1667,18 +2607,20 @@ private fun DateTasksBlock(
                     ) { Text(stringResource(R.string.schedule_tomorrow)) }
 
                     TextButton(
-                        onClick = { showMoveTaskDatePicker = true },
+                        onClick = { showMoveTaskDatePicker.value = true },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.reschedule)) }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { moveTaskId = null }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = {
+                    moveTaskId = null
+                }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
 
-    if (moveTaskId != null && showMoveTaskDatePicker) {
+    if (moveTaskId != null && showMoveTaskDatePicker.value) {
         val zone = remember { ZoneId.systemDefault() }
         val initialMillis = remember(moveTaskId, state.tasks) {
             val d = state.tasks.firstOrNull { it.id == moveTaskId }?.date ?: LocalDate.now()
@@ -1688,7 +2630,7 @@ private fun DateTasksBlock(
 
         DatePickerDialog(
             onDismissRequest = {
-                showMoveTaskDatePicker = false
+                showMoveTaskDatePicker.value = false
                 moveTaskId = null
             },
             confirmButton = {
@@ -1698,13 +2640,13 @@ private fun DateTasksBlock(
                         val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
                         vm.rescheduleTaskToDate(moveTaskId!!, newDate)
                     }
-                    showMoveTaskDatePicker = false
+                    showMoveTaskDatePicker.value = false
                     moveTaskId = null
                 }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    showMoveTaskDatePicker = false
+                    showMoveTaskDatePicker.value = false
                     moveTaskId = null
                 }) { Text(stringResource(R.string.cancel)) }
             }
@@ -1713,7 +2655,7 @@ private fun DateTasksBlock(
         }
     }
 
-    if (copyTaskId != null && !showCopyTaskDatePicker) {
+    if (copyTaskId != null && !showCopyTaskDatePicker.value) {
         AlertDialog(
             onDismissRequest = { copyTaskId = null },
             title = { Text(stringResource(R.string.copy_task)) },
@@ -1722,7 +2664,11 @@ private fun DateTasksBlock(
                     TextButton(
                         onClick = {
                             vm.copyTaskToDate(copyTaskId!!, LocalDate.now())
-                            Toast.makeText(ctx, ctx.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                ctx,
+                                ctx.getString(R.string.toast_copied),
+                                Toast.LENGTH_SHORT
+                            ).show()
                             copyTaskId = null
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -1731,32 +2677,39 @@ private fun DateTasksBlock(
                     TextButton(
                         onClick = {
                             vm.copyTaskToDate(copyTaskId!!, LocalDate.now().plusDays(1))
-                            Toast.makeText(ctx, ctx.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                ctx,
+                                ctx.getString(R.string.toast_copied),
+                                Toast.LENGTH_SHORT
+                            ).show()
                             copyTaskId = null
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.schedule_tomorrow)) }
 
                     TextButton(
-                        onClick = { showCopyTaskDatePicker = true },
+                        onClick = { showCopyTaskDatePicker.value = true },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.pick_date)) }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { copyTaskId = null }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = {
+                    copyTaskId = null
+                }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
 
-    if (copyTaskId != null && showCopyTaskDatePicker) {
+    if (copyTaskId != null && showCopyTaskDatePicker.value) {
         val zone = remember { ZoneId.systemDefault() }
-        val initialMillis = remember { LocalDate.now().atStartOfDay(zone).toInstant().toEpochMilli() }
+        val initialMillis =
+            remember { LocalDate.now().atStartOfDay(zone).toInstant().toEpochMilli() }
         val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
 
         DatePickerDialog(
             onDismissRequest = {
-                showCopyTaskDatePicker = false
+                showCopyTaskDatePicker.value = false
                 copyTaskId = null
             },
             confirmButton = {
@@ -1765,15 +2718,19 @@ private fun DateTasksBlock(
                     if (millis != null) {
                         val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
                         vm.copyTaskToDate(copyTaskId!!, newDate)
-                        Toast.makeText(ctx, ctx.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            ctx,
+                            ctx.getString(R.string.toast_copied),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                    showCopyTaskDatePicker = false
+                    showCopyTaskDatePicker.value = false
                     copyTaskId = null
                 }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    showCopyTaskDatePicker = false
+                    showCopyTaskDatePicker.value = false
                     copyTaskId = null
                 }) { Text(stringResource(R.string.cancel)) }
             }
@@ -1783,25 +2740,30 @@ private fun DateTasksBlock(
     }
 
     // Move subtask to another task
-    if (moveSubtaskId != null) {
-        val sub = state.subtasks.firstOrNull { it.id == moveSubtaskId }
+    if (moveSubtaskId.value != null) {
+        val sub = state.subtasks.firstOrNull { it.id == moveSubtaskId.value }
         val currentTaskId = sub?.taskId
 
         AlertDialog(
-            onDismissRequest = { moveSubtaskId = null },
+            onDismissRequest = { moveSubtaskId.value = null },
             title = { Text(stringResource(R.string.move_subtask)) },
             text = {
                 LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
                     val targets = state.tasks
                         .filter { it.id != currentTaskId }
-                        .sortedWith(compareBy<Task>({ it.date?.toEpochDay() ?: Long.MIN_VALUE }, { it.order }, { it.id }))
+                        .sortedWith(
+                            compareBy(
+                                { it.date?.toEpochDay() ?: Long.MIN_VALUE },
+                                { it.order },
+                                { it.id })
+                        )
 
                     items(targets) { t ->
                         val dText = t.date?.toString() ?: stringResource(R.string.someday_tag)
                         TextButton(
                             onClick = {
-                                vm.moveSubtask(moveSubtaskId!!, t.id)
-                                moveSubtaskId = null
+                                vm.moveSubtask(moveSubtaskId.value!!, t.id)
+                                moveSubtaskId.value = null
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -1811,15 +2773,17 @@ private fun DateTasksBlock(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { moveSubtaskId = null }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = {
+                    moveSubtaskId.value = null
+                }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
 
     // Add subtask dialog
-    if (addSubtaskToTaskId != null) {
+    if (addSubtaskToTaskId.value != null) {
         AlertDialog(
-            onDismissRequest = { addSubtaskToTaskId = null },
+            onDismissRequest = { addSubtaskToTaskId.value = null },
             title = { Text(stringResource(R.string.add_subtask)) },
             text = {
                 Column {
@@ -1846,19 +2810,25 @@ private fun DateTasksBlock(
                     onClick = {
                         val txt = newSubtaskText.trim()
                         if (txt.isNotBlank()) {
-                            vm.createSubtask(addSubtaskToTaskId!!, txt, colorArgb = newSubtaskColor)
+                            vm.createSubtask(
+                                addSubtaskToTaskId.value!!,
+                                txt,
+                                colorArgb = newSubtaskColor
+                            )
                         }
-                        addSubtaskToTaskId = null
+                        addSubtaskToTaskId.value = null
                     }
                 ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { addSubtaskToTaskId = null }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = {
+                    addSubtaskToTaskId.value = null
+                }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
 
-    if (copySubtaskId != null && !showCopySubtaskDatePicker) {
+    if (copySubtaskId != null && !showCopySubtaskDatePicker.value) {
         AlertDialog(
             onDismissRequest = { copySubtaskId = null },
             title = { Text(stringResource(R.string.copy_subtask)) },
@@ -1867,7 +2837,11 @@ private fun DateTasksBlock(
                     TextButton(
                         onClick = {
                             vm.copySubtaskToDate(copySubtaskId!!, LocalDate.now())
-                            Toast.makeText(ctx, ctx.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                ctx,
+                                ctx.getString(R.string.toast_copied),
+                                Toast.LENGTH_SHORT
+                            ).show()
                             copySubtaskId = null
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -1876,32 +2850,39 @@ private fun DateTasksBlock(
                     TextButton(
                         onClick = {
                             vm.copySubtaskToDate(copySubtaskId!!, LocalDate.now().plusDays(1))
-                            Toast.makeText(ctx, ctx.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                ctx,
+                                ctx.getString(R.string.toast_copied),
+                                Toast.LENGTH_SHORT
+                            ).show()
                             copySubtaskId = null
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.schedule_tomorrow)) }
 
                     TextButton(
-                        onClick = { showCopySubtaskDatePicker = true },
+                        onClick = { showCopySubtaskDatePicker.value = true },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.pick_date)) }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { copySubtaskId = null }) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = {
+                    copySubtaskId = null
+                }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
 
-    if (copySubtaskId != null && showCopySubtaskDatePicker) {
+    if (copySubtaskId != null && showCopySubtaskDatePicker.value) {
         val zone = remember { ZoneId.systemDefault() }
-        val initialMillis = remember { LocalDate.now().atStartOfDay(zone).toInstant().toEpochMilli() }
+        val initialMillis =
+            remember { LocalDate.now().atStartOfDay(zone).toInstant().toEpochMilli() }
         val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
 
         DatePickerDialog(
             onDismissRequest = {
-                showCopySubtaskDatePicker = false
+                showCopySubtaskDatePicker.value = false
                 copySubtaskId = null
             },
             confirmButton = {
@@ -1910,15 +2891,19 @@ private fun DateTasksBlock(
                     if (millis != null) {
                         val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
                         vm.copySubtaskToDate(copySubtaskId!!, newDate)
-                        Toast.makeText(ctx, ctx.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            ctx,
+                            ctx.getString(R.string.toast_copied),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                    showCopySubtaskDatePicker = false
+                    showCopySubtaskDatePicker.value = false
                     copySubtaskId = null
                 }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    showCopySubtaskDatePicker = false
+                    showCopySubtaskDatePicker.value = false
                     copySubtaskId = null
                 }) { Text(stringResource(R.string.cancel)) }
             }
@@ -1931,12 +2916,12 @@ private fun DateTasksBlock(
     // Edit task dialog
     if (editTaskId != null) {
         AlertDialog(
-            onDismissRequest = { editTaskId = null; showTaskRepeatPicker = false },
+            onDismissRequest = { editTaskId = null; showTaskRepeatPicker.value = false },
             title = { Text(stringResource(R.string.task_description_label)) },
             text = {
                 OutlinedTextField(
-                    value = editTaskText,
-                    onValueChange = { editTaskText = it },
+                    value = editTaskText.value,
+                    onValueChange = { editTaskText.value = it },
                     label = { Text(stringResource(R.string.task_description_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -1944,23 +2929,27 @@ private fun DateTasksBlock(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    vm.updateTaskDescription(editTaskId!!, editTaskText)
+                    vm.updateTaskDescription(editTaskId!!, editTaskText.value)
                     editTaskId = null
                 }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { showTaskRepeatPicker = true }) { Text(stringResource(R.string.repeat)) }
+                    TextButton(onClick = { showTaskRepeatPicker.value = true }) {
+                        Text(
+                            stringResource(R.string.repeat)
+                        )
+                    }
 
                     TextButton(onClick = {
                         vm.deleteTask(editTaskId!!)
                         editTaskId = null
-                        showTaskRepeatPicker = false
+                        showTaskRepeatPicker.value = false
                     }) { Text(stringResource(R.string.remove)) }
 
                     TextButton(onClick = {
                         editTaskId = null
-                        showTaskRepeatPicker = false
+                        showTaskRepeatPicker.value = false
                     }) { Text(stringResource(R.string.cancel)) }
                 }
             }
@@ -1970,12 +2959,12 @@ private fun DateTasksBlock(
     // Edit subtask dialog
     if (editSubtaskId != null) {
         AlertDialog(
-            onDismissRequest = { editSubtaskId = null; showSubtaskRepeatPicker = false },
+            onDismissRequest = { editSubtaskId = null; showSubtaskRepeatPicker.value = false },
             title = { Text(stringResource(R.string.task_description_label)) },
             text = {
                 OutlinedTextField(
-                    value = editSubtaskText,
-                    onValueChange = { editSubtaskText = it },
+                    value = editSubtaskText.value,
+                    onValueChange = { editSubtaskText.value = it },
                     label = { Text(stringResource(R.string.task_description_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -1983,56 +2972,60 @@ private fun DateTasksBlock(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    vm.updateSubtaskDescription(editSubtaskId!!, editSubtaskText)
+                    vm.updateSubtaskDescription(editSubtaskId!!, editSubtaskText.value)
                     editSubtaskId = null
                 }) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { showSubtaskRepeatPicker = true }) { Text(stringResource(R.string.repeat)) }
+                    TextButton(onClick = { showSubtaskRepeatPicker.value = true }) {
+                        Text(
+                            stringResource(R.string.repeat)
+                        )
+                    }
 
                     TextButton(onClick = {
                         vm.deleteSubtask(editSubtaskId!!)
                         editSubtaskId = null
-                        showSubtaskRepeatPicker = false
+                        showSubtaskRepeatPicker.value = false
                     }) { Text(stringResource(R.string.remove)) }
 
                     TextButton(onClick = {
                         editSubtaskId = null
-                        showSubtaskRepeatPicker = false
+                        showSubtaskRepeatPicker.value = false
                     }) { Text(stringResource(R.string.cancel)) }
                 }
             }
         )
     }
 
-    if (showTaskRepeatPicker && editTaskId != null) {
+    if (showTaskRepeatPicker.value && editTaskId != null) {
         RepeatPickerDialog(
-            initial = editTaskRepeatRule,
-            onDismiss = { showTaskRepeatPicker = false },
+            initial = editTaskRepeatRule.value,
+            onDismiss = { showTaskRepeatPicker.value = false },
             onConfirm = { rule ->
-                editTaskRepeatRule = rule
+                editTaskRepeatRule.value = rule
                 vm.setTaskRepeatRule(editTaskId!!, rule)
-                showTaskRepeatPicker = false
+                showTaskRepeatPicker.value = false
             }
         )
     }
 
-    if (showSubtaskRepeatPicker && editSubtaskId != null) {
+    if (showSubtaskRepeatPicker.value && editSubtaskId != null) {
         RepeatPickerDialog(
-            initial = editSubtaskRepeatRule,
-            onDismiss = { showSubtaskRepeatPicker = false },
+            initial = editSubtaskRepeatRule.value,
+            onDismiss = { showSubtaskRepeatPicker.value = false },
             onConfirm = { rule ->
-                editSubtaskRepeatRule = rule
+                editSubtaskRepeatRule.value = rule
                 vm.setSubtaskRepeatRule(editSubtaskId!!, rule)
-                showSubtaskRepeatPicker = false
+                showSubtaskRepeatPicker.value = false
             }
         )
     }
 }
 
 private fun orderedWeekDays(first: DayOfWeek): List<DayOfWeek> {
-    val all = DayOfWeek.values().toList()
+    val all = DayOfWeek.entries.toList()
     val idx = all.indexOf(first)
     return all.drop(idx) + all.take(idx)
 }
@@ -2062,7 +3055,12 @@ private fun repeatRuleText(rule: RepeatRule, anchor: LocalDate?): String {
             if (interval == 1) {
                 stringResource(R.string.repeat_weekly_every_week_on, names)
             } else {
-                pluralStringResource(R.plurals.repeat_weekly_every_n_weeks_on, interval, interval, names)
+                pluralStringResource(
+                    R.plurals.repeat_weekly_every_n_weeks_on,
+                    interval,
+                    interval,
+                    names
+                )
             }
         }
 
@@ -2072,28 +3070,21 @@ private fun repeatRuleText(rule: RepeatRule, anchor: LocalDate?): String {
             if (interval == 1) {
                 stringResource(R.string.repeat_monthly_every_month_on_day, dom)
             } else {
-                pluralStringResource(R.plurals.repeat_monthly_every_n_months_on_day, interval, interval, dom)
+                pluralStringResource(
+                    R.plurals.repeat_monthly_every_n_months_on_day,
+                    interval,
+                    interval,
+                    dom
+                )
             }
         }
     }
 }
 
 
-
 private fun isSuppressedTemplateTaskOnItsDate(task: Task, suppressed: Set<String>): Boolean {
     val d = task.date ?: return false
     return task.originTaskId == null && suppressed.contains("T:${task.id}:${d.toEpochDay()}")
-}
-
-@Composable
-fun PlaceholderScreen(title: String) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(title)
-    }
 }
 
 private val Palette: List<Long> = listOf(
@@ -2121,7 +3112,8 @@ private fun ColorDot(
     size: Dp = 16.dp,
     isSelected: Boolean = false
 ) {
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+    val borderColor =
+        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
     val borderWidth = if (isSelected) 3.dp else 1.dp
     val fill = colorArgb?.toInt()?.let { Color(it) }
 

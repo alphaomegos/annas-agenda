@@ -3,6 +3,7 @@ package com.alphaomegos.annasagenda
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,17 +27,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val loaded = store.load()
             _state.value = loaded
 
-            val maxId = (loaded.tasks.map { it.id } + loaded.subtasks.map { it.id }).maxOrNull() ?: 0L
+            val maxId =
+                (loaded.tasks.map { it.id } + loaded.subtasks.map { it.id }).maxOrNull() ?: 0L
             nextId = maxId + 1
 
             _isLoaded.value = true
 
-            state
-                .drop(1)       // skip the initially loaded state
-                .debounce(400) // reduce disk writes while user edits quickly
-                .collect { store.save(it) }
+            startAutoSave()
         }
     }
+
+    @OptIn(FlowPreview::class)
+    private suspend fun startAutoSave() {
+        state
+            .drop(1)       // skip the initially loaded state
+            .debounce(400) // reduce disk writes while user edits quickly
+            .collect { store.save(it) }
+    }
+
 
     fun resetAllData() {
         val empty = AppState()
@@ -73,10 +81,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun newId(): Long = nextId++
 
 
-
     private fun nextTaskOrderForDate(date: LocalDate?): Int =
         (_state.value.tasks.filter { it.date == date }.maxOfOrNull { it.order } ?: -1) + 1
-
 
 
     private fun nextSubtaskOrderFor(taskId: Long): Int =
@@ -95,7 +101,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(tasks = updatedTasks)
     }
 
-    private fun refreshHasSubtasksForTask(taskId: Long, tasks: MutableList<Task>, subs: List<Subtask>) {
+    private fun refreshHasSubtasksForTask(
+        taskId: Long,
+        tasks: MutableList<Task>,
+        subs: List<Subtask>
+    ) {
         val idx = tasks.indexOfFirst { it.id == taskId }
         if (idx >= 0) {
             val has = subs.any { it.taskId == taskId }
@@ -117,6 +127,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val days = ChronoUnit.DAYS.between(anchor, date)
                 days % interval == 0L
             }
+
             RepeatFreq.WEEKLY -> {
                 if (rule.weekDays.isNotEmpty() && date.dayOfWeek !in rule.weekDays) return false
                 val wf = WeekFields.of(Locale.getDefault())
@@ -125,10 +136,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val weeks = ChronoUnit.WEEKS.between(a, d)
                 weeks % interval == 0L
             }
+
             RepeatFreq.MONTHLY -> {
                 val dom = rule.dayOfMonth ?: anchor.dayOfMonth
                 if (date.dayOfMonth != dom) return false
-                val months = ChronoUnit.MONTHS.between(anchor.withDayOfMonth(1), date.withDayOfMonth(1))
+                val months =
+                    ChronoUnit.MONTHS.between(anchor.withDayOfMonth(1), date.withDayOfMonth(1))
                 months % interval == 0L
             }
         }
@@ -218,7 +231,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         val suppressKey = "S:${s.id}:$epoch"
                         if (!isSuppressed(suppressKey)) {
                             val taskForSub = findGeneratedTask(t.id, d) ?: cloneTaskForDate(t, d)
-                            val alreadySub = newSubtasks.any { it.taskId == taskForSub.id && it.originSubtaskId == s.id }
+                            val alreadySub =
+                                newSubtasks.any { it.taskId == taskForSub.id && it.originSubtaskId == s.id }
                             if (!alreadySub) {
                                 cloneSubtaskIntoTask(s, taskForSub.id)
                                 refreshHasSubtasksForTask(taskForSub.id, newTasks, newSubtasks)
@@ -325,7 +339,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteTaskSeriesFrom(templateTaskId: Long, fromDate: LocalDate = LocalDate.now()) {
         val cur = _state.value
-        val template = cur.tasks.firstOrNull { it.id == templateTaskId && it.originTaskId == null } ?: return
+        val template =
+            cur.tasks.firstOrNull { it.id == templateTaskId && it.originTaskId == null } ?: return
 
         val idsToDelete = mutableSetOf<Long>()
 
@@ -356,8 +371,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteSubtaskSeriesFrom(templateSubtaskId: Long, fromDate: LocalDate = LocalDate.now()) {
         val cur = _state.value
-        val templateSub = cur.subtasks.firstOrNull { it.id == templateSubtaskId && it.originSubtaskId == null } ?: return
-        val parentTemplateTask = cur.tasks.firstOrNull { it.id == templateSub.taskId && it.originTaskId == null } ?: return
+        val templateSub =
+            cur.subtasks.firstOrNull { it.id == templateSubtaskId && it.originSubtaskId == null }
+                ?: return
+        val parentTemplateTask =
+            cur.tasks.firstOrNull { it.id == templateSub.taskId && it.originTaskId == null }
+                ?: return
 
         val tasksById = cur.tasks.associateBy { it.id }
 
@@ -388,8 +407,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 .map { it.id }
                 .toSet()
 
-            val newTasks = if (emptyGeneratedTaskIds.isEmpty()) cur.tasks else cur.tasks.filterNot { it.id in emptyGeneratedTaskIds }
-            val newSubs2 = if (emptyGeneratedTaskIds.isEmpty()) newSubs else newSubs.filterNot { it.taskId in emptyGeneratedTaskIds }
+            val newTasks =
+                if (emptyGeneratedTaskIds.isEmpty()) cur.tasks else cur.tasks.filterNot { it.id in emptyGeneratedTaskIds }
+            val newSubs2 =
+                if (emptyGeneratedTaskIds.isEmpty()) newSubs else newSubs.filterNot { it.taskId in emptyGeneratedTaskIds }
 
             _state.value = cur.copy(tasks = newTasks, subtasks = newSubs2)
         } else {
@@ -418,7 +439,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val srcSubs = cur.subtasks
             .filter { it.taskId == taskId }
-            .sortedWith(compareBy<Subtask>({ it.order }, { it.id }))
+            .sortedWith(compareBy({ it.order }, { it.id }))
 
         val newTaskId = createTaskForDate(
             date = targetDate,
@@ -526,7 +547,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val cur = _state.value
         val victim = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
 
-        val newOrder = if (victim.taskId == targetTaskId) victim.order else nextSubtaskOrderFor(targetTaskId)
+        val newOrder =
+            if (victim.taskId == targetTaskId) victim.order else nextSubtaskOrderFor(targetTaskId)
 
         val updated = cur.subtasks.map { s ->
             if (s.id == subtaskId) s.copy(taskId = targetTaskId, order = newOrder) else s
@@ -544,7 +566,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val siblings = cur.tasks
             .filter { it.date == date }
-            .sortedWith(compareBy<Task>({ it.order }, { it.id }))
+            .sortedWith(compareBy({ it.order }, { it.id }))
 
         val idx = siblings.indexOfFirst { it.id == taskId }
         if (idx <= 0) return
@@ -566,7 +588,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val siblings = cur.tasks
             .filter { it.date == date }
-            .sortedWith(compareBy<Task>({ it.order }, { it.id }))
+            .sortedWith(compareBy({ it.order }, { it.id }))
 
         val idx = siblings.indexOfFirst { it.id == taskId }
         if (idx < 0 || idx >= siblings.lastIndex) return
@@ -589,7 +611,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val siblings = cur.subtasks
             .filter { it.taskId == taskId }
-            .sortedWith(compareBy<Subtask>({ it.order }, { it.id }))
+            .sortedWith(compareBy({ it.order }, { it.id }))
 
         val idx = siblings.indexOfFirst { it.id == subtaskId }
         if (idx <= 0) return
@@ -613,7 +635,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val siblings = cur.subtasks
             .filter { it.taskId == taskId }
-            .sortedWith(compareBy<Subtask>({ it.order }, { it.id }))
+            .sortedWith(compareBy({ it.order }, { it.id }))
 
         val idx = siblings.indexOfFirst { it.id == subtaskId }
         if (idx < 0 || idx >= siblings.lastIndex) return
@@ -629,7 +651,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         refreshHasSubtasks()
         recomputeTaskDoneFromSubtasks()
     }
-
 
 
     /* ---------------------------
@@ -692,11 +713,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     ---------------------------- */
 
     fun setTaskColor(taskId: Long, colorArgb: Long?) {
-        val updated = _state.value.tasks.map { t ->
+        val cur = _state.value
+
+        val newTasks = cur.tasks.map { t ->
             if (t.id == taskId) t.copy(colorArgb = colorArgb) else t
         }
-        _state.value = _state.value.copy(tasks = updated)
+
+        val hasSubs = cur.subtasks.any { it.taskId == taskId }
+        val newSubs = if (!hasSubs) {
+            cur.subtasks
+        } else {
+            cur.subtasks.map { s ->
+                if (s.taskId == taskId) s.copy(colorArgb = colorArgb) else s
+            }
+        }
+
+        _state.value = cur.copy(tasks = newTasks, subtasks = newSubs)
     }
+
 
     fun setSubtaskColor(subtaskId: Long, colorArgb: Long?) {
         val updated = _state.value.subtasks.map { s ->
@@ -704,4 +738,49 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         _state.value = _state.value.copy(subtasks = updated)
     }
+
+    /* ---------------------------
+       Anthropometry
+    ---------------------------- */
+
+    fun saveAnthropometryForDate(
+        date: LocalDate,
+        armCm: Double?,
+        chestCm: Double?,
+        underChestCm: Double?,
+        waistCm: Double?,
+        bellyCm: Double?,
+        hipsCm: Double?,
+        thighCm: Double?,
+        weightKg: Double?,
+    ) {
+        fun round1(v: Double?): Double? {
+            if (v == null) return null
+            return kotlin.math.round(v * 10.0) / 10.0
+        }
+
+        val entry = AnthropometryEntry(
+            date = date,
+            armCm = round1(armCm),
+            chestCm = round1(chestCm),
+            underChestCm = round1(underChestCm),
+            waistCm = round1(waistCm),
+            bellyCm = round1(bellyCm),
+            hipsCm = round1(hipsCm),
+            thighCm = round1(thighCm),
+            weightKg = round1(weightKg),
+        )
+
+        val cur = _state.value
+        val filtered = cur.anthropometry.filterNot { it.date == date }
+
+        val newList = if (!entry.hasAnyValue()) {
+            filtered
+        } else {
+            (filtered + entry).sortedBy { it.date }
+        }
+
+        _state.value = cur.copy(anthropometry = newList)
+    }
+
 }

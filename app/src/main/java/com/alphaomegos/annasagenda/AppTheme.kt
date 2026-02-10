@@ -22,7 +22,7 @@ private val DarkColors = darkColorScheme(
 )
 
 @Composable
-fun AnnasAgendaTheme(
+fun AnnaAgendaTheme(
     darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {

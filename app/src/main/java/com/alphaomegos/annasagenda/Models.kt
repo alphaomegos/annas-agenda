@@ -49,10 +49,37 @@ data class Subtask(
     val originSubtaskId: Long? = null,
 )
 
+
+data class AnthropometryEntry(
+    val date: LocalDate,
+    val armCm: Double? = null,
+    val chestCm: Double? = null,
+    val underChestCm: Double? = null,
+    val waistCm: Double? = null,
+    val bellyCm: Double? = null,
+    val hipsCm: Double? = null,
+    val thighCm: Double? = null,
+    val weightKg: Double? = null,
+) {
+    fun hasAnyValue(): Boolean =
+        armCm != null ||
+                chestCm != null ||
+                underChestCm != null ||
+                waistCm != null ||
+                bellyCm != null ||
+                hipsCm != null ||
+                thighCm != null ||
+                weightKg != null
+}
+
+
 data class AppState(
     val tasks: List<Task> = emptyList(),
     val subtasks: List<Subtask> = emptyList(),
 
     // Keys like: "T:<originTaskId>:<epochDay>", "S:<originSubtaskId>:<epochDay>"
     val suppressedRecurrences: Set<String> = emptySet(),
+
+    // Per-day body measurements (any subset of fields can be filled).
+    val anthropometry: List<AnthropometryEntry> = emptyList(),
 )

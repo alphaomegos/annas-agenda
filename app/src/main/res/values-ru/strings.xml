@@ -6,7 +6,8 @@
     <string name="create_task">Создать задачу</string>
     <string name="language_english">Английский</string>
     <string name="language_russian">Русский</string>
-    <string name="create_no_date">Когда-нибудь</string>
+    <string name="language_kiribati">Кирибати</string>
+    <string name="create_no_date">Когда-то</string>
     <string name="create_today">Сегодня</string>
     <string name="create_tomorrow">Завтра</string>
     <string name="someday_title">“Когда-нибудь”</string>
@@ -101,4 +102,21 @@
     <string name="copy_subtask">Копировать подзадачу</string>
     <string name="toast_copied">Скопировано</string>
     <string name="language_serbian">Сербский (латиница)</string>
+    <string name="anthropometry_title">Антропометрия</string>
+    <string name="coming_soon">Скоро</string>
+    <string name="anthropometry_save">Сохранить</string>
+    <string name="anthropometry_saved">Сохранено</string>
+    <string name="anthropometry_hint">Оставьте поле пустым, если не измеряли. Можно вводить точку или запятую; сохраняется с 1 знаком.</string>
+    <string name="anthro_arm_cm">Рука, см</string>
+    <string name="anthro_chest_cm">Грудь, см</string>
+    <string name="anthro_under_chest_cm">Под грудью, см</string>
+    <string name="anthro_waist_cm">Талия, см</string>
+    <string name="anthro_belly_cm">Живот, см</string>
+    <string name="anthro_hips_cm">Бёдра, см</string>
+    <string name="anthro_thigh_cm">Бедро, см</string>
+    <string name="anthro_weight_kg">Вес, кг</string>
+    <string name="anthropometry_empty">Пока нет данных по антропометрии</string>
+    <string name="enter_data">Ввести данные</string>
+    <string name="cm_short">см</string>
+    <string name="kg_short">кг</string>
 </resources>

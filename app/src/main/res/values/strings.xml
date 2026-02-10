@@ -6,6 +6,7 @@
     <string name="create_task">Create task</string>
     <string name="language_english">English</string>
     <string name="language_russian">Russian</string>
+    <string name="language_kiribati">Kiribati</string>
     <string name="create_no_date">No date</string>
     <string name="create_today">Today</string>
     <string name="create_tomorrow">Tomorrow</string>
@@ -95,4 +96,21 @@
     <string name="copy_subtask">Copy subtask</string>
     <string name="toast_copied">Copied</string>
     <string name="language_serbian">Serbian (Latin)</string>
+    <string name="anthropometry_title">Anthropometry</string>
+    <string name="coming_soon">Coming soon</string>
+    <string name="anthropometry_save">Save</string>
+    <string name="anthropometry_saved">Saved</string>
+    <string name="anthropometry_hint">Leave empty if not measured. Use dot or comma; will be saved with 1 decimal.</string>
+    <string name="anthro_arm_cm">Arm, cm</string>
+    <string name="anthro_chest_cm">Chest, cm</string>
+    <string name="anthro_under_chest_cm">Under chest, cm</string>
+    <string name="anthro_waist_cm">Waist, cm</string>
+    <string name="anthro_belly_cm">Belly, cm</string>
+    <string name="anthro_hips_cm">Hips, cm</string>
+    <string name="anthro_thigh_cm">Thigh, cm</string>
+    <string name="anthro_weight_kg">Weight, kg</string>
+    <string name="anthropometry_empty">No anthropometry data yet</string>
+    <string name="enter_data">Enter data</string>
+    <string name="cm_short">cm</string>
+    <string name="kg_short">kg</string>
 </resources>

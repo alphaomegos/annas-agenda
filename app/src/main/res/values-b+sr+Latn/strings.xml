@@ -7,6 +7,7 @@
     <string name="language_english">Engleski</string>
     <string name="language_russian">Ruski</string>
     <string name="language_serbian">Srpski (latinica)</string>
+    <string name="language_kiribati">Kiribati</string>
     <string name="create_no_date">Jednog dana</string>
     <string name="create_today">Danas</string>
     <string name="create_tomorrow">Sutra</string>
@@ -41,21 +42,18 @@
     <plurals name="repeat_daily_every_n_days">
         <item quantity="one">Svaki %1$d dan</item>
         <item quantity="few">Svakih %1$d dana</item>
-        <item quantity="many">Svakih %1$d dana</item>
         <item quantity="other">Svakih %1$d dana</item>
     </plurals>
     <string name="repeat_weekly_every_week_on">Svake nedelje: %1$s</string>
     <plurals name="repeat_weekly_every_n_weeks_on">
         <item quantity="one">Svake %1$d nedelje: %2$s</item>
         <item quantity="few">Svake %1$d nedelje: %2$s</item>
-        <item quantity="many">Svakih %1$d nedelja: %2$s</item>
         <item quantity="other">Svakih %1$d nedelja: %2$s</item>
     </plurals>
     <string name="repeat_monthly_every_month_on_day">Svaki mesec: %1$d</string>
     <plurals name="repeat_monthly_every_n_months_on_day">
         <item quantity="one">Svaki %1$d mesec: %2$d</item>
         <item quantity="few">Svakih %1$d meseca: %2$d</item>
-        <item quantity="many">Svakih %1$d meseci: %2$d</item>
         <item quantity="other">Svakih %1$d meseci: %2$d</item>
     </plurals>
     <string name="recurring_tasks_title">Ponavljanja</string>
@@ -101,4 +99,21 @@
     <string name="copy_task">Kopiraj zadatak</string>
     <string name="copy_subtask">Kopiraj podzadatak</string>
     <string name="toast_copied">Kopirano</string>
+    <string name="anthropometry_title">Antropometrija</string>
+    <string name="coming_soon">Uskoro</string>
+    <string name="anthropometry_save">Sačuvaj</string>
+    <string name="anthropometry_saved">Sačuvano</string>
+    <string name="anthropometry_hint">Ostavi prazno ako nije izmereno. Može tačka ili zarez; čuva se sa 1 decimalom.</string>
+    <string name="anthro_arm_cm">Ruka, cm</string>
+    <string name="anthro_chest_cm">Grudi, cm</string>
+    <string name="anthro_under_chest_cm">Ispod grudi, cm</string>
+    <string name="anthro_waist_cm">Struk, cm</string>
+    <string name="anthro_belly_cm">Stomak, cm</string>
+    <string name="anthro_hips_cm">Kukovi, cm</string>
+    <string name="anthro_thigh_cm">Butina, cm</string>
+    <string name="anthro_weight_kg">Težina, kg</string>
+    <string name="anthropometry_empty">Još nema podataka o antropometriji</string>
+    <string name="enter_data">Unesi podatke</string>
+    <string name="cm_short">cm</string>
+    <string name="kg_short">kg</string>
 </resources>

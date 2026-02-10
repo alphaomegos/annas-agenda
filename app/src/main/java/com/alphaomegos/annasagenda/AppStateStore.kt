@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.serialization.InternalSerializationApi::class)
+
 package com.alphaomegos.annasagenda
 
 import android.content.Context
@@ -7,8 +9,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -20,6 +22,7 @@ class AppStateStore(private val context: Context) {
 
     private val key = stringPreferencesKey("app_state_json")
 
+    @OptIn(ExperimentalSerializationApi::class)
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -44,11 +47,6 @@ class AppStateStore(private val context: Context) {
         }
     }
 
-    suspend fun clear() = withContext(Dispatchers.IO) {
-        context.appStateDataStore.edit { prefs ->
-            prefs.remove(key)
-        }
-    }
 }
 
 /* ---------------------------
@@ -61,6 +59,7 @@ private data class AppStateDto(
     val tasks: List<TaskDto> = emptyList(),
     val subtasks: List<SubtaskDto> = emptyList(),
     val suppressedRecurrences: List<String> = emptyList(),
+    val anthropometry: List<AnthropometryDto> = emptyList(),
 )
 
 @Serializable
@@ -97,6 +96,21 @@ private data class RepeatRuleDto(
     val dayOfMonth: Int? = null,
 )
 
+
+@Serializable
+private data class AnthropometryDto(
+    val dateEpochDay: Long,
+    val armCm: Double? = null,
+    val chestCm: Double? = null,
+    val underChestCm: Double? = null,
+    val waistCm: Double? = null,
+    val bellyCm: Double? = null,
+    val hipsCm: Double? = null,
+    val thighCm: Double? = null,
+    val weightKg: Double? = null,
+)
+
+
 /* ---------------------------
    Mapping
 ---------------------------- */
@@ -104,13 +118,15 @@ private data class RepeatRuleDto(
 private fun AppState.toDto(): AppStateDto = AppStateDto(
     tasks = tasks.map { it.toDto() },
     subtasks = subtasks.map { it.toDto() },
-    suppressedRecurrences = suppressedRecurrences.toList()
+    suppressedRecurrences = suppressedRecurrences.toList(),
+    anthropometry = anthropometry.map { it.toDto() },
 )
 
 private fun AppStateDto.toDomain(): AppState = AppState(
     tasks = tasks.map { it.toDomain() },
     subtasks = subtasks.map { it.toDomain() },
-    suppressedRecurrences = suppressedRecurrences.toSet()
+    suppressedRecurrences = suppressedRecurrences.toSet(),
+    anthropometry = anthropometry.map { it.toDomain() },
 )
 
 private fun Task.toDto(): TaskDto = TaskDto(
@@ -173,4 +189,28 @@ private fun RepeatRuleDto.toDomain(): RepeatRule = RepeatRule(
     interval = interval,
     weekDays = weekDaysIso.map { DayOfWeek.of(it) }.toSet(),
     dayOfMonth = dayOfMonth
+)
+
+private fun AnthropometryEntry.toDto(): AnthropometryDto = AnthropometryDto(
+    dateEpochDay = date.toEpochDay(),
+    armCm = armCm,
+    chestCm = chestCm,
+    underChestCm = underChestCm,
+    waistCm = waistCm,
+    bellyCm = bellyCm,
+    hipsCm = hipsCm,
+    thighCm = thighCm,
+    weightKg = weightKg,
+)
+
+private fun AnthropometryDto.toDomain(): AnthropometryEntry = AnthropometryEntry(
+    date = LocalDate.ofEpochDay(dateEpochDay),
+    armCm = armCm,
+    chestCm = chestCm,
+    underChestCm = underChestCm,
+    waistCm = waistCm,
+    bellyCm = bellyCm,
+    hipsCm = hipsCm,
+    thighCm = thighCm,
+    weightKg = weightKg,
 )

@@ -10,54 +10,64 @@ import java.time.LocalDate
 
 
 private object Route {
-    const val Menu = "menu"
-    const val Language = "language"
-    const val Calendar = "calendar"              // month view
-    const val CalendarDay = "calendar_day"       // day view
-    const val NewTask = "new_task"
-    const val Someday = "someday"
-    const val Recurring = "recurring"
-    const val NewTaskDate = "new_task_date"
+    const val MENU = "menu"
+    const val LANGUAGE = "language"
+    const val CALENDAR = "calendar"              // month view
+    const val CALENDAR_DAY = "calendar_day"      // day view
+    const val NEW_TASK = "new_task"
+    const val SOMEDAY = "someday"
+    const val RECURRING = "recurring"
+    const val ANTHROPOMETRY = "anthropometry"
+    const val NEW_TASK_DATE = "new_task_date"
 }
 
 @Composable
 fun AppNav(vm: AppViewModel) {
     val nav = rememberNavController()
 
-    NavHost(navController = nav, startDestination = Route.Menu) {
+    NavHost(navController = nav, startDestination = Route.MENU) {
 
-        composable(Route.Menu) {
+        composable(Route.MENU) {
             MainMenuScreen(
                 vm = vm,
-                onLanguage = { nav.navigate(Route.Language) },
-                onCalendar = { nav.navigate(Route.Calendar) },
-                onNewTask = { nav.navigate(Route.NewTask) },
-                onSomeday = { nav.navigate(Route.Someday) },
-                onRecurring = { nav.navigate(Route.Recurring) },
+                onLanguage = { nav.navigate(Route.LANGUAGE) },
+                onCalendar = { nav.navigate(Route.CALENDAR) },
+                onNewTask = { nav.navigate(Route.NEW_TASK) },
+                onSomeday = { nav.navigate(Route.SOMEDAY) },
+                onRecurring = { nav.navigate(Route.RECURRING) },
+                onAnthropometry = { nav.navigate(Route.ANTHROPOMETRY) },
             )
         }
 
-        composable(Route.Recurring) {
+        composable(Route.RECURRING) {
             RecurringTasksScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
             )
         }
 
-        composable(Route.Language) {
-            LanguageScreen(onBack = { nav.popBackStack() })
-        }
 
-        composable(Route.Calendar) {
-            CalendarMonthScreen(
+        composable(Route.ANTHROPOMETRY) {
+            AnthropometryScreen(
                 vm = vm,
-                onBack = { nav.popBackStack() },
-                onOpenDay = { epochDay -> nav.navigate("${Route.CalendarDay}/$epochDay") },
-                onOpenSomeday = { nav.navigate(Route.Someday) }
+                onBack = { nav.popBackStack() }
             )
         }
 
-        composable("${Route.CalendarDay}/{epochDay}") { backStackEntry ->
+        composable(Route.LANGUAGE) {
+            LanguageScreen(onBack = { nav.popBackStack() })
+        }
+
+        composable(Route.CALENDAR) {
+            CalendarMonthScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() },
+                onOpenDay = { epochDay -> nav.navigate("${Route.CALENDAR_DAY}/$epochDay") },
+                onOpenSomeday = { nav.navigate(Route.SOMEDAY) }
+            )
+        }
+
+        composable("${Route.CALENDAR_DAY}/{epochDay}") { backStackEntry ->
             val epochDay = backStackEntry.arguments
                 ?.getString("epochDay")
                 ?.toLongOrNull()
@@ -67,15 +77,16 @@ fun AppNav(vm: AppViewModel) {
                 vm = vm,
                 onBack = { nav.popBackStack() },
                 initialEpochDay = epochDay,
-                onAddTask = { epochDay -> nav.navigate("${Route.NewTaskDate}/$epochDay") }
+                onAddTask = { epochDay -> nav.navigate("${Route.NEW_TASK_DATE}/$epochDay") }
             )
         }
 
         composable(
-            route = "${Route.NewTaskDate}/{epochDay}",
+            route = "${Route.NEW_TASK_DATE}/{epochDay}",
             arguments = listOf(navArgument("epochDay") { type = NavType.LongType })
         ) { backStackEntry ->
-            val epochDay = backStackEntry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
+            val epochDay =
+                backStackEntry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
             NewTaskScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -83,14 +94,14 @@ fun AppNav(vm: AppViewModel) {
             )
         }
 
-        composable(Route.NewTask) {
+        composable(Route.NEW_TASK) {
             NewTaskScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
             )
         }
 
-        composable(Route.Someday) {
+        composable(Route.SOMEDAY) {
             SomedayScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }

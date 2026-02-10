@@ -1,7 +1,6 @@
 package com.alphaomegos.annasagenda
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
@@ -21,7 +20,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView)
             .show(WindowInsetsCompat.Type.systemBars())
@@ -30,7 +28,7 @@ class MainActivity : AppCompatActivity() {
             val vm: AppViewModel = viewModel()
             val loaded by vm.isLoaded.collectAsState()
 
-            AnnasAgendaTheme {
+            AnnaAgendaTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     if (!loaded) {
                         Box(
