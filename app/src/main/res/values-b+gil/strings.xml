@@ -113,4 +113,37 @@
         <item quantity="one">Namakaina n tain %1$d i te bong %2$d</item>
         <item quantity="other">Namakaina n tain %1$d i te bong %2$d</item>
     </plurals>
+    <string name="calorimeter_title">Te Kalorimeter</string>
+    <string name="kcal_short">kcal</string>
+    <string name="calorimeter_daily_goal">Taian rangi n te bong</string>
+    <string name="calorimeter_set_goal">Tuaa taian rangi</string>
+    <string name="calorimeter_eaten_button">A kan</string>
+    <string name="calorimeter_add_eaten_title">Kuria te kan</string>
+    <string name="calorimeter_food_name">Taian kan</string>
+    <string name="calorimeter_food_kcal">Kalori</string>
+    <string name="calorimeter_day_balance">Tibwakina n te bong aei</string>
+    <string name="calorimeter_week_goal">Taian rangi n te wiki</string>
+    <string name="calorimeter_week_balance">Tibwakina (7 bong a intra)</string>
+    <string name="calorimeter_month_projection">Era teuangei (30 bong)</string>
+    <string name="calorimeter_no_eaten_today">E aki kan te bwai</string>
+    <string name="calorimeter_show_all_n">Katea aika a bobong (%1$d)</string>
+    <string name="running_title">Running</string>
+    <string name="running_col_date">Tai</string>
+    <string name="running_col_distance">Ririki</string>
+    <string name="running_col_time">Tairiki</string>
+    <string name="running_col_pace">Matata</string>
+    <string name="running_hint_distance">km</string>
+    <string name="running_hint_time">min</string>
+    <string name="running_hint_pace">0917</string>
+    <string name="running_approve">Iangoia</string>
+    <string name="running_reset">Kamaucu</string>
+    <string name="running_approve_confirm_title">Koaua</string>
+    <string name="running_approve_confirm_text">Ni karaoia tăni kei kalera ao ni kamaucu iaon ti bom?</string>
+    <string name="running_reset_confirm_title">Koaua</string>
+    <string name="running_reset_confirm_text">Bwa ni kamaucu te plan, uaia te kaotioti koaua.</string>
+    <string name="running_reset_phrase_label">Taetae ni koaua</string>
+    <string name="running_reset_phrase_required">I KANI KAMUCU TE PLAN</string>
+    <string name="running_empty">Tii bom</string>
+    <string name="running_task_km">Aroro %1$s km</string>
+    <string name="running_task_minutes">Aroro %1$d minit</string>
 </resources>

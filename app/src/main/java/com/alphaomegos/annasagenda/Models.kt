@@ -49,7 +49,6 @@ data class Subtask(
     val originSubtaskId: Long? = null,
 )
 
-
 data class AnthropometryEntry(
     val date: LocalDate,
     val armCm: Double? = null,
@@ -72,6 +71,30 @@ data class AnthropometryEntry(
                 weightKg != null
 }
 
+/** Daily goal changes: new value applies from [date] and all future days. */
+data class CalorieGoalChange(
+    val date: LocalDate,
+    val kcal: Int,
+)
+
+data class FoodEntry(
+    val id: Long,
+    val date: LocalDate,
+    val title: String,
+    val kcal: Int,
+)
+/** Planned/actual running entry for a specific date. Values are stored as text to keep UX stable. */
+data class RunningPlanEntry(
+    val date: LocalDate,
+    val distanceKmText: String = "",
+    /** User-entered time as 4 digits: HHMM (e.g., "0123" -> displayed as 01:23). */
+    val durationHhMmText: String = "",
+    /** User-entered pace as 4 digits: MMSS (e.g., "0915" -> displayed as 09'15"). */
+    val paceText: String = "",
+    val taskId: Long? = null,
+)
+
+
 
 data class AppState(
     val tasks: List<Task> = emptyList(),
@@ -82,4 +105,11 @@ data class AppState(
 
     // Per-day body measurements (any subset of fields can be filled).
     val anthropometry: List<AnthropometryEntry> = emptyList(),
+
+    // Calorimeter
+    val calorieGoalChanges: List<CalorieGoalChange> = emptyList(),
+    val foodLog: List<FoodEntry> = emptyList(),
+    // Running plan ("On the run")
+    val runningPlanApproved: Boolean = false,
+    val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
 )

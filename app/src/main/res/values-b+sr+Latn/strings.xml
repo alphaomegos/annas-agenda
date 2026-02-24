@@ -26,7 +26,8 @@
     <string name="cancel">Otkaži</string>
     <string name="prev_month">Prethodni</string>
     <string name="next_month">Sledeći</string>
-    <string name="new_task_title">Kreiraj zadatak</string>
+    <string name="new_task_title">Kreiraj zadatak</string>                        setAppLanguage(ctx, "sr-Latn")
+
     <string name="task_description_label">Opis zadatka</string>
     <string name="someday_tag">Jednog dana</string>
     <string name="subtasks_title">Podzadaci</string>
@@ -116,4 +117,37 @@
     <string name="enter_data">Unesi podatke</string>
     <string name="cm_short">cm</string>
     <string name="kg_short">kg</string>
+    <string name="calorimeter_title">Kalorimeter</string>
+    <string name="kcal_short">kcal</string>
+    <string name="calorimeter_daily_goal">Dnevna norma</string>
+    <string name="calorimeter_set_goal">Promeni normu</string>
+    <string name="calorimeter_eaten_button">Pojedeno</string>
+    <string name="calorimeter_add_eaten_title">Dodaj obrok</string>
+    <string name="calorimeter_food_name">Jelo</string>
+    <string name="calorimeter_food_kcal">Kalorije</string>
+    <string name="calorimeter_day_balance">Bilans za dan</string>
+    <string name="calorimeter_week_goal">Nedeljna norma</string>
+    <string name="calorimeter_week_balance">Bilans (poslednjih 7 dana)</string>
+    <string name="calorimeter_month_projection">Potencijalna promena (30 dana)</string>
+    <string name="calorimeter_no_eaten_today">Još ništa</string>
+    <string name="calorimeter_show_all_n">Prikaži sve (%1$d)</string>
+    <string name="running_title">U trku</string>
+    <string name="running_col_date">Datum</string>
+    <string name="running_col_distance">Daljina</string>
+    <string name="running_col_time">Vreme</string>
+    <string name="running_col_pace">Tempo</string>
+    <string name="running_hint_distance">km</string>
+    <string name="running_hint_time">min</string>
+    <string name="running_hint_pace">0917</string>
+    <string name="running_approve">Odobri</string>
+    <string name="running_reset">Resetuj</string>
+    <string name="running_approve_confirm_title">Potvrda</string>
+    <string name="running_approve_confirm_text">Kreirati zadatke u kalendaru i obrisati prazne redove?</string>
+    <string name="running_reset_confirm_title">Potvrda</string>
+    <string name="running_reset_confirm_text">Da biste obrisali plan, unesite frazu za potvrdu.</string>
+    <string name="running_reset_phrase_label">Fraza za potvrdu</string>
+    <string name="running_reset_phrase_required">ŽELIMDOBRISATIPLAN</string>
+    <string name="running_empty">Nema redova</string>
+    <string name="running_task_km">Trening %1$s km</string>
+    <string name="running_task_minutes">Trening %1$d minuta</string>
 </resources>

@@ -6,6 +6,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.alphaomegos.annasagenda.screens.AnthropometryScreen
+import com.alphaomegos.annasagenda.screens.CalendarDayRoute
+import com.alphaomegos.annasagenda.screens.CalendarMonthRoute
+import com.alphaomegos.annasagenda.screens.LanguageScreen
+import com.alphaomegos.annasagenda.screens.NewTaskScreen
+import com.alphaomegos.annasagenda.screens.RecurringTasksScreen
+import com.alphaomegos.annasagenda.screens.SomedayScreen
+import com.alphaomegos.annasagenda.screens.CalorimeterRoute
+import com.alphaomegos.annasagenda.screens.MainMenuScreen
+import com.alphaomegos.annasagenda.screens.RunningPlanScreen
 import java.time.LocalDate
 
 
@@ -19,6 +29,8 @@ private object Route {
     const val RECURRING = "recurring"
     const val ANTHROPOMETRY = "anthropometry"
     const val NEW_TASK_DATE = "new_task_date"
+    const val CALORIMETER = "calorimeter"
+    const val RUNNING = "running"
 }
 
 @Composable
@@ -36,7 +48,9 @@ fun AppNav(vm: AppViewModel) {
                 onSomeday = { nav.navigate(Route.SOMEDAY) },
                 onRecurring = { nav.navigate(Route.RECURRING) },
                 onAnthropometry = { nav.navigate(Route.ANTHROPOMETRY) },
-            )
+                onCalorimeter = { nav.navigate(Route.CALORIMETER) },
+                onRunning = { nav.navigate(Route.RUNNING) },
+                )
         }
 
         composable(Route.RECURRING) {
@@ -59,7 +73,7 @@ fun AppNav(vm: AppViewModel) {
         }
 
         composable(Route.CALENDAR) {
-            CalendarMonthScreen(
+            CalendarMonthRoute(
                 vm = vm,
                 onBack = { nav.popBackStack() },
                 onOpenDay = { epochDay -> nav.navigate("${Route.CALENDAR_DAY}/$epochDay") },
@@ -73,13 +87,27 @@ fun AppNav(vm: AppViewModel) {
                 ?.toLongOrNull()
                 ?: LocalDate.now().toEpochDay()
 
-            CalendarDayScreen(
+            CalendarDayRoute(
                 vm = vm,
                 onBack = { nav.popBackStack() },
                 initialEpochDay = epochDay,
-                onAddTask = { epochDay -> nav.navigate("${Route.NEW_TASK_DATE}/$epochDay") }
+                onAddTask = { d -> nav.navigate("${Route.NEW_TASK_DATE}/$d") }
             )
         }
+        composable(Route.CALORIMETER) {
+            CalorimeterRoute(
+                vm = vm,
+                onBack = { nav.popBackStack() }
+            )
+        }
+        composable(Route.RUNNING) {
+            RunningPlanScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() }
+            )
+        }
+
+
 
         composable(
             route = "${Route.NEW_TASK_DATE}/{epochDay}",

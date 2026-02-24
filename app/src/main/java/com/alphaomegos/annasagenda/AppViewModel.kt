@@ -15,9 +15,24 @@ import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.WeekFields
 import java.util.Locale
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import java.text.DecimalFormat
+import kotlin.math.max
+import kotlin.math.roundToInt
+
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val store = AppStateStore(app.applicationContext)
+
+    private val newTaskDraftStore = NewTaskDraftStore(app.applicationContext)
+
+    private val newTaskDraftSaveRequests = MutableSharedFlow<NewTaskDraft>(
+        replay = 0,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 
     private val _isLoaded = MutableStateFlow(false)
     val isLoaded: StateFlow<Boolean> = _isLoaded.asStateFlow()
@@ -28,14 +43,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = loaded
 
             val maxId =
-                (loaded.tasks.map { it.id } + loaded.subtasks.map { it.id }).maxOrNull() ?: 0L
+                (loaded.tasks.map { it.id } + loaded.subtasks.map { it.id } + loaded.foodLog.map { it.id })
+                    .maxOrNull() ?: 0L
             nextId = maxId + 1
 
             _isLoaded.value = true
-
+            startNewTaskDraftAutoSave()
             startAutoSave()
         }
     }
+
+    @OptIn(FlowPreview::class)
+    private fun startNewTaskDraftAutoSave() {
+        viewModelScope.launch {
+            newTaskDraftSaveRequests
+                .debounce(350)
+                .distinctUntilChanged()
+                .collect { newTaskDraftStore.save(it) }
+        }
+    }
+
 
     @OptIn(FlowPreview::class)
     private suspend fun startAutoSave() {
@@ -59,12 +86,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return store.encodeToJson(_state.value)
     }
 
+    suspend fun loadNewTaskDraft(): NewTaskDraft? {
+        return newTaskDraftStore.load()
+    }
+
+    fun queueNewTaskDraftSave(draft: NewTaskDraft) {
+        newTaskDraftSaveRequests.tryEmit(draft)
+    }
+
+    fun clearNewTaskDraft() {
+        newTaskDraftSaveRequests.tryEmit(NewTaskDraft())
+        viewModelScope.launch {
+            newTaskDraftStore.clear()
+        }
+    }
+
     fun importBackupJson(raw: String): Boolean {
         val decoded = store.decodeFromJson(raw) ?: return false
 
         _state.value = decoded
 
-        val maxId = (decoded.tasks.map { it.id } + decoded.subtasks.map { it.id }).maxOrNull() ?: 0L
+        val maxId =
+            (decoded.tasks.map { it.id } + decoded.subtasks.map { it.id } + decoded.foodLog.map { it.id })
+                .maxOrNull() ?: 0L
         nextId = maxId + 1L
 
         viewModelScope.launch {
@@ -72,7 +116,175 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         return true
     }
+    /* ---------------------------
+   Running plan ("On the run")
+---------------------------- */
 
+    fun updateRunningPlanEntry(
+        date: LocalDate,
+        distanceKmText: String? = null,
+        durationHhMmText: String? = null,
+        paceText: String? = null,
+    )
+    {
+        val st = _state.value
+
+        val list = st.runningPlanEntries.toMutableList()
+        val idx = list.indexOfFirst { it.date == date }
+        val base = if (idx >= 0) list[idx] else RunningPlanEntry(date = date)
+
+        val updatedRaw = base.copy(
+            distanceKmText = distanceKmText ?: base.distanceKmText,
+            durationHhMmText = durationHhMmText ?: base.durationHhMmText,
+            paceText = if (st.runningPlanApproved) (paceText ?: base.paceText) else base.paceText,
+        )
+
+        val updated = updatedRaw
+
+        val nowEmpty =
+            updated.distanceKmText.isBlank() && updated.durationHhMmText.isBlank() && updated.paceText.isBlank()
+
+        // If user erased everything -> remove entry and delete calendar task if present.
+        if (nowEmpty) {
+            if (updated.taskId != null) deleteTask(updated.taskId)
+            if (idx >= 0) list.removeAt(idx)
+        } else {
+            if (idx >= 0) list[idx] = updated else list.add(updated)
+        }
+
+        _state.value = _state.value.copy(runningPlanEntries = list.sortedBy { it.date })
+
+        // Keep calendar task title in sync after approval.
+        if (st.runningPlanApproved) {
+            val after = list.firstOrNull { it.date == date } ?: return
+            val title = buildRunningTaskTitle(after)
+            if (after.taskId != null && title != null) updateTaskDescription(after.taskId, title)
+        }
+    }
+
+    fun approveRunningPlan() {
+        // prune old incomplete first
+        pruneRunningPlanNow()
+
+        val before = _state.value
+        val cleaned = before.runningPlanEntries
+            .map {
+                it.copy(
+                    distanceKmText = it.distanceKmText.trim(),
+                    durationHhMmText = it.durationHhMmText.trim(),
+                    paceText = it.paceText.trim(),
+                )
+            }
+            .filter { it.distanceKmText.isNotBlank() || it.durationHhMmText.isNotBlank() || it.paceText.isNotBlank() }
+
+        val updated = cleaned.map { e0 ->
+            var e = e0
+
+            if (e.taskId == null) {
+                val title = buildRunningTaskTitle(e)
+                if (title != null) {
+                    val id = createTaskForDate(
+                        date = e.date,
+                        time = null,
+                        description = title,
+                    )
+                    e = e.copy(taskId = id)
+                }
+            }
+            e
+        }.sortedBy { it.date }
+
+        _state.value = _state.value.copy(
+            runningPlanApproved = true,
+            runningPlanEntries = updated,
+        )
+    }
+
+    fun resetRunningPlan() {
+        val ids = _state.value.runningPlanEntries.mapNotNull { it.taskId }
+        ids.forEach { deleteTask(it) }
+
+        _state.value = _state.value.copy(
+            runningPlanApproved = false,
+            runningPlanEntries = emptyList(),
+        )
+    }
+
+    fun pruneRunningPlanNow() {
+        val st = _state.value
+        if (!st.runningPlanApproved) return
+        if (st.runningPlanEntries.isEmpty()) return
+
+        val today = LocalDate.now()
+
+        val expired = st.runningPlanEntries.filter { e ->
+            today.isAfter(e.date.plusDays(1)) && isRunningEntryIncomplete(e)
+        }
+
+        if (expired.isEmpty()) return
+
+        expired.mapNotNull { it.taskId }.forEach { deleteTask(it) }
+
+        val expiredDates = expired.map { it.date }.toSet()
+        _state.value = st.copy(
+            runningPlanEntries = st.runningPlanEntries.filterNot { it.date in expiredDates }
+        )
+    }
+
+    private fun isRunningEntryIncomplete(e: RunningPlanEntry): Boolean {
+        val km = parseKm(e.distanceKmText)
+        // Four digits -> total minutes
+        val minutes = parseDurationToMinutes(e.durationHhMmText)
+        val minutesOk = minutes != null && minutes > 0
+        val paceDigits = e.paceText.filter { it.isDigit() }
+        val paceOk = paceDigits.length == 4
+        // Completed entry requires distance + time + pace
+        return km == null || !minutesOk || !paceOk
+    }
+
+    private fun buildRunningTaskTitle(e: RunningPlanEntry): String? {
+        val distRaw = e.distanceKmText.trim()
+        if (distRaw.isNotBlank()) {
+            val kmTitle = formatKmForTitle(distRaw)
+            return getApplication<Application>().getString(R.string.running_task_km, kmTitle)
+        }
+
+        val minutes = parseDurationToMinutes(e.durationHhMmText) ?: return null
+        return getApplication<Application>().getString(R.string.running_task_minutes, max(1, minutes))
+    }
+
+    private fun parseDurationToMinutes(raw: String): Int? {
+        val digitsAll = raw.filter { it.isDigit() }
+        if (digitsAll.isBlank()) return null
+
+        // Let user type "80" for 80 minutes too.
+        if (digitsAll.length <= 2) {
+            return digitsAll.toIntOrNull()?.coerceAtLeast(0)
+        }
+
+        // If user typed 3 digits (e.g., 123), treat as 01:23.
+        val d = digitsAll.take(4).padStart(4, '0')
+
+        val hh = d.substring(0, 2).toIntOrNull() ?: return null
+        val mm = d.substring(2, 4).toIntOrNull() ?: return null
+
+        // If mm is invalid (e.g., "0080"), interpret as total minutes ("80").
+        return if (mm in 0..59) {
+            (hh * 60 + mm).coerceAtLeast(0)
+        } else {
+            d.toIntOrNull()?.coerceAtLeast(0)
+        }
+    }
+
+    private fun formatKmForTitle(raw: String): String {
+        val km = parseKm(raw) ?: return raw.trim()
+        return DecimalFormat("0.#").format(km)
+    }
+
+    private fun parseKm(raw: String): Double? {
+        val clean = raw.trim().replace(',', '.')
+        return clean.toDoubleOrNull()
+    }
 
     private val _state = MutableStateFlow(AppState())
     val state: StateFlow<AppState> = _state.asStateFlow()
@@ -781,6 +993,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         _state.value = cur.copy(anthropometry = newList)
+    }
+    /* ---------------------------
+       Calorimeter
+    ---------------------------- */
+
+    fun setDailyCalorieGoalFrom(date: LocalDate, kcal: Int) {
+        val clean = kcal.coerceAtLeast(1)
+        val cur = _state.value
+        val filtered = cur.calorieGoalChanges.filterNot { it.date == date }
+        val newList = (filtered + CalorieGoalChange(date = date, kcal = clean)).sortedBy { it.date }
+        _state.value = cur.copy(calorieGoalChanges = newList)
+    }
+
+    fun addFoodEntry(date: LocalDate, title: String, kcal: Int): Long {
+        val t = title.trim()
+        if (t.isBlank()) return -1L
+        val k = kcal.coerceAtLeast(1)
+
+        val id = newId()
+        val entry = FoodEntry(
+            id = id,
+            date = date,
+            title = t,
+            kcal = k
+        )
+        val cur = _state.value
+        _state.value = cur.copy(foodLog = cur.foodLog + entry)
+        return id
+    }
+
+    fun deleteFoodEntry(entryId: Long) {
+        val cur = _state.value
+        _state.value = cur.copy(foodLog = cur.foodLog.filterNot { it.id == entryId })
     }
 
 }
