@@ -1,42 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Агенда Анны</string>
-    <string name="choose_language">Выбрать язык</string>
-    <string name="calendar">Календарь</string>
-    <string name="create_task">Создать задачу</string>
-    <string name="language_english">Английский</string>
-    <string name="language_russian">Русский</string>
-    <string name="language_kiribati">Кирибати</string>
-    <string name="create_no_date">Когда-то</string>
-    <string name="create_today">Сегодня</string>
-    <string name="create_tomorrow">Завтра</string>
-    <string name="someday_title">“Когда-нибудь”</string>
-    <string name="someday_empty">Пока ничего не “когда-нибудь”</string>
-    <string name="back">Назад</string>
-    <string name="schedule_today">Сегодня</string>
-    <string name="schedule_tomorrow">Завтра</string>
-    <string name="calendar_title">Календарь</string>
-    <string name="prev_day">Назад</string>
-    <string name="next_day">Вперёд</string>
-    <string name="today">Сегодня</string>
-    <string name="move_to_someday">В “Когда-нибудь”</string>
-    <string name="reschedule">Перенести</string>
+    <!-- App -->
+    <string name="app_name">Anna\'s Agenda</string>
+    <string name="coming_soon">Скоро будет</string>
+
+    <!-- Common actions -->
     <string name="ok">ОК</string>
     <string name="cancel">Отмена</string>
-    <string name="prev_month">Назад</string>
-    <string name="next_month">Вперёд</string>
+    <string name="save">Сохранить</string>
+    <string name="saved">Сохранено</string>
+    <string name="delete">Удалить</string>
+    <string name="remove">Убрать</string>
+    <string name="back">Назад</string>
+    <string name="pick_date">Выбрать дату</string>
+    <string name="selected_label">Выбрано:</string>
+    <string name="invalid_number">Неверное число</string>
+
+    <!-- Main menu -->
+    <string name="calendar">Календарь</string>
+    <string name="create_task">Создать задачу</string>
+    <string name="someday_title">Когда-нибудь</string>
+    <string name="recurring_tasks_title">Регулярки</string>
+    <string name="anthropometry_title">Антропометрия</string>
+    <string name="calorimeter_title">Калориметр</string>
+    <string name="running_title">В бегах</string>
+    <string name="counters_title">Счётчики</string>
+    <string name="menu_reading">Медиатека</string>
+
+    <!-- Language -->
+    <string name="choose_language">Выбрать язык</string>
+    <string name="language_english">Английский</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_serbian">Сербский (латиница)</string>
+    <string name="language_kiribati">Кирибати</string>
+
+    <!-- Data / backup -->
+    <string name="data_menu">Данные</string>
+    <string name="export_backup_json">Экспорт бекапа (JSON)</string>
+    <string name="import_backup_json">Импорт бекапа (JSON)</string>
+    <string name="reset_data_menu">Сброс данных</string>
+    <string name="reset_title">Сбросить данные?</string>
+    <string name="reset_text">Это удалит все задачи и настройки.</string>
+    <string name="toast_exported">Экспортировано</string>
+    <string name="toast_export_failed">Ошибка экспорта</string>
+    <string name="toast_imported">Импортировано</string>
+    <string name="toast_import_failed">Ошибка импорта</string>
+    <string name="toast_invalid_backup">Неверный файл бекапа</string>
+    <string name="toast_reset_done">Сброс выполнен</string>
+
+    <!-- Calendar -->
+    <string name="calendar_title">Календарь</string>
+    <string name="prev_month">Прошлое</string>
+    <string name="next_month">Будущее</string>
+    <string name="prev_day">Туда</string>
+    <string name="next_day">Сюда</string>
+    <string name="today">Сегодня</string>
+    <string name="schedule_today">Сегодня</string>
+    <string name="schedule_tomorrow">Завтра</string>
+    <string name="create_task_for_this_day">Создать задачу на этот день</string>
+    <string name="no_tasks_for_this_day">Нет задач на этот день</string>
+    <string name="tasks_header">Задачи</string>
+    <string name="someday_count">Когда-нибудь: %1$d</string>
+    <string name="repeating_tasks_header">Повторяющиеся задачи</string>
+    <string name="repeating_subtasks_header">Повторяющиеся подзадачи</string>
+
+    <!-- Task creation / editing -->
     <string name="new_task_title">Создать задачу</string>
     <string name="task_description_label">Описание задачи</string>
-    <string name="someday_tag">Когда-нибудь</string>
+    <string name="when_label">Когда</string>
+    <string name="create_no_date">Без даты</string>
+    <string name="create_today">Сегодня</string>
+    <string name="create_tomorrow">Завтра</string>
+    <string name="someday_tag">Однажды</string>
+    <string name="save_task">Сохранить</string>
+    <string name="task_color">Цвет задачи</string>
+    <string name="subtask_color">Цвет подзадачи</string>
+    <string name="move_task">Переместить</string>
+    <string name="move_to_someday">В «Когда-нибудь»</string>
+    <string name="reschedule">Перенести</string>
+    <string name="repeat">Повторять</string>
+    <string name="copy_task">Копировать</string>
+
+    <!-- Subtasks -->
     <string name="subtasks_title">Подзадачи</string>
     <string name="no_subtasks_yet">Подзадач пока нет</string>
     <string name="subtask_label">Подзадача %1$d</string>
     <string name="add_subtask">Добавить подзадачу</string>
-    <string name="save_task">Сохранить</string>
-    <string name="move_subtask">Перенести подзадачу в задачу</string>
-    <string name="task_color">Цвет задачи</string>
-    <string name="subtask_color">Цвет подзадачи</string>
-    <string name="remove">Удалить</string>
+    <string name="move_subtask">Переместить подзадачу в…</string>
+    <string name="copy_subtask">Копировать подзадачу</string>
+    <string name="toast_copied">Скопировано</string>
+
+    <!-- Repeating tasks -->
+    <string name="recurring_tasks_empty">Пока нет повторяющихся задач.</string>
+    <string name="recurring_tasks_no_date">Без даты</string>
+    <string name="recurring_tasks_starts_line">Начинается: %1$s • %2$s</string>
+    <string name="recurring_tasks_delete_from_today">Удалить с сегодняшнего дня</string>
+    <string name="delete_repeating_task_title">Удалить повторяющуюся задачу?</string>
+    <string name="delete_repeating_task_text">Задача будет удалена с сегодняшнего и всех будущих дней. Прошедшие дни сохранятся для истории.</string>
+    <string name="delete_repeating_subtask_title">Удалить повторяющуюся подзадачу?</string>
+    <string name="delete_repeating_subtask_text">Подзадача будет удалена с сегодняшнего и всех будущих дней. Прошедшие дни сохранятся для истории.</string>
+
+    <!-- Repeat dialog -->
+    <string name="repeat_dialog_title">Повтор</string>
+    <string name="repeat_enabled">Включено</string>
+    <string name="repeat_freq_daily">Ежедневно</string>
+    <string name="repeat_freq_weekly">Еженедельно</string>
+    <string name="repeat_freq_monthly">Ежемесячно</string>
+    <string name="repeat_interval">Интервал</string>
+    <string name="repeat_weekdays">Дни недели</string>
+    <string name="repeat_day_of_month">День месяца</string>
     <string name="repeat_daily_every_day">Каждый день</string>
     <plurals name="repeat_daily_every_n_days">
         <item quantity="one">Каждый %1$d день</item>
@@ -44,69 +116,30 @@
         <item quantity="many">Каждые %1$d дней</item>
         <item quantity="other">Каждые %1$d дня</item>
     </plurals>
-    <string name="repeat_weekly_every_week_on">Каждую неделю: %1$s</string>
+    <string name="repeat_weekly_every_week_on">Каждую неделю в %1$s</string>
     <plurals name="repeat_weekly_every_n_weeks_on">
-        <item quantity="one">Каждую %1$d неделю: %2$s</item>
-        <item quantity="few">Каждые %1$d недели: %2$s</item>
-        <item quantity="many">Каждые %1$d недель: %2$s</item>
-        <item quantity="other">Каждые %1$d недели: %2$s</item>
+        <item quantity="one">Каждую %1$d неделю в %2$s</item>
+        <item quantity="few">Каждые %1$d недели в %2$s</item>
+        <item quantity="many">Каждые %1$d недель в %2$s</item>
+        <item quantity="other">Каждые %1$d недели в %2$s</item>
     </plurals>
-    <string name="repeat_monthly_every_month_on_day">Каждый месяц: %1$d</string>
+    <string name="repeat_monthly_every_month_on_day">Каждый месяц в %1$d день</string>
     <plurals name="repeat_monthly_every_n_months_on_day">
-        <item quantity="one">Каждый %1$d месяц: %2$d</item>
-        <item quantity="few">Каждые %1$d месяца: %2$d</item>
-        <item quantity="many">Каждые %1$d месяцев: %2$d</item>
-        <item quantity="other">Каждые %1$d месяца: %2$d</item>
+        <item quantity="one">Каждый %1$d месяц в %2$d день</item>
+        <item quantity="few">Каждые %1$d месяца в %2$d день</item>
+        <item quantity="many">Каждые %1$d месяцев в %2$d день</item>
+        <item quantity="other">Каждые %1$d месяца в %2$d день</item>
     </plurals>
-    <string name="recurring_tasks_title">Регулярки</string>
-    <string name="recurring_tasks_empty">Пока ничто не регулярно!</string>
-    <string name="recurring_tasks_no_date">Без даты</string>
-    <string name="recurring_tasks_starts_line">Начало: %1$s • %2$s</string>
-    <string name="recurring_tasks_delete_from_today">Удалить с сегодняшнего дня</string>
-    <string name="repeat_dialog_title">Повтор</string>
-    <string name="repeat_enabled">Включено</string>
-    <string name="repeat_freq_daily">День</string>
-    <string name="repeat_freq_weekly">Неделя</string>
-    <string name="repeat_freq_monthly">Месяц</string>
-    <string name="repeat_interval">Интервал</string>
-    <string name="repeat_weekdays">Дни недели</string>
-    <string name="repeat_day_of_month">День месяца</string>
-    <string name="toast_exported">Экспортировано</string>
-    <string name="toast_export_failed">Ошибка экспорта</string>
-    <string name="toast_imported">Импортировано</string>
-    <string name="toast_import_failed">Ошибка импорта</string>
-    <string name="toast_invalid_backup">Неверный файл бэкапа</string>
-    <string name="toast_reset_done">Сброс выполнен</string>
-    <string name="reset_title">Сбросить данные?</string>
-    <string name="reset_text">Это удалит все задачи и настройки.</string>
-    <string name="data_menu">Данные</string>
-    <string name="export_backup_json">Экспорт бэкапа (JSON)</string>
-    <string name="import_backup_json">Импорт бэкапа (JSON)</string>
-    <string name="reset_data_menu">Сбросить данные</string>
-    <string name="delete_repeating_task_title">Удалить повторяющуюся задачу?</string>
-    <string name="delete_repeating_task_text">Задача исчезнет с сегодняшнего дня и во всех будущих днях. Прошлые дни останутся как история.</string>
-    <string name="when_label">Когда</string>
-    <string name="pick_date">Выбрать дату</string>
-    <string name="selected_label">Выбрано:</string>
-    <string name="create_task_for_this_day">Создать задачу на этот день</string>
-    <string name="no_tasks_for_this_day">Нет задач на этот день</string>
-    <string name="tasks_header">Задачи</string>
-    <string name="someday_count">Когда-нибудь: %1$d</string>
-    <string name="move_task">Перенести задачу</string>
-    <string name="repeat">Повтор</string>
-    <string name="repeating_tasks_header">Повторяющиеся задачи</string>
-    <string name="repeating_subtasks_header">Повторяющиеся подзадачи</string>
-    <string name="delete_repeating_subtask_title">Удалить повторяющуюся подзадачу?</string>
-    <string name="delete_repeating_subtask_text">Подзадача исчезнет с сегодняшнего дня и во всех будущих днях. Прошлые дни останутся как история.</string>
-    <string name="copy_task">Копировать задачу</string>
-    <string name="copy_subtask">Копировать подзадачу</string>
-    <string name="toast_copied">Скопировано</string>
-    <string name="language_serbian">Сербский (латиница)</string>
-    <string name="anthropometry_title">Антропометрия</string>
-    <string name="coming_soon">Скоро</string>
+
+    <!-- Someday -->
+    <string name="someday_empty">Пока ничего не «когда-нибудь»</string>
+
+    <!-- Anthropometry -->
     <string name="anthropometry_save">Сохранить</string>
     <string name="anthropometry_saved">Сохранено</string>
-    <string name="anthropometry_hint">Оставьте поле пустым, если не измеряли. Можно вводить точку или запятую; сохраняется с 1 знаком.</string>
+    <string name="anthropometry_hint">Оставьте пустым, если не измеряли. Используйте точку или запятую; будет сохранено с 1 знаком после запятой.</string>
+    <string name="anthropometry_empty">Данных антропометрии пока нет</string>
+    <string name="enter_data">Ввести данные</string>
     <string name="anthro_arm_cm">Рука, см</string>
     <string name="anthro_chest_cm">Грудь, см</string>
     <string name="anthro_under_chest_cm">Под грудью, см</string>
@@ -115,32 +148,32 @@
     <string name="anthro_hips_cm">Бёдра, см</string>
     <string name="anthro_thigh_cm">Бедро, см</string>
     <string name="anthro_weight_kg">Вес, кг</string>
-    <string name="anthropometry_empty">Пока нет данных по антропометрии</string>
-    <string name="enter_data">Ввести данные</string>
     <string name="cm_short">см</string>
     <string name="kg_short">кг</string>
-    <string name="calorimeter_title">Калориметр</string>
+
+    <!-- Calorimeter -->
     <string name="kcal_short">ккал</string>
-    <string name="calorimeter_daily_goal">Норма на день</string>
-    <string name="calorimeter_set_goal">Изменить норму</string>
+    <string name="calorimeter_daily_goal">Дневная цель</string>
+    <string name="calorimeter_set_goal">Установить цель</string>
     <string name="calorimeter_eaten_button">Съедено</string>
     <string name="calorimeter_add_eaten_title">Добавить съеденное</string>
-    <string name="calorimeter_food_name">Блюдо</string>
+    <string name="calorimeter_food_name">Продукт</string>
     <string name="calorimeter_food_kcal">Калории</string>
-    <string name="calorimeter_day_balance">Баланс за день</string>
-    <string name="calorimeter_week_goal">Норма на неделю</string>
+    <string name="calorimeter_day_balance">Баланс за сегодня</string>
+    <string name="calorimeter_week_goal">Недельная цель</string>
     <string name="calorimeter_week_balance">Баланс (последние 7 дней)</string>
     <string name="calorimeter_month_projection">Потенциальное изменение (30 дней)</string>
     <string name="calorimeter_no_eaten_today">Пока ничего</string>
-    <string name="calorimeter_show_all_n">Показать всё (%1$d)</string>
-    <string name="running_title">В бегах</string>
+    <string name="calorimeter_show_all_n">Показать все (%1$d)</string>
+
+    <!-- Running -->
     <string name="running_col_date">Дата</string>
     <string name="running_col_distance">Дистанция</string>
     <string name="running_col_time">Время</string>
     <string name="running_col_pace">Темп</string>
     <string name="running_hint_distance">км</string>
     <string name="running_hint_time">мин</string>
-    <string name="running_hint_pace">0917</string>
+    <string name="running_hint_pace">0000</string>
     <string name="running_approve">Утвердить</string>
     <string name="running_reset">Обнулить</string>
     <string name="running_approve_confirm_title">Подтверждение</string>
@@ -152,4 +185,126 @@
     <string name="running_empty">Нет строк</string>
     <string name="running_task_km">Тренировка %1$s км</string>
     <string name="running_task_minutes">Тренировка %1$d минут</string>
+
+    <!-- Counters -->
+    <string name="attach_counter">Прикрепить счётчик</string>
+    <string name="counter_not_attached">Счётчик не прикреплён</string>
+    <string name="no_counter">Нет счётчика</string>
+    <string name="no_counters_yet">Счётчиков пока нет</string>
+    <string name="add_counter">Добавить счётчик</string>
+    <string name="counter_type_date_range">Дата-счётчик</string>
+    <string name="counter_type_manual">Ручной счётчик</string>
+    <string name="create_manual_counter">Создать ручной счётчик</string>
+    <string name="create_date_counter">Создать дата-счётчик</string>
+    <string name="edit_counter">Редактировать счётчик</string>
+    <string name="counter_title">Название</string>
+    <string name="balance">Остаток</string>
+    <string name="start_date_iso">Дата начала (ГГГГ-ММ-ДД)</string>
+    <string name="end_date_iso">Дата окончания (ГГГГ-ММ-ДД)</string>
+    <string name="invalid_date_range_hint">Введите корректные даты. Начало должно быть раньше конца.</string>
+    <string name="manual_remaining_fmt">Осталось %1$d</string>
+    <string name="date_remaining_fmt">Осталось %1$s (%2$d%%)</string>
+    <string name="attached_counter_fmt">Счётчик: %1$s</string>
+    <string name="detach_counter">Открепить</string>
+
+    <!-- Media library: shared -->
+    <string name="reading_title">Медиатека</string>
+    <string name="reading_empty">Пока нет элементов</string>
+    <string name="reading_nothing_found">Ничего не найдено</string>
+    <string name="reading_search_label">Поиск по названию, автору или году</string>
+    <string name="reading_tab_plans">Планы</string>
+    <string name="reading_tab_now">Сейчас</string>
+    <string name="reading_tab_done">Завершено</string>
+    <string name="reading_tab_abandoned">Брошено</string>
+    <string name="reading_media_book">Книга</string>
+    <string name="reading_media_movie">Фильм</string>
+    <string name="reading_media_series">Сериал</string>
+    <string name="reading_menu_toggle_view">Сменить вид</string>
+    <string name="reading_view_list">Список</string>
+    <string name="reading_menu_sort">Сортировка</string>
+    <string name="reading_menu_delete">Удалить</string>
+    <string name="reading_menu_move_to_plans">В планы</string>
+    <string name="reading_menu_move_to_now">В текущее</string>
+    <string name="reading_menu_move_to_done">В завершённое</string>
+    <string name="reading_menu_move_to_abandoned">В брошенное</string>
+    <string name="reading_add_item_title">Добавить</string>
+    <string name="reading_field_title_required">Название (обязательно)</string>
+    <string name="reading_note_year_auto">Примечание: год будет установлен автоматически</string>
+    <string name="reading_action_add">Добавить</string>
+    <string name="reading_action_apply">Применить</string>
+    <string name="reading_sort_title">Сортировка</string>
+    <string name="reading_sort_field_author">Автор</string>
+    <string name="reading_sort_field_title">Название</string>
+    <string name="reading_sort_field_pages">Страниц</string>
+    <string name="reading_sort_field_year">Год</string>
+    <string name="reading_sort_field_release_year">Год выпуска</string>
+    <string name="reading_sort_ascending">По возрастанию</string>
+    <string name="reading_sort_descending">По убыванию</string>
+    <string name="reading_year">Год: %1$d</string>
+    <string name="reading_year_group_header">%1$s — %2$d</string>
+    <string name="reading_toast_invalid_input">Неверный ввод</string>
+
+    <!-- Media library: book / reading session -->
+    <string name="reading_button_read">Читать</string>
+    <string name="reading_remaining_unknown">Осталось: —</string>
+    <string name="reading_remaining_hours">Осталось: %1$d ч</string>
+    <string name="reading_field_pages_required">Страниц (обязательно)</string>
+    <string name="reading_field_author">Автор</string>
+    <string name="reading_session_title">Чтение</string>
+    <string name="reading_session_finish">Завершить чтение</string>
+    <string name="reading_session_unknown_book">Неизвестная книга</string>
+    <string name="reading_session_no_active">Нет активной сессии чтения</string>
+    <string name="reading_session_back">Назад</string>
+    <string name="reading_session_finish_title">Завершение чтения</string>
+    <string name="reading_session_stop_page_question">На какой странице вы остановились?</string>
+    <string name="reading_session_page_label">Страница</string>
+    <string name="reading_session_duration_label">Длительность (минуты)</string>
+    <string name="reading_session_total_pages_hint">Всего страниц: %1$d</string>
+    <string name="reading_session_start_page_label">Начальная страница</string>
+    <string name="reading_session_save">Сохранить</string>
+    <string name="reading_session_invalid_input">Неверный ввод</string>
+    <string name="reading_session_invalid_page">Страница вне диапазона</string>
+    <string name="reading_session_save_failed">Не удалось сохранить сессию</string>
+
+    <!-- Media library: book details -->
+    <string name="reading_book_title">Книга</string>
+    <string name="reading_book_not_found">Книга не найдена</string>
+    <string name="reading_book_cover_set">Обложка установлена</string>
+    <string name="reading_book_field_title_required">Название (обязательно)</string>
+    <string name="reading_book_field_author">Автор</string>
+    <string name="reading_book_field_pages_required">Страниц (обязательно)</string>
+    <string name="reading_book_field_current_page">Текущая страница</string>
+    <string name="reading_book_field_shelf">Полка</string>
+    <string name="reading_book_field_year_read">Год прочтения</string>
+    <string name="reading_book_field_year_abandoned">Год отказа</string>
+    <string name="reading_book_invalid_input">Пожалуйста, заполните книгу правильно</string>
+    <string name="reading_book_done">Готово</string>
+    <string name="reading_book_delete_title">Удалить книгу?</string>
+    <string name="reading_book_delete_text">Удалить эту книгу и все её сессии?</string>
+    <string name="reading_book_choose_cover">Выбрать обложку</string>
+    <string name="reading_book_remove_cover">Удалить обложку</string>
+
+    <!-- Media library: movie -->
+    <string name="reading_movie_title">Фильм</string>
+    <string name="reading_movie_not_found">Фильм не найден</string>
+    <string name="reading_movie_invalid_input">Пожалуйста, заполните фильм правильно</string>
+    <string name="reading_movie_field_release_year">Год выпуска</string>
+    <string name="reading_movie_field_translation">Перевод</string>
+    <string name="reading_movie_field_year_watched">Год просмотра</string>
+    <string name="reading_movie_done">Готово</string>
+    <string name="reading_movie_delete_title">Удалить фильм?</string>
+    <string name="reading_movie_delete_text">Этот фильм будет удалён навсегда.</string>
+
+    <!-- Media library: series -->
+    <string name="reading_field_total_seasons">Всего сезонов</string>
+    <string name="reading_field_current_season">Текущий сезон</string>
+    <string name="reading_field_current_episode">Текущая серия</string>
+    <string name="reading_series_progress">S%1$d E%2$d / %3$d</string>
+    <string name="reading_series_title">Сериал</string>
+    <string name="reading_series_not_found">Сериал не найден</string>
+    <string name="reading_series_invalid_input">Пожалуйста, заполните сериал правильно</string>
+    <string name="reading_series_field_year_watched">Год просмотра</string>
+    <string name="reading_series_done">Готово</string>
+    <string name="reading_series_delete_title">Удалить сериал?</string>
+    <string name="reading_series_delete_text">Этот сериал будет удалён навсегда.</string>
 </resources>

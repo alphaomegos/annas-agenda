@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,14 +24,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.util.isSuppressedTemplateTaskOnItsDate
-import androidx.compose.runtime.getValue
 import com.alphaomegos.annasagenda.components.DateTasksBlock
+import com.alphaomegos.annasagenda.util.isSuppressedTemplateTaskOnItsDate
 
 @Composable
 fun SomedayScreen(
     vm: AppViewModel,
     onBack: () -> Unit,
+    onCreateTask: () -> Unit,
 ) {
     val state by vm.state.collectAsState()
 
@@ -76,6 +77,14 @@ fun SomedayScreen(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
+
+        // New: same entry point as on "Today" screen
+        Button(onClick = onCreateTask, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.create_task))
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.back))
         }

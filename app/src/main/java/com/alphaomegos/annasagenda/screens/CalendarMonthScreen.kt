@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -30,6 +31,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
+import kotlin.math.max
 
 @Composable
 fun CalendarMonthRoute(
@@ -66,7 +68,6 @@ private fun CalendarMonthContent(
     val baseIndex = today.year * 12 + (today.monthValue - 1)
     var monthIndex by rememberSaveable { mutableIntStateOf(baseIndex) }
 
-    // safer than / and % for negative months
     val yearMonth = remember(monthIndex) {
         val y = Math.floorDiv(monthIndex, 12)
         val m = monthIndex - y * 12 + 1
@@ -195,62 +196,85 @@ private fun CalendarMonthContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(7),
+        // Grid now fills all remaining height, and each row gets equal height.
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 460.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                .weight(1f)
         ) {
-            itemsIndexed(
-                items = cells,
-                key = { index, date ->
-                    date?.toEpochDay() ?: (Long.MIN_VALUE + index.toLong())
-                }
-            ) { _, date ->
-                if (date == null) {
-                    Box(modifier = Modifier.aspectRatio(1f))
-                } else {
-                    val count = itemCountByDate[date] ?: 0
-                    val isToday = date == today
-                    val hasAnthro = anthroDates.contains(date)
+            val spacing = 6.dp
+            val rowCount = max(1, cells.size / 7)
 
-                    Surface(
-                        tonalElevation = if (isToday) 4.dp else 0.dp,
-                        shape = MaterialTheme.shapes.medium,
-                        modifier = Modifier
-                            .aspectRatio(1f)
-                            .clickable { onOpenDay(date.toEpochDay()) }
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(8.dp),
-                            verticalArrangement = Arrangement.SpaceBetween
+            val availableHeight = this.maxHeight // make receiver usage explicit (kills the warning)
+            val usable = (availableHeight - spacing * (rowCount - 1)).coerceAtLeast(0.dp)
+            val cellHeightCandidate = usable / rowCount
+            val cellHeight = if (cellHeightCandidate < 44.dp) 44.dp else cellHeightCandidate
+
+            val cellShape = MaterialTheme.shapes.medium
+            val cellBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(7),
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(spacing),
+                horizontalArrangement = Arrangement.spacedBy(spacing),
+            ) {
+                itemsIndexed(
+                    items = cells,
+                    key = { index, date ->
+                        date?.toEpochDay() ?: (Long.MIN_VALUE + index.toLong())
+                    }
+                ) { _, date ->
+                    if (date == null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(cellHeight)
+                                .border(1.dp, cellBorderColor, cellShape)
+                        )
+                    } else {
+                        val count = itemCountByDate[date] ?: 0
+                        val isToday = date == today
+                        val hasAnthro = anthroDates.contains(date)
+
+                        Surface(
+                            tonalElevation = if (isToday) 4.dp else 0.dp,
+                            shape = cellShape,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(cellHeight)
+                                .border(1.dp, cellBorderColor, cellShape)
+                                .clickable { onOpenDay(date.toEpochDay()) }
                         ) {
-                            Box(
-                                modifier = Modifier.size(24.dp),
-                                contentAlignment = Alignment.Center
+                            Column(
+                                modifier = Modifier.padding(8.dp),
+                                verticalArrangement = Arrangement.SpaceBetween
                             ) {
-                                if (hasAnthro) {
-                                    Canvas(modifier = Modifier.matchParentSize()) {
-                                        val stroke = 2.dp.toPx()
-                                        drawCircle(
-                                            color = Color(0xFFB7E6B0),
-                                            radius = (size.minDimension - stroke) / 2f,
-                                            style = Stroke(width = stroke)
-                                        )
+                                Box(
+                                    modifier = Modifier.size(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (hasAnthro) {
+                                        Canvas(modifier = Modifier.matchParentSize()) {
+                                            val stroke = 2.dp.toPx()
+                                            drawCircle(
+                                                color = Color(0xFFB7E6B0),
+                                                radius = (size.minDimension - stroke) / 2f,
+                                                style = Stroke(width = stroke)
+                                            )
+                                        }
                                     }
+                                    Text(
+                                        text = date.dayOfMonth.toString(),
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
                                 }
-                                Text(
-                                    text = date.dayOfMonth.toString(),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            }
-                            if (count > 0) {
-                                Text(
-                                    text = count.toString(),
-                                    style = MaterialTheme.typography.labelMedium
-                                )
+                                if (count > 0) {
+                                    Text(
+                                        text = count.toString(),
+                                        style = MaterialTheme.typography.labelMedium
+                                    )
+                                }
                             }
                         }
                     }
@@ -263,7 +287,9 @@ private fun CalendarMonthContent(
         TextButton(onClick = onOpenSomeday) {
             Text(stringResource(R.string.someday_count, somedayCount))
         }
+
         Spacer(modifier = Modifier.height(12.dp))
+
         Button(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth()

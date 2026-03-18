@@ -49,7 +49,8 @@ import androidx.compose.runtime.snapshotFlow
 import com.alphaomegos.annasagenda.NewTaskDraft
 import com.alphaomegos.annasagenda.NewTaskDraftSubtask
 import kotlinx.coroutines.flow.distinctUntilChanged
-
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,16 +63,33 @@ fun NewTaskScreen(
     val maxSubtasks = 30
     val subtasksText = remember { mutableStateListOf<String>() }
     val subtasksColor = remember { mutableStateListOf<Long?>() }
-// Track whether user manually changed a draft subtask color (to avoid overwriting on task color change)
+    // Track whether user manually changed a draft subtask color (to avoid overwriting on task color change)
     val subtasksColorOverridden = remember { mutableStateListOf<Boolean>() }
+
+    // - null  -> default "today" (main menu)
+    // - >= 0  -> specific date (calendar)
+    // - < 0   -> Someday (no date)
     val initialDate: LocalDate? = remember(preselectedEpochDay) {
-        preselectedEpochDay?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.now()
+        when {
+            preselectedEpochDay == null -> LocalDate.now()
+            preselectedEpochDay < 0L -> null
+            else -> LocalDate.ofEpochDay(preselectedEpochDay)
+        }
     }
+
     var selectedDate by rememberSaveable { mutableStateOf(initialDate) }
     var showDatePicker by remember { mutableStateOf(false) }
     var taskColor by rememberSaveable { mutableStateOf<Long?>(null) }
 
     var draftLoaded by remember { mutableStateOf(false) }
+
+    val state by vm.state.collectAsState()
+
+    var linkedManualCounterId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val showCounterPicker = remember { mutableStateOf(false) }
+
+    val manualCounters = state.counters.filterIsInstance<com.alphaomegos.annasagenda.ManualCounter>()
+    val selectedCounterTitle = manualCounters.firstOrNull { it.id == linkedManualCounterId }?.title
 
     LaunchedEffect(Unit) {
         val draft = vm.loadNewTaskDraft()
@@ -115,6 +133,41 @@ fun NewTaskScreen(
             .collect { vm.queueNewTaskDraftSave(it) }
     }
 
+    if (showCounterPicker.value) {
+        AlertDialog(
+            onDismissRequest = { showCounterPicker.value = false },
+            title = { Text(stringResource(R.string.attach_counter)) },
+            text = {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 360.dp)
+                ) {
+                    item {
+                        TextButton(onClick = {
+                            linkedManualCounterId = null
+                            showCounterPicker.value = false
+                        }) {
+                            Text(stringResource(R.string.no_counter))
+                        }
+                    }
+
+                    items(manualCounters.size) { i ->
+                        val c = manualCounters[i]
+                        TextButton(onClick = {
+                            linkedManualCounterId = c.id
+                            showCounterPicker.value = false
+                        }) {
+                            Text(c.title)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCounterPicker.value = false }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -205,6 +258,19 @@ fun NewTaskScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Text(stringResource(R.string.attach_counter), style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = { showCounterPicker.value = true },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = manualCounters.isNotEmpty()
+            ) {
+                Text(selectedCounterTitle ?: stringResource(R.string.counter_not_attached))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -292,6 +358,7 @@ fun NewTaskScreen(
                             time = null,
                             description = description.trim(),
                             colorArgb = taskColor,
+                            linkedManualCounterId = linkedManualCounterId,
                             hasSubtasks = cleanSubtasks.any { it.isNotBlank() }
                         )
                         cleanSubtasks.forEachIndexed { idx, txt ->
@@ -322,7 +389,6 @@ fun NewTaskScreen(
         ) {
             Text(stringResource(R.string.back))
         }
-
 
         if (showDatePicker) {
             val zone = remember { ZoneId.systemDefault() }

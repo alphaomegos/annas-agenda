@@ -61,6 +61,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.ui.draw.clip
+import com.alphaomegos.annasagenda.ManualCounter
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 
 
 internal data class DateTasksActions(
@@ -88,7 +91,7 @@ internal data class DateTasksActions(
 
     val deleteTask: (Long) -> Unit,
     val deleteSubtask: (Long) -> Unit,
-
+    val setTaskLinkedManualCounter: (Long, Long?) -> Unit,
     val setTaskRepeatRule: (Long, RepeatRule?) -> Unit,
     val setSubtaskRepeatRule: (Long, RepeatRule?) -> Unit,
 )
@@ -146,6 +149,7 @@ internal fun DateTasksBlock(
 
             setTaskRepeatRule = { taskId, rule -> vm.setTaskRepeatRule(taskId, rule) },
             setSubtaskRepeatRule = { subId, rule -> vm.setSubtaskRepeatRule(subId, rule) },
+            setTaskLinkedManualCounter = { taskId, counterId -> vm.setTaskLinkedManualCounter(taskId, counterId) },
         )
     }
 
@@ -189,7 +193,7 @@ private fun DateTasksBlockContent(
     val editTaskText = remember { mutableStateOf("") }
     val editTaskRepeatRule = remember { mutableStateOf<RepeatRule?>(null) }
     val showTaskRepeatPicker = remember { mutableStateOf(false) }
-
+    val showCounterPicker = remember { mutableStateOf(false) }
     var editSubtaskId by remember { mutableStateOf<Long?>(null) }
     val editSubtaskText = remember { mutableStateOf("") }
     val editSubtaskRepeatRule = remember { mutableStateOf<RepeatRule?>(null) }
@@ -696,44 +700,141 @@ private fun DateTasksBlockContent(
 
     // Edit task dialog
     if (editTaskId != null) {
+        val taskId = editTaskId!!
+        val editingTask = tasks.firstOrNull { it.id == taskId }
+        val manualCounters = state.counters.filterIsInstance<ManualCounter>()
+        val linkedId = editingTask?.linkedManualCounterId
+        val linkedTitle = manualCounters.firstOrNull { it.id == linkedId }?.title
+
         AlertDialog(
-            onDismissRequest = { editTaskId = null; showTaskRepeatPicker.value = false },
+            onDismissRequest = {
+                editTaskId = null
+                showTaskRepeatPicker.value = false
+                showCounterPicker.value = false
+            },
             title = { Text(stringResource(R.string.task_description_label)) },
             text = {
-                OutlinedTextField(
-                    value = editTaskText.value,
-                    onValueChange = { editTaskText.value = it },
-                    label = { Text(stringResource(R.string.task_description_label)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    actions.updateTaskDescription(editTaskId!!, editTaskText.value)
-                    editTaskId = null
-                }) { Text(stringResource(R.string.ok)) }
-            },
-            dismissButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { showTaskRepeatPicker.value = true }) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                    OutlinedTextField(
+                        value = editTaskText.value,
+                        onValueChange = { editTaskText.value = it },
+                        label = { Text(stringResource(R.string.task_description_label)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (linkedId == null) {
+                        OutlinedButton(
+                            onClick = { showCounterPicker.value = true },
+                            enabled = manualCounters.isNotEmpty(),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.attach_counter))
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.attached_counter_fmt, linkedTitle ?: ""),
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(
+                                onClick = { actions.setTaskLinkedManualCounter(taskId, null) }
+                            ) {
+                                Text(stringResource(R.string.detach_counter))
+                            }
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = { showTaskRepeatPicker.value = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(stringResource(R.string.repeat))
                     }
 
-                    TextButton(onClick = {
-                        actions.deleteTask(editTaskId!!)
-                        editTaskId = null
-                        showTaskRepeatPicker.value = false
-                    }) { Text(stringResource(R.string.remove)) }
+                    TextButton(
+                        onClick = {
+                            actions.deleteTask(taskId)
+                            editTaskId = null
+                            showTaskRepeatPicker.value = false
+                            showCounterPicker.value = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text(stringResource(R.string.remove))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    actions.updateTaskDescription(taskId, editTaskText.value)
+                    editTaskId = null
+                    showTaskRepeatPicker.value = false
+                    showCounterPicker.value = false
+                }) { Text(stringResource(R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    editTaskId = null
+                    showTaskRepeatPicker.value = false
+                    showCounterPicker.value = false
+                }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
+    }
+    if (showCounterPicker.value && editTaskId != null) {
+        val manualCounters = state.counters.filterIsInstance<ManualCounter>()
+        AlertDialog(
+            onDismissRequest = { showCounterPicker.value = false },
+            title = { Text(stringResource(R.string.attach_counter)) },
+            text = {
+                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
 
-                    TextButton(onClick = {
-                        editTaskId = null
-                        showTaskRepeatPicker.value = false
-                    }) { Text(stringResource(R.string.cancel)) }
+                    item {
+                        TextButton(
+                            onClick = {
+                                actions.setTaskLinkedManualCounter(editTaskId!!, null)
+                                showCounterPicker.value = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(stringResource(R.string.no_counter)) }
+                    }
+
+                    if (manualCounters.isEmpty()) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.no_counters_yet),
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    } else {
+                        items(manualCounters, key = { it.id }) { c ->
+                            TextButton(
+                                onClick = {
+                                    actions.setTaskLinkedManualCounter(editTaskId!!, c.id)
+                                    showCounterPicker.value = false
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text(c.title) }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showCounterPicker.value = false }) {
+                    Text(stringResource(android.R.string.ok))
                 }
             }
         )
     }
+
 
     // Edit subtask dialog
     if (editSubtaskId != null) {

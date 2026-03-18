@@ -4,24 +4,22 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import java.text.DecimalFormat
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.WeekFields
 import java.util.Locale
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import java.text.DecimalFormat
 import kotlin.math.max
-import kotlin.math.roundToInt
-
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val store = AppStateStore(app.applicationContext)
@@ -43,7 +41,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = loaded
 
             val maxId =
-                (loaded.tasks.map { it.id } + loaded.subtasks.map { it.id } + loaded.foodLog.map { it.id })
+                (loaded.tasks.map { it.id }
+                        + loaded.subtasks.map { it.id }
+                        + loaded.foodLog.map { it.id }
+                        + loaded.counters.map { it.id }
+                        + loaded.readingBooks.map { it.id }
+                        + loaded.readingMovies.map { it.id }
+                        + loaded.readingSeries.map { it.id }
+                        + loaded.readingSessions.map { it.id })
                     .maxOrNull() ?: 0L
             nextId = maxId + 1
 
@@ -63,15 +68,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun applyManualCounterDelta(
+        counters: List<Counter>,
+        counterId: Long,
+        delta: Int
+    ): List<Counter> {
+        return counters.map { c ->
+            if (c is ManualCounter && c.id == counterId) c.copy(balance = c.balance + delta) else c
+        }
+    }
 
     @OptIn(FlowPreview::class)
     private suspend fun startAutoSave() {
         state
-            .drop(1)       // skip the initially loaded state
-            .debounce(400) // reduce disk writes while user edits quickly
+            .drop(1)
+            .debounce(400)
             .collect { store.save(it) }
     }
-
 
     fun resetAllData() {
         val empty = AppState()
@@ -80,6 +93,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             store.save(empty)
         }
+        _activeReading.value = null
     }
 
     fun exportBackupJson(): String {
@@ -107,26 +121,802 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = decoded
 
         val maxId =
-            (decoded.tasks.map { it.id } + decoded.subtasks.map { it.id } + decoded.foodLog.map { it.id })
+            (decoded.tasks.map { it.id }
+                    + decoded.subtasks.map { it.id }
+                    + decoded.foodLog.map { it.id }
+                    + decoded.counters.map { it.id }
+                    + decoded.readingBooks.map { it.id }
+                    + decoded.readingMovies.map { it.id }
+                    + decoded.readingSeries.map { it.id }
+                    + decoded.readingSessions.map { it.id })
                 .maxOrNull() ?: 0L
         nextId = maxId + 1L
+
+        _activeReading.value = null
 
         viewModelScope.launch {
             store.save(decoded)
         }
         return true
     }
+
     /* ---------------------------
-   Running plan ("On the run")
----------------------------- */
+       Main menu ordering
+    ---------------------------- */
+
+    fun setMainMenuOrder(ids: List<String>) {
+        val normalized = ids
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .toList()
+
+        val cur = _state.value
+        if (cur.mainMenuOrder == normalized) return
+        _state.value = cur.copy(mainMenuOrder = normalized)
+    }
+
+    /* ---------------------------
+       Reading
+    ---------------------------- */
+
+    data class ActiveReading(
+        val bookId: Long,
+        val startedAtEpochMillis: Long,
+        val startPage: Int
+    )
+
+    private val _activeReading = MutableStateFlow<ActiveReading?>(null)
+    val activeReading: StateFlow<ActiveReading?> = _activeReading.asStateFlow()
+
+    private fun tabPrefsForShelf(st: AppState, shelf: ReadingShelf): ReadingTabPrefs {
+        return when (shelf) {
+            ReadingShelf.PLANS -> st.readingPlansPrefs
+            ReadingShelf.NOW -> st.readingNowPrefs
+            ReadingShelf.DONE -> st.readingDonePrefs
+            ReadingShelf.ABANDONED -> st.readingAbandonedPrefs
+        }
+    }
+
+    private fun withTabPrefs(st: AppState, shelf: ReadingShelf, prefs: ReadingTabPrefs): AppState {
+        return when (shelf) {
+            ReadingShelf.PLANS -> st.copy(readingPlansPrefs = prefs)
+            ReadingShelf.NOW -> st.copy(readingNowPrefs = prefs)
+            ReadingShelf.DONE -> st.copy(readingDonePrefs = prefs)
+            ReadingShelf.ABANDONED -> st.copy(readingAbandonedPrefs = prefs)
+        }
+    }
+
+    fun setReadingViewMode(shelf: ReadingShelf, mode: ReadingViewMode) {
+        val st = _state.value
+        val prefs = tabPrefsForShelf(st, shelf)
+        if (prefs.viewMode == mode) return
+        _state.value = withTabPrefs(st, shelf, prefs.copy(viewMode = mode))
+    }
+
+    fun setReadingSort(shelf: ReadingShelf, field: ReadingSortField, ascending: Boolean) {
+        val st = _state.value
+        val prefs = tabPrefsForShelf(st, shelf)
+        val newSort = ReadingSort(field = field, ascending = ascending)
+        if (prefs.sort == newSort) return
+        _state.value = withTabPrefs(st, shelf, prefs.copy(sort = newSort))
+    }
+
+    fun setReadingMediaFilter(
+        showBooks: Boolean? = null,
+        showMovies: Boolean? = null,
+        showSeries: Boolean? = null,
+    ) {
+        val st = _state.value
+        val old = st.readingMediaFilter
+        val updated = old.copy(
+            showBooks = showBooks ?: old.showBooks,
+            showMovies = showMovies ?: old.showMovies,
+            showSeries = showSeries ?: old.showSeries,
+        )
+        if (updated == old) return
+        _state.value = st.copy(readingMediaFilter = updated)
+    }
+
+    fun addReadingBook(
+        shelf: ReadingShelf,
+        title: String,
+        totalPages: Int,
+        author: String = "",
+        coverUri: String? = null
+    ): Long? {
+        val cleanTitle = title.trim()
+        if (cleanTitle.isEmpty()) return null
+        if (totalPages <= 0) return null
+
+        val now = System.currentTimeMillis()
+        val currentYear = LocalDate.now().year
+
+        val book = ReadingBook(
+            id = newId(),
+            shelf = shelf,
+            author = author.trim(),
+            title = cleanTitle,
+            coverUri = coverUri,
+            totalPages = totalPages,
+            currentPage = 0,
+            yearRead = if (shelf == ReadingShelf.DONE) currentYear else null,
+            yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
+            createdAtEpochMillis = now
+        )
+
+        val st = _state.value
+        _state.value = st.copy(readingBooks = st.readingBooks + book)
+        return book.id
+    }
+
+    fun deleteReadingBook(bookId: Long) {
+        val st = _state.value
+        val has = st.readingBooks.any { it.id == bookId }
+        if (!has) return
+
+        if (_activeReading.value?.bookId == bookId) {
+            _activeReading.value = null
+        }
+
+        _state.value = st.copy(
+            readingBooks = st.readingBooks.filterNot { it.id == bookId },
+            readingSessions = st.readingSessions.filterNot { it.bookId == bookId }
+        )
+    }
+
+    fun moveReadingBookToShelf(bookId: Long, shelf: ReadingShelf) {
+        val st = _state.value
+        val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return
+        if (book.shelf == shelf) return
+
+        if (_activeReading.value?.bookId == bookId && shelf != ReadingShelf.NOW) {
+            _activeReading.value = null
+        }
+
+        val currentYear = LocalDate.now().year
+
+        val updatedBooks = st.readingBooks.map { b ->
+            if (b.id != bookId) {
+                b
+            } else {
+                when (shelf) {
+                    ReadingShelf.DONE -> b.copy(
+                        shelf = shelf,
+                        yearRead = currentYear,
+                        yearAbandoned = null
+                    )
+
+                    ReadingShelf.ABANDONED -> b.copy(
+                        shelf = shelf,
+                        yearRead = null,
+                        yearAbandoned = currentYear
+                    )
+
+                    ReadingShelf.PLANS,
+                    ReadingShelf.NOW -> b.copy(
+                        shelf = shelf,
+                        yearRead = null,
+                        yearAbandoned = null
+                    )
+                }
+            }
+        }
+
+        _state.value = st.copy(readingBooks = updatedBooks)
+    }
+    fun updateReadingBook(
+        bookId: Long,
+        author: String? = null,
+        title: String? = null,
+        coverUri: String? = null,
+        clearCover: Boolean = false,
+        totalPages: Int? = null,
+        currentPage: Int? = null,
+        yearRead: Int? = null,
+        yearAbandoned: Int? = null,
+        shelf: ReadingShelf? = null,
+    ) {
+        val st = _state.value
+        val old = st.readingBooks.firstOrNull { it.id == bookId } ?: return
+
+        val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
+        val newAuthor = author?.trim() ?: old.author
+
+        val pages = (totalPages ?: old.totalPages).coerceAtLeast(1)
+        val newCurrent = (currentPage ?: old.currentPage).coerceIn(0, pages)
+
+        val newShelf = shelf ?: old.shelf
+        val currentYear = LocalDate.now().year
+
+        val newYearRead = when (newShelf) {
+            ReadingShelf.DONE -> yearRead ?: old.yearRead ?: currentYear
+            else -> null
+        }
+
+        val newYearAbandoned = when (newShelf) {
+            ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
+            else -> null
+        }
+
+        val newCover = when {
+            clearCover -> null
+            coverUri != null -> coverUri
+            else -> old.coverUri
+        }
+
+        val updated = old.copy(
+            shelf = newShelf,
+            author = newAuthor,
+            title = newTitle,
+            coverUri = newCover,
+            totalPages = pages,
+            currentPage = newCurrent,
+            yearRead = newYearRead,
+            yearAbandoned = newYearAbandoned
+        )
+
+        if (_activeReading.value?.bookId == bookId) {
+            _activeReading.value =
+                if (updated.shelf == ReadingShelf.NOW) {
+                    _activeReading.value?.copy(startPage = updated.currentPage)
+                } else {
+                    null
+                }
+        }
+
+        _state.value = st.copy(
+            readingBooks = st.readingBooks.map { b -> if (b.id == bookId) updated else b }
+        )
+    }
+
+    fun sortedReadingBooksForShelf(shelf: ReadingShelf): List<ReadingBook> {
+        val st = _state.value
+        val prefs = tabPrefsForShelf(st, shelf)
+        val base = st.readingBooks.filter { it.shelf == shelf }
+        return sortReadingBooks(base, prefs.sort, shelf)
+    }
+
+    private fun sortReadingBooks(
+        list: List<ReadingBook>,
+        sort: ReadingSort,
+        shelf: ReadingShelf
+    ): List<ReadingBook> {
+        fun s(x: String) = x.trim().lowercase(Locale.getDefault())
+
+        fun yearForShelf(book: ReadingBook): Int {
+            return when (shelf) {
+                ReadingShelf.DONE -> book.yearRead ?: Int.MIN_VALUE
+                ReadingShelf.ABANDONED -> book.yearAbandoned ?: Int.MIN_VALUE
+                ReadingShelf.PLANS,
+                ReadingShelf.NOW -> Int.MIN_VALUE
+            }
+        }
+
+        val comparator = when (sort.field) {
+            ReadingSortField.AUTHOR ->
+                compareBy<ReadingBook> { s(it.author) }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.TITLE ->
+                compareBy<ReadingBook> { s(it.title) }
+                    .thenBy { s(it.author) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.PAGES ->
+                compareBy<ReadingBook> { it.totalPages }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.YEAR ->
+                compareBy<ReadingBook> { yearForShelf(it) }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.RELEASE_YEAR ->
+                compareBy<ReadingBook> { Int.MIN_VALUE }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+        }
+
+        val sorted = list.sortedWith(comparator)
+        return if (sort.ascending) sorted else sorted.asReversed()
+    }
+
+    fun addReadingMovie(
+        shelf: ReadingShelf,
+        title: String,
+        releaseYear: Int? = null,
+        translation: String = "",
+        coverUri: String? = null,
+    ): Long? {
+        val cleanTitle = title.trim()
+        if (cleanTitle.isEmpty()) return null
+
+        val cleanReleaseYear = releaseYear?.takeIf { it in 1..9999 }
+        val cleanTranslation = translation.trim()
+
+        val now = System.currentTimeMillis()
+        val currentYear = LocalDate.now().year
+
+        val movie = ReadingMovie(
+            id = newId(),
+            shelf = shelf,
+            title = cleanTitle,
+            coverUri = coverUri,
+            releaseYear = cleanReleaseYear,
+            translation = cleanTranslation,
+            yearWatched = if (shelf == ReadingShelf.DONE) currentYear else null,
+            yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
+            createdAtEpochMillis = now
+        )
+
+        val st = _state.value
+        _state.value = st.copy(readingMovies = st.readingMovies + movie)
+        return movie.id
+    }
+
+    fun deleteReadingMovie(movieId: Long) {
+        val st = _state.value
+        val has = st.readingMovies.any { it.id == movieId }
+        if (!has) return
+
+        _state.value = st.copy(
+            readingMovies = st.readingMovies.filterNot { it.id == movieId }
+        )
+    }
+
+    fun moveReadingMovieToShelf(movieId: Long, shelf: ReadingShelf) {
+        val st = _state.value
+        val movie = st.readingMovies.firstOrNull { it.id == movieId } ?: return
+        if (movie.shelf == shelf) return
+
+        val currentYear = LocalDate.now().year
+
+        val updatedMovies = st.readingMovies.map { m ->
+            if (m.id != movieId) {
+                m
+            } else {
+                when (shelf) {
+                    ReadingShelf.DONE -> m.copy(
+                        shelf = shelf,
+                        yearWatched = currentYear,
+                        yearAbandoned = null
+                    )
+
+                    ReadingShelf.ABANDONED -> m.copy(
+                        shelf = shelf,
+                        yearWatched = null,
+                        yearAbandoned = currentYear
+                    )
+
+                    ReadingShelf.PLANS,
+                    ReadingShelf.NOW -> m.copy(
+                        shelf = shelf,
+                        yearWatched = null,
+                        yearAbandoned = null
+                    )
+                }
+            }
+        }
+
+        _state.value = st.copy(readingMovies = updatedMovies)
+    }
+
+    fun updateReadingMovie(
+        movieId: Long,
+        title: String? = null,
+        coverUri: String? = null,
+        clearCover: Boolean = false,
+        releaseYear: Int? = null,
+        clearReleaseYear: Boolean = false,
+        translation: String? = null,
+        yearWatched: Int? = null,
+        yearAbandoned: Int? = null,
+        shelf: ReadingShelf? = null,
+    ) {
+        val st = _state.value
+        val old = st.readingMovies.firstOrNull { it.id == movieId } ?: return
+
+        val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
+        val newShelf = shelf ?: old.shelf
+        val currentYear = LocalDate.now().year
+
+        val newYearWatched = when (newShelf) {
+            ReadingShelf.DONE -> yearWatched ?: old.yearWatched ?: currentYear
+            else -> null
+        }
+
+        val newYearAbandoned = when (newShelf) {
+            ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
+            else -> null
+        }
+
+        val newCover = when {
+            clearCover -> null
+            coverUri != null -> coverUri
+            else -> old.coverUri
+        }
+
+        val newReleaseYear = when {
+            clearReleaseYear -> null
+            releaseYear != null -> releaseYear.takeIf { it in 1..9999 }
+            else -> old.releaseYear
+        }
+
+        val newTranslation = translation?.trim() ?: old.translation
+
+        val updated = old.copy(
+            shelf = newShelf,
+            title = newTitle,
+            coverUri = newCover,
+            releaseYear = newReleaseYear,
+            translation = newTranslation,
+            yearWatched = newYearWatched,
+            yearAbandoned = newYearAbandoned
+        )
+
+        _state.value = st.copy(
+            readingMovies = st.readingMovies.map { m -> if (m.id == movieId) updated else m }
+        )
+    }
+
+    fun sortedReadingMoviesForShelf(shelf: ReadingShelf): List<ReadingMovie> {
+        val st = _state.value
+        val prefs = tabPrefsForShelf(st, shelf)
+        val base = st.readingMovies.filter { it.shelf == shelf }
+        return sortReadingMovies(base, prefs.sort, shelf)
+    }
+
+    private fun sortReadingMovies(
+        list: List<ReadingMovie>,
+        sort: ReadingSort,
+        shelf: ReadingShelf
+    ): List<ReadingMovie> {
+        fun s(x: String) = x.trim().lowercase(Locale.getDefault())
+
+        fun yearForShelf(movie: ReadingMovie): Int {
+            return when (shelf) {
+                ReadingShelf.DONE -> movie.yearWatched ?: Int.MIN_VALUE
+                ReadingShelf.ABANDONED -> movie.yearAbandoned ?: Int.MIN_VALUE
+                ReadingShelf.PLANS,
+                ReadingShelf.NOW -> Int.MIN_VALUE
+            }
+        }
+
+        val comparator = when (sort.field) {
+            ReadingSortField.AUTHOR ->
+                compareBy<ReadingMovie> { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.TITLE ->
+                compareBy<ReadingMovie> { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.PAGES ->
+                compareBy<ReadingMovie> { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.YEAR ->
+                compareBy<ReadingMovie> { yearForShelf(it) }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.RELEASE_YEAR ->
+                compareBy<ReadingMovie> { it.releaseYear ?: Int.MIN_VALUE }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+        }
+
+        val sorted = list.sortedWith(comparator)
+        return if (sort.ascending) sorted else sorted.asReversed()
+    }
+
+    fun addReadingSeries(
+        shelf: ReadingShelf,
+        title: String,
+        totalSeasons: Int = 1,
+        currentSeason: Int = 1,
+        currentEpisode: Int = 1,
+        coverUri: String? = null,
+    ): Long? {
+        val cleanTitle = title.trim()
+        if (cleanTitle.isEmpty()) return null
+
+        val safeTotalSeasons = totalSeasons.coerceAtLeast(1)
+        val safeCurrentSeason = currentSeason.coerceIn(1, safeTotalSeasons)
+        val safeCurrentEpisode = currentEpisode.coerceAtLeast(1)
+
+        val now = System.currentTimeMillis()
+        val currentYear = LocalDate.now().year
+
+        val series = ReadingSeries(
+            id = newId(),
+            shelf = shelf,
+            title = cleanTitle,
+            coverUri = coverUri,
+            totalSeasons = safeTotalSeasons,
+            currentSeason = safeCurrentSeason,
+            currentEpisode = safeCurrentEpisode,
+            yearWatched = if (shelf == ReadingShelf.DONE) currentYear else null,
+            yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
+            createdAtEpochMillis = now
+        )
+
+        val st = _state.value
+        _state.value = st.copy(readingSeries = st.readingSeries + series)
+        return series.id
+    }
+
+    fun deleteReadingSeries(seriesId: Long) {
+        val st = _state.value
+        val has = st.readingSeries.any { it.id == seriesId }
+        if (!has) return
+
+        _state.value = st.copy(
+            readingSeries = st.readingSeries.filterNot { it.id == seriesId }
+        )
+    }
+
+    fun moveReadingSeriesToShelf(seriesId: Long, shelf: ReadingShelf) {
+        val st = _state.value
+        val series = st.readingSeries.firstOrNull { it.id == seriesId } ?: return
+        if (series.shelf == shelf) return
+
+        val currentYear = LocalDate.now().year
+
+        val updatedSeries = st.readingSeries.map { s ->
+            if (s.id != seriesId) {
+                s
+            } else {
+                when (shelf) {
+                    ReadingShelf.DONE -> s.copy(
+                        shelf = shelf,
+                        yearWatched = currentYear,
+                        yearAbandoned = null
+                    )
+
+                    ReadingShelf.ABANDONED -> s.copy(
+                        shelf = shelf,
+                        yearWatched = null,
+                        yearAbandoned = currentYear
+                    )
+
+                    ReadingShelf.PLANS,
+                    ReadingShelf.NOW -> s.copy(
+                        shelf = shelf,
+                        yearWatched = null,
+                        yearAbandoned = null
+                    )
+                }
+            }
+        }
+
+        _state.value = st.copy(readingSeries = updatedSeries)
+    }
+
+    fun updateReadingSeries(
+        seriesId: Long,
+        title: String? = null,
+        coverUri: String? = null,
+        clearCover: Boolean = false,
+        totalSeasons: Int? = null,
+        currentSeason: Int? = null,
+        currentEpisode: Int? = null,
+        yearWatched: Int? = null,
+        yearAbandoned: Int? = null,
+        shelf: ReadingShelf? = null,
+    ) {
+        val st = _state.value
+        val old = st.readingSeries.firstOrNull { it.id == seriesId } ?: return
+
+        val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
+        val newShelf = shelf ?: old.shelf
+        val currentYear = LocalDate.now().year
+
+        val safeTotalSeasons = (totalSeasons ?: old.totalSeasons).coerceAtLeast(1)
+        val safeCurrentSeason = (currentSeason ?: old.currentSeason).coerceIn(1, safeTotalSeasons)
+        val safeCurrentEpisode = (currentEpisode ?: old.currentEpisode).coerceAtLeast(1)
+
+        val newYearWatched = when (newShelf) {
+            ReadingShelf.DONE -> yearWatched ?: old.yearWatched ?: currentYear
+            else -> null
+        }
+
+        val newYearAbandoned = when (newShelf) {
+            ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
+            else -> null
+        }
+
+        val newCover = when {
+            clearCover -> null
+            coverUri != null -> coverUri
+            else -> old.coverUri
+        }
+
+        val updated = old.copy(
+            shelf = newShelf,
+            title = newTitle,
+            coverUri = newCover,
+            totalSeasons = safeTotalSeasons,
+            currentSeason = safeCurrentSeason,
+            currentEpisode = safeCurrentEpisode,
+            yearWatched = newYearWatched,
+            yearAbandoned = newYearAbandoned
+        )
+
+        _state.value = st.copy(
+            readingSeries = st.readingSeries.map { s -> if (s.id == seriesId) updated else s }
+        )
+    }
+
+    fun sortedReadingSeriesForShelf(shelf: ReadingShelf): List<ReadingSeries> {
+        val st = _state.value
+        val prefs = tabPrefsForShelf(st, shelf)
+        val base = st.readingSeries.filter { it.shelf == shelf }
+        return sortReadingSeries(base, prefs.sort, shelf)
+    }
+
+    private fun sortReadingSeries(
+        list: List<ReadingSeries>,
+        sort: ReadingSort,
+        shelf: ReadingShelf
+    ): List<ReadingSeries> {
+        fun s(x: String) = x.trim().lowercase(Locale.getDefault())
+
+        fun yearForShelf(series: ReadingSeries): Int {
+            return when (shelf) {
+                ReadingShelf.DONE -> series.yearWatched ?: Int.MIN_VALUE
+                ReadingShelf.ABANDONED -> series.yearAbandoned ?: Int.MIN_VALUE
+                ReadingShelf.PLANS,
+                ReadingShelf.NOW -> Int.MIN_VALUE
+            }
+        }
+
+        val comparator = when (sort.field) {
+            ReadingSortField.AUTHOR ->
+                compareBy<ReadingSeries> { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.TITLE ->
+                compareBy<ReadingSeries> { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.PAGES ->
+                compareBy<ReadingSeries> { it.totalSeasons }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.YEAR ->
+                compareBy<ReadingSeries> { yearForShelf(it) }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+
+            ReadingSortField.RELEASE_YEAR ->
+                compareBy<ReadingSeries> { Int.MIN_VALUE }
+                    .thenBy { s(it.title) }
+                    .thenBy { it.createdAtEpochMillis }
+        }
+
+        val sorted = list.sortedWith(comparator)
+        return if (sort.ascending) sorted else sorted.asReversed()
+    }
+
+    fun beginReading(bookId: Long, startedAtEpochMillis: Long = System.currentTimeMillis()): Boolean {
+        val st = _state.value
+        val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return false
+
+        if (book.shelf == ReadingShelf.PLANS) {
+            moveReadingBookToShelf(bookId, ReadingShelf.NOW)
+        }
+
+        val after = _state.value.readingBooks.firstOrNull { it.id == bookId } ?: return false
+        _activeReading.value = ActiveReading(
+            bookId = bookId,
+            startedAtEpochMillis = startedAtEpochMillis,
+            startPage = after.currentPage.coerceAtLeast(0)
+        )
+        return true
+    }
+
+    fun cancelReading() {
+        _activeReading.value = null
+    }
+
+    // Backward-compatible wrapper.
+    fun finishReading(
+        endPage: Int,
+        durationMinutes: Int,
+        finishedAtEpochMillis: Long = System.currentTimeMillis()
+    ): Boolean {
+        val active = _activeReading.value ?: return false
+        return finishReading(
+            startPage = active.startPage,
+            endPage = endPage,
+            durationMinutes = durationMinutes,
+            finishedAtEpochMillis = finishedAtEpochMillis
+        )
+    }
+
+    fun finishReading(
+        startPage: Int,
+        endPage: Int,
+        durationMinutes: Int,
+        finishedAtEpochMillis: Long = System.currentTimeMillis()
+    ): Boolean {
+        val active = _activeReading.value ?: return false
+        val st = _state.value
+        val book = st.readingBooks.firstOrNull { it.id == active.bookId } ?: return false
+
+        val pages = book.totalPages.coerceAtLeast(1)
+        val start = startPage.coerceIn(0, pages)
+        val end = endPage.coerceIn(0, pages)
+        val dur = durationMinutes.coerceAtLeast(1)
+
+        val session = ReadingSession(
+            id = newId(),
+            bookId = book.id,
+            startedAtEpochMillis = active.startedAtEpochMillis,
+            durationMinutes = dur,
+            startPage = start,
+            endPage = end,
+            createdAtEpochMillis = finishedAtEpochMillis
+        )
+
+        val updatedBooks = st.readingBooks.map { b ->
+            if (b.id == book.id) b.copy(currentPage = end.coerceIn(0, b.totalPages)) else b
+        }
+
+        _state.value = st.copy(
+            readingBooks = updatedBooks,
+            readingSessions = st.readingSessions + session
+        )
+
+        _activeReading.value = null
+        return true
+    }
+
+    fun estimateRemainingMinutes(bookId: Long): Int? {
+        val st = _state.value
+        val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return null
+        val remainingPages = (book.totalPages - book.currentPage).coerceAtLeast(0)
+        if (remainingPages == 0) return 0
+
+        val last = st.readingSessions
+            .asSequence()
+            .filter { it.bookId == bookId }
+            .maxByOrNull { it.createdAtEpochMillis }
+            ?: return null
+
+        val pagesRead = (last.endPage - last.startPage).coerceAtLeast(0)
+        val dur = last.durationMinutes.coerceAtLeast(1)
+
+        if (pagesRead <= 0) return null
+
+        val num = remainingPages.toLong() * dur.toLong()
+        val denim = pagesRead.toLong()
+        val minutes = ((num + denim - 1) / denim).toInt()
+
+        return minutes.coerceAtLeast(0)
+    }
+
+    fun estimateRemainingHours(bookId: Long): Int? {
+        val minutes = estimateRemainingMinutes(bookId) ?: return null
+        return ((minutes + 59) / 60).coerceAtLeast(0)
+    }
+
+    /* ---------------------------
+       Running plan ("On the run")
+    ---------------------------- */
 
     fun updateRunningPlanEntry(
         date: LocalDate,
         distanceKmText: String? = null,
         durationHhMmText: String? = null,
         paceText: String? = null,
-    )
-    {
+    ) {
         val st = _state.value
 
         val list = st.runningPlanEntries.toMutableList()
@@ -139,22 +929,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             paceText = if (st.runningPlanApproved) (paceText ?: base.paceText) else base.paceText,
         )
 
-        val updated = updatedRaw
-
         val nowEmpty =
-            updated.distanceKmText.isBlank() && updated.durationHhMmText.isBlank() && updated.paceText.isBlank()
+            updatedRaw.distanceKmText.isBlank() && updatedRaw.durationHhMmText.isBlank() && updatedRaw.paceText.isBlank()
 
-        // If user erased everything -> remove entry and delete calendar task if present.
         if (nowEmpty) {
-            if (updated.taskId != null) deleteTask(updated.taskId)
+            if (updatedRaw.taskId != null) deleteTask(updatedRaw.taskId)
             if (idx >= 0) list.removeAt(idx)
         } else {
-            if (idx >= 0) list[idx] = updated else list.add(updated)
+            if (idx >= 0) list[idx] = updatedRaw else list.add(updatedRaw)
         }
 
         _state.value = _state.value.copy(runningPlanEntries = list.sortedBy { it.date })
 
-        // Keep calendar task title in sync after approval.
         if (st.runningPlanApproved) {
             val after = list.firstOrNull { it.date == date } ?: return
             val title = buildRunningTaskTitle(after)
@@ -163,7 +949,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun approveRunningPlan() {
-        // prune old incomplete first
         pruneRunningPlanNow()
 
         val before = _state.value
@@ -233,12 +1018,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun isRunningEntryIncomplete(e: RunningPlanEntry): Boolean {
         val km = parseKm(e.distanceKmText)
-        // Four digits -> total minutes
         val minutes = parseDurationToMinutes(e.durationHhMmText)
         val minutesOk = minutes != null && minutes > 0
         val paceDigits = e.paceText.filter { it.isDigit() }
         val paceOk = paceDigits.length == 4
-        // Completed entry requires distance + time + pace
         return km == null || !minutesOk || !paceOk
     }
 
@@ -257,18 +1040,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val digitsAll = raw.filter { it.isDigit() }
         if (digitsAll.isBlank()) return null
 
-        // Let user type "80" for 80 minutes too.
         if (digitsAll.length <= 2) {
             return digitsAll.toIntOrNull()?.coerceAtLeast(0)
         }
 
-        // If user typed 3 digits (e.g., 123), treat as 01:23.
         val d = digitsAll.take(4).padStart(4, '0')
 
         val hh = d.substring(0, 2).toIntOrNull() ?: return null
         val mm = d.substring(2, 4).toIntOrNull() ?: return null
 
-        // If mm is invalid (e.g., "0080"), interpret as total minutes ("80").
         return if (mm in 0..59) {
             (hh * 60 + mm).coerceAtLeast(0)
         } else {
@@ -292,10 +1072,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private var nextId: Long = 1L
     private fun newId(): Long = nextId++
 
-
     private fun nextTaskOrderForDate(date: LocalDate?): Int =
         (_state.value.tasks.filter { it.date == date }.maxOfOrNull { it.order } ?: -1) + 1
-
 
     private fun nextSubtaskOrderFor(taskId: Long): Int =
         (_state.value.subtasks.filter { it.taskId == taskId }.maxOfOrNull { it.order } ?: -1) + 1
@@ -324,7 +1102,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             tasks[idx] = tasks[idx].copy(hasSubtasks = has)
         }
     }
-
 
     /* ---------------------------
        Recurrence (generated instances)
@@ -400,14 +1177,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return t
         }
 
-        // Templates are tasks that live on some date and are not generated instances.
         val dateTemplates = cur.tasks.filter { it.originTaskId == null && it.date != null }
 
         for (t in dateTemplates) {
             val anchor = t.date ?: continue
             val subs = subtasksByTask[t.id].orEmpty().filter { it.originSubtaskId == null }
 
-            // 1) repeating task -> clone task + all its subtasks
             val taskRule = t.repeatRule
             if (taskRule != null) {
                 var d = start
@@ -433,7 +1208,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
-            // 2) repeating subtasks -> ensure task clone exists and add only that subtask
             for (s in subs) {
                 val rule = s.repeatRule ?: continue
                 var d = start
@@ -458,7 +1232,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         _state.value = cur.copy(tasks = newTasks, subtasks = newSubtasks)
     }
-
 
     fun setTaskRepeatRule(taskId: Long, rule: RepeatRule?) {
         val st = _state.value
@@ -488,6 +1261,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         colorArgb: Long? = null,
         hasSubtasks: Boolean = false,
         repeatRule: RepeatRule? = null,
+        linkedManualCounterId: Long? = null,
     ): Long {
         val id = newId()
         val task = Task(
@@ -498,12 +1272,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             description = description,
             colorArgb = colorArgb,
             hasSubtasks = hasSubtasks,
+            linkedManualCounterId = linkedManualCounterId,
             repeatRule = repeatRule,
         )
         _state.value = _state.value.copy(tasks = _state.value.tasks + task)
         return id
     }
-
 
     fun updateTaskDescription(taskId: Long, description: String) {
         val clean = description.trim()
@@ -518,7 +1292,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val cur = _state.value
         val victim = cur.tasks.firstOrNull { it.id == taskId } ?: return
 
-        // 1) If deleting a generated instance -> suppress regeneration for that date and really delete it.
         if (victim.originTaskId != null && victim.date != null) {
             val key = "T:${victim.originTaskId}:${victim.date.toEpochDay()}"
             val newTasks = cur.tasks.filterNot { it.id == taskId }
@@ -533,16 +1306,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
 
-
-        // 2) If deleting a template recurring task (originTaskId == null && repeatRule != null)
-        // -> treat as "delete only this day": keep template, just hide it for its own date.
         if (victim.originTaskId == null && victim.repeatRule != null && victim.date != null) {
             suppress("T:${victim.id}:${victim.date.toEpochDay()}")
-            // IMPORTANT: do not remove template task/subtasks, they define the series.
             return
         }
 
-        // 3) Normal delete
         val newTasks = cur.tasks.filterNot { it.id == taskId }
         val newSubs = cur.subtasks.filterNot { it.taskId == taskId }
         _state.value = cur.copy(tasks = newTasks, subtasks = newSubs)
@@ -556,13 +1324,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val idsToDelete = mutableSetOf<Long>()
 
-        // Delete the template itself only if it is on/after fromDate (i.e. "starting today").
         val td = template.date
         if (td == null || !td.isBefore(fromDate)) {
             idsToDelete.add(template.id)
         }
 
-        // Delete already generated instances on/after fromDate.
         cur.tasks.filter { it.originTaskId == templateTaskId }.forEach { inst ->
             val d = inst.date
             if (d == null || !d.isBefore(fromDate)) {
@@ -572,7 +1338,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val newTasks = cur.tasks
             .filterNot { it.id in idsToDelete }
-            // If template is in the past, keep it as history but stop repeating.
             .map { t -> if (t.id == templateTaskId) t.copy(repeatRule = null) else t }
 
         val newSubs = cur.subtasks.filterNot { it.taskId in idsToDelete }
@@ -604,8 +1369,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             .filterNot { it.id in subIdsToDelete }
             .map { s -> if (s.id == templateSubtaskId) s.copy(repeatRule = null) else s }
 
-        // If the parent task itself is NOT repeating, we can delete empty generated task instances
-        // that existed only to host this repeating subtask.
         val parentIsRepeating = parentTemplateTask.repeatRule != null
         if (!parentIsRepeating) {
             val remainingByTask = newSubs.groupBy { it.taskId }
@@ -631,7 +1394,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         refreshHasSubtasks()
     }
-
 
     fun rescheduleTaskToDate(taskId: Long, newDate: LocalDate?) {
         val cur = _state.value
@@ -659,6 +1421,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             description = srcTask.description,
             colorArgb = srcTask.colorArgb,
             hasSubtasks = srcSubs.isNotEmpty(),
+            linkedManualCounterId = srcTask.linkedManualCounterId,
             repeatRule = null
         )
 
@@ -670,7 +1433,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
     }
-
 
     /* ---------------------------
        Subtasks
@@ -695,7 +1457,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return id
     }
 
-
     fun updateSubtaskDescription(subtaskId: Long, description: String) {
         val clean = description.trim()
         if (clean.isBlank()) return
@@ -709,7 +1470,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val cur = _state.value
         val victim = cur.subtasks.firstOrNull { it.id == subtaskId }
 
-        // If deleting a generated instance, suppress it for that date.
         if (victim?.originSubtaskId != null) {
             val parentTask = cur.tasks.firstOrNull { it.id == victim.taskId }
             val epoch = parentTask?.date?.toEpochDay()
@@ -722,7 +1482,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = cur.copy(subtasks = newSubs)
         refreshHasSubtasks()
 
-        // Recompute parent task done state after deletion, but only if it still has subtasks.
         val taskId = victim?.taskId ?: return
         val remaining = newSubs.filter { it.taskId == taskId }
         if (remaining.isNotEmpty()) {
@@ -745,6 +1504,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             description = parent.description,
             colorArgb = parent.colorArgb,
             hasSubtasks = true,
+            linkedManualCounterId = parent.linkedManualCounterId,
             repeatRule = null
         )
 
@@ -769,7 +1529,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         refreshHasSubtasks()
         recomputeTaskDoneFromSubtasks()
     }
-
 
     fun moveTaskUp(taskId: Long) {
         val cur = _state.value
@@ -814,7 +1573,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val newTasks = cur.tasks.map { t -> idToOrder[t.id]?.let { t.copy(order = it) } ?: t }
         _state.value = cur.copy(tasks = newTasks)
     }
-
 
     fun moveSubtaskUp(subtaskId: Long) {
         val cur = _state.value
@@ -864,14 +1622,94 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         recomputeTaskDoneFromSubtasks()
     }
 
+    fun addManualCounter(title: String, balance: Int) {
+        val t = title.trim()
+        if (t.isEmpty()) return
+        val cur = _state.value
+        val c = ManualCounter(id = newId(), title = t, balance = balance)
+        _state.value = cur.copy(counters = cur.counters + c)
+        persistNow()
+    }
+
+    fun addDateRangeCounter(title: String, startDate: LocalDate, endDate: LocalDate) {
+        val t = title.trim()
+        if (t.isEmpty()) return
+        val cur = _state.value
+        val c = DateRangeCounter(id = newId(), title = t, startDate = startDate, endDate = endDate)
+        _state.value = cur.copy(counters = cur.counters + c)
+        persistNow()
+    }
+
+    fun updateManualCounter(counterId: Long, title: String, balance: Int) {
+        val t = title.trim()
+        if (t.isEmpty()) return
+        val cur = _state.value
+        val updated = cur.counters.map { c ->
+            if (c is ManualCounter && c.id == counterId) c.copy(title = t, balance = balance) else c
+        }
+        _state.value = cur.copy(counters = updated)
+        persistNow()
+    }
+
+    fun updateDateRangeCounter(counterId: Long, title: String, startDate: LocalDate, endDate: LocalDate) {
+        val t = title.trim()
+        if (t.isEmpty()) return
+        val cur = _state.value
+        val updated = cur.counters.map { c ->
+            if (c is DateRangeCounter && c.id == counterId) c.copy(title = t, startDate = startDate, endDate = endDate) else c
+        }
+        _state.value = cur.copy(counters = updated)
+        persistNow()
+    }
+
+    fun deleteCounter(counterId: Long) {
+        val cur = _state.value
+        val newCounters = cur.counters.filterNot { it.id == counterId }
+        val newTasks = cur.tasks.map { t ->
+            if (t.linkedManualCounterId == counterId) t.copy(linkedManualCounterId = null) else t
+        }
+        _state.value = cur.copy(counters = newCounters, tasks = newTasks)
+        persistNow()
+    }
+
+    private fun persistNow() {
+    }
 
     /* ---------------------------
        Done flags sync (Task <-> Subtasks)
     ---------------------------- */
 
+    fun setTaskLinkedManualCounter(taskId: Long, newCounterId: Long?) {
+        val cur = _state.value
+        val task = cur.tasks.firstOrNull { it.id == taskId } ?: return
+        val oldCounterId = task.linkedManualCounterId
+        if (oldCounterId == newCounterId) return
+
+        var newCounters = cur.counters
+
+        if (task.isDone) {
+            if (oldCounterId != null) {
+                newCounters = applyManualCounterDelta(newCounters, oldCounterId, +1)
+            }
+            if (newCounterId != null) {
+                newCounters = applyManualCounterDelta(newCounters, newCounterId, -1)
+            }
+        }
+
+        val newTasks = cur.tasks.map { t ->
+            if (t.id == taskId) t.copy(linkedManualCounterId = newCounterId) else t
+        }
+
+        _state.value = cur.copy(
+            tasks = newTasks,
+            counters = newCounters
+        )
+    }
+
     fun toggleTaskDone(taskId: Long) {
         val cur = _state.value
         val task = cur.tasks.firstOrNull { it.id == taskId } ?: return
+
         val newDone = !task.isDone
 
         val newTasks = cur.tasks.map { t ->
@@ -887,18 +1725,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        _state.value = cur.copy(tasks = newTasks, subtasks = newSubs)
+        val counterId = task.linkedManualCounterId
+        val newCounters =
+            if (counterId != null) applyManualCounterDelta(cur.counters, counterId, if (newDone) -1 else +1)
+            else cur.counters
+
+        _state.value = cur.copy(
+            tasks = newTasks,
+            subtasks = newSubs,
+            counters = newCounters
+        )
     }
 
     fun toggleSubtaskDone(subtaskId: Long) {
         val cur = _state.value
-        val st = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
+        val st0 = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
+
+        val taskId = st0.taskId
+        val task = cur.tasks.firstOrNull { it.id == taskId } ?: return
+        val oldDone = task.isDone
 
         val newSubs = cur.subtasks.map { s ->
             if (s.id == subtaskId) s.copy(isDone = !s.isDone) else s
         }
 
-        val taskId = st.taskId
         val related = newSubs.filter { it.taskId == taskId }
         val allDone = related.isNotEmpty() && related.all { it.isDone }
 
@@ -906,7 +1756,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             if (t.id == taskId) t.copy(isDone = allDone) else t
         }
 
-        _state.value = cur.copy(tasks = newTasks, subtasks = newSubs)
+        val counterId = task.linkedManualCounterId
+        val newCounters =
+            if (counterId != null && oldDone != allDone) {
+                applyManualCounterDelta(cur.counters, counterId, if (allDone) -1 else +1)
+            } else {
+                cur.counters
+            }
+
+        _state.value = cur.copy(
+            tasks = newTasks,
+            subtasks = newSubs,
+            counters = newCounters
+        )
     }
 
     private fun recomputeTaskDoneFromSubtasks() {
@@ -942,7 +1804,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         _state.value = cur.copy(tasks = newTasks, subtasks = newSubs)
     }
-
 
     fun setSubtaskColor(subtaskId: Long, colorArgb: Long?) {
         val updated = _state.value.subtasks.map { s ->
@@ -994,6 +1855,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         _state.value = cur.copy(anthropometry = newList)
     }
+
     /* ---------------------------
        Calorimeter
     ---------------------------- */
@@ -1027,5 +1889,4 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val cur = _state.value
         _state.value = cur.copy(foodLog = cur.foodLog.filterNot { it.id == entryId })
     }
-
 }

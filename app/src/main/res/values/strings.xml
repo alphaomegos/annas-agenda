@@ -1,42 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- App -->
     <string name="app_name">Anna\'s Agenda</string>
-    <string name="choose_language">Choose language</string>
+    <string name="coming_soon">Coming soon</string>
+
+    <!-- Common actions -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
+    <string name="delete">Delete</string>
+    <string name="remove">Remove</string>
+    <string name="back">Back</string>
+    <string name="pick_date">Pick date</string>
+    <string name="selected_label">Selected:</string>
+    <string name="invalid_number">Invalid number</string>
+
+    <!-- Main menu -->
     <string name="calendar">Calendar</string>
     <string name="create_task">Create task</string>
+    <string name="someday_title">Someday</string>
+    <string name="recurring_tasks_title">Repeating tasks</string>
+    <string name="anthropometry_title">Anthropometry</string>
+    <string name="calorimeter_title">Calorimeter</string>
+    <string name="running_title">On the run</string>
+    <string name="counters_title">Counters</string>
+    <string name="menu_reading">Media library</string>
+
+    <!-- Language -->
+    <string name="choose_language">Choose language</string>
     <string name="language_english">English</string>
     <string name="language_russian">Russian</string>
+    <string name="language_serbian">Serbian (Latin)</string>
     <string name="language_kiribati">Kiribati</string>
-    <string name="create_no_date">No date</string>
-    <string name="create_today">Today</string>
-    <string name="create_tomorrow">Tomorrow</string>
-    <string name="someday_title">Someday</string>
-    <string name="someday_empty">No someday lists yet</string>
-    <string name="back">Back</string>
-    <string name="schedule_today">Today</string>
-    <string name="schedule_tomorrow">Tomorrow</string>
+
+    <!-- Data / backup -->
+    <string name="data_menu">Data</string>
+    <string name="export_backup_json">Export backup (JSON)</string>
+    <string name="import_backup_json">Import backup (JSON)</string>
+    <string name="reset_data_menu">Reset data</string>
+    <string name="reset_title">Reset data?</string>
+    <string name="reset_text">This will delete all tasks and settings.</string>
+    <string name="toast_exported">Exported</string>
+    <string name="toast_export_failed">Export failed</string>
+    <string name="toast_imported">Imported</string>
+    <string name="toast_import_failed">Import failed</string>
+    <string name="toast_invalid_backup">Invalid backup file</string>
+    <string name="toast_reset_done">Reset done</string>
+
+    <!-- Calendar -->
     <string name="calendar_title">Calendar</string>
+    <string name="prev_month">Prev</string>
+    <string name="next_month">Next</string>
     <string name="prev_day">Prev</string>
     <string name="next_day">Next</string>
     <string name="today">Today</string>
-    <string name="move_to_someday">Move to Someday</string>
-    <string name="reschedule">Reschedule</string>
-    <string name="ok">OK</string>
-    <string name="cancel">Cancel</string>
-    <string name="prev_month">Prev</string>
-    <string name="next_month">Next</string>
+    <string name="schedule_today">Today</string>
+    <string name="schedule_tomorrow">Tomorrow</string>
+    <string name="create_task_for_this_day">Create task for this day</string>
+    <string name="no_tasks_for_this_day">No tasks for this day</string>
+    <string name="tasks_header">Tasks</string>
+    <string name="someday_count">Someday: %1$d</string>
+    <string name="repeating_tasks_header">Repeating tasks</string>
+    <string name="repeating_subtasks_header">Repeating subtasks</string>
+
+    <!-- Task creation / editing -->
     <string name="new_task_title">Create task</string>
     <string name="task_description_label">Task description</string>
+    <string name="when_label">When</string>
+    <string name="create_no_date">No date</string>
+    <string name="create_today">Today</string>
+    <string name="create_tomorrow">Tomorrow</string>
     <string name="someday_tag">Someday</string>
+    <string name="save_task">Save</string>
+    <string name="task_color">Task color</string>
+    <string name="subtask_color">Subtask color</string>
+    <string name="move_task">Move task</string>
+    <string name="move_to_someday">Move to Someday</string>
+    <string name="reschedule">Reschedule</string>
+    <string name="repeat">Repeat</string>
+    <string name="copy_task">Copy task</string>
+
+    <!-- Subtasks -->
     <string name="subtasks_title">Subtasks</string>
     <string name="no_subtasks_yet">No subtasks yet</string>
     <string name="subtask_label">Subtask %1$d</string>
     <string name="add_subtask">Add subtask</string>
-    <string name="save_task">Save</string>
     <string name="move_subtask">Move subtask to…</string>
-    <string name="task_color">Task color</string>
-    <string name="subtask_color">Subtask color</string>
-    <string name="remove">Remove</string>
+    <string name="copy_subtask">Copy subtask</string>
+    <string name="toast_copied">Copied</string>
+
+    <!-- Repeating tasks -->
+    <string name="recurring_tasks_empty">No repeating tasks yet.</string>
+    <string name="recurring_tasks_no_date">No date</string>
+    <string name="recurring_tasks_starts_line">Starts: %1$s • %2$s</string>
+    <string name="recurring_tasks_delete_from_today">Delete from today</string>
+    <string name="delete_repeating_task_title">Delete repeating task?</string>
+    <string name="delete_repeating_task_text">This will remove the task from today and all future days. Past days will stay as history.</string>
+    <string name="delete_repeating_subtask_title">Delete repeating subtask?</string>
+    <string name="delete_repeating_subtask_text">This will remove the subtask from today and all future days. Past days will stay as history.</string>
+
+    <!-- Repeat dialog -->
+    <string name="repeat_dialog_title">Repeat</string>
+    <string name="repeat_enabled">Enabled</string>
+    <string name="repeat_freq_daily">Daily</string>
+    <string name="repeat_freq_weekly">Weekly</string>
+    <string name="repeat_freq_monthly">Monthly</string>
+    <string name="repeat_interval">Interval</string>
+    <string name="repeat_weekdays">Days of week</string>
+    <string name="repeat_day_of_month">Day of month</string>
     <string name="repeat_daily_every_day">Every day</string>
     <plurals name="repeat_daily_every_n_days">
         <item quantity="one">Every %1$d day</item>
@@ -52,55 +125,16 @@
         <item quantity="one">Every %1$d month on day %2$d</item>
         <item quantity="other">Every %1$d months on day %2$d</item>
     </plurals>
-    <string name="recurring_tasks_title">Repeating tasks</string>
-    <string name="recurring_tasks_empty">No repeating tasks yet.</string>
-    <string name="recurring_tasks_no_date">No date</string>
-    <string name="recurring_tasks_starts_line">Starts: %1$s • %2$s</string>
-    <string name="recurring_tasks_delete_from_today">Delete from today</string>
-    <string name="repeat_dialog_title">Repeat</string>
-    <string name="repeat_enabled">Enabled</string>
-    <string name="repeat_freq_daily">Daily</string>
-    <string name="repeat_freq_weekly">Weekly</string>
-    <string name="repeat_freq_monthly">Monthly</string>
-    <string name="repeat_interval">Interval</string>
-    <string name="repeat_weekdays">Days of week</string>
-    <string name="repeat_day_of_month">Day of month</string>
-    <string name="toast_exported">Exported</string>
-    <string name="toast_export_failed">Export failed</string>
-    <string name="toast_imported">Imported</string>
-    <string name="toast_import_failed">Import failed</string>
-    <string name="toast_invalid_backup">Invalid backup file</string>
-    <string name="toast_reset_done">Reset done</string>
-    <string name="reset_title">Reset data?</string>
-    <string name="reset_text">This will delete all tasks and settings.</string>
-    <string name="data_menu">Data</string>
-    <string name="export_backup_json">Export backup (JSON)</string>
-    <string name="import_backup_json">Import backup (JSON)</string>
-    <string name="reset_data_menu">Reset data</string>
-    <string name="delete_repeating_task_title">Delete repeating task?</string>
-    <string name="delete_repeating_task_text">This will remove the task from today and all future days. Past days will stay as history.</string>
-    <string name="when_label">When</string>
-    <string name="pick_date">Pick date</string>
-    <string name="selected_label">Selected:</string>
-    <string name="create_task_for_this_day">Create task for this day</string>
-    <string name="no_tasks_for_this_day">No tasks for this day</string>
-    <string name="tasks_header">Tasks</string>
-    <string name="someday_count">Someday: %1$d</string>
-    <string name="move_task">Move task</string>
-    <string name="repeat">Repeat</string>
-    <string name="repeating_tasks_header">Repeating tasks</string>
-    <string name="repeating_subtasks_header">Repeating subtasks</string>
-    <string name="delete_repeating_subtask_title">Delete repeating subtask?</string>
-    <string name="delete_repeating_subtask_text">This will remove the subtask from today and all future days. Past days will stay as history.</string>
-    <string name="copy_task">Copy task</string>
-    <string name="copy_subtask">Copy subtask</string>
-    <string name="toast_copied">Copied</string>
-    <string name="language_serbian">Serbian (Latin)</string>
-    <string name="anthropometry_title">Anthropometry</string>
-    <string name="coming_soon">Coming soon</string>
+
+    <!-- Someday -->
+    <string name="someday_empty">No someday lists yet</string>
+
+    <!-- Anthropometry -->
     <string name="anthropometry_save">Save</string>
     <string name="anthropometry_saved">Saved</string>
     <string name="anthropometry_hint">Leave empty if not measured. Use dot or comma; will be saved with 1 decimal.</string>
+    <string name="anthropometry_empty">No anthropometry data yet</string>
+    <string name="enter_data">Enter data</string>
     <string name="anthro_arm_cm">Arm, cm</string>
     <string name="anthro_chest_cm">Chest, cm</string>
     <string name="anthro_under_chest_cm">Under chest, cm</string>
@@ -109,11 +143,10 @@
     <string name="anthro_hips_cm">Hips, cm</string>
     <string name="anthro_thigh_cm">Thigh, cm</string>
     <string name="anthro_weight_kg">Weight, kg</string>
-    <string name="anthropometry_empty">No anthropometry data yet</string>
-    <string name="enter_data">Enter data</string>
     <string name="cm_short">cm</string>
     <string name="kg_short">kg</string>
-    <string name="calorimeter_title">Calorimeter</string>
+
+    <!-- Calorimeter -->
     <string name="kcal_short">kcal</string>
     <string name="calorimeter_daily_goal">Daily goal</string>
     <string name="calorimeter_set_goal">Set goal</string>
@@ -127,7 +160,8 @@
     <string name="calorimeter_month_projection">Potential change (30 days)</string>
     <string name="calorimeter_no_eaten_today">Nothing yet</string>
     <string name="calorimeter_show_all_n">Show all (%1$d)</string>
-    <string name="running_title">On the run</string>
+
+    <!-- Running -->
     <string name="running_col_date">Date</string>
     <string name="running_col_distance">Distance</string>
     <string name="running_col_time">Time</string>
@@ -146,4 +180,126 @@
     <string name="running_empty">No rows</string>
     <string name="running_task_km">Workout %1$s km</string>
     <string name="running_task_minutes">Workout %1$d minutes</string>
+
+    <!-- Counters -->
+    <string name="attach_counter">Attach counter</string>
+    <string name="counter_not_attached">No counter</string>
+    <string name="no_counter">No counter</string>
+    <string name="no_counters_yet">No counters yet</string>
+    <string name="add_counter">Add counter</string>
+    <string name="counter_type_date_range">Date counter</string>
+    <string name="counter_type_manual">Manual counter</string>
+    <string name="create_manual_counter">Create manual counter</string>
+    <string name="create_date_counter">Create date counter</string>
+    <string name="edit_counter">Edit counter</string>
+    <string name="counter_title">Title</string>
+    <string name="balance">Balance</string>
+    <string name="start_date_iso">Start date (YYYY-MM-DD)</string>
+    <string name="end_date_iso">End date (YYYY-MM-DD)</string>
+    <string name="invalid_date_range_hint">Enter valid dates. Start must be before end.</string>
+    <string name="manual_remaining_fmt">Remaining %1$d</string>
+    <string name="date_remaining_fmt">Remaining %1$s (%2$d%%)</string>
+    <string name="attached_counter_fmt">Counter: %1$s</string>
+    <string name="detach_counter">Detach</string>
+
+    <!-- Media library: shared -->
+    <string name="reading_title">Media library</string>
+    <string name="reading_empty">No items yet</string>
+    <string name="reading_nothing_found">Nothing found</string>
+    <string name="reading_search_label">Search by title, author, or year</string>
+    <string name="reading_tab_plans">Plans</string>
+    <string name="reading_tab_now">Now</string>
+    <string name="reading_tab_done">Done</string>
+    <string name="reading_tab_abandoned">Abandoned</string>
+    <string name="reading_media_book">Book</string>
+    <string name="reading_media_movie">Movie</string>
+    <string name="reading_media_series">Series</string>
+    <string name="reading_menu_toggle_view">Change view</string>
+    <string name="reading_view_list">List</string>
+    <string name="reading_menu_sort">Sort</string>
+    <string name="reading_menu_delete">Delete</string>
+    <string name="reading_menu_move_to_plans">Move to Plans</string>
+    <string name="reading_menu_move_to_now">Move to Now</string>
+    <string name="reading_menu_move_to_done">Move to Done</string>
+    <string name="reading_menu_move_to_abandoned">Move to Abandoned</string>
+    <string name="reading_add_item_title">Add item</string>
+    <string name="reading_field_title_required">Title (required)</string>
+    <string name="reading_note_year_auto">Note: year will be set automatically</string>
+    <string name="reading_action_add">Add</string>
+    <string name="reading_action_apply">Apply</string>
+    <string name="reading_sort_title">Sort</string>
+    <string name="reading_sort_field_author">Author</string>
+    <string name="reading_sort_field_title">Title</string>
+    <string name="reading_sort_field_pages">Pages</string>
+    <string name="reading_sort_field_year">Year</string>
+    <string name="reading_sort_field_release_year">Release year</string>
+    <string name="reading_sort_ascending">Ascending</string>
+    <string name="reading_sort_descending">Descending</string>
+    <string name="reading_year">Year: %1$d</string>
+    <string name="reading_year_group_header">%1$s — %2$d</string>
+    <string name="reading_toast_invalid_input">Invalid input</string>
+
+    <!-- Media library: book / reading session -->
+    <string name="reading_button_read">Read</string>
+    <string name="reading_remaining_unknown">Remaining: —</string>
+    <string name="reading_remaining_hours">Remaining: %1$d h</string>
+    <string name="reading_field_pages_required">Pages (required)</string>
+    <string name="reading_field_author">Author</string>
+    <string name="reading_session_title">Reading</string>
+    <string name="reading_session_finish">Finish reading</string>
+    <string name="reading_session_unknown_book">Unknown book</string>
+    <string name="reading_session_no_active">No active reading session</string>
+    <string name="reading_session_back">Back</string>
+    <string name="reading_session_finish_title">Finish reading</string>
+    <string name="reading_session_stop_page_question">On which page did you stop?</string>
+    <string name="reading_session_page_label">Page</string>
+    <string name="reading_session_duration_label">Duration (minutes)</string>
+    <string name="reading_session_total_pages_hint">Total pages: %1$d</string>
+    <string name="reading_session_start_page_label">Started at page</string>
+    <string name="reading_session_save">Save</string>
+    <string name="reading_session_invalid_input">Invalid input</string>
+    <string name="reading_session_invalid_page">Page is out of range</string>
+    <string name="reading_session_save_failed">Could not save session</string>
+
+    <!-- Media library: book details -->
+    <string name="reading_book_title">Book</string>
+    <string name="reading_book_not_found">Book not found</string>
+    <string name="reading_book_cover_set">Cover set</string>
+    <string name="reading_book_field_title_required">Title (required)</string>
+    <string name="reading_book_field_author">Author</string>
+    <string name="reading_book_field_pages_required">Pages (required)</string>
+    <string name="reading_book_field_current_page">Current page</string>
+    <string name="reading_book_field_shelf">Shelf</string>
+    <string name="reading_book_field_year_read">Year read</string>
+    <string name="reading_book_field_year_abandoned">Year abandoned</string>
+    <string name="reading_book_invalid_input">Please fill in the book correctly</string>
+    <string name="reading_book_done">Done</string>
+    <string name="reading_book_delete_title">Delete book?</string>
+    <string name="reading_book_delete_text">Delete this book and all its sessions?</string>
+    <string name="reading_book_choose_cover">Choose cover</string>
+    <string name="reading_book_remove_cover">Remove cover</string>
+
+    <!-- Media library: movie -->
+    <string name="reading_movie_title">Movie</string>
+    <string name="reading_movie_not_found">Movie not found</string>
+    <string name="reading_movie_invalid_input">Please fill in the movie correctly</string>
+    <string name="reading_movie_field_release_year">Release year</string>
+    <string name="reading_movie_field_translation">Translation</string>
+    <string name="reading_movie_field_year_watched">Year watched</string>
+    <string name="reading_movie_done">Done</string>
+    <string name="reading_movie_delete_title">Delete movie?</string>
+    <string name="reading_movie_delete_text">This movie will be deleted permanently.</string>
+
+    <!-- Media library: series -->
+    <string name="reading_field_total_seasons">Total seasons</string>
+    <string name="reading_field_current_season">Current season</string>
+    <string name="reading_field_current_episode">Current episode</string>
+    <string name="reading_series_progress">S%1$d E%2$d / %3$d</string>
+    <string name="reading_series_title">Series</string>
+    <string name="reading_series_not_found">Series not found</string>
+    <string name="reading_series_invalid_input">Please fill in the series correctly</string>
+    <string name="reading_series_field_year_watched">Year watched</string>
+    <string name="reading_series_done">Done</string>
+    <string name="reading_series_delete_title">Delete series?</string>
+    <string name="reading_series_delete_text">This series will be deleted permanently.</string>
 </resources>
