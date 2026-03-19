@@ -69,8 +69,8 @@ fun LanguageScreen(onBack: () -> Unit) {
                     title = stringResource(R.string.language_english),
                     onClick = {
                         setAppLanguage(ctx, "en")
-                        activity?.recreate()
                         onBack()
+                        activity?.recreate()
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -81,8 +81,8 @@ fun LanguageScreen(onBack: () -> Unit) {
                     title = stringResource(R.string.language_russian),
                     onClick = {
                         setAppLanguage(ctx, "ru")
-                        activity?.recreate()
                         onBack()
+                        activity?.recreate()
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -101,8 +101,8 @@ fun LanguageScreen(onBack: () -> Unit) {
                     title = stringResource(R.string.language_serbian),
                     onClick = {
                         setAppLanguage(ctx, AppLanguages.SR_LATN)
-                        activity?.recreate()
                         onBack()
+                        activity?.recreate()
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -113,8 +113,8 @@ fun LanguageScreen(onBack: () -> Unit) {
                     title = stringResource(R.string.language_kiribati),
                     onClick = {
                         setAppLanguage(ctx, "gil")
-                        activity?.recreate()
                         onBack()
+                        activity?.recreate()
                     },
                     modifier = Modifier
                         .weight(1f)

@@ -260,4 +260,9 @@
     <string name="reading_series_done">I toki</string>
     <string name="reading_series_delete_title">Kamaucu te tairiki n te tiibo?</string>
     <string name="reading_series_delete_text">E na kamaucu te tairiki n te tiibo aio n aki kona ni koki.</string>
+    <string name="main_menu_show_all">Kotaki</string>
+    <string name="main_menu_hide">Kuna</string>
+    <string name="reading_sort_field_release_year">Ririki n te karaoa</string>
+    <string name="reading_movie_field_release_year">Ririki n te karaoa</string>
+    <string name="reading_movie_field_translation">Ranibweh</string>
 </resources>

@@ -7,23 +7,26 @@ import android.os.Build
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.OutputStreamWriter
+import java.nio.charset.StandardCharsets
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+
+const val BACKUP_APP_STATE_ENTRY_NAME = "app_state.json"
+const val BACKUP_META_ENTRY_NAME = "backup_meta.json"
+private const val BACKUP_FORMAT_VERSION = 1
 
 suspend fun writeBackupToDocuments(
     context: Context,
     json: String,
-    fileName: String = "annas_agenda_backup.json",
+    coverFiles: List<StoredCoverFile> = emptyList(),
+    fileName: String = "annas_agenda_backup.zip",
 ) = withContext(Dispatchers.IO) {
-
-    // Works best on Android 10+ (API 29+).
     if (Build.VERSION.SDK_INT < 29) return@withContext
 
     val resolver = context.contentResolver
     val relativePath = "Documents/AnnasAgenda/"
-
     val collection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
-    // Try to find existing file and overwrite it
     val existingUri = resolver.query(
         collection,
         arrayOf(MediaStore.MediaColumns._ID),
@@ -34,19 +37,82 @@ suspend fun writeBackupToDocuments(
         if (c.moveToFirst()) {
             val id = c.getLong(0)
             ContentUris.withAppendedId(collection, id)
-        } else null
+        } else {
+            null
+        }
     }
 
     val uri = existingUri ?: run {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+            put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
             put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
         }
         resolver.insert(collection, values) ?: return@withContext
     }
 
-    resolver.openOutputStream(uri, "wt")?.use { os ->
-        OutputStreamWriter(os).use { it.write(json) }
+    resolver.openOutputStream(uri, "w")?.use { rawOut ->
+        ZipOutputStream(rawOut).use { zip ->
+            writeZipStringEntry(
+                zip = zip,
+                entryName = BACKUP_APP_STATE_ENTRY_NAME,
+                text = json
+            )
+
+            writeZipStringEntry(
+                zip = zip,
+                entryName = BACKUP_META_ENTRY_NAME,
+                text = buildBackupMetaJson(
+                    coverCount = coverFiles.size
+                )
+            )
+
+            coverFiles
+                .sortedBy { it.ref }
+                .forEach { stored ->
+                    val entryName = zipEntryNameForCoverRef(stored.ref) ?: return@forEach
+                    val bytes = runCatching { stored.file.readBytes() }.getOrNull() ?: return@forEach
+                    writeZipBytesEntry(
+                        zip = zip,
+                        entryName = entryName,
+                        bytes = bytes
+                    )
+                }
+        }
     }
+}
+
+private fun buildBackupMetaJson(
+    coverCount: Int,
+): String {
+    return """
+        {
+          "format": "annas_agenda_backup",
+          "version": $BACKUP_FORMAT_VERSION,
+          "appStateEntry": "$BACKUP_APP_STATE_ENTRY_NAME",
+          "coverCount": $coverCount
+        }
+    """.trimIndent()
+}
+
+private fun writeZipStringEntry(
+    zip: ZipOutputStream,
+    entryName: String,
+    text: String,
+) {
+    writeZipBytesEntry(
+        zip = zip,
+        entryName = entryName,
+        bytes = text.toByteArray(StandardCharsets.UTF_8)
+    )
+}
+
+private fun writeZipBytesEntry(
+    zip: ZipOutputStream,
+    entryName: String,
+    bytes: ByteArray,
+) {
+    zip.putNextEntry(ZipEntry(entryName))
+    zip.write(bytes)
+    zip.closeEntry()
 }

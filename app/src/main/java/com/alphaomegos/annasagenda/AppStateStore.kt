@@ -208,6 +208,7 @@ private data class AppStateDto(
     val suppressedRecurrences: List<String> = emptyList(),
 
     val anthropometry: List<AnthropometryDto> = emptyList(),
+    val anthropometryEnabledFieldIds: List<String> = emptyList(),
 
     val calorieGoalChanges: List<CalorieGoalChangeDto> = emptyList(),
     val foodLog: List<FoodEntryDto> = emptyList(),
@@ -216,8 +217,9 @@ private data class AppStateDto(
     val runningPlanEntries: List<RunningPlanEntryDto> = emptyList(),
 
     val counters: List<CounterDto> = emptyList(),
-
     val mainMenuOrder: List<String> = emptyList(),
+
+    val mainMenuHiddenIds: List<String> = emptyList(),
 
     // Reading / media
     val readingBooks: List<ReadingBookDto> = emptyList(),
@@ -398,12 +400,14 @@ private fun AppState.toDto(): AppStateDto = AppStateDto(
     subtasks = subtasks.map { it.toDto() },
     suppressedRecurrences = suppressedRecurrences.toList(),
     anthropometry = anthropometry.map { it.toDto() },
+    anthropometryEnabledFieldIds = anthropometryEnabledFieldIds.toList(),
     calorieGoalChanges = calorieGoalChanges.map { it.toDto() },
     foodLog = foodLog.map { it.toDto() },
     runningPlanApproved = runningPlanApproved,
     runningPlanEntries = runningPlanEntries.map { it.toDto() },
     counters = counters.map { it.toDto() },
     mainMenuOrder = mainMenuOrder,
+    mainMenuHiddenIds = mainMenuHiddenIds.toList(),
 
     readingBooks = readingBooks.map { it.toDto() },
     readingMovies = readingMovies.map { it.toDto() },
@@ -418,17 +422,33 @@ private fun AppState.toDto(): AppStateDto = AppStateDto(
     readingAbandonedPrefs = readingAbandonedPrefs.toDto(),
 )
 
+private fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
+    val normalized = ids
+        .asSequence()
+        .map { it.trim() }
+        .filter { it in allAnthropometryFieldIds() }
+        .toSet()
+
+    return if (normalized.isEmpty()) {
+        defaultAnthropometryFieldIds()
+    } else {
+        normalized
+    }
+}
+
 private fun AppStateDto.toDomain(): AppState = AppState(
     tasks = tasks.map { it.toDomain() },
     subtasks = subtasks.map { it.toDomain() },
     suppressedRecurrences = suppressedRecurrences.toSet(),
     anthropometry = anthropometry.map { it.toDomain() },
+    anthropometryEnabledFieldIds = normalizeAnthropometryFieldIdsForStore(anthropometryEnabledFieldIds),
     calorieGoalChanges = calorieGoalChanges.map { it.toDomain() },
     foodLog = foodLog.map { it.toDomain() },
     runningPlanApproved = runningPlanApproved,
     runningPlanEntries = runningPlanEntries.map { it.toDomain() },
     counters = counters.mapNotNull { it.toDomainOrNull() },
     mainMenuOrder = mainMenuOrder,
+    mainMenuHiddenIds = mainMenuHiddenIds.toSet(),
 
     readingBooks = readingBooks.mapNotNull { it.toDomainOrNull() },
     readingMovies = readingMovies.mapNotNull { it.toDomainOrNull() },

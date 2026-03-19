@@ -72,17 +72,12 @@ internal fun buildVisibleReadingItems(
     sort: ReadingSort,
     query: String,
 ): List<ReadingUiItem> {
-    val allItems = buildList {
-        if (state.readingMediaFilter.showBooks) {
-            addAll(state.readingBooks.map { ReadingBookItem(it) })
-        }
-        if (state.readingMediaFilter.showMovies) {
-            addAll(state.readingMovies.map { ReadingMovieItem(it) })
-        }
-        if (state.readingMediaFilter.showSeries) {
-            addAll(state.readingSeries.map { ReadingSeriesItem(it) })
-        }
-    }
+    val allItems = buildAllVisibleReadingItems(
+        books = state.readingBooks,
+        movies = state.readingMovies,
+        series = state.readingSeries,
+        filter = state.readingMediaFilter
+    )
 
     return if (query.isBlank()) {
         sortReadingItems(
@@ -91,7 +86,29 @@ internal fun buildVisibleReadingItems(
             shelf = shelf
         )
     } else {
-        searchReadingItems(allItems, query)
+        searchReadingItems(
+            items = allItems,
+            query = query
+        )
+    }
+}
+
+private fun buildAllVisibleReadingItems(
+    books: List<ReadingBook>,
+    movies: List<ReadingMovie>,
+    series: List<ReadingSeries>,
+    filter: ReadingMediaFilter,
+): List<ReadingUiItem> {
+    return buildList {
+        if (filter.showBooks) {
+            addAll(books.map(::ReadingBookItem))
+        }
+        if (filter.showMovies) {
+            addAll(movies.map(::ReadingMovieItem))
+        }
+        if (filter.showSeries) {
+            addAll(series.map(::ReadingSeriesItem))
+        }
     }
 }
 
@@ -100,126 +117,63 @@ private fun sortReadingItems(
     sort: ReadingSort,
     shelf: ReadingShelf,
 ): List<ReadingUiItem> {
-    fun s(x: String) = x.trim().lowercase(Locale.getDefault())
-
-    fun authorKey(item: ReadingUiItem): String {
-        return when (item) {
-            is ReadingBookItem -> s(item.book.author)
-            is ReadingMovieItem -> s(item.movie.title)
-            is ReadingSeriesItem -> s(item.series.title)
-        }
-    }
-
-    fun titleKey(item: ReadingUiItem): String = s(item.title)
-
-    fun pagesKey(item: ReadingUiItem): Int {
-        return when (item) {
-            is ReadingBookItem -> item.book.totalPages
-            is ReadingMovieItem -> 0
-            is ReadingSeriesItem -> item.series.totalSeasons
-        }
-    }
-
-    fun yearKey(item: ReadingUiItem): Int {
-        return when (shelf) {
-            ReadingShelf.DONE -> when (item) {
-                is ReadingBookItem -> item.book.yearRead ?: Int.MIN_VALUE
-                is ReadingMovieItem -> item.movie.yearWatched ?: Int.MIN_VALUE
-                is ReadingSeriesItem -> item.series.yearWatched ?: Int.MIN_VALUE
-            }
-
-            ReadingShelf.ABANDONED -> when (item) {
-                is ReadingBookItem -> item.book.yearAbandoned ?: Int.MIN_VALUE
-                is ReadingMovieItem -> item.movie.yearAbandoned ?: Int.MIN_VALUE
-                is ReadingSeriesItem -> item.series.yearAbandoned ?: Int.MIN_VALUE
-            }
-
-            ReadingShelf.PLANS,
-            ReadingShelf.NOW -> Int.MIN_VALUE
-        }
-    }
-
-    fun releaseYearKey(item: ReadingUiItem): Int {
-        return when (item) {
-            is ReadingMovieItem -> item.movie.releaseYear ?: Int.MIN_VALUE
-            is ReadingBookItem,
-            is ReadingSeriesItem -> Int.MIN_VALUE
-        }
-    }
-
     val comparator = when (sort.field) {
         ReadingSortField.AUTHOR ->
-            compareBy<ReadingUiItem> { authorKey(it) }
-                .thenBy { titleKey(it) }
+            compareBy<ReadingUiItem> { itemAuthorKey(it) }
+                .thenBy { itemTitleKey(it) }
                 .thenBy { it.createdAtEpochMillis }
 
         ReadingSortField.TITLE ->
-            compareBy<ReadingUiItem> { titleKey(it) }
+            compareBy<ReadingUiItem> { itemTitleKey(it) }
                 .thenBy { it.createdAtEpochMillis }
 
         ReadingSortField.PAGES ->
-            compareBy<ReadingUiItem> { pagesKey(it) }
-                .thenBy { titleKey(it) }
+            compareBy<ReadingUiItem> { itemPagesKey(it) }
+                .thenBy { itemTitleKey(it) }
                 .thenBy { it.createdAtEpochMillis }
 
         ReadingSortField.YEAR ->
-            compareBy<ReadingUiItem> { yearKey(it) }
-                .thenBy { titleKey(it) }
+            compareBy<ReadingUiItem> { readingItemYearForShelf(it, shelf) ?: Int.MIN_VALUE }
+                .thenBy { itemTitleKey(it) }
                 .thenBy { it.createdAtEpochMillis }
 
         ReadingSortField.RELEASE_YEAR ->
-            compareBy<ReadingUiItem> { releaseYearKey(it) }
-                .thenBy { titleKey(it) }
+            compareBy<ReadingUiItem> { itemReleaseYearKey(it) }
+                .thenBy { itemTitleKey(it) }
                 .thenBy { it.createdAtEpochMillis }
     }
 
     val sorted = items.sortedWith(comparator)
     return if (sort.ascending) sorted else sorted.asReversed()
 }
+
 private fun searchReadingItems(
     items: List<ReadingUiItem>,
     query: String,
 ): List<ReadingUiItem> {
-    val q = normalizeSearch(query)
-    if (q.isBlank()) return items
-
-    fun shelfOrder(shelf: ReadingShelf): Int {
-        return when (shelf) {
-            ReadingShelf.PLANS -> 0
-            ReadingShelf.NOW -> 1
-            ReadingShelf.DONE -> 2
-            ReadingShelf.ABANDONED -> 3
-        }
-    }
-
-    fun mediaTypeOrder(item: ReadingUiItem): Int {
-        return when (item) {
-            is ReadingBookItem -> 0
-            is ReadingMovieItem -> 1
-            is ReadingSeriesItem -> 2
-        }
-    }
+    val normalizedQuery = normalizeSearch(query)
+    if (normalizedQuery.isBlank()) return items
 
     fun matches(item: ReadingUiItem): Boolean {
-        val byTitle = normalizeSearch(item.title).contains(q)
+        val byTitle = normalizeSearch(item.title).contains(normalizedQuery)
 
         return when (item) {
             is ReadingBookItem -> {
-                val byAuthor = normalizeSearch(item.book.author).contains(q)
-                val byYearRead = item.book.yearRead?.toString()?.contains(q) == true
-                val byYearAbandoned = item.book.yearAbandoned?.toString()?.contains(q) == true
+                val byAuthor = normalizeSearch(item.book.author).contains(normalizedQuery)
+                val byYearRead = item.book.yearRead?.toString()?.contains(normalizedQuery) == true
+                val byYearAbandoned = item.book.yearAbandoned?.toString()?.contains(normalizedQuery) == true
                 byTitle || byAuthor || byYearRead || byYearAbandoned
             }
 
             is ReadingMovieItem -> {
-                val byYearWatched = item.movie.yearWatched?.toString()?.contains(q) == true
-                val byYearAbandoned = item.movie.yearAbandoned?.toString()?.contains(q) == true
+                val byYearWatched = item.movie.yearWatched?.toString()?.contains(normalizedQuery) == true
+                val byYearAbandoned = item.movie.yearAbandoned?.toString()?.contains(normalizedQuery) == true
                 byTitle || byYearWatched || byYearAbandoned
             }
 
             is ReadingSeriesItem -> {
-                val byYearWatched = item.series.yearWatched?.toString()?.contains(q) == true
-                val byYearAbandoned = item.series.yearAbandoned?.toString()?.contains(q) == true
+                val byYearWatched = item.series.yearWatched?.toString()?.contains(normalizedQuery) == true
+                val byYearAbandoned = item.series.yearAbandoned?.toString()?.contains(normalizedQuery) == true
                 byTitle || byYearWatched || byYearAbandoned
             }
         }
@@ -230,7 +184,7 @@ private fun searchReadingItems(
         .sortedWith(
             compareBy<ReadingUiItem> { shelfOrder(it.shelf) }
                 .thenBy { mediaTypeOrder(it) }
-                .thenBy { normalizeSearch(it.title) }
+                .thenBy { itemTitleKey(it) }
                 .thenBy { it.createdAtEpochMillis }
         )
 }
@@ -239,38 +193,97 @@ private fun normalizeSearch(value: String): String {
     return value.trim().lowercase(Locale.getDefault())
 }
 
+private fun itemAuthorKey(item: ReadingUiItem): String {
+    return when (item) {
+        is ReadingBookItem -> normalizeSearch(item.book.author)
+        is ReadingMovieItem -> normalizeSearch(item.movie.title)
+        is ReadingSeriesItem -> normalizeSearch(item.series.title)
+    }
+}
+
+private fun itemTitleKey(item: ReadingUiItem): String {
+    return normalizeSearch(item.title)
+}
+
+private fun itemPagesKey(item: ReadingUiItem): Int {
+    return when (item) {
+        is ReadingBookItem -> item.book.totalPages
+        is ReadingMovieItem -> 0
+        is ReadingSeriesItem -> item.series.totalSeasons
+    }
+}
+
+private fun itemReleaseYearKey(item: ReadingUiItem): Int {
+    return when (item) {
+        is ReadingMovieItem -> item.movie.releaseYear ?: Int.MIN_VALUE
+        is ReadingBookItem,
+        is ReadingSeriesItem -> Int.MIN_VALUE
+    }
+}
+
+private fun readingItemYearForShelf(
+    item: ReadingUiItem,
+    shelf: ReadingShelf,
+): Int? {
+    return when (shelf) {
+        ReadingShelf.DONE -> when (item) {
+            is ReadingBookItem -> item.book.yearRead
+            is ReadingMovieItem -> item.movie.yearWatched
+            is ReadingSeriesItem -> item.series.yearWatched
+        }
+
+        ReadingShelf.ABANDONED -> when (item) {
+            is ReadingBookItem -> item.book.yearAbandoned
+            is ReadingMovieItem -> item.movie.yearAbandoned
+            is ReadingSeriesItem -> item.series.yearAbandoned
+        }
+
+        ReadingShelf.PLANS,
+        ReadingShelf.NOW -> null
+    }
+}
+
+private fun mediaTypeOrder(item: ReadingUiItem): Int {
+    return when (item) {
+        is ReadingBookItem -> 0
+        is ReadingMovieItem -> 1
+        is ReadingSeriesItem -> 2
+    }
+}
+
+private fun shelfOrder(shelf: ReadingShelf): Int {
+    return when (shelf) {
+        ReadingShelf.PLANS -> 0
+        ReadingShelf.NOW -> 1
+        ReadingShelf.DONE -> 2
+        ReadingShelf.ABANDONED -> 3
+    }
+}
+
 internal fun buildReadingYearGroups(
     items: List<ReadingUiItem>,
     shelf: ReadingShelf,
 ): List<ReadingYearGroup> {
     if (items.isEmpty()) return emptyList()
 
-    fun yearForItem(item: ReadingUiItem): Int? {
-        return when (shelf) {
-            ReadingShelf.DONE -> when (item) {
-                is ReadingBookItem -> item.book.yearRead
-                is ReadingMovieItem -> item.movie.yearWatched
-                is ReadingSeriesItem -> item.series.yearWatched
-            }
-
-            ReadingShelf.ABANDONED -> when (item) {
-                is ReadingBookItem -> item.book.yearAbandoned
-                is ReadingMovieItem -> item.movie.yearAbandoned
-                is ReadingSeriesItem -> item.series.yearAbandoned
-            }
-
-            ReadingShelf.PLANS,
-            ReadingShelf.NOW -> null
-        }
-    }
-
     val result = mutableListOf<ReadingYearGroup>()
-
     var currentYear: Int? = null
     var currentItems = mutableListOf<ReadingUiItem>()
 
+    fun flushGroup() {
+        if (currentItems.isEmpty()) return
+
+        result.add(
+            ReadingYearGroup(
+                year = currentYear,
+                items = currentItems.toList()
+            )
+        )
+        currentItems = mutableListOf()
+    }
+
     for (item in items) {
-        val itemYear = yearForItem(item)
+        val itemYear = readingItemYearForShelf(item, shelf)
 
         if (currentItems.isEmpty()) {
             currentYear = itemYear
@@ -281,25 +294,12 @@ internal fun buildReadingYearGroups(
         if (itemYear == currentYear) {
             currentItems.add(item)
         } else {
-            result.add(
-                ReadingYearGroup(
-                    year = currentYear,
-                    items = currentItems.toList()
-                )
-            )
+            flushGroup()
             currentYear = itemYear
-            currentItems = mutableListOf(item)
+            currentItems.add(item)
         }
     }
 
-    if (currentItems.isNotEmpty()) {
-        result.add(
-            ReadingYearGroup(
-                year = currentYear,
-                items = currentItems.toList()
-            )
-        )
-    }
-
+    flushGroup()
     return result
 }

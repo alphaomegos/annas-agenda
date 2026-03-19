@@ -1,10 +1,5 @@
 package com.alphaomegos.annasagenda.screens.media
 
-import android.content.Context
-import android.graphics.ImageDecoder
-import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,18 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingShelf
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.math.max
-import kotlin.math.min
+import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
 
 @Composable
 internal fun ReadingItemsList(
@@ -256,20 +246,15 @@ private fun ReadingItemRowCard(
     onMove: (ReadingShelf) -> Unit,
     onDelete: () -> Unit,
 ) {
-    val ctx = LocalContext.current
+    val context = LocalContext.current
     val shelf = item.shelf
 
     val thumbBitmap: ImageBitmap? by produceState(initialValue = null, key1 = item.coverUri) {
-        val s = item.coverUri
-        if (s.isNullOrBlank()) {
-            value = null
-            return@produceState
-        }
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                decodeImageBitmap(ctx, s.toUri(), targetMaxSidePx = 220)
-            }.getOrNull()
-        }
+        value = loadCoverBitmapForUi(
+            context = context,
+            coverRef = item.coverUri,
+            targetMaxSidePx = 220
+        )
     }
 
     val shape = RoundedCornerShape(22.dp)
@@ -381,20 +366,15 @@ private fun ReadingItemGridCard(
     onMove: (ReadingShelf) -> Unit,
     onDelete: () -> Unit,
 ) {
-    val ctx = LocalContext.current
+    val context = LocalContext.current
     val shelf = item.shelf
 
     val coverBitmap: ImageBitmap? by produceState(initialValue = null, key1 = item.coverUri) {
-        val s = item.coverUri
-        if (s.isNullOrBlank()) {
-            value = null
-            return@produceState
-        }
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                decodeImageBitmap(ctx, s.toUri(), targetMaxSidePx = 520)
-            }.getOrNull()
-        }
+        value = loadCoverBitmapForUi(
+            context = context,
+            coverRef = item.coverUri,
+            targetMaxSidePx = 520
+        )
     }
 
     val shape = RoundedCornerShape(22.dp)
@@ -568,7 +548,7 @@ private fun readingItemMetaLabel(
 ): String {
     val parts = buildList {
         if (showMediaTypeLabel) add(mediaTypeLabel(item))
-        if (showShelfLabel) add(shelfLabel(item.shelf))
+        if (showShelfLabel) add(mediaDetailsShelfLabel(item.shelf))
     }
     return parts.joinToString(" • ")
 }
@@ -579,16 +559,6 @@ private fun mediaTypeLabel(item: ReadingUiItem): String {
         is ReadingBookItem -> stringResource(R.string.reading_media_book)
         is ReadingMovieItem -> stringResource(R.string.reading_media_movie)
         is ReadingSeriesItem -> stringResource(R.string.reading_media_series)
-    }
-}
-
-@Composable
-private fun shelfLabel(shelf: ReadingShelf): String {
-    return when (shelf) {
-        ReadingShelf.PLANS -> stringResource(R.string.reading_tab_plans)
-        ReadingShelf.NOW -> stringResource(R.string.reading_tab_now)
-        ReadingShelf.DONE -> stringResource(R.string.reading_tab_done)
-        ReadingShelf.ABANDONED -> stringResource(R.string.reading_tab_abandoned)
     }
 }
 
@@ -668,30 +638,4 @@ private fun readingItemSecondaryText(
             }
         }
     }
-}
-
-private fun decodeImageBitmap(
-    ctx: Context,
-    uri: Uri,
-    targetMaxSidePx: Int,
-): ImageBitmap {
-    val cr = ctx.contentResolver
-
-    val bitmap = if (Build.VERSION.SDK_INT >= 28) {
-        val source = ImageDecoder.createSource(cr, uri)
-        ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-            val w = info.size.width
-            val h = info.size.height
-            val maxSide = max(w, h).coerceAtLeast(1)
-            val scale = min(1f, targetMaxSidePx.toFloat() / maxSide.toFloat())
-            val tw = max(1, (w * scale).toInt())
-            val th = max(1, (h * scale).toInt())
-            decoder.setTargetSize(tw, th)
-        }
-    } else {
-        @Suppress("DEPRECATION")
-        MediaStore.Images.Media.getBitmap(cr, uri)
-    }
-
-    return bitmap.asImageBitmap()
 }

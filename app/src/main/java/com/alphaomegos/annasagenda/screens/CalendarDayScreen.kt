@@ -62,17 +62,10 @@ fun CalendarDayRoute(
         onBack = onBack,
         onAddTask = onAddTask,
         ensureGeneratedInRange = vm::ensureGeneratedInRange,
-        onSaveAnthro = { date, values ->
+        onSaveAnthro = { date, valuesByFieldId ->
             vm.saveAnthropometryForDate(
                 date = date,
-                armCm = values[0],
-                chestCm = values[1],
-                underChestCm = values[2],
-                waistCm = values[3],
-                bellyCm = values[4],
-                hipsCm = values[5],
-                thighCm = values[6],
-                weightKg = values[7]
+                valuesByFieldId = valuesByFieldId
             )
         },
         tasksContent = { date ->
@@ -89,7 +82,7 @@ private fun CalendarDayContent(
     onBack: () -> Unit,
     onAddTask: (Long) -> Unit,
     ensureGeneratedInRange: (LocalDate, LocalDate) -> Unit,
-    onSaveAnthro: (LocalDate, List<Double?>) -> Unit,
+    onSaveAnthro: (LocalDate, Map<String, Double?>) -> Unit,
     tasksContent: @Composable (LocalDate) -> Unit,
 ) {
     val today = remember { LocalDate.now() }
@@ -199,9 +192,10 @@ private fun CalendarDayContent(
             AnthropometryDayInputDialog(
                 date = selectedDate,
                 initialEntry = existing,
+                enabledFieldIds = state.anthropometryEnabledFieldIds,
                 onDismiss = { showAnthroDialog = false },
-                onSave = { values ->
-                    onSaveAnthro(selectedDate, values)
+                onSave = { valuesByFieldId ->
+                    onSaveAnthro(selectedDate, valuesByFieldId)
                     Toast.makeText(ctx, savedMsg, Toast.LENGTH_SHORT).show()
                     showAnthroDialog = false
                 }

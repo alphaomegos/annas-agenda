@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -27,6 +29,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,14 +64,75 @@ import androidx.compose.runtime.setValue
 import com.alphaomegos.annasagenda.AppState
 import com.alphaomegos.annasagenda.CalorieGoalChange
 import com.alphaomegos.annasagenda.util.appLocale
+import com.alphaomegos.annasagenda.AnthropometryFieldIds
+import com.alphaomegos.annasagenda.defaultAnthropometryFieldIds
 
-private enum class AnthroAxis { CM, KG }
+enum class AnthropometryAxis { CM, KG }
 
-private data class AnthroSeries(
+data class AnthropometryFieldDef(
+    val id: String,
     val labelRes: Int,
-    val axis: AnthroAxis,
+    val axis: AnthropometryAxis,
     val color: Color,
     val getValue: (AnthropometryEntry) -> Double?
+)
+
+val anthropometryFieldDefs = listOf(
+    AnthropometryFieldDef(
+        id = AnthropometryFieldIds.ARM,
+        labelRes = R.string.anthro_arm_cm,
+        axis = AnthropometryAxis.CM,
+        color = Color(0xFF1E88E5),
+    ) { it.armCm },
+
+    AnthropometryFieldDef(
+        id = AnthropometryFieldIds.CHEST,
+        labelRes = R.string.anthro_chest_cm,
+        axis = AnthropometryAxis.CM,
+        color = Color(0xFFE53935),
+    ) { it.chestCm },
+
+    AnthropometryFieldDef(
+        id = AnthropometryFieldIds.UNDER_CHEST,
+        labelRes = R.string.anthro_under_chest_cm,
+        axis = AnthropometryAxis.CM,
+        color = Color(0xFF8E24AA),
+    ) { it.underChestCm },
+
+    AnthropometryFieldDef(
+        id = AnthropometryFieldIds.WAIST,
+        labelRes = R.string.anthro_waist_cm,
+        axis = AnthropometryAxis.CM,
+        color = Color(0xFFFB8C00),
+    ) { it.waistCm },
+
+    AnthropometryFieldDef(
+        id = AnthropometryFieldIds.BELLY,
+        labelRes = R.string.anthro_belly_cm,
+        axis = AnthropometryAxis.CM,
+        color = Color(0xFF43A047),
+    ) { it.bellyCm },
+
+    AnthropometryFieldDef(
+        id = AnthropometryFieldIds.HIPS,
+        labelRes = R.string.anthro_hips_cm,
+        axis = AnthropometryAxis.CM,
+        color = Color(0xFF00ACC1),
+    ) { it.hipsCm },
+
+    AnthropometryFieldDef(
+        id = AnthropometryFieldIds.THIGH,
+        labelRes = R.string.anthro_thigh_cm,
+        axis = AnthropometryAxis.CM,
+        color = Color(0xFF6D4C41),
+    ) { it.thighCm },
+
+    AnthropometryFieldDef(
+        id = AnthropometryFieldIds.WEIGHT,
+        labelRes = R.string.anthro_weight_kg,
+        axis = AnthropometryAxis.KG,
+        color = Color(0xFF546E7A),
+    ) { it.weightKg },
 )
 
 private inline fun <T, R : Any> List<T>.lastNotNullOfOrNullCompat(transform: (T) -> R?): R? {
@@ -84,23 +150,6 @@ private inline fun <T, R : Any> List<T>.firstNotNullOfOrNullCompat(transform: (T
     }
     return null
 }
-
-
-private val anthroSeries = listOf(
-    AnthroSeries(R.string.anthro_arm_cm, AnthroAxis.CM, Color(0xFF1E88E5)) { it.armCm },
-    AnthroSeries(R.string.anthro_chest_cm, AnthroAxis.CM, Color(0xFFE53935)) { it.chestCm },
-    AnthroSeries(
-        R.string.anthro_under_chest_cm,
-        AnthroAxis.CM,
-        Color(0xFF8E24AA)
-    ) { it.underChestCm },
-    AnthroSeries(R.string.anthro_waist_cm, AnthroAxis.CM, Color(0xFFFB8C00)) { it.waistCm },
-    AnthroSeries(R.string.anthro_belly_cm, AnthroAxis.CM, Color(0xFF43A047)) { it.bellyCm },
-    AnthroSeries(R.string.anthro_hips_cm, AnthroAxis.CM, Color(0xFF00ACC1)) { it.hipsCm },
-    AnthroSeries(R.string.anthro_thigh_cm, AnthroAxis.CM, Color(0xFF6D4C41)) { it.thighCm },
-    AnthroSeries(R.string.anthro_weight_kg, AnthroAxis.KG, Color(0xFF546E7A)) { it.weightKg },
-)
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,6 +196,14 @@ fun AnthropometryScreen(
 
     val showInput = remember { mutableStateOf(false) }
 
+    val showSettings = remember { mutableStateOf(false) }
+
+    val visibleFieldDefs = remember(state.anthropometryEnabledFieldIds) {
+        anthropometryFieldDefs
+            .filter { it.id in state.anthropometryEnabledFieldIds }
+            .ifEmpty { anthropometryFieldDefs }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -156,6 +213,14 @@ fun AnthropometryScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showSettings.value = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null
                         )
                     }
                 }
@@ -171,6 +236,7 @@ fun AnthropometryScreen(
         ) {
             AnthropometryChart(
                 entries = window,
+                series = visibleFieldDefs,
                 canGoOlder = allEntries.size > window.size && window.firstOrNull()?.date != allEntries.firstOrNull()?.date,
                 canGoNewer = allEntries.isNotEmpty() && window.lastOrNull()?.date != allEntries.lastOrNull()?.date,
                 onGoOlder = { windowEnd = (windowEnd - 1).coerceAtLeast(0) },
@@ -223,7 +289,7 @@ fun AnthropometryScreen(
                             }
                         }
 
-                        items(anthroSeries) { s ->
+                        items(visibleFieldDefs) { s ->
                     val first: Pair<LocalDate, Double>? =
                                 allEntries.firstNotNullOfOrNullCompat { e ->
                                     s.getValue(e)?.let { v -> Pair(e.date, v) }
@@ -237,7 +303,7 @@ fun AnthropometryScreen(
 
                             val diff = last.second - first.second
                             val unit =
-                                if (s.axis == AnthroAxis.KG) stringResource(R.string.kg_short) else stringResource(
+                                if (s.axis == AnthropometryAxis.KG) stringResource(R.string.kg_short) else stringResource(
                                     R.string.cm_short
                                 )
 
@@ -279,22 +345,27 @@ fun AnthropometryScreen(
     if (showInput.value) {
         AnthropometryInputDialog(
             entriesByDate = entriesByDate,
+            enabledFieldIds = state.anthropometryEnabledFieldIds,
             onDismiss = { showInput.value = false },
-            onSave = { date, values ->
+            onSave = { date, valuesByFieldId ->
                 vm.saveAnthropometryForDate(
                     date = date,
-                    armCm = values.getOrNull(0),
-                    chestCm = values.getOrNull(1),
-                    underChestCm = values.getOrNull(2),
-                    waistCm = values.getOrNull(3),
-                    bellyCm = values.getOrNull(4),
-                    hipsCm = values.getOrNull(5),
-                    thighCm = values.getOrNull(6),
-                    weightKg = values.getOrNull(7),
+                    valuesByFieldId = valuesByFieldId
                 )
                 Toast.makeText(ctx, ctx.getString(R.string.anthropometry_saved), Toast.LENGTH_SHORT)
                     .show()
                 showInput.value = false
+            }
+        )
+    }
+    if (showSettings.value) {
+        AnthropometryFieldsDialog(
+            fieldDefs = anthropometryFieldDefs,
+            enabledFieldIds = state.anthropometryEnabledFieldIds,
+            onDismiss = { showSettings.value = false },
+            onSave = { enabledIds ->
+                vm.setAnthropometryEnabledFieldIds(enabledIds)
+                showSettings.value = false
             }
         )
     }
@@ -303,6 +374,7 @@ fun AnthropometryScreen(
 @Composable
 private fun AnthropometryChart(
     entries: List<AnthropometryEntry>,
+    series: List<AnthropometryFieldDef>,
     canGoOlder: Boolean,
     canGoNewer: Boolean,
     onGoOlder: () -> Unit,
@@ -349,9 +421,9 @@ private fun AnthropometryChart(
                 .fillMaxSize()
                 .padding(12.dp)
         ) {
-            val cmValues = anthroSeries.filter { it.axis == AnthroAxis.CM }
+            val cmValues = series.filter { it.axis == AnthropometryAxis.CM }
                 .flatMap { s -> entries.mapNotNull { e -> s.getValue(e) } }
-            val kgValues = anthroSeries.filter { it.axis == AnthroAxis.KG }
+            val kgValues = series.filter { it.axis == AnthropometryAxis.KG }
                 .flatMap { s -> entries.mapNotNull { e -> s.getValue(e) } }
 
             fun bounds(vals: List<Double>): Pair<Double, Double> {
@@ -429,11 +501,11 @@ private fun AnthropometryChart(
             drawLabel(entries.last().date.toString(), plotRight - 72f, size.height - 6f)
 
             // Series lines
-            anthroSeries.forEach { s ->
+            series.forEach { s ->
                 val points = entries.mapNotNull { e ->
                     val v = s.getValue(e) ?: return@mapNotNull null
                     val x = xFor(e.date)
-                    val y = if (s.axis == AnthroAxis.CM) yForCm(v) else yForKg(v)
+                    val y = if (s.axis == AnthropometryAxis.CM) yForCm(v) else yForKg(v)
                     Offset(x, y)
                 }
                 if (points.size < 2) return@forEach
@@ -447,6 +519,75 @@ private fun AnthropometryChart(
             }
         }
     }
+}
+
+@Composable
+private fun AnthropometryFieldsDialog(
+    fieldDefs: List<AnthropometryFieldDef>,
+    enabledFieldIds: Set<String>,
+    onDismiss: () -> Unit,
+    onSave: (Set<String>) -> Unit,
+) {
+    val pendingIds = remember(enabledFieldIds) {
+        mutableStateOf(
+            enabledFieldIds.ifEmpty { defaultAnthropometryFieldIds() }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.anthropometry_title)) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                fieldDefs.forEach { field ->
+                    val isChecked = field.id in pendingIds.value
+                    val canUncheck = pendingIds.value.size > 1
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                pendingIds.value = when {
+                                    isChecked && canUncheck -> pendingIds.value - field.id
+                                    !isChecked -> pendingIds.value + field.id
+                                    else -> pendingIds.value
+                                }
+                            }
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = isChecked,
+                            onCheckedChange = { checked ->
+                                pendingIds.value = when {
+                                    checked -> pendingIds.value + field.id
+                                    canUncheck -> pendingIds.value - field.id
+                                    else -> pendingIds.value
+                                }
+                            }
+                        )
+
+                        Text(
+                            text = stringResource(field.labelRes),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSave(pendingIds.value) }) {
+                Text(stringResource(R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 private fun goalFor(date: LocalDate, changes: List<CalorieGoalChange>): Int {

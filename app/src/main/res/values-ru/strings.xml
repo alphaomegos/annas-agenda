@@ -26,6 +26,8 @@
     <string name="running_title">В бегах</string>
     <string name="counters_title">Счётчики</string>
     <string name="menu_reading">Медиатека</string>
+    <string name="main_menu_show_all">Показать все</string>
+    <string name="main_menu_hide">Скрыть</string>
 
     <!-- Language -->
     <string name="choose_language">Выбрать язык</string>
@@ -36,8 +38,8 @@
 
     <!-- Data / backup -->
     <string name="data_menu">Данные</string>
-    <string name="export_backup_json">Экспорт бекапа (JSON)</string>
-    <string name="import_backup_json">Импорт бекапа (JSON)</string>
+    <string name="export_backup_json">Сделать бэкап</string>
+    <string name="import_backup_json">Загрузить бэкап</string>
     <string name="reset_data_menu">Сброс данных</string>
     <string name="reset_title">Сбросить данные?</string>
     <string name="reset_text">Это удалит все задачи и настройки.</string>

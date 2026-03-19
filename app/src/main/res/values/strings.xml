@@ -27,6 +27,8 @@
     <string name="running_title">On the run</string>
     <string name="counters_title">Counters</string>
     <string name="menu_reading">Media library</string>
+    <string name="main_menu_show_all">Show all</string>
+    <string name="main_menu_hide">Hide</string>
 
     <!-- Language -->
     <string name="choose_language">Choose language</string>
@@ -37,8 +39,8 @@
 
     <!-- Data / backup -->
     <string name="data_menu">Data</string>
-    <string name="export_backup_json">Export backup (JSON)</string>
-    <string name="import_backup_json">Import backup (JSON)</string>
+    <string name="export_backup_json">Export backup</string>
+    <string name="import_backup_json">Import backup</string>
     <string name="reset_data_menu">Reset data</string>
     <string name="reset_title">Reset data?</string>
     <string name="reset_text">This will delete all tasks and settings.</string>

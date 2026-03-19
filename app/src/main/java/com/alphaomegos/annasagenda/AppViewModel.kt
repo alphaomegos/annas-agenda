@@ -1,6 +1,16 @@
 package com.alphaomegos.annasagenda
 
 import android.app.Application
+import android.net.Uri
+import androidx.core.net.toUri
+import com.alphaomegos.annasagenda.util.isExternalCoverRef
+import com.alphaomegos.annasagenda.util.resolveStoredCoverFiles
+import com.alphaomegos.annasagenda.util.writeBackupToDocuments
+import com.alphaomegos.annasagenda.util.writeInternalCoverBytes
+import com.alphaomegos.annasagenda.util.collectInternalCoverRefs
+import com.alphaomegos.annasagenda.util.deleteInternalCoverIfAny
+import com.alphaomegos.annasagenda.util.importCoverIntoInternalStorage
+import com.alphaomegos.annasagenda.util.isInternalCoverRef
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
@@ -21,10 +31,211 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.max
 
+
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val store = AppStateStore(app.applicationContext)
 
     private val newTaskDraftStore = NewTaskDraftStore(app.applicationContext)
+
+    private val appContext
+        get() = getApplication<Application>().applicationContext
+
+    private fun cleanupInternalCoverAsync(ref: String?) {
+        if (!isInternalCoverRef(ref)) return
+
+        viewModelScope.launch {
+            deleteInternalCoverIfAny(appContext, ref)
+        }
+    }
+
+    private fun cleanupRemovedInternalCoversAsync(before: AppState, after: AppState) {
+        val staleRefs = collectInternalCoverRefs(before) - collectInternalCoverRefs(after)
+        if (staleRefs.isEmpty()) return
+
+        viewModelScope.launch {
+            staleRefs.forEach { ref ->
+                deleteInternalCoverIfAny(appContext, ref)
+            }
+        }
+    }
+
+    private fun nextIdAfter(state: AppState): Long {
+        val maxId =
+            (state.tasks.map { it.id }
+                    + state.subtasks.map { it.id }
+                    + state.foodLog.map { it.id }
+                    + state.counters.map { it.id }
+                    + state.readingBooks.map { it.id }
+                    + state.readingMovies.map { it.id }
+                    + state.readingSeries.map { it.id }
+                    + state.readingSessions.map { it.id })
+                .maxOrNull() ?: 0L
+
+        return maxId + 1L
+    }
+
+    private suspend fun migrateLegacyCoverRef(
+        coverRef: String?,
+        mediaKind: String,
+        itemId: Long,
+    ): String? {
+        val source = coverRef?.takeIf(::isExternalCoverRef) ?: return coverRef
+
+        return importCoverIntoInternalStorage(
+            context = appContext,
+            sourceUri = source.toUri(),
+            mediaKind = mediaKind,
+            itemId = itemId
+        ) ?: coverRef
+    }
+
+    private suspend fun migrateLegacyMediaCovers(
+        state: AppState,
+    ): AppState {
+        val migratedBooks = state.readingBooks.map { book ->
+            val migratedCover = migrateLegacyCoverRef(
+                coverRef = book.coverUri,
+                mediaKind = "book",
+                itemId = book.id
+            )
+            if (migratedCover == book.coverUri) {
+                book
+            } else {
+                book.copy(coverUri = migratedCover)
+            }
+        }
+
+        val migratedMovies = state.readingMovies.map { movie ->
+            val migratedCover = migrateLegacyCoverRef(
+                coverRef = movie.coverUri,
+                mediaKind = "movie",
+                itemId = movie.id
+            )
+            if (migratedCover == movie.coverUri) {
+                movie
+            } else {
+                movie.copy(coverUri = migratedCover)
+            }
+        }
+
+        val migratedSeries = state.readingSeries.map { series ->
+            val migratedCover = migrateLegacyCoverRef(
+                coverRef = series.coverUri,
+                mediaKind = "series",
+                itemId = series.id
+            )
+            if (migratedCover == series.coverUri) {
+                series
+            } else {
+                series.copy(coverUri = migratedCover)
+            }
+        }
+
+        val changed =
+            migratedBooks != state.readingBooks ||
+                    migratedMovies != state.readingMovies ||
+                    migratedSeries != state.readingSeries
+
+        return if (!changed) {
+            state
+        } else {
+            state.copy(
+                readingBooks = migratedBooks,
+                readingMovies = migratedMovies,
+                readingSeries = migratedSeries
+            )
+        }
+    }
+
+    fun setReadingBookCoverFromPickedUri(bookId: Long, sourceUri: Uri) {
+        viewModelScope.launch {
+            val existsBefore = _state.value.readingBooks.any { it.id == bookId }
+            if (!existsBefore) return@launch
+
+            val importedRef = importCoverIntoInternalStorage(
+                context = appContext,
+                sourceUri = sourceUri,
+                mediaKind = "book",
+                itemId = bookId
+            ) ?: return@launch
+
+            val existsAfter = _state.value.readingBooks.any { it.id == bookId }
+            if (!existsAfter) {
+                cleanupInternalCoverAsync(importedRef)
+                return@launch
+            }
+
+            updateReadingBook(
+                bookId = bookId,
+                coverUri = importedRef,
+                clearCover = false
+            )
+        }
+    }
+
+    fun setReadingMovieCoverFromPickedUri(movieId: Long, sourceUri: Uri) {
+        viewModelScope.launch {
+            val existsBefore = _state.value.readingMovies.any { it.id == movieId }
+            if (!existsBefore) return@launch
+
+            val importedRef = importCoverIntoInternalStorage(
+                context = appContext,
+                sourceUri = sourceUri,
+                mediaKind = "movie",
+                itemId = movieId
+            ) ?: return@launch
+
+            val existsAfter = _state.value.readingMovies.any { it.id == movieId }
+            if (!existsAfter) {
+                cleanupInternalCoverAsync(importedRef)
+                return@launch
+            }
+
+            updateReadingMovie(
+                movieId = movieId,
+                coverUri = importedRef,
+                clearCover = false
+            )
+        }
+    }
+
+    fun setReadingSeriesCoverFromPickedUri(seriesId: Long, sourceUri: Uri) {
+        viewModelScope.launch {
+            val existsBefore = _state.value.readingSeries.any { it.id == seriesId }
+            if (!existsBefore) return@launch
+
+            val importedRef = importCoverIntoInternalStorage(
+                context = appContext,
+                sourceUri = sourceUri,
+                mediaKind = "series",
+                itemId = seriesId
+            ) ?: return@launch
+
+            val existsAfter = _state.value.readingSeries.any { it.id == seriesId }
+            if (!existsAfter) {
+                cleanupInternalCoverAsync(importedRef)
+                return@launch
+            }
+
+            updateReadingSeries(
+                seriesId = seriesId,
+                coverUri = importedRef,
+                clearCover = false
+            )
+        }
+    }
+
+    fun removeReadingBookCover(bookId: Long) {
+        updateReadingBook(bookId = bookId, clearCover = true)
+    }
+
+    fun removeReadingMovieCover(movieId: Long) {
+        updateReadingMovie(movieId = movieId, clearCover = true)
+    }
+
+    fun removeReadingSeriesCover(seriesId: Long) {
+        updateReadingSeries(seriesId = seriesId, clearCover = true)
+    }
 
     private val newTaskDraftSaveRequests = MutableSharedFlow<NewTaskDraft>(
         replay = 0,
@@ -38,19 +249,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     init {
         viewModelScope.launch {
             val loaded = store.load()
-            _state.value = loaded
+            val migrated = migrateLegacyMediaCovers(loaded)
 
-            val maxId =
-                (loaded.tasks.map { it.id }
-                        + loaded.subtasks.map { it.id }
-                        + loaded.foodLog.map { it.id }
-                        + loaded.counters.map { it.id }
-                        + loaded.readingBooks.map { it.id }
-                        + loaded.readingMovies.map { it.id }
-                        + loaded.readingSeries.map { it.id }
-                        + loaded.readingSessions.map { it.id })
-                    .maxOrNull() ?: 0L
-            nextId = maxId + 1
+            _state.value = migrated
+            nextId = nextIdAfter(migrated)
+
+            if (migrated != loaded) {
+                store.save(migrated)
+            }
 
             _isLoaded.value = true
             startNewTaskDraftAutoSave()
@@ -87,19 +293,42 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun resetAllData() {
+        val before = _state.value
         val empty = AppState()
+
         _state.value = empty
         nextId = 1L
+        _activeReading.value = null
+
+        cleanupRemovedInternalCoversAsync(before, empty)
+
         viewModelScope.launch {
             store.save(empty)
         }
-        _activeReading.value = null
     }
 
     fun exportBackupJson(): String {
         return store.encodeToJson(_state.value)
     }
 
+    suspend fun exportBackupToDocuments() {
+        val before = _state.value
+        val current = migrateLegacyMediaCovers(before)
+
+        if (current != before) {
+            _state.value = current
+            store.save(current)
+        }
+
+        val json = store.encodeToJson(current)
+        val coverFiles = resolveStoredCoverFiles(appContext, current)
+
+        writeBackupToDocuments(
+            context = appContext,
+            json = json,
+            coverFiles = coverFiles
+        )
+    }
     suspend fun loadNewTaskDraft(): NewTaskDraft? {
         return newTaskDraftStore.load()
     }
@@ -118,43 +347,94 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun importBackupJson(raw: String): Boolean {
         val decoded = store.decodeFromJson(raw) ?: return false
 
-        _state.value = decoded
+        viewModelScope.launch {
+            val migrated = migrateLegacyMediaCovers(decoded)
+            val before = _state.value
 
-        val maxId =
-            (decoded.tasks.map { it.id }
-                    + decoded.subtasks.map { it.id }
-                    + decoded.foodLog.map { it.id }
-                    + decoded.counters.map { it.id }
-                    + decoded.readingBooks.map { it.id }
-                    + decoded.readingMovies.map { it.id }
-                    + decoded.readingSeries.map { it.id }
-                    + decoded.readingSessions.map { it.id })
-                .maxOrNull() ?: 0L
-        nextId = maxId + 1L
+            _state.value = migrated
+            nextId = nextIdAfter(migrated)
+            _activeReading.value = null
 
+            cleanupRemovedInternalCoversAsync(before, migrated)
+            store.save(migrated)
+        }
+
+        return true
+    }
+
+    suspend fun importBackupPackage(
+        appStateJson: String,
+        coverEntries: Map<String, ByteArray>,
+    ): Boolean {
+        val decoded = store.decodeFromJson(appStateJson) ?: return false
+        val before = _state.value
+
+        val expectedRefs = collectInternalCoverRefs(decoded)
+
+        expectedRefs.forEach { ref ->
+            if (ref !in coverEntries.keys) {
+                deleteInternalCoverIfAny(appContext, ref)
+            }
+        }
+
+        coverEntries.forEach { (ref, bytes) ->
+            if (ref in expectedRefs) {
+                writeInternalCoverBytes(
+                    context = appContext,
+                    coverRef = ref,
+                    bytes = bytes
+                )
+            }
+        }
+
+        val migrated = migrateLegacyMediaCovers(decoded)
+
+        _state.value = migrated
+        nextId = nextIdAfter(migrated)
         _activeReading.value = null
 
-        viewModelScope.launch {
-            store.save(decoded)
-        }
+        cleanupRemovedInternalCoversAsync(before, migrated)
+        store.save(migrated)
+
         return true
     }
 
     /* ---------------------------
-       Main menu ordering
-    ---------------------------- */
+   Main menu ordering / visibility
+---------------------------- */
 
-    fun setMainMenuOrder(ids: List<String>) {
-        val normalized = ids
-            .asSequence()
+    private fun normalizeMainMenuIds(ids: Iterable<String>): List<String> =
+        ids.asSequence()
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .distinct()
             .toList()
 
+        fun setMainMenuOrder(ids: List<String>) {
+        val normalized = normalizeMainMenuIds(ids)
+
         val cur = _state.value
         if (cur.mainMenuOrder == normalized) return
         _state.value = cur.copy(mainMenuOrder = normalized)
+    }
+
+        fun hideMainMenuItem(id: String) {
+        val normalizedId = id.trim()
+        if (normalizedId.isEmpty()) return
+
+        val cur = _state.value
+        if (normalizedId in cur.mainMenuHiddenIds) return
+
+        _state.value = cur.copy(
+            mainMenuHiddenIds = cur.mainMenuHiddenIds + normalizedId
+        )
+    }
+
+    fun showAllMainMenuItems() {
+        val cur = _state.value
+        if (cur.mainMenuHiddenIds.isEmpty()) return
+
+        _state.value = cur.copy(mainMenuHiddenIds = emptySet())
     }
 
     /* ---------------------------
@@ -253,8 +533,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteReadingBook(bookId: Long) {
         val st = _state.value
-        val has = st.readingBooks.any { it.id == bookId }
-        if (!has) return
+        val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return
 
         if (_activeReading.value?.bookId == bookId) {
             _activeReading.value = null
@@ -264,6 +543,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             readingBooks = st.readingBooks.filterNot { it.id == bookId },
             readingSessions = st.readingSessions.filterNot { it.bookId == bookId }
         )
+
+        cleanupInternalCoverAsync(book.coverUri)
     }
 
     fun moveReadingBookToShelf(bookId: Long, shelf: ReadingShelf) {
@@ -321,6 +602,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st = _state.value
         val old = st.readingBooks.firstOrNull { it.id == bookId } ?: return
 
+        val oldCover = old.coverUri
+
         val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
         val newAuthor = author?.trim() ?: old.author
 
@@ -369,61 +652,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = st.copy(
             readingBooks = st.readingBooks.map { b -> if (b.id == bookId) updated else b }
         )
-    }
 
-    fun sortedReadingBooksForShelf(shelf: ReadingShelf): List<ReadingBook> {
-        val st = _state.value
-        val prefs = tabPrefsForShelf(st, shelf)
-        val base = st.readingBooks.filter { it.shelf == shelf }
-        return sortReadingBooks(base, prefs.sort, shelf)
-    }
-
-    private fun sortReadingBooks(
-        list: List<ReadingBook>,
-        sort: ReadingSort,
-        shelf: ReadingShelf
-    ): List<ReadingBook> {
-        fun s(x: String) = x.trim().lowercase(Locale.getDefault())
-
-        fun yearForShelf(book: ReadingBook): Int {
-            return when (shelf) {
-                ReadingShelf.DONE -> book.yearRead ?: Int.MIN_VALUE
-                ReadingShelf.ABANDONED -> book.yearAbandoned ?: Int.MIN_VALUE
-                ReadingShelf.PLANS,
-                ReadingShelf.NOW -> Int.MIN_VALUE
-            }
+        if (oldCover != newCover) {
+            cleanupInternalCoverAsync(oldCover)
         }
-
-        val comparator = when (sort.field) {
-            ReadingSortField.AUTHOR ->
-                compareBy<ReadingBook> { s(it.author) }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.TITLE ->
-                compareBy<ReadingBook> { s(it.title) }
-                    .thenBy { s(it.author) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.PAGES ->
-                compareBy<ReadingBook> { it.totalPages }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.YEAR ->
-                compareBy<ReadingBook> { yearForShelf(it) }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.RELEASE_YEAR ->
-                compareBy<ReadingBook> { Int.MIN_VALUE }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-        }
-
-        val sorted = list.sortedWith(comparator)
-        return if (sort.ascending) sorted else sorted.asReversed()
     }
+
+
+
+
 
     fun addReadingMovie(
         shelf: ReadingShelf,
@@ -460,12 +697,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteReadingMovie(movieId: Long) {
         val st = _state.value
-        val has = st.readingMovies.any { it.id == movieId }
-        if (!has) return
+        val movie = st.readingMovies.firstOrNull { it.id == movieId } ?: return
 
         _state.value = st.copy(
             readingMovies = st.readingMovies.filterNot { it.id == movieId }
         )
+
+        cleanupInternalCoverAsync(movie.coverUri)
     }
 
     fun moveReadingMovieToShelf(movieId: Long, shelf: ReadingShelf) {
@@ -520,6 +758,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st = _state.value
         val old = st.readingMovies.firstOrNull { it.id == movieId } ?: return
 
+        val oldCover = old.coverUri
+
         val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
         val newShelf = shelf ?: old.shelf
         val currentYear = LocalDate.now().year
@@ -561,58 +801,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = st.copy(
             readingMovies = st.readingMovies.map { m -> if (m.id == movieId) updated else m }
         )
-    }
 
-    fun sortedReadingMoviesForShelf(shelf: ReadingShelf): List<ReadingMovie> {
-        val st = _state.value
-        val prefs = tabPrefsForShelf(st, shelf)
-        val base = st.readingMovies.filter { it.shelf == shelf }
-        return sortReadingMovies(base, prefs.sort, shelf)
-    }
-
-    private fun sortReadingMovies(
-        list: List<ReadingMovie>,
-        sort: ReadingSort,
-        shelf: ReadingShelf
-    ): List<ReadingMovie> {
-        fun s(x: String) = x.trim().lowercase(Locale.getDefault())
-
-        fun yearForShelf(movie: ReadingMovie): Int {
-            return when (shelf) {
-                ReadingShelf.DONE -> movie.yearWatched ?: Int.MIN_VALUE
-                ReadingShelf.ABANDONED -> movie.yearAbandoned ?: Int.MIN_VALUE
-                ReadingShelf.PLANS,
-                ReadingShelf.NOW -> Int.MIN_VALUE
-            }
+        if (oldCover != newCover) {
+            cleanupInternalCoverAsync(oldCover)
         }
-
-        val comparator = when (sort.field) {
-            ReadingSortField.AUTHOR ->
-                compareBy<ReadingMovie> { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.TITLE ->
-                compareBy<ReadingMovie> { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.PAGES ->
-                compareBy<ReadingMovie> { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.YEAR ->
-                compareBy<ReadingMovie> { yearForShelf(it) }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.RELEASE_YEAR ->
-                compareBy<ReadingMovie> { it.releaseYear ?: Int.MIN_VALUE }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-        }
-
-        val sorted = list.sortedWith(comparator)
-        return if (sort.ascending) sorted else sorted.asReversed()
     }
+
+
+
+
 
     fun addReadingSeries(
         shelf: ReadingShelf,
@@ -652,12 +849,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteReadingSeries(seriesId: Long) {
         val st = _state.value
-        val has = st.readingSeries.any { it.id == seriesId }
-        if (!has) return
+        val series = st.readingSeries.firstOrNull { it.id == seriesId } ?: return
 
         _state.value = st.copy(
             readingSeries = st.readingSeries.filterNot { it.id == seriesId }
         )
+
+        cleanupInternalCoverAsync(series.coverUri)
     }
 
     fun moveReadingSeriesToShelf(seriesId: Long, shelf: ReadingShelf) {
@@ -712,6 +910,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st = _state.value
         val old = st.readingSeries.firstOrNull { it.id == seriesId } ?: return
 
+        val oldCover = old.coverUri
+
         val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
         val newShelf = shelf ?: old.shelf
         val currentYear = LocalDate.now().year
@@ -750,59 +950,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = st.copy(
             readingSeries = st.readingSeries.map { s -> if (s.id == seriesId) updated else s }
         )
-    }
 
-    fun sortedReadingSeriesForShelf(shelf: ReadingShelf): List<ReadingSeries> {
-        val st = _state.value
-        val prefs = tabPrefsForShelf(st, shelf)
-        val base = st.readingSeries.filter { it.shelf == shelf }
-        return sortReadingSeries(base, prefs.sort, shelf)
-    }
-
-    private fun sortReadingSeries(
-        list: List<ReadingSeries>,
-        sort: ReadingSort,
-        shelf: ReadingShelf
-    ): List<ReadingSeries> {
-        fun s(x: String) = x.trim().lowercase(Locale.getDefault())
-
-        fun yearForShelf(series: ReadingSeries): Int {
-            return when (shelf) {
-                ReadingShelf.DONE -> series.yearWatched ?: Int.MIN_VALUE
-                ReadingShelf.ABANDONED -> series.yearAbandoned ?: Int.MIN_VALUE
-                ReadingShelf.PLANS,
-                ReadingShelf.NOW -> Int.MIN_VALUE
-            }
+        if (oldCover != newCover) {
+            cleanupInternalCoverAsync(oldCover)
         }
-
-        val comparator = when (sort.field) {
-            ReadingSortField.AUTHOR ->
-                compareBy<ReadingSeries> { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.TITLE ->
-                compareBy<ReadingSeries> { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.PAGES ->
-                compareBy<ReadingSeries> { it.totalSeasons }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.YEAR ->
-                compareBy<ReadingSeries> { yearForShelf(it) }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-
-            ReadingSortField.RELEASE_YEAR ->
-                compareBy<ReadingSeries> { Int.MIN_VALUE }
-                    .thenBy { s(it.title) }
-                    .thenBy { it.createdAtEpochMillis }
-        }
-
-        val sorted = list.sortedWith(comparator)
-        return if (sort.ascending) sorted else sorted.asReversed()
     }
+
 
     fun beginReading(bookId: Long, startedAtEpochMillis: Long = System.currentTimeMillis()): Boolean {
         val st = _state.value
@@ -826,21 +979,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // Backward-compatible wrapper.
-    fun finishReading(
-        endPage: Int,
-        durationMinutes: Int,
-        finishedAtEpochMillis: Long = System.currentTimeMillis()
-    ): Boolean {
-        val active = _activeReading.value ?: return false
-        return finishReading(
-            startPage = active.startPage,
-            endPage = endPage,
-            durationMinutes = durationMinutes,
-            finishedAtEpochMillis = finishedAtEpochMillis
-        )
-    }
-
-    fun finishReading(
+       fun finishReading(
         startPage: Int,
         endPage: Int,
         durationMinutes: Int,
@@ -1813,8 +1952,87 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /* ---------------------------
-       Anthropometry
-    ---------------------------- */
+   Anthropometry settings
+---------------------------- */
+
+    private fun normalizeAnthropometryFieldIds(ids: Iterable<String>): Set<String> {
+        val normalized = ids
+            .asSequence()
+            .map { it.trim() }
+            .filter { it in allAnthropometryFieldIds() }
+            .toSet()
+
+        return if (normalized.isEmpty()) {
+            defaultAnthropometryFieldIds()
+        } else {
+            normalized
+        }
+    }
+
+    fun setAnthropometryEnabledFieldIds(ids: Set<String>) {
+        val normalized = normalizeAnthropometryFieldIds(ids)
+
+        val cur = _state.value
+        if (cur.anthropometryEnabledFieldIds == normalized) return
+
+        _state.value = cur.copy(anthropometryEnabledFieldIds = normalized)
+    }
+
+    fun showAllAnthropometryFields() {
+        val all = allAnthropometryFieldIds()
+        val cur = _state.value
+        if (cur.anthropometryEnabledFieldIds == all) return
+
+        _state.value = cur.copy(anthropometryEnabledFieldIds = all)
+    }
+
+
+    /* ---------------------------
+     Anthropometry
+  ---------------------------- */
+
+    fun saveAnthropometryForDate(
+        date: LocalDate,
+        valuesByFieldId: Map<String, Double?>
+    ) {
+        fun round1(v: Double?): Double? {
+            if (v == null) return null
+            return kotlin.math.round(v * 10.0) / 10.0
+        }
+
+        val cur = _state.value
+        val existing = cur.anthropometry.firstOrNull { it.date == date }
+
+        fun valueOrExisting(fieldId: String, existingValue: Double?): Double? {
+            return if (fieldId in valuesByFieldId) {
+                round1(valuesByFieldId[fieldId])
+            } else {
+                existingValue
+            }
+        }
+
+        val entry = AnthropometryEntry(
+            date = date,
+            armCm = valueOrExisting(AnthropometryFieldIds.ARM, existing?.armCm),
+            chestCm = valueOrExisting(AnthropometryFieldIds.CHEST, existing?.chestCm),
+            underChestCm = valueOrExisting(AnthropometryFieldIds.UNDER_CHEST, existing?.underChestCm),
+            waistCm = valueOrExisting(AnthropometryFieldIds.WAIST, existing?.waistCm),
+            bellyCm = valueOrExisting(AnthropometryFieldIds.BELLY, existing?.bellyCm),
+            hipsCm = valueOrExisting(AnthropometryFieldIds.HIPS, existing?.hipsCm),
+            thighCm = valueOrExisting(AnthropometryFieldIds.THIGH, existing?.thighCm),
+            weightKg = valueOrExisting(AnthropometryFieldIds.WEIGHT, existing?.weightKg),
+        )
+
+        val filtered = cur.anthropometry.filterNot { it.date == date }
+
+        val newList = if (!entry.hasAnyValue()) {
+            filtered
+        } else {
+            (filtered + entry).sortedBy { it.date }
+        }
+
+        _state.value = cur.copy(anthropometry = newList)
+    }
 
     fun saveAnthropometryForDate(
         date: LocalDate,
@@ -1827,33 +2045,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         thighCm: Double?,
         weightKg: Double?,
     ) {
-        fun round1(v: Double?): Double? {
-            if (v == null) return null
-            return kotlin.math.round(v * 10.0) / 10.0
-        }
-
-        val entry = AnthropometryEntry(
+        saveAnthropometryForDate(
             date = date,
-            armCm = round1(armCm),
-            chestCm = round1(chestCm),
-            underChestCm = round1(underChestCm),
-            waistCm = round1(waistCm),
-            bellyCm = round1(bellyCm),
-            hipsCm = round1(hipsCm),
-            thighCm = round1(thighCm),
-            weightKg = round1(weightKg),
+            valuesByFieldId = mapOf(
+                AnthropometryFieldIds.ARM to armCm,
+                AnthropometryFieldIds.CHEST to chestCm,
+                AnthropometryFieldIds.UNDER_CHEST to underChestCm,
+                AnthropometryFieldIds.WAIST to waistCm,
+                AnthropometryFieldIds.BELLY to bellyCm,
+                AnthropometryFieldIds.HIPS to hipsCm,
+                AnthropometryFieldIds.THIGH to thighCm,
+                AnthropometryFieldIds.WEIGHT to weightKg,
+            )
         )
-
-        val cur = _state.value
-        val filtered = cur.anthropometry.filterNot { it.date == date }
-
-        val newList = if (!entry.hasAnyValue()) {
-            filtered
-        } else {
-            (filtered + entry).sortedBy { it.date }
-        }
-
-        _state.value = cur.copy(anthropometry = newList)
     }
 
     /* ---------------------------

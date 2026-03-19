@@ -263,4 +263,9 @@
     <string name="reading_series_done">Gotovo</string>
     <string name="reading_series_delete_title">Obriši seriju?</string>
     <string name="reading_series_delete_text">Ova serija će biti trajno obrisana.</string>
+    <string name="main_menu_show_all">Prikaži sve</string>
+    <string name="main_menu_hide">Sakrij</string>
+    <string name="reading_sort_field_release_year">Godina izdanja</string>
+    <string name="reading_movie_field_release_year">Godina izdanja</string>
+    <string name="reading_movie_field_translation">Prevodi</string>
 </resources>
