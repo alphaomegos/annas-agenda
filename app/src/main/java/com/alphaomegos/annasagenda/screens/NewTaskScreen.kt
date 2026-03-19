@@ -47,7 +47,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import com.alphaomegos.annasagenda.NewTaskDraft
-import com.alphaomegos.annasagenda.NewTaskDraftSubtask
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.collectAsState
@@ -61,10 +60,7 @@ fun NewTaskScreen(
 ) {
     var description by rememberSaveable { mutableStateOf("") }
     val maxSubtasks = 30
-    val subtasksText = remember { mutableStateListOf<String>() }
-    val subtasksColor = remember { mutableStateListOf<Long?>() }
-    // Track whether user manually changed a draft subtask color (to avoid overwriting on task color change)
-    val subtasksColorOverridden = remember { mutableStateListOf<Boolean>() }
+    val subtasks = remember { mutableStateListOf<EditableNewTaskSubtask>() }
 
     // - null  -> default "today" (main menu)
     // - >= 0  -> specific date (calendar)
@@ -93,21 +89,19 @@ fun NewTaskScreen(
 
     LaunchedEffect(Unit) {
         val draft = vm.loadNewTaskDraft()
-        val canApply = description.isBlank() && subtasksText.isEmpty() && taskColor == null
+        val canApply = description.isBlank() && subtasks.isEmpty() && taskColor == null
 
         if (draft != null && canApply) {
             description = draft.description
             taskColor = draft.taskColorArgb
 
-            subtasksText.clear()
-            subtasksColor.clear()
-            subtasksColorOverridden.clear()
-
-            draft.subtasks.take(maxSubtasks).forEach { s ->
-                subtasksText.add(s.description)
-                subtasksColor.add(s.colorArgb)
-                subtasksColorOverridden.add(s.colorOverridden)
-            }
+            subtasks.clear()
+            subtasks.addAll(
+                draftSubtasksToEditable(
+                    subtasks = draft.subtasks,
+                    maxSubtasks = maxSubtasks,
+                )
+            )
         }
 
         draftLoaded = true
@@ -120,13 +114,7 @@ fun NewTaskScreen(
             NewTaskDraft(
                 description = description,
                 taskColorArgb = taskColor,
-                subtasks = subtasksText.indices.map { i ->
-                    NewTaskDraftSubtask(
-                        description = subtasksText[i],
-                        colorArgb = subtasksColor.getOrNull(i),
-                        colorOverridden = subtasksColorOverridden.getOrNull(i) ?: false
-                    )
-                }
+                subtasks = editableSubtasksToDraft(subtasks.toList())
             )
         }
             .distinctUntilChanged()
@@ -247,12 +235,13 @@ fun NewTaskScreen(
                 selected = taskColor,
                 onSelect = { newColor ->
                     taskColor = newColor
-                    // Apply the task color to draft subtasks unless the user manually changed that subtask's color.
-                    for (i in subtasksColor.indices) {
-                        if (i < subtasksColorOverridden.size && !subtasksColorOverridden[i]) {
-                            subtasksColor[i] = newColor
-                        }
-                    }
+
+                    val updated = applyTaskColorToNonOverriddenSubtasks(
+                        subtasks = subtasks.toList(),
+                        taskColor = newColor,
+                    )
+                    subtasks.clear()
+                    subtasks.addAll(updated)
                 }
             )
 
@@ -280,14 +269,14 @@ fun NewTaskScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    "${subtasksText.size}/$maxSubtasks",
+                    "${subtasks.size}/$maxSubtasks",
                     style = MaterialTheme.typography.labelMedium
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (subtasksText.isEmpty()) {
+            if (subtasks.isEmpty()) {
                 Text(stringResource(R.string.no_subtasks_yet))
             } else {
                 LazyColumn(
@@ -295,32 +284,35 @@ fun NewTaskScreen(
                         .fillMaxWidth()
                         .heightIn(max = 260.dp)
                 ) {
-                    items(subtasksText.size) { i ->
+                    items(subtasks.size) { i ->
+                        val subtask = subtasks[i]
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             ColorDot(
-                                colorArgb = subtasksColor[i],
+                                colorArgb = subtask.colorArgb,
                                 onClick = {
-                                    // Cycle color for THIS draft subtask
-                                    subtasksColor[i] = nextPaletteColor(subtasksColor[i])
-                                    subtasksColorOverridden[i] = true
+                                    subtasks[i] = subtask.copy(
+                                        colorArgb = nextPaletteColor(subtask.colorArgb),
+                                        colorOverridden = true,
+                                    )
                                 }
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             OutlinedTextField(
-                                value = subtasksText[i],
-                                onValueChange = { subtasksText[i] = it },
+                                value = subtask.description,
+                                onValueChange = { newText ->
+                                    subtasks[i] = subtask.copy(description = newText)
+                                },
                                 label = { Text(stringResource(R.string.subtask_label, i + 1)) },
                                 singleLine = true,
                                 modifier = Modifier.weight(1f)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             TextButton(onClick = {
-                                subtasksText.removeAt(i)
-                                subtasksColor.removeAt(i)
-                                subtasksColorOverridden.removeAt(i)
+                                subtasks.removeAt(i)
                             }) {
                                 Text(stringResource(R.string.remove))
                             }
@@ -338,13 +330,11 @@ fun NewTaskScreen(
             ) {
                 OutlinedButton(
                     onClick = {
-                        if (subtasksText.size < maxSubtasks) {
-                            subtasksText.add("")
-                            subtasksColor.add(taskColor)           // inherit task color by default
-                            subtasksColorOverridden.add(false)     // not overridden yet
+                        if (subtasks.size < maxSubtasks) {
+                            subtasks.add(newEditableSubtask(taskColor))
                         }
                     },
-                    enabled = subtasksText.size < maxSubtasks,
+                    enabled = subtasks.size < maxSubtasks,
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(stringResource(R.string.add_subtask))
@@ -352,7 +342,7 @@ fun NewTaskScreen(
 
                 Button(
                     onClick = {
-                        val cleanSubtasks = subtasksText.map { it.trim() }
+                        val cleanSubtasks = subtasks.map { it.description.trim() }
                         val taskId = vm.createTaskForDate(
                             date = selectedDate,
                             time = null,
@@ -363,7 +353,7 @@ fun NewTaskScreen(
                         )
                         cleanSubtasks.forEachIndexed { idx, txt ->
                             if (txt.isNotBlank()) {
-                                val subColor = subtasksColor.getOrNull(idx) ?: taskColor
+                                val subColor = subtasks.getOrNull(idx)?.colorArgb ?: taskColor
                                 vm.createSubtask(taskId, txt, colorArgb = subColor)
                             }
                         }

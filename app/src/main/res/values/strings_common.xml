@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Anna\'s Agenda</string>
+    <string name="coming_soon">Coming soon</string>
+
+    <!-- Common actions -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
+    <string name="delete">Delete</string>
+    <string name="remove">Remove</string>
+    <string name="back">Back</string>
+    <string name="pick_date">Pick date</string>
+    <string name="selected_label">Selected:</string>
+    <string name="invalid_number">Invalid number</string>
+</resources>

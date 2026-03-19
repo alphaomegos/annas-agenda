@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Counters -->
+    <string name="attach_counter">Attach counter</string>
+    <string name="counter_not_attached">No counter</string>
+    <string name="no_counter">No counter</string>
+    <string name="no_counters_yet">No counters yet</string>
+    <string name="add_counter">Add counter</string>
+    <string name="counter_type_date_range">Date counter</string>
+    <string name="counter_type_manual">Manual counter</string>
+    <string name="create_manual_counter">Create manual counter</string>
+    <string name="create_date_counter">Create date counter</string>
+    <string name="edit_counter">Edit counter</string>
+    <string name="counter_title">Title</string>
+    <string name="balance">Balance</string>
+    <string name="start_date_iso">Start date (YYYY-MM-DD)</string>
+    <string name="end_date_iso">End date (YYYY-MM-DD)</string>
+    <string name="invalid_date_range_hint">Enter valid dates. Start must be before end.</string>
+    <string name="manual_remaining_fmt">Remaining %1$d</string>
+    <string name="date_remaining_fmt">Remaining %1$s (%2$d%%)</string>
+    <string name="attached_counter_fmt">Counter: %1$s</string>
+    <string name="detach_counter">Detach</string>
+</resources>

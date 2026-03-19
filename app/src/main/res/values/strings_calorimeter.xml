@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Calorimeter -->
+    <string name="kcal_short">kcal</string>
+    <string name="calorimeter_daily_goal">Daily goal</string>
+    <string name="calorimeter_set_goal">Set goal</string>
+    <string name="calorimeter_eaten_button">Eaten</string>
+    <string name="calorimeter_add_eaten_title">Add eaten item</string>
+    <string name="calorimeter_food_name">Food</string>
+    <string name="calorimeter_food_kcal">Calories</string>
+    <string name="calorimeter_day_balance">Balance today</string>
+    <string name="calorimeter_week_goal">Weekly goal</string>
+    <string name="calorimeter_week_balance">Balance (last 7 days)</string>
+    <string name="calorimeter_month_projection">Potential change (30 days)</string>
+    <string name="calorimeter_no_eaten_today">Nothing yet</string>
+    <string name="calorimeter_show_all_n">Show all (%1$d)</string>
+</resources>

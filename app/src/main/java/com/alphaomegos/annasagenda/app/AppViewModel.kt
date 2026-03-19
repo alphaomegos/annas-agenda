@@ -23,13 +23,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import java.text.DecimalFormat
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.WeekFields
 import java.util.Locale
-import kotlin.math.max
 
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -402,16 +400,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /* ---------------------------
    Main menu ordering / visibility
 ---------------------------- */
-
-    private fun normalizeMainMenuIds(ids: Iterable<String>): List<String> =
-        ids.asSequence()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .toList()
-
         fun setMainMenuOrder(ids: List<String>) {
-        val normalized = normalizeMainMenuIds(ids)
+        val normalized = normalizeMainMenuOrderIds(ids)
 
         val cur = _state.value
         if (cur.mainMenuOrder == normalized) return
@@ -419,8 +409,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
         fun hideMainMenuItem(id: String) {
-        val normalizedId = id.trim()
-        if (normalizedId.isEmpty()) return
+            val normalizedId = normalizeMainMenuItemId(id) ?: return
 
         val cur = _state.value
         if (normalizedId in cur.mainMenuHiddenIds) return
@@ -450,37 +439,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _activeReading = MutableStateFlow<ActiveReading?>(null)
     val activeReading: StateFlow<ActiveReading?> = _activeReading.asStateFlow()
 
-    private fun tabPrefsForShelf(st: AppState, shelf: ReadingShelf): ReadingTabPrefs {
-        return when (shelf) {
-            ReadingShelf.PLANS -> st.readingPlansPrefs
-            ReadingShelf.NOW -> st.readingNowPrefs
-            ReadingShelf.DONE -> st.readingDonePrefs
-            ReadingShelf.ABANDONED -> st.readingAbandonedPrefs
-        }
-    }
-
-    private fun withTabPrefs(st: AppState, shelf: ReadingShelf, prefs: ReadingTabPrefs): AppState {
-        return when (shelf) {
-            ReadingShelf.PLANS -> st.copy(readingPlansPrefs = prefs)
-            ReadingShelf.NOW -> st.copy(readingNowPrefs = prefs)
-            ReadingShelf.DONE -> st.copy(readingDonePrefs = prefs)
-            ReadingShelf.ABANDONED -> st.copy(readingAbandonedPrefs = prefs)
-        }
-    }
 
     fun setReadingViewMode(shelf: ReadingShelf, mode: ReadingViewMode) {
         val st = _state.value
-        val prefs = tabPrefsForShelf(st, shelf)
+        val prefs = readingTabPrefsForShelf(st, shelf)
         if (prefs.viewMode == mode) return
-        _state.value = withTabPrefs(st, shelf, prefs.copy(viewMode = mode))
+        _state.value = readingStateWithTabPrefs(st, shelf, prefs.copy(viewMode = mode))
     }
 
     fun setReadingSort(shelf: ReadingShelf, field: ReadingSortField, ascending: Boolean) {
         val st = _state.value
-        val prefs = tabPrefsForShelf(st, shelf)
+        val prefs = readingTabPrefsForShelf(st, shelf)
         val newSort = ReadingSort(field = field, ascending = ascending)
         if (prefs.sort == newSort) return
-        _state.value = withTabPrefs(st, shelf, prefs.copy(sort = newSort))
+        _state.value = readingStateWithTabPrefs(st, shelf, prefs.copy(sort = newSort))
     }
 
     fun setReadingMediaFilter(
@@ -506,25 +478,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         author: String = "",
         coverUri: String? = null
     ): Long? {
-        val cleanTitle = title.trim()
-        if (cleanTitle.isEmpty()) return null
-        if (totalPages <= 0) return null
-
         val now = System.currentTimeMillis()
         val currentYear = LocalDate.now().year
 
-        val book = ReadingBook(
+        val book = buildReadingBook(
             id = newId(),
             shelf = shelf,
-            author = author.trim(),
-            title = cleanTitle,
-            coverUri = coverUri,
+            title = title,
             totalPages = totalPages,
-            currentPage = 0,
-            yearRead = if (shelf == ReadingShelf.DONE) currentYear else null,
-            yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
-            createdAtEpochMillis = now
-        )
+            author = author,
+            coverUri = coverUri,
+            createdAtEpochMillis = now,
+            currentYear = currentYear,
+        ) ?: return null
 
         val st = _state.value
         _state.value = st.copy(readingBooks = st.readingBooks + book)
@@ -559,30 +525,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val currentYear = LocalDate.now().year
 
         val updatedBooks = st.readingBooks.map { b ->
-            if (b.id != bookId) {
-                b
-            } else {
-                when (shelf) {
-                    ReadingShelf.DONE -> b.copy(
-                        shelf = shelf,
-                        yearRead = currentYear,
-                        yearAbandoned = null
-                    )
-
-                    ReadingShelf.ABANDONED -> b.copy(
-                        shelf = shelf,
-                        yearRead = null,
-                        yearAbandoned = currentYear
-                    )
-
-                    ReadingShelf.PLANS,
-                    ReadingShelf.NOW -> b.copy(
-                        shelf = shelf,
-                        yearRead = null,
-                        yearAbandoned = null
-                    )
-                }
-            }
+            if (b.id != bookId) b
+            else moveReadingBookToShelf(b, shelf, currentYear)
         }
 
         _state.value = st.copy(readingBooks = updatedBooks)
@@ -604,40 +548,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val oldCover = old.coverUri
 
-        val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
-        val newAuthor = author?.trim() ?: old.author
-
-        val pages = (totalPages ?: old.totalPages).coerceAtLeast(1)
-        val newCurrent = (currentPage ?: old.currentPage).coerceIn(0, pages)
-
-        val newShelf = shelf ?: old.shelf
         val currentYear = LocalDate.now().year
 
-        val newYearRead = when (newShelf) {
-            ReadingShelf.DONE -> yearRead ?: old.yearRead ?: currentYear
-            else -> null
-        }
-
-        val newYearAbandoned = when (newShelf) {
-            ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
-            else -> null
-        }
-
-        val newCover = when {
-            clearCover -> null
-            coverUri != null -> coverUri
-            else -> old.coverUri
-        }
-
-        val updated = old.copy(
-            shelf = newShelf,
-            author = newAuthor,
-            title = newTitle,
-            coverUri = newCover,
-            totalPages = pages,
-            currentPage = newCurrent,
-            yearRead = newYearRead,
-            yearAbandoned = newYearAbandoned
+        val updated = updateReadingBookEntity(
+            old = old,
+            author = author,
+            title = title,
+            coverUri = coverUri,
+            clearCover = clearCover,
+            totalPages = totalPages,
+            currentPage = currentPage,
+            yearRead = yearRead,
+            yearAbandoned = yearAbandoned,
+            shelf = shelf,
+            currentYear = currentYear,
         )
 
         if (_activeReading.value?.bookId == bookId) {
@@ -653,14 +577,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             readingBooks = st.readingBooks.map { b -> if (b.id == bookId) updated else b }
         )
 
-        if (oldCover != newCover) {
+        if (oldCover != updated.coverUri) {
             cleanupInternalCoverAsync(oldCover)
         }
     }
-
-
-
-
 
     fun addReadingMovie(
         shelf: ReadingShelf,
@@ -669,26 +589,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         translation: String = "",
         coverUri: String? = null,
     ): Long? {
-        val cleanTitle = title.trim()
-        if (cleanTitle.isEmpty()) return null
-
-        val cleanReleaseYear = releaseYear?.takeIf { it in 1..9999 }
-        val cleanTranslation = translation.trim()
-
         val now = System.currentTimeMillis()
         val currentYear = LocalDate.now().year
 
-        val movie = ReadingMovie(
+        val movie = buildReadingMovie(
             id = newId(),
             shelf = shelf,
-            title = cleanTitle,
+            title = title,
+            releaseYear = releaseYear,
+            translation = translation,
             coverUri = coverUri,
-            releaseYear = cleanReleaseYear,
-            translation = cleanTranslation,
-            yearWatched = if (shelf == ReadingShelf.DONE) currentYear else null,
-            yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
-            createdAtEpochMillis = now
-        )
+            createdAtEpochMillis = now,
+            currentYear = currentYear,
+        ) ?: return null
 
         val st = _state.value
         _state.value = st.copy(readingMovies = st.readingMovies + movie)
@@ -714,30 +627,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val currentYear = LocalDate.now().year
 
         val updatedMovies = st.readingMovies.map { m ->
-            if (m.id != movieId) {
-                m
-            } else {
-                when (shelf) {
-                    ReadingShelf.DONE -> m.copy(
-                        shelf = shelf,
-                        yearWatched = currentYear,
-                        yearAbandoned = null
-                    )
-
-                    ReadingShelf.ABANDONED -> m.copy(
-                        shelf = shelf,
-                        yearWatched = null,
-                        yearAbandoned = currentYear
-                    )
-
-                    ReadingShelf.PLANS,
-                    ReadingShelf.NOW -> m.copy(
-                        shelf = shelf,
-                        yearWatched = null,
-                        yearAbandoned = null
-                    )
-                }
-            }
+            if (m.id != movieId) m
+            else moveReadingMovieToShelf(m, shelf, currentYear)
         }
 
         _state.value = st.copy(readingMovies = updatedMovies)
@@ -760,56 +651,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val oldCover = old.coverUri
 
-        val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
-        val newShelf = shelf ?: old.shelf
         val currentYear = LocalDate.now().year
 
-        val newYearWatched = when (newShelf) {
-            ReadingShelf.DONE -> yearWatched ?: old.yearWatched ?: currentYear
-            else -> null
-        }
-
-        val newYearAbandoned = when (newShelf) {
-            ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
-            else -> null
-        }
-
-        val newCover = when {
-            clearCover -> null
-            coverUri != null -> coverUri
-            else -> old.coverUri
-        }
-
-        val newReleaseYear = when {
-            clearReleaseYear -> null
-            releaseYear != null -> releaseYear.takeIf { it in 1..9999 }
-            else -> old.releaseYear
-        }
-
-        val newTranslation = translation?.trim() ?: old.translation
-
-        val updated = old.copy(
-            shelf = newShelf,
-            title = newTitle,
-            coverUri = newCover,
-            releaseYear = newReleaseYear,
-            translation = newTranslation,
-            yearWatched = newYearWatched,
-            yearAbandoned = newYearAbandoned
+        val updated = updateReadingMovieEntity(
+            old = old,
+            title = title,
+            coverUri = coverUri,
+            clearCover = clearCover,
+            releaseYear = releaseYear,
+            clearReleaseYear = clearReleaseYear,
+            translation = translation,
+            yearWatched = yearWatched,
+            yearAbandoned = yearAbandoned,
+            shelf = shelf,
+            currentYear = currentYear,
         )
 
         _state.value = st.copy(
             readingMovies = st.readingMovies.map { m -> if (m.id == movieId) updated else m }
         )
 
-        if (oldCover != newCover) {
+        if (oldCover != updated.coverUri) {
             cleanupInternalCoverAsync(oldCover)
         }
     }
-
-
-
-
 
     fun addReadingSeries(
         shelf: ReadingShelf,
@@ -819,28 +684,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         currentEpisode: Int = 1,
         coverUri: String? = null,
     ): Long? {
-        val cleanTitle = title.trim()
-        if (cleanTitle.isEmpty()) return null
-
-        val safeTotalSeasons = totalSeasons.coerceAtLeast(1)
-        val safeCurrentSeason = currentSeason.coerceIn(1, safeTotalSeasons)
-        val safeCurrentEpisode = currentEpisode.coerceAtLeast(1)
-
         val now = System.currentTimeMillis()
         val currentYear = LocalDate.now().year
 
-        val series = ReadingSeries(
+        val series = buildReadingSeries(
             id = newId(),
             shelf = shelf,
-            title = cleanTitle,
+            title = title,
+            totalSeasons = totalSeasons,
+            currentSeason = currentSeason,
+            currentEpisode = currentEpisode,
             coverUri = coverUri,
-            totalSeasons = safeTotalSeasons,
-            currentSeason = safeCurrentSeason,
-            currentEpisode = safeCurrentEpisode,
-            yearWatched = if (shelf == ReadingShelf.DONE) currentYear else null,
-            yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
-            createdAtEpochMillis = now
-        )
+            createdAtEpochMillis = now,
+            currentYear = currentYear,
+        ) ?: return null
 
         val st = _state.value
         _state.value = st.copy(readingSeries = st.readingSeries + series)
@@ -866,30 +723,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val currentYear = LocalDate.now().year
 
         val updatedSeries = st.readingSeries.map { s ->
-            if (s.id != seriesId) {
-                s
-            } else {
-                when (shelf) {
-                    ReadingShelf.DONE -> s.copy(
-                        shelf = shelf,
-                        yearWatched = currentYear,
-                        yearAbandoned = null
-                    )
-
-                    ReadingShelf.ABANDONED -> s.copy(
-                        shelf = shelf,
-                        yearWatched = null,
-                        yearAbandoned = currentYear
-                    )
-
-                    ReadingShelf.PLANS,
-                    ReadingShelf.NOW -> s.copy(
-                        shelf = shelf,
-                        yearWatched = null,
-                        yearAbandoned = null
-                    )
-                }
-            }
+            if (s.id != seriesId) s
+            else moveReadingSeriesToShelf(s, shelf, currentYear)
         }
 
         _state.value = st.copy(readingSeries = updatedSeries)
@@ -912,46 +747,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val oldCover = old.coverUri
 
-        val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
-        val newShelf = shelf ?: old.shelf
         val currentYear = LocalDate.now().year
 
-        val safeTotalSeasons = (totalSeasons ?: old.totalSeasons).coerceAtLeast(1)
-        val safeCurrentSeason = (currentSeason ?: old.currentSeason).coerceIn(1, safeTotalSeasons)
-        val safeCurrentEpisode = (currentEpisode ?: old.currentEpisode).coerceAtLeast(1)
-
-        val newYearWatched = when (newShelf) {
-            ReadingShelf.DONE -> yearWatched ?: old.yearWatched ?: currentYear
-            else -> null
-        }
-
-        val newYearAbandoned = when (newShelf) {
-            ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
-            else -> null
-        }
-
-        val newCover = when {
-            clearCover -> null
-            coverUri != null -> coverUri
-            else -> old.coverUri
-        }
-
-        val updated = old.copy(
-            shelf = newShelf,
-            title = newTitle,
-            coverUri = newCover,
-            totalSeasons = safeTotalSeasons,
-            currentSeason = safeCurrentSeason,
-            currentEpisode = safeCurrentEpisode,
-            yearWatched = newYearWatched,
-            yearAbandoned = newYearAbandoned
+        val updated = updateReadingSeriesEntity(
+            old = old,
+            title = title,
+            coverUri = coverUri,
+            clearCover = clearCover,
+            totalSeasons = totalSeasons,
+            currentSeason = currentSeason,
+            currentEpisode = currentEpisode,
+            yearWatched = yearWatched,
+            yearAbandoned = yearAbandoned,
+            shelf = shelf,
+            currentYear = currentYear,
         )
 
         _state.value = st.copy(
             readingSeries = st.readingSeries.map { s -> if (s.id == seriesId) updated else s }
         )
 
-        if (oldCover != newCover) {
+        if (oldCover != updated.coverUri) {
             cleanupInternalCoverAsync(oldCover)
         }
     }
@@ -1017,34 +833,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return true
     }
 
-    fun estimateRemainingMinutes(bookId: Long): Int? {
+    fun estimateRemainingHours(bookId: Long): Int? {
         val st = _state.value
         val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return null
-        val remainingPages = (book.totalPages - book.currentPage).coerceAtLeast(0)
-        if (remainingPages == 0) return 0
-
-        val last = st.readingSessions
-            .asSequence()
-            .filter { it.bookId == bookId }
-            .maxByOrNull { it.createdAtEpochMillis }
-            ?: return null
-
-        val pagesRead = (last.endPage - last.startPage).coerceAtLeast(0)
-        val dur = last.durationMinutes.coerceAtLeast(1)
-
-        if (pagesRead <= 0) return null
-
-        val num = remainingPages.toLong() * dur.toLong()
-        val denim = pagesRead.toLong()
-        val minutes = ((num + denim - 1) / denim).toInt()
-
-        return minutes.coerceAtLeast(0)
+        return estimateRemainingReadingHours(
+            book = book,
+            sessions = st.readingSessions,
+        )
     }
 
-    fun estimateRemainingHours(bookId: Long): Int? {
-        val minutes = estimateRemainingMinutes(bookId) ?: return null
-        return ((minutes + 59) / 60).coerceAtLeast(0)
-    }
+       private fun formatRunningTaskKmTitle(kmTitle: String): String =
+        getApplication<Application>().getString(R.string.running_task_km, kmTitle)
+
+    private fun formatRunningTaskMinutesTitle(minutes: Int): String =
+        getApplication<Application>().getString(R.string.running_task_minutes, minutes)
 
     /* ---------------------------
        Running plan ("On the run")
@@ -1082,7 +884,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         if (st.runningPlanApproved) {
             val after = list.firstOrNull { it.date == date } ?: return
-            val title = buildRunningTaskTitle(after)
+            val title = buildRunningPlanTaskTitle(
+                entry = after,
+                formatKmTitle = ::formatRunningTaskKmTitle,
+                formatMinutesTitle = ::formatRunningTaskMinutesTitle,
+            )
             if (after.taskId != null && title != null) updateTaskDescription(after.taskId, title)
         }
     }
@@ -1105,7 +911,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             var e = e0
 
             if (e.taskId == null) {
-                val title = buildRunningTaskTitle(e)
+                val title = buildRunningPlanTaskTitle(
+                    entry = e,
+                    formatKmTitle = ::formatRunningTaskKmTitle,
+                    formatMinutesTitle = ::formatRunningTaskMinutesTitle,
+                )
                 if (title != null) {
                     val id = createTaskForDate(
                         date = e.date,
@@ -1142,7 +952,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val today = LocalDate.now()
 
         val expired = st.runningPlanEntries.filter { e ->
-            today.isAfter(e.date.plusDays(1)) && isRunningEntryIncomplete(e)
+            today.isAfter(e.date.plusDays(1)) && isRunningPlanEntryIncomplete(e)
         }
 
         if (expired.isEmpty()) return
@@ -1153,56 +963,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = st.copy(
             runningPlanEntries = st.runningPlanEntries.filterNot { it.date in expiredDates }
         )
-    }
-
-    private fun isRunningEntryIncomplete(e: RunningPlanEntry): Boolean {
-        val km = parseKm(e.distanceKmText)
-        val minutes = parseDurationToMinutes(e.durationHhMmText)
-        val minutesOk = minutes != null && minutes > 0
-        val paceDigits = e.paceText.filter { it.isDigit() }
-        val paceOk = paceDigits.length == 4
-        return km == null || !minutesOk || !paceOk
-    }
-
-    private fun buildRunningTaskTitle(e: RunningPlanEntry): String? {
-        val distRaw = e.distanceKmText.trim()
-        if (distRaw.isNotBlank()) {
-            val kmTitle = formatKmForTitle(distRaw)
-            return getApplication<Application>().getString(R.string.running_task_km, kmTitle)
-        }
-
-        val minutes = parseDurationToMinutes(e.durationHhMmText) ?: return null
-        return getApplication<Application>().getString(R.string.running_task_minutes, max(1, minutes))
-    }
-
-    private fun parseDurationToMinutes(raw: String): Int? {
-        val digitsAll = raw.filter { it.isDigit() }
-        if (digitsAll.isBlank()) return null
-
-        if (digitsAll.length <= 2) {
-            return digitsAll.toIntOrNull()?.coerceAtLeast(0)
-        }
-
-        val d = digitsAll.take(4).padStart(4, '0')
-
-        val hh = d.substring(0, 2).toIntOrNull() ?: return null
-        val mm = d.substring(2, 4).toIntOrNull() ?: return null
-
-        return if (mm in 0..59) {
-            (hh * 60 + mm).coerceAtLeast(0)
-        } else {
-            d.toIntOrNull()?.coerceAtLeast(0)
-        }
-    }
-
-    private fun formatKmForTitle(raw: String): String {
-        val km = parseKm(raw) ?: return raw.trim()
-        return DecimalFormat("0.#").format(km)
-    }
-
-    private fun parseKm(raw: String): Double? {
-        val clean = raw.trim().replace(',', '.')
-        return clean.toDoubleOrNull()
     }
 
     private val _state = MutableStateFlow(AppState())
@@ -1671,67 +1431,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun moveTaskUp(taskId: Long) {
         val cur = _state.value
-        val victim = cur.tasks.firstOrNull { it.id == taskId } ?: return
-        val date = victim.date
-
-        val siblings = cur.tasks
-            .filter { it.date == date }
-            .sortedWith(compareBy({ it.order }, { it.id }))
-
-        val idx = siblings.indexOfFirst { it.id == taskId }
-        if (idx <= 0) return
-
-        val reordered = siblings.toMutableList()
-        val tmp = reordered[idx - 1]
-        reordered[idx - 1] = reordered[idx]
-        reordered[idx] = tmp
-
-        val idToOrder = reordered.mapIndexed { i, t -> t.id to i }.toMap()
-        val newTasks = cur.tasks.map { t -> idToOrder[t.id]?.let { t.copy(order = it) } ?: t }
+        val newTasks = moveTaskWithinDate(cur.tasks, taskId, step = -1)
+        if (newTasks == cur.tasks) return
         _state.value = cur.copy(tasks = newTasks)
     }
-
     fun moveTaskDown(taskId: Long) {
         val cur = _state.value
-        val victim = cur.tasks.firstOrNull { it.id == taskId } ?: return
-        val date = victim.date
-
-        val siblings = cur.tasks
-            .filter { it.date == date }
-            .sortedWith(compareBy({ it.order }, { it.id }))
-
-        val idx = siblings.indexOfFirst { it.id == taskId }
-        if (idx < 0 || idx >= siblings.lastIndex) return
-
-        val reordered = siblings.toMutableList()
-        val tmp = reordered[idx + 1]
-        reordered[idx + 1] = reordered[idx]
-        reordered[idx] = tmp
-
-        val idToOrder = reordered.mapIndexed { i, t -> t.id to i }.toMap()
-        val newTasks = cur.tasks.map { t -> idToOrder[t.id]?.let { t.copy(order = it) } ?: t }
+        val newTasks = moveTaskWithinDate(cur.tasks, taskId, step = 1)
+        if (newTasks == cur.tasks) return
         _state.value = cur.copy(tasks = newTasks)
     }
 
     fun moveSubtaskUp(subtaskId: Long) {
         val cur = _state.value
-        val victim = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
-        val taskId = victim.taskId
-
-        val siblings = cur.subtasks
-            .filter { it.taskId == taskId }
-            .sortedWith(compareBy({ it.order }, { it.id }))
-
-        val idx = siblings.indexOfFirst { it.id == subtaskId }
-        if (idx <= 0) return
-
-        val reordered = siblings.toMutableList()
-        val tmp = reordered[idx - 1]
-        reordered[idx - 1] = reordered[idx]
-        reordered[idx] = tmp
-
-        val idToOrder = reordered.mapIndexed { i, s -> s.id to i }.toMap()
-        val newSubs = cur.subtasks.map { s -> idToOrder[s.id]?.let { s.copy(order = it) } ?: s }
+        val newSubs = moveSubtaskWithinTask(cur.subtasks, subtaskId, step = -1)
+        if (newSubs == cur.subtasks) return
         _state.value = cur.copy(subtasks = newSubs)
         refreshHasSubtasks()
         recomputeTaskDoneFromSubtasks()
@@ -1739,79 +1453,64 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun moveSubtaskDown(subtaskId: Long) {
         val cur = _state.value
-        val victim = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
-        val taskId = victim.taskId
-
-        val siblings = cur.subtasks
-            .filter { it.taskId == taskId }
-            .sortedWith(compareBy({ it.order }, { it.id }))
-
-        val idx = siblings.indexOfFirst { it.id == subtaskId }
-        if (idx < 0 || idx >= siblings.lastIndex) return
-
-        val reordered = siblings.toMutableList()
-        val tmp = reordered[idx + 1]
-        reordered[idx + 1] = reordered[idx]
-        reordered[idx] = tmp
-
-        val idToOrder = reordered.mapIndexed { i, s -> s.id to i }.toMap()
-        val newSubs = cur.subtasks.map { s -> idToOrder[s.id]?.let { s.copy(order = it) } ?: s }
+        val newSubs = moveSubtaskWithinTask(cur.subtasks, subtaskId, step = 1)
+        if (newSubs == cur.subtasks) return
         _state.value = cur.copy(subtasks = newSubs)
         refreshHasSubtasks()
         recomputeTaskDoneFromSubtasks()
     }
 
     fun addManualCounter(title: String, balance: Int) {
-        val t = title.trim()
-        if (t.isEmpty()) return
+        val cleanTitle = normalizeCounterTitleOrNull(title) ?: return
         val cur = _state.value
-        val c = ManualCounter(id = newId(), title = t, balance = balance)
-        _state.value = cur.copy(counters = cur.counters + c)
-        persistNow()
+        val counter = ManualCounter(
+            id = newId(),
+            title = cleanTitle,
+            balance = balance,
+        )
+        _state.value = stateWithAddedCounter(cur, counter)
     }
 
     fun addDateRangeCounter(title: String, startDate: LocalDate, endDate: LocalDate) {
-        val t = title.trim()
-        if (t.isEmpty()) return
+        val cleanTitle = normalizeCounterTitleOrNull(title) ?: return
         val cur = _state.value
-        val c = DateRangeCounter(id = newId(), title = t, startDate = startDate, endDate = endDate)
-        _state.value = cur.copy(counters = cur.counters + c)
-        persistNow()
+        val counter = DateRangeCounter(
+            id = newId(),
+            title = cleanTitle,
+            startDate = startDate,
+            endDate = endDate,
+        )
+        _state.value = stateWithAddedCounter(cur, counter)
     }
 
     fun updateManualCounter(counterId: Long, title: String, balance: Int) {
-        val t = title.trim()
-        if (t.isEmpty()) return
+        val cleanTitle = normalizeCounterTitleOrNull(title) ?: return
         val cur = _state.value
-        val updated = cur.counters.map { c ->
-            if (c is ManualCounter && c.id == counterId) c.copy(title = t, balance = balance) else c
-        }
+        val updated = countersWithUpdatedManualCounter(
+            counters = cur.counters,
+            counterId = counterId,
+            title = cleanTitle,
+            balance = balance,
+        )
         _state.value = cur.copy(counters = updated)
-        persistNow()
     }
 
     fun updateDateRangeCounter(counterId: Long, title: String, startDate: LocalDate, endDate: LocalDate) {
-        val t = title.trim()
-        if (t.isEmpty()) return
+        val cleanTitle = normalizeCounterTitleOrNull(title) ?: return
         val cur = _state.value
-        val updated = cur.counters.map { c ->
-            if (c is DateRangeCounter && c.id == counterId) c.copy(title = t, startDate = startDate, endDate = endDate) else c
-        }
+        val updated = countersWithUpdatedDateRangeCounter(
+            counters = cur.counters,
+            counterId = counterId,
+            title = cleanTitle,
+            startDate = startDate,
+            endDate = endDate,
+        )
         _state.value = cur.copy(counters = updated)
-        persistNow()
     }
 
     fun deleteCounter(counterId: Long) {
         val cur = _state.value
-        val newCounters = cur.counters.filterNot { it.id == counterId }
-        val newTasks = cur.tasks.map { t ->
-            if (t.linkedManualCounterId == counterId) t.copy(linkedManualCounterId = null) else t
-        }
-        _state.value = cur.copy(counters = newCounters, tasks = newTasks)
-        persistNow()
-    }
-
-    private fun persistNow() {
+        _state.value = stateWithoutCounter(cur, counterId)
     }
 
     /* ---------------------------
@@ -1954,38 +1653,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /* ---------------------------
    Anthropometry settings
 ---------------------------- */
-
-    private fun normalizeAnthropometryFieldIds(ids: Iterable<String>): Set<String> {
-        val normalized = ids
-            .asSequence()
-            .map { it.trim() }
-            .filter { it in allAnthropometryFieldIds() }
-            .toSet()
-
-        return if (normalized.isEmpty()) {
-            defaultAnthropometryFieldIds()
-        } else {
-            normalized
-        }
-    }
-
     fun setAnthropometryEnabledFieldIds(ids: Set<String>) {
-        val normalized = normalizeAnthropometryFieldIds(ids)
+        val normalized = normalizeAnthropometryEnabledFieldIds(ids)
 
         val cur = _state.value
         if (cur.anthropometryEnabledFieldIds == normalized) return
 
         _state.value = cur.copy(anthropometryEnabledFieldIds = normalized)
     }
-
-    fun showAllAnthropometryFields() {
-        val all = allAnthropometryFieldIds()
-        val cur = _state.value
-        if (cur.anthropometryEnabledFieldIds == all) return
-
-        _state.value = cur.copy(anthropometryEnabledFieldIds = all)
-    }
-
 
     /* ---------------------------
      Anthropometry
@@ -1995,32 +1670,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         date: LocalDate,
         valuesByFieldId: Map<String, Double?>
     ) {
-        fun round1(v: Double?): Double? {
-            if (v == null) return null
-            return kotlin.math.round(v * 10.0) / 10.0
-        }
-
         val cur = _state.value
         val existing = cur.anthropometry.firstOrNull { it.date == date }
 
-        fun valueOrExisting(fieldId: String, existingValue: Double?): Double? {
-            return if (fieldId in valuesByFieldId) {
-                round1(valuesByFieldId[fieldId])
-            } else {
-                existingValue
-            }
-        }
-
-        val entry = AnthropometryEntry(
+        val entry = mergeAnthropometryEntryForDate(
             date = date,
-            armCm = valueOrExisting(AnthropometryFieldIds.ARM, existing?.armCm),
-            chestCm = valueOrExisting(AnthropometryFieldIds.CHEST, existing?.chestCm),
-            underChestCm = valueOrExisting(AnthropometryFieldIds.UNDER_CHEST, existing?.underChestCm),
-            waistCm = valueOrExisting(AnthropometryFieldIds.WAIST, existing?.waistCm),
-            bellyCm = valueOrExisting(AnthropometryFieldIds.BELLY, existing?.bellyCm),
-            hipsCm = valueOrExisting(AnthropometryFieldIds.HIPS, existing?.hipsCm),
-            thighCm = valueOrExisting(AnthropometryFieldIds.THIGH, existing?.thighCm),
-            weightKg = valueOrExisting(AnthropometryFieldIds.WEIGHT, existing?.weightKg),
+            existing = existing,
+            valuesByFieldId = valuesByFieldId,
         )
 
         val filtered = cur.anthropometry.filterNot { it.date == date }
@@ -2032,32 +1688,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         _state.value = cur.copy(anthropometry = newList)
-    }
-
-    fun saveAnthropometryForDate(
-        date: LocalDate,
-        armCm: Double?,
-        chestCm: Double?,
-        underChestCm: Double?,
-        waistCm: Double?,
-        bellyCm: Double?,
-        hipsCm: Double?,
-        thighCm: Double?,
-        weightKg: Double?,
-    ) {
-        saveAnthropometryForDate(
-            date = date,
-            valuesByFieldId = mapOf(
-                AnthropometryFieldIds.ARM to armCm,
-                AnthropometryFieldIds.CHEST to chestCm,
-                AnthropometryFieldIds.UNDER_CHEST to underChestCm,
-                AnthropometryFieldIds.WAIST to waistCm,
-                AnthropometryFieldIds.BELLY to bellyCm,
-                AnthropometryFieldIds.HIPS to hipsCm,
-                AnthropometryFieldIds.THIGH to thighCm,
-                AnthropometryFieldIds.WEIGHT to weightKg,
-            )
-        )
     }
 
     /* ---------------------------

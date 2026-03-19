@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Main menu -->
+    <string name="calendar">Calendar</string>
+    <string name="create_task">Create task</string>
+    <string name="someday_title">Someday</string>
+    <string name="recurring_tasks_title">Repeating tasks</string>
+    <string name="anthropometry_title">Anthropometry</string>
+    <string name="calorimeter_title">Calorimeter</string>
+    <string name="running_title">On the run</string>
+    <string name="counters_title">Counters</string>
+    <string name="menu_reading">Media library</string>
+    <string name="main_menu_show_all">Show all</string>
+    <string name="main_menu_hide">Hide</string>
+</resources>

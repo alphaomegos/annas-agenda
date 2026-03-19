@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Running -->
+    <string name="running_col_date">Date</string>
+    <string name="running_col_distance">Distance</string>
+    <string name="running_col_time">Time</string>
+    <string name="running_col_pace">Pace</string>
+    <string name="running_hint_distance">km</string>
+    <string name="running_hint_time">min</string>
+    <string name="running_hint_pace">0917</string>
+    <string name="running_approve">Approve</string>
+    <string name="running_reset">Reset</string>
+    <string name="running_approve_confirm_title">Confirmation</string>
+    <string name="running_approve_confirm_text">Create calendar tasks and delete empty rows?</string>
+    <string name="running_reset_confirm_title">Confirmation</string>
+    <string name="running_reset_confirm_text">To delete the plan, enter the confirmation phrase.</string>
+    <string name="running_reset_phrase_label">Confirmation phrase</string>
+    <string name="running_reset_phrase_required">IWANTTODELETETHEPLAN</string>
+    <string name="running_empty">No rows</string>
+    <string name="running_task_km">Workout %1$s km</string>
+    <string name="running_task_minutes">Workout %1$d minutes</string>
+</resources>

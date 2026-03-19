@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Calendar -->
+    <string name="calendar_title">Calendar</string>
+    <string name="prev_month">Prev</string>
+    <string name="next_month">Next</string>
+    <string name="prev_day">Prev</string>
+    <string name="next_day">Next</string>
+    <string name="today">Today</string>
+    <string name="schedule_today">Today</string>
+    <string name="schedule_tomorrow">Tomorrow</string>
+    <string name="create_task_for_this_day">Create task for this day</string>
+    <string name="no_tasks_for_this_day">No tasks for this day</string>
+    <string name="tasks_header">Tasks</string>
+    <string name="someday_count">Someday: %1$d</string>
+    <string name="repeating_tasks_header">Repeating tasks</string>
+    <string name="repeating_subtasks_header">Repeating subtasks</string>
+</resources>

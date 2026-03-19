@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Language -->
+    <string name="choose_language">Choose language</string>
+    <string name="language_english">English</string>
+    <string name="language_russian">Russian</string>
+    <string name="language_serbian">Serbian (Latin)</string>
+    <string name="language_kiribati">Kiribati</string>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Data / backup -->
+    <string name="data_menu">Data</string>
+    <string name="export_backup_json">Export backup</string>
+    <string name="import_backup_json">Import backup</string>
+    <string name="reset_data_menu">Reset data</string>
+    <string name="reset_title">Reset data?</string>
+    <string name="reset_text">This will delete all tasks and settings.</string>
+    <string name="toast_exported">Exported</string>
+    <string name="toast_export_failed">Export failed</string>
+    <string name="toast_imported">Imported</string>
+    <string name="toast_import_failed">Import failed</string>
+    <string name="toast_invalid_backup">Invalid backup file</string>
+    <string name="toast_reset_done">Reset done</string>
+</resources>
