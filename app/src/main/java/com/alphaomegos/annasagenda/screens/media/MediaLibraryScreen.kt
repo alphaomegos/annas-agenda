@@ -9,15 +9,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,7 +23,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
@@ -52,7 +47,7 @@ fun MediaLibraryScreen(
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var menuExpanded by rememberSaveable { mutableStateOf(false) }
+    var searchEnabled by rememberSaveable { mutableStateOf(false) }
     val addDialogOpen = rememberSaveable { mutableStateOf(false) }
     val sortDialogOpen = rememberSaveable { mutableStateOf(false) }
 
@@ -73,7 +68,11 @@ fun MediaLibraryScreen(
     ).count { it }
 
     val effectiveSearchQuery =
-        if (prefs.viewMode == ReadingViewMode.WALL) "" else searchQuery
+        if (prefs.viewMode == ReadingViewMode.WALL || !searchEnabled) {
+            ""
+        } else {
+            searchQuery
+        }
 
     val isSearching = effectiveSearchQuery.isNotBlank()
 
@@ -101,10 +100,14 @@ fun MediaLibraryScreen(
     Scaffold(
         topBar = {
             MediaLibraryTopBar(
-                menuExpanded = menuExpanded,
-                onMenuExpandedChange = { menuExpanded = it },
                 onBack = onBack,
                 onAdd = { addDialogOpen.value = true },
+                mediaFilter = mediaFilter,
+                searchEnabled = searchEnabled && prefs.viewMode != ReadingViewMode.WALL,
+                onSearchEnabledChange = { searchEnabled = it },
+                onShowBooksChange = { vm.setReadingMediaFilter(showBooks = it) },
+                onShowMoviesChange = { vm.setReadingMediaFilter(showMovies = it) },
+                onShowSeriesChange = { vm.setReadingMediaFilter(showSeries = it) },
                 onToggleView = {
                     vm.setReadingViewMode(shelf, nextMediaLibraryViewMode(prefs.viewMode))
                 },
@@ -118,10 +121,7 @@ fun MediaLibraryScreen(
                 .padding(padding),
             selectedTab = selectedTab,
             onSelectTab = { selectedTab = it },
-            mediaFilter = mediaFilter,
-            onShowBooksChange = { vm.setReadingMediaFilter(showBooks = it) },
-            onShowMoviesChange = { vm.setReadingMediaFilter(showMovies = it) },
-            onShowSeriesChange = { vm.setReadingMediaFilter(showSeries = it) },
+            searchEnabled = searchEnabled,
             searchQuery = searchQuery,
             onSearchQueryChange = { searchQuery = it },
             items = items,
@@ -182,15 +182,30 @@ fun MediaLibraryScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MediaLibraryTopBar(
-    menuExpanded: Boolean,
-    onMenuExpandedChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onAdd: () -> Unit,
+    mediaFilter: ReadingMediaFilter,
+    searchEnabled: Boolean,
+    onSearchEnabledChange: (Boolean) -> Unit,
+    onShowBooksChange: (Boolean) -> Unit,
+    onShowMoviesChange: (Boolean) -> Unit,
+    onShowSeriesChange: (Boolean) -> Unit,
     onToggleView: () -> Unit,
     onOpenSort: () -> Unit,
 ) {
     CenterAlignedTopAppBar(
-        title = { Text(stringResource(R.string.reading_title)) },
+        title = {
+            MediaLibraryTopBarFilters(
+                mediaFilter = mediaFilter,
+                searchEnabled = searchEnabled,
+                onSearchEnabledChange = onSearchEnabledChange,
+                onShowBooksChange = onShowBooksChange,
+                onShowMoviesChange = onShowMoviesChange,
+                onShowSeriesChange = onShowSeriesChange,
+                onToggleView = onToggleView,
+                onOpenSort = onOpenSort
+            )
+        },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -199,31 +214,6 @@ private fun MediaLibraryTopBar(
         actions = {
             IconButton(onClick = onAdd) {
                 Icon(Icons.Default.Add, contentDescription = null)
-            }
-
-            IconButton(onClick = { onMenuExpandedChange(true) }) {
-                Icon(Icons.Default.MoreVert, contentDescription = null)
-            }
-
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { onMenuExpandedChange(false) }
-            ) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.reading_menu_toggle_view)) },
-                    onClick = {
-                        onMenuExpandedChange(false)
-                        onToggleView()
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.reading_menu_sort)) },
-                    onClick = {
-                        onMenuExpandedChange(false)
-                        onOpenSort()
-                    }
-                )
             }
         }
     )
@@ -234,10 +224,7 @@ private fun MediaLibraryScreenContent(
     modifier: Modifier = Modifier,
     selectedTab: Int,
     onSelectTab: (Int) -> Unit,
-    mediaFilter: ReadingMediaFilter,
-    onShowBooksChange: (Boolean) -> Unit,
-    onShowMoviesChange: (Boolean) -> Unit,
-    onShowSeriesChange: (Boolean) -> Unit,
+    searchEnabled: Boolean,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     items: List<ReadingUiItem>,
@@ -258,14 +245,7 @@ private fun MediaLibraryScreenContent(
             onSelectTab = onSelectTab
         )
 
-        MediaLibraryFilterRow(
-            mediaFilter = mediaFilter,
-            onShowBooksChange = onShowBooksChange,
-            onShowMoviesChange = onShowMoviesChange,
-            onShowSeriesChange = onShowSeriesChange
-        )
-
-        if (viewMode != ReadingViewMode.WALL) {
+        if (searchEnabled && viewMode != ReadingViewMode.WALL) {
             MediaLibrarySearchField(
                 searchQuery = searchQuery,
                 onSearchQueryChange = onSearchQueryChange

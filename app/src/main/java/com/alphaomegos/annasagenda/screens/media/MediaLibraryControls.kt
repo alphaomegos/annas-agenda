@@ -1,25 +1,39 @@
 package com.alphaomegos.annasagenda.screens.media
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaFilter
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun MediaLibraryShelfTabs(
@@ -51,41 +65,128 @@ internal fun MediaLibraryShelfTabs(
 }
 
 @Composable
-internal fun MediaLibraryFilterRow(
+internal fun MediaLibraryTopBarFilters(
     mediaFilter: ReadingMediaFilter,
+    searchEnabled: Boolean,
+    onSearchEnabledChange: (Boolean) -> Unit,
     onShowBooksChange: (Boolean) -> Unit,
     onShowMoviesChange: (Boolean) -> Unit,
     onShowSeriesChange: (Boolean) -> Unit,
+    onToggleView: () -> Unit,
+    onOpenSort: () -> Unit,
 ) {
-    LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        item {
-            MediaTypeCheckbox(
-                checked = mediaFilter.showBooks,
-                label = stringResource(R.string.reading_media_book),
-                onCheckedChange = onShowBooksChange
-            )
-        }
-        item {
-            MediaTypeCheckbox(
-                checked = mediaFilter.showMovies,
-                label = stringResource(R.string.reading_media_movie),
-                onCheckedChange = onShowMoviesChange
-            )
-        }
-        item {
-            MediaTypeCheckbox(
-                checked = mediaFilter.showSeries,
-                label = stringResource(R.string.reading_media_series),
-                onCheckedChange = onShowSeriesChange
-            )
-        }
+        MediaTypeToggleIcon(
+            checked = searchEnabled,
+            iconRes = R.drawable.ic_filter_search,
+            onClick = { onSearchEnabledChange(!searchEnabled) }
+        )
+
+        MediaActionIconButton(
+            iconRes = R.drawable.ic_filter_view,
+            onClick = onToggleView
+        )
+
+        MediaActionIconButton(
+            iconRes = R.drawable.ic_filter_sort,
+            onClick = onOpenSort
+        )
+
+        MediaTypeToggleIcon(
+            checked = mediaFilter.showBooks,
+            iconRes = R.drawable.ic_filter_book,
+            onClick = { onShowBooksChange(!mediaFilter.showBooks) }
+        )
+
+        MediaTypeToggleIcon(
+            checked = mediaFilter.showMovies,
+            iconRes = R.drawable.ic_filter_movie,
+            onClick = { onShowMoviesChange(!mediaFilter.showMovies) }
+        )
+
+        MediaTypeToggleIcon(
+            checked = mediaFilter.showSeries,
+            iconRes = R.drawable.ic_filter_series,
+            onClick = { onShowSeriesChange(!mediaFilter.showSeries) }
+        )
     }
 }
+
+@Composable
+private fun MediaTypeToggleIcon(
+    checked: Boolean,
+    iconRes: Int,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(10.dp)
+
+    val backgroundColor = if (checked) {
+        Color(0xFFDDF4D8)
+    } else {
+        Color.Transparent
+    }
+
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(shape)
+            .background(backgroundColor)
+            .clickable(onClick = onClick)
+            .padding(5.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(if (checked) 1f else 0.42f)
+        )
+    }
+}
+
+@Composable
+private fun MediaActionIconButton(
+    iconRes: Int,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(10.dp)
+    val scope = rememberCoroutineScope()
+    var flashed by remember { mutableStateOf(false) }
+
+    val backgroundColor = if (flashed) {
+        Color(0xFFDDF4D8)
+    } else {
+        Color.Transparent
+    }
+
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(shape)
+            .background(backgroundColor)
+            .clickable {
+                flashed = true
+                scope.launch {
+                    delay(140)
+                    flashed = false
+                }
+                onClick()
+            }
+            .padding(5.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
 
 @Composable
 internal fun MediaLibrarySearchField(
@@ -124,23 +225,5 @@ internal fun MediaLibraryEmptyState(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-@Composable
-private fun MediaTypeCheckbox(
-    checked: Boolean,
-    label: String,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(start = 8.dp)
-    ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-        Text(text = label)
     }
 }

@@ -437,13 +437,17 @@ private fun ReadingItemRowCard(
                     Image(
                         bitmap = thumbBitmap!!,
                         contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter,
                         modifier = Modifier.size(56.dp)
                     )
                 } else {
                     Image(
-                        painter = painterResource(R.drawable.ic_menu_reading),
+                        painter = painterResource(mediaPlaceholderRes(item)),
                         contentDescription = null,
-                        modifier = Modifier.size(36.dp)
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter,
+                        modifier = Modifier.size(56.dp)
                     )
                 }
             }
@@ -564,9 +568,12 @@ private fun ReadingItemGridCard(
                     )
                 } else {
                     Image(
-                        painter = painterResource(R.drawable.ic_menu_reading),
+                        painter = painterResource(mediaPlaceholderRes(item)),
                         contentDescription = null,
-                        modifier = Modifier.size(96.dp)
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 140.dp)
                     )
                 }
 
@@ -654,7 +661,7 @@ private fun ReadingWallTile(
             )
         } else {
             Image(
-                painter = painterResource(wallPlaceholderRes(item)),
+                painter = painterResource(mediaPlaceholderRes(item)),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -663,7 +670,7 @@ private fun ReadingWallTile(
     }
 }
 
-private fun wallPlaceholderRes(item: ReadingUiItem): Int {
+private fun mediaPlaceholderRes(item: ReadingUiItem): Int {
     return when (item) {
         is ReadingBookItem -> R.drawable.media_placeholder_book
         is ReadingMovieItem -> R.drawable.media_placeholder_movie

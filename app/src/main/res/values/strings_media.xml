@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Media library: shared -->
-    <string name="reading_title">Media library</string>
     <string name="reading_empty">No items yet</string>
     <string name="reading_nothing_found">Nothing found</string>
     <string name="reading_search_label">Search by title, author, or year</string>
@@ -12,9 +11,7 @@
     <string name="reading_media_book">Book</string>
     <string name="reading_media_movie">Movie</string>
     <string name="reading_media_series">Series</string>
-    <string name="reading_menu_toggle_view">Change view</string>
     <string name="reading_view_list">List</string>
-    <string name="reading_menu_sort">Sort</string>
     <string name="reading_menu_delete">Delete</string>
     <string name="reading_menu_move_to_plans">Move to Plans</string>
     <string name="reading_menu_move_to_now">Move to Now</string>
