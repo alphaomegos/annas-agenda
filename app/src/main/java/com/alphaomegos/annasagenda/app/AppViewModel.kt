@@ -1298,12 +1298,60 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val cur = _state.value
         val victim = cur.tasks.firstOrNull { it.id == taskId } ?: return
 
-        val newOrder = if (victim.date == newDate) victim.order else nextTaskOrderForDate(newDate)
-
-        val updated = cur.tasks.map { t ->
-            if (t.id == taskId) t.copy(date = newDate, order = newOrder) else t
+        val oldDate = victim.date
+        val newOrder = if (oldDate == newDate) {
+            victim.order
+        } else {
+            nextTaskOrderForDate(newDate)
         }
-        _state.value = cur.copy(tasks = updated)
+
+        if (victim.originTaskId != null && oldDate != null && oldDate != newDate) {
+            val taskSuppressKey = "T:${victim.originTaskId}:${oldDate.toEpochDay()}"
+
+            val movedTask = victim.copy(
+                date = newDate,
+                order = newOrder,
+                repeatRule = null,
+                originTaskId = null,
+            )
+
+            val generatedSubs = cur.subtasks.filter { it.taskId == taskId && it.originSubtaskId != null }
+            val subSuppressKeys = generatedSubs.map { sub ->
+                "S:${sub.originSubtaskId}:${oldDate.toEpochDay()}"
+            }
+
+            val updatedTasks = cur.tasks.map { task ->
+                if (task.id == taskId) movedTask else task
+            }
+
+            val updatedSubtasks = cur.subtasks.map { sub ->
+                if (sub.taskId == taskId && sub.originSubtaskId != null) {
+                    sub.copy(
+                        repeatRule = null,
+                        originSubtaskId = null,
+                    )
+                } else {
+                    sub
+                }
+            }
+
+            _state.value = cur.copy(
+                suppressedRecurrences = cur.suppressedRecurrences + taskSuppressKey + subSuppressKeys,
+                tasks = updatedTasks,
+                subtasks = updatedSubtasks,
+            )
+            return
+        }
+
+        val updatedTasks = cur.tasks.map { task ->
+            if (task.id == taskId) {
+                task.copy(date = newDate, order = newOrder)
+            } else {
+                task
+            }
+        }
+
+        _state.value = cur.copy(tasks = updatedTasks)
     }
 
     fun copyTaskToDate(taskId: Long, targetDate: LocalDate) {
