@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -34,6 +35,7 @@ import com.alphaomegos.annasagenda.ReadingMediaFilter
 import com.alphaomegos.annasagenda.ReadingShelf
 import com.alphaomegos.annasagenda.ReadingSortField
 import com.alphaomegos.annasagenda.ReadingViewMode
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,13 +72,16 @@ fun MediaLibraryScreen(
         mediaFilter.showSeries
     ).count { it }
 
-    val isSearching = searchQuery.isNotBlank()
+    val effectiveSearchQuery =
+        if (prefs.viewMode == ReadingViewMode.WALL) "" else searchQuery
+
+    val isSearching = effectiveSearchQuery.isNotBlank()
 
     val items = buildVisibleReadingItems(
         state = st,
         shelf = shelf,
         sort = prefs.sort,
-        query = searchQuery
+        query = effectiveSearchQuery
     )
 
     val showYearGroups =
@@ -260,27 +265,33 @@ private fun MediaLibraryScreenContent(
             onShowSeriesChange = onShowSeriesChange
         )
 
-        MediaLibrarySearchField(
-            searchQuery = searchQuery,
-            onSearchQueryChange = onSearchQueryChange
-        )
+        if (viewMode != ReadingViewMode.WALL) {
+            MediaLibrarySearchField(
+                searchQuery = searchQuery,
+                onSearchQueryChange = onSearchQueryChange
+            )
+        }
 
         if (items.isEmpty()) {
             MediaLibraryEmptyState(isSearching = isSearching)
         } else {
-            MediaLibraryItemsContent(
-                viewMode = viewMode,
-                showYearGroups = showYearGroups,
-                items = items,
-                yearGroups = yearGroups,
-                remainingHours = remainingHours,
-                showShelfLabel = isSearching,
-                showMediaTypeLabel = showMediaTypeLabel,
-                onOpenItem = onOpenItem,
-                onReadItem = onReadItem,
-                onMoveItem = onMoveItem,
-                onDeleteItem = onDeleteItem
-            )
+            Box(
+                modifier = Modifier.weight(1f)
+            ) {
+                MediaLibraryItemsContent(
+                    viewMode = viewMode,
+                    showYearGroups = showYearGroups,
+                    items = items,
+                    yearGroups = yearGroups,
+                    remainingHours = remainingHours,
+                    showShelfLabel = isSearching,
+                    showMediaTypeLabel = showMediaTypeLabel,
+                    onOpenItem = onOpenItem,
+                    onReadItem = onReadItem,
+                    onMoveItem = onMoveItem,
+                    onDeleteItem = onDeleteItem
+                )
+            }
         }
     }
 }
@@ -401,6 +412,13 @@ private fun MediaLibraryItemsContent(
                     onDeleteItem = onDeleteItem
                 )
             }
+
+            ReadingViewMode.WALL -> {
+                ReadingItemsWall(
+                    items = items,
+                    onOpenItem = onOpenItem
+                )
+            }
         }
     } else {
         when (viewMode) {
@@ -429,6 +447,13 @@ private fun MediaLibraryItemsContent(
                     onDeleteItem = onDeleteItem
                 )
             }
+
+            ReadingViewMode.WALL -> {
+                ReadingItemsWall(
+                    items = items,
+                    onOpenItem = onOpenItem
+                )
+            }
         }
     }
 }
@@ -443,10 +468,10 @@ private fun mediaLibraryShelfForTab(selectedTab: Int): ReadingShelf {
 }
 
 private fun nextMediaLibraryViewMode(current: ReadingViewMode): ReadingViewMode {
-    return if (current == ReadingViewMode.GRID) {
-        ReadingViewMode.LIST
-    } else {
-        ReadingViewMode.GRID
+    return when (current) {
+        ReadingViewMode.GRID -> ReadingViewMode.LIST
+        ReadingViewMode.LIST -> ReadingViewMode.WALL
+        ReadingViewMode.WALL -> ReadingViewMode.GRID
     }
 }
 

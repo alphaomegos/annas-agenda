@@ -26,6 +26,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -73,6 +76,7 @@ import kotlin.math.abs
 import kotlin.math.min
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import com.alphaomegos.annasagenda.components.TinyIconButton
 
 private const val MENU_REORDER_HOLD_MS = 3000L
 private const val MENU_ROW_MIN_HEIGHT_DP = 80
@@ -83,7 +87,7 @@ private enum class MenuGestureAxis {
     Vertical,
 }
 
-private data class MenuEntry(
+internal data class MenuEntry(
     val id: String,
     val iconRes: Int,
     val titleRes: Int,
@@ -275,7 +279,7 @@ private fun applyMenuOrder(
     ExperimentalFoundationApi::class
 )
 @Composable
-private fun MainMenuContent(
+internal fun MainMenuContent(
     langIconRes: Int,
     menuEntries: List<MenuEntry>,
     menuOrderIds: List<String>,
@@ -385,6 +389,16 @@ private fun MainMenuContent(
                 }
                 draggingIndex.intValue = to
                 draggingOffsetY.floatValue += dragCompensation
+            },
+            onStepMoveItem = { from, to ->
+                if (from in items.indices && to in items.indices && from != to) {
+                    items = items.toMutableList().also { list ->
+                        val moved = list.removeAt(from)
+                        list.add(to, moved)
+                    }
+                    draggingIndex.intValue = -1
+                    draggingOffsetY.floatValue = 0f
+                }
             },
             onHideItem = { id ->
                 draggingIndex.intValue = -1
@@ -497,6 +511,7 @@ private fun MainMenuList(
     onDragStart: (Int) -> Unit,
     onDragOffsetChange: (Float) -> Unit,
     onMoveItem: (from: Int, to: Int, dragCompensation: Float) -> Unit,
+    onStepMoveItem: (from: Int, to: Int) -> Unit,
     onHideItem: (String) -> Unit,
     onStopDragging: () -> Unit,
     modifier: Modifier = Modifier,
@@ -622,7 +637,8 @@ private fun MainMenuList(
                                             MenuGestureAxis.Vertical
                                         }
 
-                                    when (lockedAxis) {
+                                    val axis = lockedAxis ?: return@detectDragGestures
+                                    when (axis) {
                                         MenuGestureAxis.Horizontal -> {
                                             swipingItemId = item.id
                                             swipeOffsetX = 0f
@@ -633,11 +649,11 @@ private fun MainMenuList(
                                             onDragStart(index)
                                             return@detectDragGestures
                                         }
-                                        null -> Unit
                                     }
                                 }
 
-                                when (lockedAxis) {
+                                val axis = lockedAxis ?: return@detectDragGestures
+                                when (axis) {
                                     MenuGestureAxis.Horizontal -> {
                                         change.consume()
                                         if (!canHideItems) return@detectDragGestures
@@ -675,8 +691,6 @@ private fun MainMenuList(
 
                                         onMoveItem(activeIndex, to, dragCompensation)
                                     }
-
-                                    null -> Unit
                                 }
                             }
                         )
@@ -710,6 +724,24 @@ private fun MainMenuList(
                     title = stringResource(item.titleRes),
                     reorderMode = reorderMode,
                     isDragging = isDragging,
+                    canMoveUp = index > 0,
+                    canMoveDown = index < items.lastIndex,
+                    canHide = canHideItems,
+                    onMoveUp = {
+                        if (index > 0) {
+                            onStepMoveItem(index, index - 1)
+                        }
+                    },
+                    onMoveDown = {
+                        if (index < items.lastIndex) {
+                            onStepMoveItem(index, index + 1)
+                        }
+                    },
+                    onHide = {
+                        if (canHideItems) {
+                            onHideItem(item.id)
+                        }
+                    },
                     modifier = Modifier
                         .graphicsLayer {
                             translationX = rowTranslationX
@@ -753,6 +785,12 @@ private fun MenuRowCard(
     title: String,
     reorderMode: Boolean,
     isDragging: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    canHide: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onHide: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(22.dp)
@@ -789,6 +827,44 @@ private fun MenuRowCard(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f)
             )
+
+            if (reorderMode) {
+                Row(
+                    modifier = Modifier.padding(end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Box(modifier = Modifier.alpha(if (canMoveUp) 1f else 0.35f)) {
+                        TinyIconButton(
+                            onClick = {
+                                if (canMoveUp) onMoveUp()
+                            },
+                            icon = Icons.Default.KeyboardArrowUp,
+                            cd = "Move menu item up"
+                        )
+                    }
+
+                    Box(modifier = Modifier.alpha(if (canMoveDown) 1f else 0.35f)) {
+                        TinyIconButton(
+                            onClick = {
+                                if (canMoveDown) onMoveDown()
+                            },
+                            icon = Icons.Default.KeyboardArrowDown,
+                            cd = "Move menu item down"
+                        )
+                    }
+
+                    Box(modifier = Modifier.alpha(if (canHide) 1f else 0.35f)) {
+                        TinyIconButton(
+                            onClick = {
+                                if (canHide) onHide()
+                            },
+                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            cd = "Hide menu item"
+                        )
+                    }
+                }
+            }
 
             Image(
                 painter = painterResource(iconRes),

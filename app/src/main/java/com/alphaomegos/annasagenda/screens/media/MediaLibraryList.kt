@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
@@ -32,6 +34,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,9 +44,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingShelf
 import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.roundToInt
+import kotlin.random.Random
 
 @Composable
 internal fun ReadingItemsList(
@@ -120,6 +140,136 @@ internal fun ReadingItemsGrid(
         }
     }
 }
+@Composable
+internal fun ReadingItemsWall(
+    items: List<ReadingUiItem>,
+    onOpenItem: (ReadingUiItem) -> Unit,
+) {
+    if (items.isEmpty()) return
+
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
+    var viewportWidthPx by remember { mutableIntStateOf(0) }
+    var viewportHeightPx by remember { mutableIntStateOf(0) }
+
+    val density = LocalDensity.current
+    val context = LocalContext.current
+    val seed = remember { Random.nextInt() }
+
+    val coverCache = remember(items) {
+        mutableStateMapOf<String, ImageBitmap?>()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clipToBounds()
+            .background(MaterialTheme.colorScheme.background)
+            .onSizeChanged { size ->
+                viewportWidthPx = size.width
+                viewportHeightPx = size.height
+            }
+            .pointerInput(seed, items.size) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    offsetX += dragAmount.x
+                    offsetY += dragAmount.y
+                }
+            }
+    ) {
+        if (viewportWidthPx <= 0 || viewportHeightPx <= 0) return@Box
+
+        val viewportWidth = viewportWidthPx.toFloat()
+        val viewportHeight = viewportHeightPx.toFloat()
+
+        val minTileWidthPx = with(density) { 112.dp.toPx() }
+        val maxTileWidthPx = with(density) { 168.dp.toPx() }
+
+        val tileWidthPx = (viewportWidth / 3.2f)
+            .coerceIn(minTileWidthPx, maxTileWidthPx)
+
+        val tileHeightPx = tileWidthPx * 1.5f
+
+        val tileWidthDp = with(density) { tileWidthPx.toDp() }
+        val tileHeightDp = with(density) { tileHeightPx.toDp() }
+
+        val columnRange = wallVisibleRange(
+            offsetPx = offsetX,
+            tilePx = tileWidthPx,
+            viewportPx = viewportWidth
+        )
+
+        val rowRange = wallVisibleRange(
+            offsetPx = offsetY,
+            tilePx = tileHeightPx,
+            viewportPx = viewportHeight
+        )
+
+        val visibleCells = remember(
+            items,
+            seed,
+            rowRange.first,
+            rowRange.last,
+            columnRange.first,
+            columnRange.last
+        ) {
+            buildList {
+                for (row in rowRange) {
+                    for (col in columnRange) {
+                        add(
+                            WallCell(
+                                row = row,
+                                col = col,
+                                item = wallItemForCell(
+                                    items = items,
+                                    seed = seed,
+                                    row = row,
+                                    col = col
+                                )
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        val visibleCoverRefs = remember(visibleCells) {
+            visibleCells
+                .mapNotNull { it.item.coverUri?.takeIf(String::isNotBlank) }
+                .distinct()
+        }
+
+        LaunchedEffect(visibleCoverRefs) {
+            visibleCoverRefs.forEach { ref ->
+                if (!coverCache.containsKey(ref)) {
+                    coverCache[ref] = loadCoverBitmapForUi(
+                        context = context,
+                        coverRef = ref,
+                        targetMaxSidePx = 280
+                    )
+                }
+            }
+        }
+
+        for (cell in visibleCells) {
+            ReadingWallTile(
+                item = cell.item,
+                coverBitmap = cell.item.coverUri?.let { coverCache[it] },
+                modifier = Modifier
+                    .offset {
+                        IntOffset(
+                            x = (cell.col * tileWidthPx + offsetX).roundToInt(),
+                            y = (cell.row * tileHeightPx + offsetY).roundToInt()
+                        )
+                    }
+                    .width(tileWidthDp)
+                    .height(tileHeightDp),
+                onOpen = { onOpenItem(cell.item) }
+            )
+        }
+    }
+}
+
 
 @Composable
 internal fun ReadingItemsListGroupedByYear(
@@ -419,6 +569,22 @@ private fun ReadingItemGridCard(
                         modifier = Modifier.size(96.dp)
                     )
                 }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                            shape = CircleShape
+                        )
+                ) {
+                    ReadingItemMenu(
+                        currentShelf = shelf,
+                        onMove = onMove,
+                        onDelete = onDelete
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.size(8.dp))
@@ -453,29 +619,103 @@ private fun ReadingItemGridCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            if (canReadItem(item) && onRead != null) {
+                Spacer(modifier = Modifier.size(8.dp))
 
-            Spacer(modifier = Modifier.size(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (canReadItem(item) && onRead != null) {
-                    Button(onClick = onRead, modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.reading_button_read))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = onRead,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.reading_button_read))
                 }
-
-                ReadingItemMenu(
-                    currentShelf = shelf,
-                    onMove = onMove,
-                    onDelete = onDelete
-                )
             }
         }
     }
 }
+
+@Composable
+private fun ReadingWallTile(
+    item: ReadingUiItem,
+    coverBitmap: ImageBitmap?,
+    modifier: Modifier = Modifier,
+    onOpen: () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onOpen)
+    ) {
+        if (coverBitmap != null) {
+            Image(
+                bitmap = coverBitmap,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Image(
+                painter = painterResource(wallPlaceholderRes(item)),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+private fun wallPlaceholderRes(item: ReadingUiItem): Int {
+    return when (item) {
+        is ReadingBookItem -> R.drawable.media_placeholder_book
+        is ReadingMovieItem -> R.drawable.media_placeholder_movie
+        is ReadingSeriesItem -> R.drawable.media_placeholder_series
+    }
+}
+
+private fun wallVisibleRange(
+    offsetPx: Float,
+    tilePx: Float,
+    viewportPx: Float,
+): IntRange {
+    val overscan = 2
+    val first = floor((-offsetPx) / tilePx).toInt() - overscan
+    val last = ceil((viewportPx - offsetPx) / tilePx).toInt() + overscan
+    return first..last
+}
+
+private fun wallItemForCell(
+    items: List<ReadingUiItem>,
+    seed: Int,
+    row: Int,
+    col: Int,
+): ReadingUiItem {
+    val index = positiveMod(
+        value = mixWallCell(seed = seed, row = row, col = col),
+        mod = items.size
+    )
+    return items[index]
+}
+
+private fun mixWallCell(
+    seed: Int,
+    row: Int,
+    col: Int,
+): Int {
+    var x = seed.toLong()
+    x = x * 1103515245L + 12345L + row * 1000003L + col * 2000003L
+    x = x xor (x ushr 16)
+    x *= 2246822519L
+    x = x xor (x ushr 13)
+    return x.toInt()
+}
+
+private fun positiveMod(
+    value: Int,
+    mod: Int,
+): Int {
+    val raw = value % mod
+    return if (raw >= 0) raw else raw + mod
+}
+
 
 @Composable
 private fun ReadingItemMenu(
@@ -561,6 +801,12 @@ private fun mediaTypeLabel(item: ReadingUiItem): String {
         is ReadingSeriesItem -> stringResource(R.string.reading_media_series)
     }
 }
+
+private data class WallCell(
+    val row: Int,
+    val col: Int,
+    val item: ReadingUiItem,
+)
 
 @Composable
 private fun readingItemSecondaryText(

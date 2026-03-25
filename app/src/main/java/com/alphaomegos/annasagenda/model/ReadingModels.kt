@@ -10,6 +10,7 @@ enum class ReadingShelf {
 enum class ReadingViewMode {
     GRID,
     LIST,
+    WALL,
 }
 
 enum class ReadingSortField {
