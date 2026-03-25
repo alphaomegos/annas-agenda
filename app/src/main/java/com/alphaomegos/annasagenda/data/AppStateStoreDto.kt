@@ -28,6 +28,7 @@ internal data class AppStateDto(
     val counters: List<CounterDto> = emptyList(),
     val mainMenuOrder: List<String> = emptyList(),
     val mainMenuHiddenIds: List<String> = emptyList(),
+    val undoneLampMuted: Boolean = false,
 
     val readingBooks: List<ReadingBookDto> = emptyList(),
     val readingMovies: List<ReadingMovieDto> = emptyList(),

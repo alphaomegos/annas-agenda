@@ -28,6 +28,9 @@ data class AppState(
     // Hidden main menu items (stable ids like "calendar", "new_task", ...).
     val mainMenuHiddenIds: Set<String> = emptySet(),
 
+    // "Undone" lamp state.
+    val undoneLampMuted: Boolean = false,
+
     // Reading / media
     val readingBooks: List<ReadingBook> = emptyList(),
     val readingMovies: List<ReadingMovie> = emptyList(),

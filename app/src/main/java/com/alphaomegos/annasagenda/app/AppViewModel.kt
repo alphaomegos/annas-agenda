@@ -426,6 +426,43 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = cur.copy(mainMenuHiddenIds = emptySet())
     }
 
+    fun setUndoneLampMuted(value: Boolean) {
+        val cur = _state.value
+        if (cur.undoneLampMuted == value) return
+        _state.value = cur.copy(undoneLampMuted = value)
+    }
+
+    fun toggleUndoneLampMuted() {
+        val cur = _state.value
+        _state.value = cur.copy(undoneLampMuted = !cur.undoneLampMuted)
+    }
+
+    fun hasUndonePastTasks(today: LocalDate = LocalDate.now()): Boolean {
+        val yesterday = today.minusDays(1)
+        return _state.value.tasks.any { task ->
+            val date = task.date
+            date != null &&
+                    !task.isDone &&
+                    !date.isAfter(yesterday)
+        }
+    }
+
+    fun undonePastTaskDates(today: LocalDate = LocalDate.now()): List<LocalDate> {
+        val yesterday = today.minusDays(1)
+        return _state.value.tasks
+            .mapNotNull { task ->
+                val date = task.date
+                if (date != null && !task.isDone && !date.isAfter(yesterday)) {
+                    date
+                } else {
+                    null
+                }
+            }
+            .distinct()
+            .sorted()
+    }
+
+
     /* ---------------------------
        Reading
     ---------------------------- */
