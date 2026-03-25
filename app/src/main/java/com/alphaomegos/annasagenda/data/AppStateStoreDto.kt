@@ -59,8 +59,8 @@ internal data class RunningPlanEntryDto(
     val durationHhMmText: String = "",
     val paceText: String = "",
     val taskId: Long? = null,
+    val isBonus: Boolean = false,
 )
-
 @Serializable
 internal data class TaskDto(
     val id: Long,

@@ -871,27 +871,89 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
 
         val nowEmpty =
-            updatedRaw.distanceKmText.isBlank() && updatedRaw.durationHhMmText.isBlank() && updatedRaw.paceText.isBlank()
+            updatedRaw.distanceKmText.isBlank() &&
+                    updatedRaw.durationHhMmText.isBlank() &&
+                    updatedRaw.paceText.isBlank()
 
         if (nowEmpty) {
-            if (updatedRaw.taskId != null) deleteTask(updatedRaw.taskId)
-            if (idx >= 0) list.removeAt(idx)
+            if (st.runningPlanApproved) {
+                if (idx >= 0) {
+                    list[idx] = updatedRaw
+                } else {
+                    return
+                }
+            } else {
+                if (updatedRaw.taskId != null) deleteTask(updatedRaw.taskId)
+                if (idx >= 0) list.removeAt(idx)
+            }
         } else {
-            if (idx >= 0) list[idx] = updatedRaw else list.add(updatedRaw)
+            if (idx >= 0) {
+                list[idx] = updatedRaw
+            } else {
+                list.add(updatedRaw)
+            }
         }
 
-        _state.value = _state.value.copy(runningPlanEntries = list.sortedBy { it.date })
+        _state.value = _state.value.copy(
+            runningPlanEntries = list.sortedBy { it.date }
+        )
 
         if (st.runningPlanApproved) {
-            val after = list.firstOrNull { it.date == date } ?: return
+            val after = _state.value.runningPlanEntries.firstOrNull { it.date == date } ?: return
             val title = buildRunningPlanTaskTitle(
                 entry = after,
                 formatKmTitle = ::formatRunningTaskKmTitle,
                 formatMinutesTitle = ::formatRunningTaskMinutesTitle,
             )
-            if (after.taskId != null && title != null) updateTaskDescription(after.taskId, title)
+
+            when {
+                title == null -> {
+                    // Keep the approved row (and any existing task) untouched.
+                    // Timeout cleanup is handled later by pruneRunningPlanNow().
+                }
+
+                after.taskId != null -> {
+                    updateTaskDescription(after.taskId, title)
+                }
+
+                else -> {
+                    val newTaskId = createTaskForDate(
+                        date = after.date,
+                        time = null,
+                        description = title,
+                    )
+
+                    _state.value = _state.value.copy(
+                        runningPlanEntries = _state.value.runningPlanEntries
+                            .map { entry ->
+                                if (entry.date == date) {
+                                    entry.copy(taskId = newTaskId)
+                                } else {
+                                    entry
+                                }
+                            }
+                            .sortedBy { it.date }
+                    )
+                }
+            }
         }
     }
+
+
+    fun addRunningPlanBonusEntry(date: LocalDate): Boolean {
+        val st = _state.value
+        if (!st.runningPlanApproved) return false
+        if (st.runningPlanEntries.any { it.date == date }) return false
+
+        val updated = (st.runningPlanEntries + RunningPlanEntry(
+            date = date,
+            isBonus = true,
+        )).sortedBy { it.date }
+
+        _state.value = st.copy(runningPlanEntries = updated)
+        return true
+    }
+
 
     fun approveRunningPlan() {
         pruneRunningPlanNow()

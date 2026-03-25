@@ -30,6 +30,10 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
+import android.app.DatePickerDialog
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.platform.LocalContext
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,6 +43,8 @@ fun RunningPlanScreen(
     onBack: () -> Unit,
 ) {
     val state by vm.state.collectAsState()
+
+    val context = LocalContext.current
 
     // prune incomplete past rows when entering
     LaunchedEffect(Unit) {
@@ -76,7 +82,45 @@ fun RunningPlanScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { if (!approved) showApprove.value = true else showReset.value = true }) {
+                    if (approved) {
+                        IconButton(
+                            onClick = {
+                                val initial = state.runningPlanEntries.lastOrNull()?.date ?: LocalDate.now()
+                                DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                                        val ok = vm.addRunningPlanBonusEntry(picked)
+                                        if (!ok) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.running_bonus_exists),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    initial.year,
+                                    initial.monthValue - 1,
+                                    initial.dayOfMonth
+                                ).show()
+                            }
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = stringResource(R.string.running_add_bonus)
+                            )
+                        }
+                    }
+
+                    TextButton(
+                        onClick = {
+                            if (!approved) {
+                                showApprove.value = true
+                            } else {
+                                showReset.value = true
+                            }
+                        }
+                    ) {
                         Text(
                             if (!approved) stringResource(R.string.running_approve)
                             else stringResource(R.string.running_reset)
@@ -244,6 +288,12 @@ private fun RunningRow(
         s.replaceFirstChar { it.titlecase(locale) }
     }
 
+    val dateLabel = if (entry?.isBonus == true) {
+        "$dateText ⭐"
+    } else {
+        dateText
+    }
+
     val distance = entry?.distanceKmText.orEmpty()
 
     val timeRaw = entry?.durationHhMmText.orEmpty()
@@ -252,14 +302,19 @@ private fun RunningRow(
     val paceRaw = entry?.paceText.orEmpty()
     val paceDigits = remember(paceRaw) { paceRaw.filter { it.isDigit() }.take(4) }
 
-
     val isComplete = approved &&
             distance.isNotBlank() &&
             timeDigits.isNotBlank() &&
             paceDigits.isNotBlank()
 
+    val isBonus = entry?.isBonus == true
+
     val shape = RoundedCornerShape(12.dp)
-    val completeBg = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    val completeBg = when {
+        !isComplete -> Color.Transparent
+        isBonus -> Color(0xFFE3F2FD)
+        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    }
     val fieldTextStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.Center)
 
     Row(
@@ -267,12 +322,12 @@ private fun RunningRow(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .clip(shape)
-            .background(if (isComplete) completeBg else Color.Transparent)
+            .background(completeBg)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = dateText,
+            text = dateLabel,
             modifier = Modifier.weight(1.6f),
             style = MaterialTheme.typography.bodyMedium
         )

@@ -11,4 +11,5 @@ data class RunningPlanEntry(
     /** User-entered pace as 4 digits: MMSS (e.g., "0915" -> displayed as 09'15"). */
     val paceText: String = "",
     val taskId: Long? = null,
+    val isBonus: Boolean = false,
 )

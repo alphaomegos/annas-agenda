@@ -187,6 +187,8 @@
     <string name="running_empty">Нет строк</string>
     <string name="running_task_km">Тренировка %1$s км</string>
     <string name="running_task_minutes">Тренировка %1$d минут</string>
+    <string name="running_add_bonus">Добавить тренировку</string>
+    <string name="running_bonus_exists">На этот день уже есть тренировка</string>
 
     <!-- Counters -->
     <string name="attach_counter">Прикрепить счётчик</string>

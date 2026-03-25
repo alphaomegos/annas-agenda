@@ -19,4 +19,6 @@
     <string name="running_empty">No rows</string>
     <string name="running_task_km">Workout %1$s km</string>
     <string name="running_task_minutes">Workout %1$d minutes</string>
+    <string name="running_add_bonus">Add bonus workout</string>
+    <string name="running_bonus_exists">A workout row for this date already exists</string>
 </resources>

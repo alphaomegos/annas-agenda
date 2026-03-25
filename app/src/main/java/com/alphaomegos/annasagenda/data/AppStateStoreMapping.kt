@@ -184,6 +184,7 @@ internal fun RunningPlanEntry.toDto(): RunningPlanEntryDto = RunningPlanEntryDto
     durationHhMmText = durationHhMmText,
     paceText = paceText,
     taskId = taskId,
+    isBonus = isBonus,
 )
 
 internal fun RunningPlanEntryDto.toDomain(): RunningPlanEntry = RunningPlanEntry(
@@ -192,6 +193,7 @@ internal fun RunningPlanEntryDto.toDomain(): RunningPlanEntry = RunningPlanEntry
     durationHhMmText = durationHhMmText,
     paceText = paceText,
     taskId = taskId,
+    isBonus = isBonus,
 )
 
 internal fun Counter.toDto(): CounterDto = when (this) {
