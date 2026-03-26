@@ -1,0 +1,5 @@
+<resources>
+    <string name="menu_travel">Travel</string>
+    <string name="travel_title">Travel</string>
+    <string name="travel_placeholder">Travel screen skeleton. Countries, trips, search and world map will be added next.</string>
+</resources>

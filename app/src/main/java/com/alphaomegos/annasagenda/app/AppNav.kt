@@ -18,6 +18,7 @@ import com.alphaomegos.annasagenda.screens.media.MediaLibraryScreen
 import com.alphaomegos.annasagenda.screens.media.MovieDetailsScreen
 import com.alphaomegos.annasagenda.screens.NewTaskScreen
 import com.alphaomegos.annasagenda.screens.media.ReadingSessionScreen
+import com.alphaomegos.annasagenda.screens.travel.TravelScreen
 import com.alphaomegos.annasagenda.screens.RecurringTasksScreen
 import com.alphaomegos.annasagenda.screens.RunningPlanScreen
 import com.alphaomegos.annasagenda.screens.media.SeriesDetailsScreen
@@ -40,9 +41,8 @@ private object Route {
     const val CALORIMETER = "calorimeter"
     const val RUNNING = "running"
     const val COUNTERS = "counters"
-
+    const val TRAVEL = "travel"
     const val UNDONE = "undone"
-
     const val READING = "reading"
     const val READING_BOOK = "reading_book"
     const val READING_MOVIE = "reading_movie"
@@ -74,6 +74,7 @@ fun AppNav(vm: AppViewModel) {
                 onRunning = { nav.navigate(Route.RUNNING) },
                 onCounters = { nav.navigate(Route.COUNTERS) },
                 onMediaLibrary = { nav.navigate(Route.READING) },
+                onTravel = { nav.navigate(Route.TRAVEL) },
                 onUndone = { nav.navigate(Route.UNDONE) },
             )
         }
@@ -136,6 +137,12 @@ fun AppNav(vm: AppViewModel) {
         composable(Route.COUNTERS) {
             CountersScreen(
                 vm = vm,
+                onBack = { nav.popBackStack() }
+            )
+        }
+
+        composable(Route.TRAVEL) {
+            TravelScreen(
                 onBack = { nav.popBackStack() }
             )
         }

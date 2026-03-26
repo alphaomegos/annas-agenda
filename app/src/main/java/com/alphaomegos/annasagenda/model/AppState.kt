@@ -31,6 +31,9 @@ data class AppState(
     // "Undone" lamp state.
     val undoneLampMuted: Boolean = false,
 
+    // Travel
+    val travelCountries: List<TravelCountryRecord> = emptyList(),
+
     // Reading / media
     val readingBooks: List<ReadingBook> = emptyList(),
     val readingMovies: List<ReadingMovie> = emptyList(),

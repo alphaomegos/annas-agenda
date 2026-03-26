@@ -30,6 +30,8 @@ internal data class AppStateDto(
     val mainMenuHiddenIds: List<String> = emptyList(),
     val undoneLampMuted: Boolean = false,
 
+    val travelCountries: List<TravelCountryRecordDto> = emptyList(),
+
     val readingBooks: List<ReadingBookDto> = emptyList(),
     val readingMovies: List<ReadingMovieDto> = emptyList(),
     val readingSeries: List<ReadingSeriesDto> = emptyList(),
@@ -123,6 +125,30 @@ internal data class FoodEntryDto(
     val title: String,
     val kcal: Int,
 )
+
+@Serializable
+internal data class TravelVisitDto(
+    val year: Int,
+    val month: Int,
+    val cities: List<String> = emptyList(),
+)
+
+@Serializable
+internal data class TravelMapPointDto(
+    val x: Float,
+    val y: Float,
+)
+
+@Serializable
+internal data class TravelCountryRecordDto(
+    val countryId: String,
+    val trips: List<TravelVisitDto> = emptyList(),
+    val customName: String? = null,
+    val continentOverride: String? = null,
+    val customMapPoint: TravelMapPointDto? = null,
+    val isUserCreated: Boolean = false,
+)
+
 
 /* ---------------------------
    Reading DTOs

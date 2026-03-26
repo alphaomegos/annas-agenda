@@ -22,6 +22,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     mainMenuOrder = mainMenuOrder,
     mainMenuHiddenIds = mainMenuHiddenIds.toList(),
     undoneLampMuted = undoneLampMuted,
+    travelCountries = travelCountries.map { it.toDto() },
     readingBooks = readingBooks.map { it.toDto() },
     readingMovies = readingMovies.map { it.toDto() },
     readingSeries = readingSeries.map { it.toDto() },
@@ -57,6 +58,7 @@ internal fun AppStateDto.toDomain(): AppState = AppState(
     mainMenuOrder = mainMenuOrder,
     mainMenuHiddenIds = mainMenuHiddenIds.toSet(),
     undoneLampMuted = undoneLampMuted,
+    travelCountries = travelCountries.mapNotNull { it.toDomainOrNull() },
     readingBooks = readingBooks.mapNotNull { it.toDomainOrNull() },
     readingMovies = readingMovies.mapNotNull { it.toDomainOrNull() },
     readingSeries = readingSeries.mapNotNull { it.toDomainOrNull() },
@@ -234,6 +236,78 @@ internal fun CounterDto.toDomainOrNull(): Counter? = when (kind) {
     )
 
     else -> null
+}
+
+/* ---------------------------
+   Travel mapping helpers
+---------------------------- */
+
+internal fun parseTravelContinentOrNull(raw: String?): TravelContinent? =
+    raw
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { runCatching { TravelContinent.valueOf(it) }.getOrNull() }
+
+internal fun TravelVisit.toDto(): TravelVisitDto = TravelVisitDto(
+    year = year,
+    month = month,
+    cities = cities,
+)
+
+internal fun TravelVisitDto.toDomainOrNull(): TravelVisit? {
+    if (year <= 0) return null
+    if (month !in 1..12) return null
+
+    return TravelVisit(
+        year = year,
+        month = month,
+        cities = cities
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    )
+}
+
+internal fun TravelMapPoint.toDto(): TravelMapPointDto = TravelMapPointDto(
+    x = x,
+    y = y,
+)
+
+internal fun TravelMapPointDto.toDomainOrNull(): TravelMapPoint? {
+    if (!x.isFinite() || !y.isFinite()) return null
+    if (x !in 0f..1f) return null
+    if (y !in 0f..1f) return null
+
+    return TravelMapPoint(
+        x = x,
+        y = y,
+    )
+}
+
+internal fun TravelCountryRecord.toDto(): TravelCountryRecordDto = TravelCountryRecordDto(
+    countryId = countryId,
+    trips = trips.map { it.toDto() },
+    customName = customName,
+    continentOverride = continentOverride?.name,
+    customMapPoint = customMapPoint?.toDto(),
+    isUserCreated = isUserCreated,
+)
+
+internal fun TravelCountryRecordDto.toDomainOrNull(): TravelCountryRecord? {
+    val cleanCountryId = countryId.trim()
+    if (cleanCountryId.isEmpty()) return null
+
+    val cleanCustomName = customName
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+
+    return TravelCountryRecord(
+        countryId = cleanCountryId,
+        trips = trips.mapNotNull { it.toDomainOrNull() },
+        customName = cleanCustomName,
+        continentOverride = parseTravelContinentOrNull(continentOverride),
+        customMapPoint = customMapPoint?.toDomainOrNull(),
+        isUserCreated = isUserCreated,
+    )
 }
 
 /* ---------------------------

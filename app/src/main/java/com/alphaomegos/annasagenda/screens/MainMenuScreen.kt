@@ -107,8 +107,9 @@ fun MainMenuScreen(
     onRunning: () -> Unit,
     onCounters: () -> Unit,
     onMediaLibrary: () -> Unit,
+    onTravel: () -> Unit,
     onUndone: () -> Unit,
-) {
+)  {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -182,7 +183,8 @@ fun MainMenuScreen(
         onCalorimeter = onCalorimeter,
         onRunning = onRunning,
         onCounters = onCounters,
-        onMediaLibrary = onMediaLibrary
+        onMediaLibrary = onMediaLibrary,
+        onTravel = onTravel,
     )
 
     MainMenuContent(
@@ -246,6 +248,7 @@ private fun rememberMainMenuEntries(
     onRunning: () -> Unit,
     onCounters: () -> Unit,
     onMediaLibrary: () -> Unit,
+    onTravel: () -> Unit,
 ): List<MenuEntry> {
     return remember(
         onCalendar,
@@ -256,7 +259,8 @@ private fun rememberMainMenuEntries(
         onCalorimeter,
         onRunning,
         onCounters,
-        onMediaLibrary
+        onMediaLibrary,
+        onTravel,
     ) {
         listOf(
             MenuEntry("calendar", R.drawable.ic_menu_calendar, R.string.calendar, onCalendar),
@@ -268,6 +272,7 @@ private fun rememberMainMenuEntries(
             MenuEntry("running", R.drawable.ic_menu_running, R.string.running_title, onRunning),
             MenuEntry("counters", R.drawable.ic_menu_counters, R.string.counters_title, onCounters),
             MenuEntry("reading", R.drawable.ic_menu_reading, R.string.menu_reading, onMediaLibrary),
+            MenuEntry("travel", R.drawable.ic_menu_calendar, R.string.menu_travel, onTravel),
         )
     }
 }
