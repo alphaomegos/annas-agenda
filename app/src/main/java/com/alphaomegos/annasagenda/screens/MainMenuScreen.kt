@@ -107,6 +107,7 @@ fun MainMenuScreen(
     onRunning: () -> Unit,
     onCounters: () -> Unit,
     onMediaLibrary: () -> Unit,
+    onUndone: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -165,6 +166,13 @@ fun MainMenuScreen(
     }
 
     val state by vm.state.collectAsState()
+
+    val undoneLampIconRes = when {
+        state.undoneLampMuted -> R.drawable.ic_undone_lamp_gray
+        vm.hasUndonePastTasks() -> R.drawable.ic_undone_lamp_red
+        else -> R.drawable.ic_undone_lamp_green
+    }
+
     val menuEntries = rememberMainMenuEntries(
         onCalendar = onCalendar,
         onNewTask = onNewTask,
@@ -179,6 +187,7 @@ fun MainMenuScreen(
 
     MainMenuContent(
         langIconRes = langIconRes,
+        undoneLampIconRes = undoneLampIconRes,
         menuEntries = menuEntries,
         menuOrderIds = state.mainMenuOrder,
         menuHiddenIds = state.mainMenuHiddenIds,
@@ -186,6 +195,7 @@ fun MainMenuScreen(
         onHideMenuItem = vm::hideMainMenuItem,
         onShowAllMenuItems = vm::showAllMainMenuItems,
         onLanguage = onLanguage,
+        onUndone = onUndone,
         onExport = {
             scope.launch {
                 val ok = if (Build.VERSION.SDK_INT < 29) {
@@ -281,6 +291,7 @@ private fun applyMenuOrder(
 @Composable
 internal fun MainMenuContent(
     langIconRes: Int,
+    undoneLampIconRes: Int,
     menuEntries: List<MenuEntry>,
     menuOrderIds: List<String>,
     menuHiddenIds: Set<String>,
@@ -288,6 +299,7 @@ internal fun MainMenuContent(
     onHideMenuItem: (String) -> Unit,
     onShowAllMenuItems: () -> Unit,
     onLanguage: () -> Unit,
+    onUndone: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onResetConfirmed: () -> Unit,
@@ -336,9 +348,11 @@ internal fun MainMenuContent(
         topBar = {
             MainMenuTopBar(
                 langIconRes = langIconRes,
+                undoneLampIconRes = undoneLampIconRes,
                 reorderMode = reorderMode,
                 showShowAllButton = menuHiddenIds.isNotEmpty(),
                 dataMenuExpanded = dataMenuExpanded,
+                onUndone = onUndone,
                 onLanguage = onLanguage,
                 onOpenDataMenu = { dataMenuExpanded = true },
                 onDismissDataMenu = { dataMenuExpanded = false },
@@ -434,9 +448,11 @@ internal fun MainMenuContent(
 @Composable
 private fun MainMenuTopBar(
     langIconRes: Int,
+    undoneLampIconRes: Int,
     reorderMode: Boolean,
     showShowAllButton: Boolean,
     dataMenuExpanded: Boolean,
+    onUndone: () -> Unit,
     onLanguage: () -> Unit,
     onOpenDataMenu: () -> Unit,
     onDismissDataMenu: () -> Unit,
@@ -448,6 +464,15 @@ private fun MainMenuTopBar(
 ) {
     CenterAlignedTopAppBar(
         title = { Text(stringResource(R.string.app_name)) },
+        navigationIcon = {
+            IconButton(onClick = onUndone) {
+                Icon(
+                    painter = painterResource(undoneLampIconRes),
+                    contentDescription = stringResource(R.string.undone_lamp_open),
+                    tint = Color.Unspecified
+                )
+            }
+        },
         actions = {
             if (reorderMode) {
                 TextButton(

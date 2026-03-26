@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Undone tasks -->
+    <string name="undone_title">Undone</string>
+    <string name="undone_empty">No undone tasks</string>
+    <string name="undone_lamp_toggle">Toggle undone lamp</string>
+    <string name="undone_lamp_open">Open undone tasks</string>
+</resources>

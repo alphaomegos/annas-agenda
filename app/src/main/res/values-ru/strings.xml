@@ -212,7 +212,6 @@
     <string name="detach_counter">Открепить</string>
 
     <!-- Media library: shared -->
-    <string name="reading_title">Медиатека</string>
     <string name="reading_empty">Пока нет элементов</string>
     <string name="reading_nothing_found">Ничего не найдено</string>
     <string name="reading_search_label">Поиск по названию, автору или году</string>
@@ -223,9 +222,8 @@
     <string name="reading_media_book">Книга</string>
     <string name="reading_media_movie">Фильм</string>
     <string name="reading_media_series">Сериал</string>
-    <string name="reading_menu_toggle_view">Сменить вид</string>
+
     <string name="reading_view_list">Список</string>
-    <string name="reading_menu_sort">Сортировка</string>
     <string name="reading_menu_delete">Удалить</string>
     <string name="reading_menu_move_to_plans">В планы</string>
     <string name="reading_menu_move_to_now">В текущее</string>
@@ -311,4 +309,10 @@
     <string name="reading_series_done">Готово</string>
     <string name="reading_series_delete_title">Удалить сериал?</string>
     <string name="reading_series_delete_text">Этот сериал будет удалён навсегда.</string>
+
+    <!-- Undone tasks -->
+    <string name="undone_title">Недоделки</string>
+    <string name="undone_empty">Все задачи закрыты</string>
+    <string name="undone_lamp_toggle">Выключить лампу</string>
+    <string name="undone_lamp_open">Открыть недоделки</string>
 </resources>

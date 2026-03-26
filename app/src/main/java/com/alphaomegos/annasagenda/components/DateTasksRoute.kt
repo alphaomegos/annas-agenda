@@ -62,11 +62,21 @@ internal data class DateTasksActions(
 internal fun DateTasksBlock(
     vm: AppViewModel,
     state: AppState,
-    date: LocalDate?
+    date: LocalDate?,
+    includeDoneTasks: Boolean = true,
+    visibleTaskIds: Set<Long>? = null,
 ) {
-    val tasks = remember(state.tasks, state.suppressedRecurrences, date) {
+    val tasks = remember(
+        state.tasks,
+        state.suppressedRecurrences,
+        date,
+        includeDoneTasks,
+        visibleTaskIds
+    ) {
         state.tasks
             .filter { it.date == date }
+            .filter { includeDoneTasks || !it.isDone }
+            .filter { visibleTaskIds == null || it.id in visibleTaskIds }
             .filterNot { isSuppressedTemplateTaskOnItsDate(it, state.suppressedRecurrences) }
             .sortedWith(compareBy({ it.order }, { it.id }))
     }
@@ -134,20 +144,20 @@ private fun DateTasksBlockContent(
 ) {
     var expandedTaskIds by remember(date) { mutableStateOf<Set<Long>>(emptySet()) }
 
-    var moveTaskId by remember { mutableStateOf<Long?>(null) }
+    val moveTaskId = remember { mutableStateOf<Long?>(null) }
     val showMoveTaskDatePicker = remember { mutableStateOf(false) }
 
-    var copyTaskId by remember { mutableStateOf<Long?>(null) }
+    val copyTaskId = remember { mutableStateOf<Long?>(null) }
     val showCopyTaskDatePicker = remember { mutableStateOf(false) }
 
-    var copySubtaskId by remember { mutableStateOf<Long?>(null) }
+    val copySubtaskId = remember { mutableStateOf<Long?>(null) }
     val showCopySubtaskDatePicker = remember { mutableStateOf(false) }
 
     val moveSubtaskId = remember { mutableStateOf<Long?>(null) }
 
     val addSubtaskToTaskId = remember { mutableStateOf<Long?>(null) }
-    var newSubtaskText by remember { mutableStateOf("") }
-    var newSubtaskColor by remember { mutableStateOf<Long?>(null) }
+    val newSubtaskText = remember { mutableStateOf("") }
+    val newSubtaskColor = remember { mutableStateOf<Long?>(null) }
 
     var editTaskId by remember { mutableStateOf<Long?>(null) }
     val editTaskText = remember { mutableStateOf("") }
@@ -183,8 +193,8 @@ private fun DateTasksBlockContent(
             },
             onMoveUp = { actions.moveTaskUp(task.id) },
             onMoveDown = { actions.moveTaskDown(task.id) },
-            onMove = { moveTaskId = task.id },
-            onCopy = { copyTaskId = task.id },
+            onMove = { moveTaskId.value = task.id },
+            onCopy = { copyTaskId.value = task.id },
         )
 
         Row(
@@ -194,8 +204,8 @@ private fun DateTasksBlockContent(
             if (isTaskExpanded) {
                 TextButton(onClick = {
                     addSubtaskToTaskId.value = task.id
-                    newSubtaskText = ""
-                    newSubtaskColor = task.colorArgb
+                    newSubtaskText.value = ""
+                    newSubtaskColor.value = task.colorArgb
                 }) {
                     Text(stringResource(R.string.add_subtask))
                 }
@@ -219,7 +229,7 @@ private fun DateTasksBlockContent(
                     onMoveUp = { actions.moveSubtaskUp(st.id) },
                     onMoveDown = { actions.moveSubtaskDown(st.id) },
                     onMove = { moveSubtaskId.value = st.id },
-                    onCopy = { copySubtaskId = st.id },
+                    onCopy = { copySubtaskId.value = st.id },
                 )
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -232,12 +242,12 @@ private fun DateTasksBlockContent(
     // Move task: choose date (Today / Tomorrow / Someday / Pick date)
 
     MoveTaskDialogs(
-        taskId = moveTaskId,
+        taskId = moveTaskId.value,
         showDatePicker = showMoveTaskDatePicker.value,
-        currentTaskDate = state.tasks.firstOrNull { it.id == moveTaskId }?.date,
+        currentTaskDate = state.tasks.firstOrNull { it.id == moveTaskId.value }?.date,
         onDismissAll = {
             showMoveTaskDatePicker.value = false
-            moveTaskId = null
+            moveTaskId.value = null
         },
         onShowDatePicker = { showMoveTaskDatePicker.value = true },
         onMoveToSomeday = { taskId ->
@@ -255,11 +265,11 @@ private fun DateTasksBlockContent(
     )
 
     CopyTaskDialogs(
-        taskId = copyTaskId,
+        taskId = copyTaskId.value,
         showDatePicker = showCopyTaskDatePicker.value,
         onDismissAll = {
             showCopyTaskDatePicker.value = false
-            copyTaskId = null
+            copyTaskId.value = null
         },
         onShowDatePicker = { showCopyTaskDatePicker.value = true },
         onCopyToToday = { taskId ->
@@ -284,10 +294,10 @@ private fun DateTasksBlockContent(
 
     AddSubtaskDialog(
         taskId = addSubtaskToTaskId.value,
-        text = newSubtaskText,
-        color = newSubtaskColor,
-        onTextChange = { newSubtaskText = it },
-        onColorChange = { newSubtaskColor = it },
+        text = newSubtaskText.value,
+        color = newSubtaskColor.value,
+        onTextChange = { newSubtaskText.value = it },
+        onColorChange = { newSubtaskColor.value = it },
         onDismiss = { addSubtaskToTaskId.value = null },
         onConfirm = { taskId, text, color ->
             actions.createSubtask(taskId, text, color)
@@ -295,11 +305,11 @@ private fun DateTasksBlockContent(
     )
 
     CopySubtaskDialogs(
-        subtaskId = copySubtaskId,
+        subtaskId = copySubtaskId.value,
         showDatePicker = showCopySubtaskDatePicker.value,
         onDismissAll = {
             showCopySubtaskDatePicker.value = false
-            copySubtaskId = null
+            copySubtaskId.value = null
         },
         onShowDatePicker = { showCopySubtaskDatePicker.value = true },
         onCopyToToday = { subtaskId ->

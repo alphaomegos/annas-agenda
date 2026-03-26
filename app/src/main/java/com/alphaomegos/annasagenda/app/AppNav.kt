@@ -22,7 +22,9 @@ import com.alphaomegos.annasagenda.screens.RecurringTasksScreen
 import com.alphaomegos.annasagenda.screens.RunningPlanScreen
 import com.alphaomegos.annasagenda.screens.media.SeriesDetailsScreen
 import com.alphaomegos.annasagenda.screens.SomedayScreen
+import com.alphaomegos.annasagenda.screens.UndoneTasksScreen
 import java.time.LocalDate
+
 
 private object Route {
     const val MENU = "menu"
@@ -38,6 +40,8 @@ private object Route {
     const val CALORIMETER = "calorimeter"
     const val RUNNING = "running"
     const val COUNTERS = "counters"
+
+    const val UNDONE = "undone"
 
     const val READING = "reading"
     const val READING_BOOK = "reading_book"
@@ -70,6 +74,7 @@ fun AppNav(vm: AppViewModel) {
                 onRunning = { nav.navigate(Route.RUNNING) },
                 onCounters = { nav.navigate(Route.COUNTERS) },
                 onMediaLibrary = { nav.navigate(Route.READING) },
+                onUndone = { nav.navigate(Route.UNDONE) },
             )
         }
 
@@ -134,6 +139,14 @@ fun AppNav(vm: AppViewModel) {
                 onBack = { nav.popBackStack() }
             )
         }
+
+        composable(Route.UNDONE) {
+            UndoneTasksScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() }
+            )
+        }
+
 
         composable(Route.READING) {
             MediaLibraryScreen(

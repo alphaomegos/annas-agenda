@@ -31,6 +31,7 @@ class MainMenuContentTest {
             MaterialTheme {
                 MainMenuContent(
                     langIconRes = R.drawable.ic_langflag_en,
+                    undoneLampIconRes = R.drawable.ic_undone_lamp_green,
                     menuEntries = listOf(
                         MenuEntry(
                             id = "calendar",
@@ -57,6 +58,7 @@ class MainMenuContentTest {
                     onHideMenuItem = {},
                     onShowAllMenuItems = {},
                     onLanguage = { languageClicks++ },
+                    onUndone = {},
                     onExport = {},
                     onImport = {},
                     onResetConfirmed = {},
@@ -101,6 +103,7 @@ class MainMenuContentTest {
             MaterialTheme {
                 MainMenuContent(
                     langIconRes = R.drawable.ic_langflag_en,
+                    undoneLampIconRes = R.drawable.ic_undone_lamp_green,
                     menuEntries = listOf(
                         MenuEntry(
                             id = "calendar",
@@ -115,6 +118,7 @@ class MainMenuContentTest {
                     onHideMenuItem = {},
                     onShowAllMenuItems = {},
                     onLanguage = {},
+                    onUndone = {},
                     onExport = { exportClicks++ },
                     onImport = { importClicks++ },
                     onResetConfirmed = { resetConfirmed++ },
