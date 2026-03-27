@@ -1,5 +1,35 @@
 <resources>
     <string name="menu_travel">Travel</string>
     <string name="travel_title">Travel</string>
-    <string name="travel_placeholder">Travel screen skeleton. Countries, trips, search and world map will be added next.</string>
+
+    <string name="travel_seed_empty">No bundled countries were loaded.</string>
+    <string name="travel_stats">%1$d / %2$d countries visited</string>
+
+    <string name="travel_country_not_visited">%1$s • not visited yet</string>
+    <string name="travel_country_visited_one">%1$s • 1 trip</string>
+    <string name="travel_country_visited_many">%1$s • %2$d trips</string>
+
+    <string name="travel_country_trips_title">Trips</string>
+    <string name="travel_country_empty">No trips added yet.</string>
+
+    <string name="travel_add_trip">Add trip</string>
+    <string name="travel_add_trip_title">Add trip</string>
+    <string name="travel_trip_year">Year</string>
+    <string name="travel_trip_month">Month</string>
+    <string name="travel_trip_city_input">City</string>
+    <string name="travel_trip_add_city">Add city</string>
+    <string name="travel_trip_cities_label">Cities</string>
+    <string name="travel_trip_cities_empty">No cities added</string>
+    <string name="travel_trip_cities_none">No cities specified</string>
+    <string name="travel_trip_save">Save</string>
+    <string name="travel_trip_cancel">Cancel</string>
+
+    <string name="travel_continent_africa">Africa</string>
+    <string name="travel_continent_antarctica">Antarctica</string>
+    <string name="travel_continent_asia">Asia</string>
+    <string name="travel_continent_europe">Europe</string>
+    <string name="travel_continent_north_america">North America</string>
+    <string name="travel_continent_oceania">Australia and Oceania</string>
+    <string name="travel_continent_south_america">South America</string>
+    <string name="travel_continent_unknown">Unknown continent</string>
 </resources>

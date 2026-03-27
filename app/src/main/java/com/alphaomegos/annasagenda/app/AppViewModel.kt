@@ -462,6 +462,61 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             .sorted()
     }
 
+    /* ---------------------------
+       Travel
+    ---------------------------- */
+
+    fun addTravelTrip(
+        countryId: String,
+        year: Int,
+        month: Int,
+        cities: List<String>,
+    ): Boolean {
+        val normalizedCountryId = countryId
+            .trim()
+            .uppercase()
+            .takeIf { it.isNotEmpty() }
+            ?: return false
+
+        if (year <= 0) return false
+        if (month !in 1..12) return false
+
+        val cleanCities = cities
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+
+        val newTrip = TravelVisit(
+            year = year,
+            month = month,
+            cities = cleanCities,
+        )
+
+        val cur = _state.value
+        val idx = cur.travelCountries.indexOfFirst {
+            it.countryId.trim().uppercase() == normalizedCountryId
+        }
+
+        val updatedTravelCountries =
+            if (idx >= 0) {
+                val existing = cur.travelCountries[idx]
+                cur.travelCountries.toMutableList().apply {
+                    this[idx] = existing.copy(
+                        countryId = normalizedCountryId,
+                        trips = (existing.trips + newTrip)
+                            .sortedWith(compareBy<TravelVisit>({ it.year }, { it.month }))
+                    )
+                }
+            } else {
+                cur.travelCountries + TravelCountryRecord(
+                    countryId = normalizedCountryId,
+                    trips = listOf(newTrip),
+                )
+            }
+
+        _state.value = cur.copy(travelCountries = updatedTravelCountries)
+        return true
+    }
 
     /* ---------------------------
        Reading

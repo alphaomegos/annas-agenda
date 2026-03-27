@@ -19,12 +19,14 @@ import com.alphaomegos.annasagenda.screens.media.MovieDetailsScreen
 import com.alphaomegos.annasagenda.screens.NewTaskScreen
 import com.alphaomegos.annasagenda.screens.media.ReadingSessionScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelScreen
+import com.alphaomegos.annasagenda.screens.travel.CountryDetailsScreen
 import com.alphaomegos.annasagenda.screens.RecurringTasksScreen
 import com.alphaomegos.annasagenda.screens.RunningPlanScreen
 import com.alphaomegos.annasagenda.screens.media.SeriesDetailsScreen
 import com.alphaomegos.annasagenda.screens.SomedayScreen
 import com.alphaomegos.annasagenda.screens.UndoneTasksScreen
 import java.time.LocalDate
+import android.net.Uri
 
 
 private object Route {
@@ -42,6 +44,7 @@ private object Route {
     const val RUNNING = "running"
     const val COUNTERS = "counters"
     const val TRAVEL = "travel"
+    const val TRAVEL_COUNTRY = "travel_country"
     const val UNDONE = "undone"
     const val READING = "reading"
     const val READING_BOOK = "reading_book"
@@ -53,6 +56,7 @@ private object Route {
     fun readingMovie(movieId: Long) = "$READING_MOVIE/$movieId"
     fun readingSeries(seriesId: Long) = "$READING_SERIES/$seriesId"
     fun readingSession(bookId: Long) = "$READING_SESSION/$bookId"
+    fun travelCountry(countryId: String) = "$TRAVEL_COUNTRY/${Uri.encode(countryId)}"
 }
 
 @Composable
@@ -143,6 +147,26 @@ fun AppNav(vm: AppViewModel) {
 
         composable(Route.TRAVEL) {
             TravelScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() },
+                onOpenCountry = { countryId ->
+                    nav.navigate(Route.travelCountry(countryId))
+                }
+            )
+        }
+
+        composable(
+            route = "${Route.TRAVEL_COUNTRY}/{countryId}",
+            arguments = listOf(navArgument("countryId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val countryId = backStackEntry.arguments
+                ?.getString("countryId")
+                ?.let(Uri::decode)
+                .orEmpty()
+
+            CountryDetailsScreen(
+                vm = vm,
+                countryId = countryId,
                 onBack = { nav.popBackStack() }
             )
         }

@@ -1,0 +1,165 @@
+[
+  {
+    "countryId": "AL",
+    "names": { "en": "Albania" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "DZ",
+    "names": { "en": "Algeria" },
+    "defaultContinent": "AFRICA"
+  },
+  {
+    "countryId": "AT",
+    "names": { "en": "Austria" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "AZ",
+    "names": { "en": "Azerbaijan" },
+    "defaultContinent": "ASIA"
+  },
+  {
+    "countryId": "BY",
+    "names": { "en": "Belarus" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "BG",
+    "names": { "en": "Bulgaria" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "HR",
+    "names": { "en": "Croatia" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "CZ",
+    "names": { "en": "Czechia" },
+    "defaultContinent": "EUROPE",
+    "aliases": ["Czech Republic"]
+  },
+  {
+    "countryId": "EG",
+    "names": { "en": "Egypt" },
+    "defaultContinent": "AFRICA"
+  },
+  {
+    "countryId": "EE",
+    "names": { "en": "Estonia" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "FI",
+    "names": { "en": "Finland" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "FR",
+    "names": { "en": "France" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "GE",
+    "names": { "en": "Georgia" },
+    "defaultContinent": "ASIA"
+  },
+  {
+    "countryId": "DE",
+    "names": { "en": "Germany" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "GR",
+    "names": { "en": "Greece" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "HU",
+    "names": { "en": "Hungary" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "IT",
+    "names": { "en": "Italy" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "JP",
+    "names": { "en": "Japan" },
+    "defaultContinent": "ASIA"
+  },
+  {
+    "countryId": "KZ",
+    "names": { "en": "Kazakhstan" },
+    "defaultContinent": "ASIA"
+  },
+  {
+    "countryId": "ME",
+    "names": { "en": "Montenegro" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "NO",
+    "names": { "en": "Norway" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "PL",
+    "names": { "en": "Poland" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "PT",
+    "names": { "en": "Portugal" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "RO",
+    "names": { "en": "Romania" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "RS",
+    "names": { "en": "Serbia" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "RU",
+    "names": { "en": "Russia" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "ES",
+    "names": { "en": "Spain" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "SE",
+    "names": { "en": "Sweden" },
+    "defaultContinent": "EUROPE"
+  },
+  {
+    "countryId": "TR",
+    "names": { "en": "Turkey" },
+    "defaultContinent": "ASIA"
+  },
+  {
+    "countryId": "GB",
+    "names": { "en": "United Kingdom" },
+    "defaultContinent": "EUROPE",
+    "aliases": ["UK", "Britain", "Great Britain"]
+  },
+  {
+    "countryId": "US",
+    "names": { "en": "United States" },
+    "defaultContinent": "NORTH_AMERICA",
+    "aliases": ["USA", "United States of America", "US"]
+  },
+  {
+    "countryId": "UZ",
+    "names": { "en": "Uzbekistan" },
+    "defaultContinent": "ASIA"
+  }
+]
