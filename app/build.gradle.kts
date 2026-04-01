@@ -14,8 +14,8 @@ android {
         applicationId = "com.alphaomegos.annasagenda"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18
-        versionName = "21.3"
+        versionCode = 19
+        versionName = "22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
