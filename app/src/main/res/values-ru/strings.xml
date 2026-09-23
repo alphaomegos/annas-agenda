@@ -50,6 +50,16 @@
     <string name="toast_invalid_backup">Неверный файл бекапа</string>
     <string name="toast_reset_done">Сброс выполнен</string>
 
+    <!-- Unreadable saved state -->
+    <string name="storage_failure_title">Не удалось прочитать данные</string>
+    <string name="storage_failure_text">Приложение нашло на устройстве сохранённые данные, но не смогло их открыть. Ничего не удалено и не перезаписано.</string>
+    <string name="storage_failure_saved_copy">Точная копия сохранена здесь:\n%1$s</string>
+    <string name="storage_failure_no_copy">Копию нечитаемых данных сохранить не удалось.</string>
+    <string name="storage_failure_restore_hint">Если продолжить с пустым ежедневником, данные потом можно вернуть через Данные → Загрузить бэкап.</string>
+    <string name="storage_failure_continue_empty">Продолжить с пустыми данными</string>
+    <string name="storage_failure_confirm_title">Начать с пустых данных?</string>
+    <string name="storage_failure_confirm_text">Нечитаемые данные останутся на устройстве в виде копии, но приложение запустится с нуля.</string>
+
     <!-- Calendar -->
     <string name="calendar_title">Календарь</string>
     <string name="prev_month">Прошлое</string>

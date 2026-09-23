@@ -16,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import com.alphaomegos.annasagenda.screens.StorageFailureScreen
 import com.alphaomegos.annasagenda.util.writeBackupToDocuments
 import kotlinx.coroutines.launch
 
@@ -34,18 +35,25 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val loaded by vm.isLoaded.collectAsState()
+            val storageFailure by vm.storageFailure.collectAsState()
 
             AnnaAgendaTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    if (!loaded) {
-                        Box(
+                    val failure = storageFailure
+                    when {
+                        !loaded -> Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator()
                         }
-                    } else {
-                        AppNav(vm)
+
+                        failure != null -> StorageFailureScreen(
+                            failure = failure,
+                            onContinueEmpty = { vm.discardCorruptedStateAndStartEmpty() }
+                        )
+
+                        else -> AppNav(vm)
                     }
                 }
             }
@@ -57,6 +65,11 @@ class MainActivity : AppCompatActivity() {
 
         // don't write backup until initial state is loaded
         if (!vm.isLoaded.value) return
+
+        // Never let an unreadable startup overwrite a good backup: the in-memory
+        // state is empty in that case, and writeBackupToDocuments truncates the
+        // existing archive.
+        if (vm.storageFailure.value != null) return
 
         lifecycleScope.launch {
             val json = vm.exportBackupJson()

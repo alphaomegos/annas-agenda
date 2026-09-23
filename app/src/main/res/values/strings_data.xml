@@ -13,4 +13,14 @@
     <string name="toast_import_failed">Import failed</string>
     <string name="toast_invalid_backup">Invalid backup file</string>
     <string name="toast_reset_done">Reset done</string>
+
+    <!-- Unreadable saved state -->
+    <string name="storage_failure_title">Saved data could not be read</string>
+    <string name="storage_failure_text">The app found saved data on this device but was unable to open it. Nothing has been deleted or overwritten.</string>
+    <string name="storage_failure_saved_copy">A verbatim copy has been kept at:\n%1$s</string>
+    <string name="storage_failure_no_copy">A copy of the unreadable data could not be written.</string>
+    <string name="storage_failure_restore_hint">If you continue with an empty agenda, you can afterwards restore your data with Data → Import backup.</string>
+    <string name="storage_failure_continue_empty">Continue with empty data</string>
+    <string name="storage_failure_confirm_title">Start with empty data?</string>
+    <string name="storage_failure_confirm_text">The unreadable data stays on the device as a copy, but the app will start from scratch.</string>
 </resources>

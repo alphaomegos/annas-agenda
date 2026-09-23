@@ -1,8 +1,11 @@
 package com.alphaomegos.annasagenda
 
 import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -23,20 +26,44 @@ class AppStateStoreInstrumentedTest {
     @Before
     fun setUp() {
         appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        clearAppStateStoreFile()
+        clearAppStateStore()
         store = AppStateStore(appContext)
     }
 
     @After
     fun tearDown() {
-        clearAppStateStoreFile()
+        clearAppStateStore()
     }
 
     @Test
-    fun load_returnsDefaultState_whenStoreFileDoesNotExist() = runBlocking {
+    fun load_reportsEmpty_whenNothingWasEverSaved() = runBlocking {
         val loaded = store.load()
 
-        assertEquals(AppState(), loaded)
+        assertEquals(AppStateLoadResult.Empty, loaded)
+    }
+
+    @Test
+    fun load_reportsCorrupted_andKeepsPayload_whenStoredJsonIsUnreadable() = runBlocking {
+        val unreadable = """{"v":3,"tasks":[{"id":1,"order":0}"""
+
+        appContext.appStateDataStore.edit { prefs ->
+            prefs[stringPreferencesKey(AppStateStore.APP_STATE_KEY_NAME)] = unreadable
+        }
+
+        val loaded = store.load()
+
+        assertTrue("expected Corrupted, got $loaded", loaded is AppStateLoadResult.Corrupted)
+
+        // The unreadable payload is still on disk, untouched.
+        val stillStored = appContext.appStateDataStore.data.first()[
+            stringPreferencesKey(AppStateStore.APP_STATE_KEY_NAME)
+        ]
+        assertEquals(unreadable, stillStored)
+
+        // And a verbatim copy was quarantined for manual recovery.
+        val quarantined = (loaded as AppStateLoadResult.Corrupted).quarantineFile
+        assertNotNull(quarantined)
+        assertEquals(unreadable, quarantined!!.readText())
     }
 
     @Test
@@ -65,7 +92,8 @@ class AppStateStoreInstrumentedTest {
         store.save(original)
         val restored = store.load()
 
-        assertEquals(original, restored)
+        assertTrue("expected Loaded, got $restored", restored is AppStateLoadResult.Loaded)
+        assertEquals(original, (restored as AppStateLoadResult.Loaded).state)
     }
 
     @Test
@@ -96,10 +124,18 @@ class AppStateStoreInstrumentedTest {
         assertTrue(decoded.runningPlanEntries.isEmpty())
     }
 
-    private fun clearAppStateStoreFile() {
-        val file = File(appContext.filesDir, "datastore/app_state_store.preferences_pb")
-        if (file.exists()) {
-            file.delete()
-        }
+    /**
+     * Clears through the DataStore API rather than deleting the backing file:
+     * the file on disk is not the source of truth while an instance is alive,
+     * so deleting it leaves the in-memory cache stale and makes the tests order
+     * dependent.
+     */
+    private fun clearAppStateStore() = runBlocking {
+        appContext.appStateDataStore.edit { it.clear() }
+
+        File(appContext.filesDir, AppStateStore.QUARANTINE_DIR_NAME)
+            .listFiles()
+            ?.forEach { it.delete() }
+        Unit
     }
 }

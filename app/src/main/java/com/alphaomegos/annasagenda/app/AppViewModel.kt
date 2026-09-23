@@ -244,21 +244,82 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _isLoaded = MutableStateFlow(false)
     val isLoaded: StateFlow<Boolean> = _isLoaded.asStateFlow()
 
+    /**
+     * Non-null when persisted state exists but could not be read. While this is
+     * set, autosave stays off so the unreadable payload is never overwritten.
+     */
+    private val _storageFailure = MutableStateFlow<AppStateLoadResult.Corrupted?>(null)
+    val storageFailure: StateFlow<AppStateLoadResult.Corrupted?> = _storageFailure.asStateFlow()
+
+    private var autoSaveStarted = false
+
     init {
         viewModelScope.launch {
-            val loaded = store.load()
-            val migrated = migrateLegacyMediaCovers(loaded)
+            when (val result = store.load()) {
+                is AppStateLoadResult.Corrupted -> {
+                    // Deliberately leave _state at its default and do NOT start
+                    // autosave: the payload on disk stays untouched until the
+                    // user decides what to do with it.
+                    _storageFailure.value = result
+                    _isLoaded.value = true
+                }
 
-            _state.value = migrated
-            nextId = nextIdAfter(migrated)
+                AppStateLoadResult.Empty -> {
+                    nextId = nextIdAfter(_state.value)
+                    _isLoaded.value = true
+                    beginAutoSaveOnce()
+                }
 
-            if (migrated != loaded) {
-                store.save(migrated)
+                is AppStateLoadResult.Loaded -> {
+                    val loaded = result.state
+                    val migrated = migrateLegacyMediaCovers(loaded)
+
+                    _state.value = migrated
+                    nextId = nextIdAfter(migrated)
+
+                    if (migrated != loaded) {
+                        store.save(migrated)
+                    }
+
+                    _isLoaded.value = true
+                    beginAutoSaveOnce()
+                }
             }
+        }
+    }
 
-            _isLoaded.value = true
-            startNewTaskDraftAutoSave()
-            startAutoSave()
+    /**
+     * Starts both autosave loops exactly once. Idempotent, because recovery
+     * paths may reach it after startup already declined to start them.
+     */
+    private fun beginAutoSaveOnce() {
+        if (autoSaveStarted) return
+        autoSaveStarted = true
+
+        startNewTaskDraftAutoSave()
+        viewModelScope.launch { startAutoSave() }
+    }
+
+    /**
+     * Abandons an unreadable payload and continues from an empty state.
+     *
+     * The quarantined copy written by [AppStateStore.load] is left in place, so
+     * this is recoverable afterwards via the normal backup import.
+     */
+    fun discardCorruptedStateAndStartEmpty() {
+        if (_storageFailure.value == null) return
+
+        viewModelScope.launch {
+            val empty = AppState()
+
+            _state.value = empty
+            nextId = 1L
+            _activeReading.value = null
+
+            store.save(empty)
+
+            _storageFailure.value = null
+            beginAutoSaveOnce()
         }
     }
 
@@ -355,6 +416,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
             cleanupRemovedInternalCoversAsync(before, migrated)
             store.save(migrated)
+
+            // A successful import is also a recovery: the payload we could not
+            // read has just been replaced by one we can.
+            _storageFailure.value = null
+            beginAutoSaveOnce()
         }
 
         return true
@@ -393,6 +459,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         cleanupRemovedInternalCoversAsync(before, migrated)
         store.save(migrated)
+
+        _storageFailure.value = null
+        beginAutoSaveOnce()
 
         return true
     }
