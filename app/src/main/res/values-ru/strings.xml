@@ -52,7 +52,7 @@
 
     <!-- Unreadable saved state -->
     <string name="storage_failure_title">Не удалось прочитать данные</string>
-    <string name="storage_failure_text">Приложение нашло на устройстве сохранённые данные, но не смогло их открыть. Ничего не удалено и не перезаписано.</string>
+    <string name="storage_failure_text">Приложение нашло на устройстве сохранённые данные, но не смогло их открыть. Нечитаемые данные сохранены в виде копии.</string>
     <string name="storage_failure_saved_copy">Точная копия сохранена здесь:\n%1$s</string>
     <string name="storage_failure_no_copy">Копию нечитаемых данных сохранить не удалось.</string>
     <string name="storage_failure_restore_hint">Если продолжить с пустым ежедневником, данные потом можно вернуть через Данные → Загрузить бэкап.</string>

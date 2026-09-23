@@ -8,6 +8,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -46,7 +47,7 @@ class AppStateStoreInstrumentedTest {
     fun load_reportsCorrupted_andKeepsPayload_whenStoredJsonIsUnreadable() = runBlocking {
         val unreadable = """{"v":3,"tasks":[{"id":1,"order":0}"""
 
-        appContext.appStateDataStore.edit { prefs ->
+        appStateDataStore(appContext).edit { prefs ->
             prefs[stringPreferencesKey(AppStateStore.APP_STATE_KEY_NAME)] = unreadable
         }
 
@@ -55,7 +56,7 @@ class AppStateStoreInstrumentedTest {
         assertTrue("expected Corrupted, got $loaded", loaded is AppStateLoadResult.Corrupted)
 
         // The unreadable payload is still on disk, untouched.
-        val stillStored = appContext.appStateDataStore.data.first()[
+        val stillStored = appStateDataStore(appContext).data.first()[
             stringPreferencesKey(AppStateStore.APP_STATE_KEY_NAME)
         ]
         assertEquals(unreadable, stillStored)
@@ -64,6 +65,46 @@ class AppStateStoreInstrumentedTest {
         val quarantined = (loaded as AppStateLoadResult.Corrupted).quarantineFile
         assertNotNull(quarantined)
         assertEquals(unreadable, quarantined!!.readText())
+    }
+
+    /**
+     * The layer below the JSON one: the Preferences file itself is unparseable.
+     *
+     * Before the corruption handler existed, DataStore threw CorruptionException
+     * straight out of `data.first()`, the exception escaped the coroutine started
+     * in AppViewModel's init, and the app died on launch with no way back in.
+     */
+    @Test
+    fun load_reportsCorrupted_andQuarantinesFile_whenDataStoreFileIsUnparseable() = runBlocking {
+        // Leading 0x00 is an invalid protobuf tag, so this can never parse.
+        val garbage = byteArrayOf(0) + "definitely not a preferences file".toByteArray()
+
+        val file = File(
+            appContext.filesDir,
+            "datastore/${PROBE_PREFIX}${System.currentTimeMillis()}.preferences_pb"
+        )
+        file.parentFile?.mkdirs()
+        file.writeBytes(garbage)
+
+        AppStateStoreCorruption.clear()
+        val probeStore = AppStateStore(appContext, buildAppStateDataStore(appContext, file))
+
+        val loaded = probeStore.load()
+
+        assertTrue("expected Corrupted, got $loaded", loaded is AppStateLoadResult.Corrupted)
+
+        // The bad bytes were copied aside before DataStore replaced the file.
+        val quarantined = (loaded as AppStateLoadResult.Corrupted).quarantineFile
+        assertNotNull("corrupt file was not quarantined", quarantined)
+        assertArrayEquals(garbage, quarantined!!.readBytes())
+
+        // And the store is usable again afterwards, so recovery can persist.
+        val recovered = AppState(mainMenuOrder = listOf("calendar", "new_task"))
+        probeStore.save(recovered)
+
+        val reloaded = probeStore.load()
+        assertTrue("expected Loaded, got $reloaded", reloaded is AppStateLoadResult.Loaded)
+        assertEquals(recovered, (reloaded as AppStateLoadResult.Loaded).state)
     }
 
     @Test
@@ -131,11 +172,23 @@ class AppStateStoreInstrumentedTest {
      * dependent.
      */
     private fun clearAppStateStore() = runBlocking {
-        appContext.appStateDataStore.edit { it.clear() }
+        AppStateStoreCorruption.clear()
+        appStateDataStore(appContext).edit { it.clear() }
 
         File(appContext.filesDir, AppStateStore.QUARANTINE_DIR_NAME)
             .listFiles()
             ?.forEach { it.delete() }
+
+        // Probe files from the file-corruption test, which cannot delete its
+        // own file inside the test body: a @Test method must return void, and
+        // File.delete() as the last expression would make it return Boolean.
+        File(appContext.filesDir, "datastore")
+            .listFiles { f -> f.name.startsWith(PROBE_PREFIX) }
+            ?.forEach { it.delete() }
         Unit
+    }
+
+    private companion object {
+        const val PROBE_PREFIX = "corrupt_probe_"
     }
 }
