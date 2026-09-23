@@ -8,19 +8,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.temporal.WeekFields
 
 /**
  * Covers the recurrence engine on a plain JVM.
  *
  * Until this logic was extracted from AppViewModel it could only be reached
  * through an instrumented test on a device, which is why almost none of it was
- * covered. WeekFields.ISO is passed explicitly everywhere so results do not
- * depend on the machine's locale.
+ * covered. A Monday week start is passed explicitly everywhere so results do
+ * not depend on the machine's locale.
  */
 class RecurrenceSupportTest {
 
-    private val iso: WeekFields = WeekFields.ISO
+    private val iso: DayOfWeek = DayOfWeek.MONDAY
 
     private val monday = LocalDate.of(2026, 3, 23)
     private val nextMonday = LocalDate.of(2026, 3, 30)
@@ -69,7 +68,7 @@ class RecurrenceSupportTest {
         start = start,
         end = end,
         nextId = nextId,
-        weekFields = iso,
+        defaultWeekStart = iso,
     )
 
     /* ---------------- matchesRepeat ---------------- */
@@ -156,6 +155,84 @@ class RecurrenceSupportTest {
         assertTrue(matchesRepeat(anchor, LocalDate.of(2026, 3, 15), everyOtherMonth, iso))
     }
 
+    /* ---------------- where the week starts ---------------- */
+
+    @Test
+    fun startOfWeekWalksBackToTheChosenFirstDay() {
+        val sunday = LocalDate.of(2026, 3, 22)
+
+        assertEquals(LocalDate.of(2026, 3, 16), startOfWeek(sunday, DayOfWeek.MONDAY))
+        assertEquals(sunday, startOfWeek(sunday, DayOfWeek.SUNDAY))
+        assertEquals(monday, startOfWeek(monday, DayOfWeek.MONDAY))
+    }
+
+    /**
+     * The bug this field exists for. Anchor on a Sunday, target the Monday nine
+     * days later, every two weeks: the two week boundaries disagree about how
+     * many weeks have passed, so the same rule fires under one and not the
+     * other. Switching the app language used to flip this.
+     */
+    @Test
+    fun aWeeklyIntervalDependsOnWhereTheWeekStarts() {
+        val anchorSunday = LocalDate.of(2026, 3, 22)
+        val targetMonday = LocalDate.of(2026, 3, 30)
+        val rule = RepeatRule(
+            freq = RepeatFreq.WEEKLY,
+            interval = 2,
+            weekDays = setOf(DayOfWeek.MONDAY),
+        )
+
+        assertTrue(matchesRepeat(anchorSunday, targetMonday, rule, DayOfWeek.MONDAY))
+        assertFalse(matchesRepeat(anchorSunday, targetMonday, rule, DayOfWeek.SUNDAY))
+    }
+
+    @Test
+    fun theRuleSOwnWeekStartWinsOverTheLocale() {
+        val anchorSunday = LocalDate.of(2026, 3, 22)
+        val targetMonday = LocalDate.of(2026, 3, 30)
+        val pinnedToMonday = RepeatRule(
+            freq = RepeatFreq.WEEKLY,
+            interval = 2,
+            weekDays = setOf(DayOfWeek.MONDAY),
+            weekStart = DayOfWeek.MONDAY,
+        )
+
+        // Same rule, opposite locale defaults, same answer.
+        assertTrue(matchesRepeat(anchorSunday, targetMonday, pinnedToMonday, DayOfWeek.SUNDAY))
+        assertTrue(matchesRepeat(anchorSunday, targetMonday, pinnedToMonday, DayOfWeek.MONDAY))
+    }
+
+    @Test
+    fun aRuleWithoutARecordedWeekStartStillFollowsTheLocale() {
+        val anchorSunday = LocalDate.of(2026, 3, 22)
+        val targetMonday = LocalDate.of(2026, 3, 30)
+        val legacy = RepeatRule(
+            freq = RepeatFreq.WEEKLY,
+            interval = 2,
+            weekDays = setOf(DayOfWeek.MONDAY),
+            weekStart = null,
+        )
+
+        assertTrue(matchesRepeat(anchorSunday, targetMonday, legacy, DayOfWeek.MONDAY))
+        assertFalse(matchesRepeat(anchorSunday, targetMonday, legacy, DayOfWeek.SUNDAY))
+    }
+
+    @Test
+    fun weekStartDoesNotAffectDailyOrMonthlyRules() {
+        val daily = RepeatRule(freq = RepeatFreq.DAILY, interval = 3)
+        val monthly = RepeatRule(freq = RepeatFreq.MONTHLY, interval = 2, dayOfMonth = 15)
+        val anchorMonthly = LocalDate.of(2026, 1, 15)
+
+        assertEquals(
+            matchesRepeat(monday, LocalDate.of(2026, 3, 26), daily, DayOfWeek.MONDAY),
+            matchesRepeat(monday, LocalDate.of(2026, 3, 26), daily, DayOfWeek.SUNDAY),
+        )
+        assertEquals(
+            matchesRepeat(anchorMonthly, LocalDate.of(2026, 3, 15), monthly, DayOfWeek.MONDAY),
+            matchesRepeat(anchorMonthly, LocalDate.of(2026, 3, 15), monthly, DayOfWeek.SUNDAY),
+        )
+    }
+
     /* ---------------- generateRecurrencesInRange ---------------- */
 
     @Test
@@ -212,7 +289,7 @@ class RecurrenceSupportTest {
             start = monday.plusDays(1),
             end = monday.plusDays(5),
             nextId = first.nextId,
-            weekFields = iso,
+            defaultWeekStart = iso,
         )
 
         assertEquals(first.tasks, second.tasks)

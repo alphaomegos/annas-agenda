@@ -1262,18 +1262,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    /**
+     * Records the week boundary the rule was created under, so that switching
+     * the app language later cannot move an "every N weeks" schedule.
+     */
+    private fun withRecordedWeekStart(rule: RepeatRule?): RepeatRule? = when {
+        rule == null -> null
+        rule.weekStart != null -> rule
+        else -> rule.copy(weekStart = currentLocaleWeekStart())
+    }
+
     fun setTaskRepeatRule(taskId: Long, rule: RepeatRule?) {
+        val recorded = withRecordedWeekStart(rule)
+
         val st = _state.value
         val updated = st.tasks.map { t ->
-            if (t.id == taskId) t.copy(repeatRule = rule) else t
+            if (t.id == taskId) t.copy(repeatRule = recorded) else t
         }
         _state.value = st.copy(tasks = updated)
     }
 
     fun setSubtaskRepeatRule(subtaskId: Long, rule: RepeatRule?) {
+        val recorded = withRecordedWeekStart(rule)
+
         val st = _state.value
         val updated = st.subtasks.map { s ->
-            if (s.id == subtaskId) s.copy(repeatRule = rule) else s
+            if (s.id == subtaskId) s.copy(repeatRule = recorded) else s
         }
         _state.value = st.copy(subtasks = updated)
         refreshHasSubtasks()
@@ -1302,7 +1316,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             colorArgb = colorArgb,
             hasSubtasks = hasSubtasks,
             linkedManualCounterId = linkedManualCounterId,
-            repeatRule = repeatRule,
+            repeatRule = withRecordedWeekStart(repeatRule),
         )
         _state.value = _state.value.copy(tasks = _state.value.tasks + task)
         return id

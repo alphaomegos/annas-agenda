@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda
 
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.temporal.WeekFields
@@ -27,18 +28,16 @@ data class RecurrenceGenerationResult(
  *
  * The anchor day itself is never an occurrence — it is the template's own day.
  *
- * [weekFields] decides where a week starts for WEEKLY rules and defaults to the
- * current locale, which is how this has always behaved. It is a parameter so
- * tests do not depend on the machine's locale — and note that because the
- * default is locale-dependent, a user switching app language can shift which
- * days a "every 2 weeks" rule lands on. That behaviour is preserved here as-is;
- * changing it is a separate decision.
+ * Where a week starts, for WEEKLY rules, comes from the rule itself. Rules
+ * saved before that was recorded carry null and fall back to [defaultWeekStart],
+ * which is the current locale — the old behaviour, kept so nothing shifts under
+ * an existing schedule that has not been migrated yet.
  */
 fun matchesRepeat(
     anchor: LocalDate,
     date: LocalDate,
     rule: RepeatRule,
-    weekFields: WeekFields = WeekFields.of(Locale.getDefault()),
+    defaultWeekStart: DayOfWeek = currentLocaleWeekStart(),
 ): Boolean {
     if (!date.isAfter(anchor)) return false
     val interval = rule.interval.coerceAtLeast(1)
@@ -51,9 +50,11 @@ fun matchesRepeat(
 
         RepeatFreq.WEEKLY -> {
             if (rule.weekDays.isNotEmpty() && date.dayOfWeek !in rule.weekDays) return false
-            val a = anchor.with(weekFields.dayOfWeek(), 1)
-            val d = date.with(weekFields.dayOfWeek(), 1)
-            val weeks = ChronoUnit.WEEKS.between(a, d)
+            val weekStart = rule.weekStart ?: defaultWeekStart
+            val weeks = ChronoUnit.WEEKS.between(
+                startOfWeek(anchor, weekStart),
+                startOfWeek(date, weekStart),
+            )
             weeks % interval == 0L
         }
 
@@ -66,6 +67,15 @@ fun matchesRepeat(
         }
     }
 }
+
+/** The first day of the week containing [date], for a week starting on [weekStart]. */
+fun startOfWeek(date: LocalDate, weekStart: DayOfWeek): LocalDate {
+    val shift = (date.dayOfWeek.value - weekStart.value + 7) % 7
+    return date.minusDays(shift.toLong())
+}
+
+/** What the device currently considers the first day of the week. */
+fun currentLocaleWeekStart(): DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
 
 /** Tombstone key for a generated task occurrence. */
 fun taskSuppressionKey(templateTaskId: Long, date: LocalDate): String =
@@ -92,7 +102,7 @@ fun generateRecurrencesInRange(
     start: LocalDate,
     end: LocalDate,
     nextId: Long,
-    weekFields: WeekFields = WeekFields.of(Locale.getDefault()),
+    defaultWeekStart: DayOfWeek = currentLocaleWeekStart(),
 ): RecurrenceGenerationResult {
     val newTasks = tasks.toMutableList()
     val newSubtasks = subtasks.toMutableList()
@@ -144,7 +154,7 @@ fun generateRecurrencesInRange(
         if (taskRule != null) {
             var d = start
             while (!d.isAfter(end)) {
-                if (matchesRepeat(anchor, d, taskRule, weekFields)) {
+                if (matchesRepeat(anchor, d, taskRule, defaultWeekStart)) {
                     if (!isSuppressed(taskSuppressionKey(t.id, d))) {
                         val existing = findGeneratedTask(t.id, d)
                         if (existing == null) {
@@ -166,7 +176,7 @@ fun generateRecurrencesInRange(
             val rule = s.repeatRule ?: continue
             var d = start
             while (!d.isAfter(end)) {
-                if (matchesRepeat(anchor, d, rule, weekFields)) {
+                if (matchesRepeat(anchor, d, rule, defaultWeekStart)) {
                     if (!isSuppressed(subtaskSuppressionKey(s.id, d))) {
                         val taskForSub = findGeneratedTask(t.id, d) ?: cloneTaskForDate(t, d)
                         val alreadySub = newSubtasks.any {

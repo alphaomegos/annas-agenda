@@ -7,6 +7,8 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import java.time.temporal.WeekFields
+import java.util.Locale
 import org.junit.Test
 import java.time.LocalDate
 
@@ -34,6 +36,72 @@ class AppStateStoreMigrationTest {
             LocalDate.now().toEpochDay(),
             first?.get("dateEpochDay")?.jsonPrimitive?.contentOrNull?.toLongOrNull(),
         )
+    }
+
+    /**
+     * Existing weekly rules must come out of the migration pinned to the week
+     * boundary the device is using right now, so nothing in a schedule that
+     * already exists moves.
+     */
+    @Test
+    fun migrateVersion3_recordsTheCurrentWeekStartOnEveryRepeatRule() {
+        val raw = """
+            {
+              "v": 3,
+              "tasks": [
+                {
+                  "id": 1, "order": 0, "description": "Weekly",
+                  "repeatRule": { "freq": "WEEKLY", "interval": 2, "weekDaysIso": [1] }
+                },
+                { "id": 2, "order": 1, "description": "No rule" }
+              ],
+              "subtasks": [
+                {
+                  "id": 3, "order": 0, "taskId": 1, "description": "Weekly sub",
+                  "repeatRule": { "freq": "WEEKLY", "interval": 1, "weekDaysIso": [3] }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val root = migrateAppStateRawJson(raw) as JsonObject
+        val expected = WeekFields.of(Locale.getDefault()).firstDayOfWeek.value
+
+        assertEquals(CURRENT_SCHEMA_VERSION, root["v"]?.jsonPrimitive?.intOrNull)
+
+        val tasks = root["tasks"] as JsonArray
+        val firstRule = (tasks[0] as JsonObject)["repeatRule"] as JsonObject
+        assertEquals(expected, firstRule["weekStartIso"]?.jsonPrimitive?.intOrNull)
+
+        // A task without a rule is left exactly as it was.
+        assertFalse((tasks[1] as JsonObject).containsKey("repeatRule"))
+
+        val subtasks = root["subtasks"] as JsonArray
+        val subRule = (subtasks[0] as JsonObject)["repeatRule"] as JsonObject
+        assertEquals(expected, subRule["weekStartIso"]?.jsonPrimitive?.intOrNull)
+    }
+
+    @Test
+    fun migrateVersion3_leavesAnAlreadyRecordedWeekStartAlone() {
+        val raw = """
+            {
+              "v": 3,
+              "tasks": [
+                {
+                  "id": 1, "order": 0, "description": "Weekly",
+                  "repeatRule": {
+                    "freq": "WEEKLY", "interval": 2,
+                    "weekDaysIso": [1], "weekStartIso": 7
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val root = migrateAppStateRawJson(raw) as JsonObject
+        val rule = ((root["tasks"] as JsonArray)[0] as JsonObject)["repeatRule"] as JsonObject
+
+        assertEquals(7, rule["weekStartIso"]?.jsonPrimitive?.intOrNull)
     }
 
     @Test

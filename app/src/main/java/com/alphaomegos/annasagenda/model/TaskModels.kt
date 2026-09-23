@@ -15,6 +15,18 @@ data class RepeatRule(
     val interval: Int = 1,                      // every N days/weeks/months
     val weekDays: Set<DayOfWeek> = emptySet(),  // for WEEKLY
     val dayOfMonth: Int? = null,                // for MONTHLY (1..31)
+
+    /**
+     * Which day a week starts on, for WEEKLY rules with an interval above one.
+     *
+     * Recorded on the rule rather than read from the locale every time. It used
+     * to come from Locale.getDefault(), so switching the app language moved the
+     * week boundary and "every 2 weeks" landed on different days than before.
+     *
+     * Null means a rule saved before this was recorded; the caller falls back
+     * to the current locale, which is exactly the old behaviour.
+     */
+    val weekStart: DayOfWeek? = null,
 )
 
 data class Task(

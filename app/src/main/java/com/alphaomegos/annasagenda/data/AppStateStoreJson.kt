@@ -3,7 +3,7 @@ package com.alphaomegos.annasagenda
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 
-internal const val CURRENT_SCHEMA_VERSION = 3
+internal const val CURRENT_SCHEMA_VERSION = 4
 
 @OptIn(ExperimentalSerializationApi::class)
 internal val appStateStoreJson = Json {

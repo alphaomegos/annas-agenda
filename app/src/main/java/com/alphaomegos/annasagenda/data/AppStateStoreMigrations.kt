@@ -9,6 +9,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
+import java.time.temporal.WeekFields
 import java.util.Locale
 
 internal fun migrateAppStateRawJson(raw: String): JsonElement {
@@ -24,6 +25,7 @@ internal fun migrateAppStateRawJson(raw: String): JsonElement {
             0 -> migrateAppState0To1(cur)
             1 -> migrateAppState1To2(cur)
             2 -> migrateAppState2To3(cur)
+            3 -> migrateAppState3To4(cur)
             else -> cur
         }
 
@@ -107,6 +109,46 @@ private fun migrateAppState2To3(obj: JsonObject): JsonObject {
     }
 
     m["v"] = JsonPrimitive(3)
+    return JsonObject(m)
+}
+
+/**
+ * Freezes the week boundary that existing repeat rules have been using.
+ *
+ * Until now WEEKLY rules took the first day of the week from the current
+ * locale, so switching the app language could move an "every N weeks" rule by a
+ * week. Writing the value the device is using right now into each rule keeps
+ * every existing schedule exactly where it is, and stops the language from
+ * moving it afterwards.
+ */
+private fun migrateAppState3To4(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    val weekStartIso = WeekFields.of(Locale.getDefault()).firstDayOfWeek.value
+
+    listOf("tasks", "subtasks").forEach { field ->
+        val items = m[field] as? JsonArray ?: return@forEach
+
+        m[field] = JsonArray(
+            items.map { element ->
+                val item = element as? JsonObject ?: return@map element
+                val rule = item["repeatRule"] as? JsonObject ?: return@map element
+
+                if (rule.containsKey("weekStartIso")) return@map element
+
+                val patchedRule = rule.toMutableMap().apply {
+                    put("weekStartIso", JsonPrimitive(weekStartIso))
+                }
+
+                JsonObject(
+                    item.toMutableMap().apply {
+                        put("repeatRule", JsonObject(patchedRule))
+                    }
+                )
+            }
+        )
+    }
+
+    m["v"] = JsonPrimitive(4)
     return JsonObject(m)
 }
 

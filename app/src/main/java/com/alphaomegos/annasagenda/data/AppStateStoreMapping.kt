@@ -125,6 +125,7 @@ internal fun RepeatRule.toDto(): RepeatRuleDto = RepeatRuleDto(
     interval = interval,
     weekDaysIso = weekDays.map { it.value },
     dayOfMonth = dayOfMonth,
+    weekStartIso = weekStart?.value,
 )
 
 internal fun RepeatRuleDto.toDomain(): RepeatRule = RepeatRule(
@@ -132,6 +133,9 @@ internal fun RepeatRuleDto.toDomain(): RepeatRule = RepeatRule(
     interval = interval,
     weekDays = weekDaysIso.map { DayOfWeek.of(it) }.toSet(),
     dayOfMonth = dayOfMonth,
+    weekStart = weekStartIso
+        ?.takeIf { it in 1..7 }
+        ?.let { DayOfWeek.of(it) },
 )
 
 internal fun AnthropometryEntry.toDto(): AnthropometryDto = AnthropometryDto(

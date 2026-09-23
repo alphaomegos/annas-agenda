@@ -99,6 +99,7 @@ internal data class RepeatRuleDto(
     val interval: Int = 1,
     val weekDaysIso: List<Int> = emptyList(),
     val dayOfMonth: Int? = null,
+    val weekStartIso: Int? = null,
 )
 
 @Serializable
