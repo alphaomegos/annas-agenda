@@ -336,16 +336,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun applyManualCounterDelta(
-        counters: List<Counter>,
-        counterId: Long,
-        delta: Int
-    ): List<Counter> {
-        return counters.map { c ->
-            if (c is ManualCounter && c.id == counterId) c.copy(balance = c.balance + delta) else c
-        }
-    }
-
     @OptIn(FlowPreview::class)
     private suspend fun startAutoSave() {
         state
@@ -1625,11 +1615,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (remaining.isNotEmpty()) {
             val allDone = remaining.all { it.isDone }
             _state.update { cur ->
-                cur.copy(
-                    tasks = cur.tasks.map { t ->
-                        if (t.id == taskId) t.copy(isDone = allDone) else t
-                    }
-                )
+                val applied = applyTaskDoneFlags(cur.tasks, cur.counters) { t ->
+                    if (t.id == taskId) allDone else t.isDone
+                }
+                cur.copy(tasks = applied.tasks, counters = applied.counters)
             }
         }
     }
@@ -1769,10 +1758,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         if (task.isDone) {
             if (oldCounterId != null) {
-                newCounters = applyManualCounterDelta(newCounters, oldCounterId, +1)
+                newCounters = countersWithManualCounterDelta(newCounters, oldCounterId, +1)
             }
             if (newCounterId != null) {
-                newCounters = applyManualCounterDelta(newCounters, newCounterId, -1)
+                newCounters = countersWithManualCounterDelta(newCounters, newCounterId, -1)
             }
         }
 
@@ -1792,8 +1781,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val newDone = !task.isDone
 
-        val newTasks = cur.tasks.map { t ->
-            if (t.id == taskId) t.copy(isDone = newDone) else t
+        val applied = applyTaskDoneFlags(cur.tasks, cur.counters) { t ->
+            if (t.id == taskId) newDone else t.isDone
         }
 
         val hasSubs = cur.subtasks.any { it.taskId == taskId }
@@ -1805,15 +1794,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
-        val counterId = task.linkedManualCounterId
-        val newCounters =
-            if (counterId != null) applyManualCounterDelta(cur.counters, counterId, if (newDone) -1 else +1)
-            else cur.counters
-
         _state.value = cur.copy(
-            tasks = newTasks,
+            tasks = applied.tasks,
             subtasks = newSubs,
-            counters = newCounters
+            counters = applied.counters
         )
     }
 
@@ -1822,8 +1806,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st0 = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
 
         val taskId = st0.taskId
-        val task = cur.tasks.firstOrNull { it.id == taskId } ?: return
-        val oldDone = task.isDone
+        if (cur.tasks.none { it.id == taskId }) return
 
         val newSubs = cur.subtasks.map { s ->
             if (s.id == subtaskId) s.copy(isDone = !s.isDone) else s
@@ -1832,34 +1815,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val related = newSubs.filter { it.taskId == taskId }
         val allDone = related.isNotEmpty() && related.all { it.isDone }
 
-        val newTasks = cur.tasks.map { t ->
-            if (t.id == taskId) t.copy(isDone = allDone) else t
+        val applied = applyTaskDoneFlags(cur.tasks, cur.counters) { t ->
+            if (t.id == taskId) allDone else t.isDone
         }
 
-        val counterId = task.linkedManualCounterId
-        val newCounters =
-            if (counterId != null && oldDone != allDone) {
-                applyManualCounterDelta(cur.counters, counterId, if (allDone) -1 else +1)
-            } else {
-                cur.counters
-            }
-
         _state.value = cur.copy(
-            tasks = newTasks,
+            tasks = applied.tasks,
             subtasks = newSubs,
-            counters = newCounters
+            counters = applied.counters
         )
     }
 
     private fun recomputeTaskDoneFromSubtasks() {
         val cur = _state.value
         val subsByTask = cur.subtasks.groupBy { it.taskId }
-        val newTasks = cur.tasks.map { t ->
+
+        val applied = applyTaskDoneFlags(cur.tasks, cur.counters) { t ->
             val subs = subsByTask[t.id].orEmpty()
-            if (subs.isEmpty()) t
-            else t.copy(isDone = subs.all { it.isDone })
+            if (subs.isEmpty()) t.isDone else subs.all { it.isDone }
         }
-        _state.value = cur.copy(tasks = newTasks)
+
+        _state.value = cur.copy(tasks = applied.tasks, counters = applied.counters)
     }
 
     /* ---------------------------
