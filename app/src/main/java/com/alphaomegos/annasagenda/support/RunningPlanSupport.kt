@@ -55,3 +55,23 @@ fun buildRunningPlanTaskTitle(
     val minutes = parseRunningDurationToMinutes(entry.durationHhMmText) ?: return null
     return formatMinutesTitle(minutes.coerceAtLeast(1))
 }
+/**
+ * Removes every reference to [taskId] from the plan.
+ *
+ * A plan row keeps the id of the task it created, forever, and nothing checked
+ * that the task was still there. Deleting that task from the calendar left the
+ * row pointing at a number — and ids are handed out as "one past the largest in
+ * use", so after a restart that number belongs to whatever the user created
+ * next. Resetting the plan then deleted a stranger's task, and editing the row
+ * renamed one.
+ */
+fun runningPlanEntriesWithoutTask(
+    entries: List<RunningPlanEntry>,
+    taskId: Long,
+): List<RunningPlanEntry> {
+    if (entries.none { it.taskId == taskId }) return entries
+
+    return entries.map { entry ->
+        if (entry.taskId == taskId) entry.copy(taskId = null) else entry
+    }
+}

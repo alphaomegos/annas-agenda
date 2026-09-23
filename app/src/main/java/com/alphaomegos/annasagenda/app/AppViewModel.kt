@@ -1074,14 +1074,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 formatMinutesTitle = ::formatRunningTaskMinutesTitle,
             )
 
+            // Asking whether the task still exists, rather than whether the row
+            // remembers an id: a row whose task was deleted used to be stuck,
+            // renaming nothing and never getting a task back.
+            val linkedTask = after.taskId?.let { id ->
+                _state.value.tasks.firstOrNull { it.id == id }
+            }
+
             when {
                 title == null -> {
                     // Keep the approved row (and any existing task) untouched.
                     // Timeout cleanup is handled later by pruneRunningPlanNow().
                 }
 
-                after.taskId != null -> {
-                    updateTaskDescription(after.taskId, title)
+                linkedTask != null -> {
+                    updateTaskDescription(linkedTask.id, title)
                 }
 
                 else -> {
@@ -1383,7 +1390,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = cur.copy(
                 suppressedRecurrences = cur.suppressedRecurrences + key,
                 tasks = newTasks,
-                subtasks = newSubs
+                subtasks = newSubs,
+                runningPlanEntries = runningPlanEntriesWithoutTask(cur.runningPlanEntries, taskId),
             )
             refreshHasSubtasks()
             return
@@ -1396,7 +1404,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val newTasks = cur.tasks.filterNot { it.id == taskId }
         val newSubs = cur.subtasks.filterNot { it.taskId == taskId }
-        _state.value = cur.copy(tasks = newTasks, subtasks = newSubs)
+
+        // A plan row must never outlive the task it points at: see
+        // runningPlanEntriesWithoutTask.
+        _state.value = cur.copy(
+            tasks = newTasks,
+            subtasks = newSubs,
+            runningPlanEntries = runningPlanEntriesWithoutTask(cur.runningPlanEntries, taskId),
+        )
         refreshHasSubtasks()
     }
 

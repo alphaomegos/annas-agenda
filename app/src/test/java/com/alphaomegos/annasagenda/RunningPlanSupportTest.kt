@@ -3,6 +3,7 @@ package com.alphaomegos.annasagenda
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -98,6 +99,47 @@ class RunningPlanSupportTest {
         )
 
         assertNull(title)
+    }
+
+    /* ---------------- a row must not outlive its task ---------------- */
+
+    /**
+     * Ids are handed out as "one past the largest in use", so a number freed by
+     * a deletion comes back after a restart. A plan row still holding that
+     * number then points at somebody else's task — and the plan deletes and
+     * renames what it points at.
+     */
+    @Test
+    fun deletingATaskTakesItsReferenceOutOfThePlan() {
+        val date = LocalDate.of(2026, 9, 23)
+        val entries = listOf(
+            entry(date, "5", "", "", taskId = 57L),
+            entry(date.plusDays(1), "7", "", "", taskId = 58L),
+        )
+
+        val result = runningPlanEntriesWithoutTask(entries, 57L)
+
+        assertNull("the row keeps its numbers but forgets the task", result[0].taskId)
+        assertEquals("5", result[0].distanceKmText)
+        assertEquals(58L, result[1].taskId)
+    }
+
+    @Test
+    fun aPlanThatNeverMentionedTheTaskIsHandedBackUnchanged() {
+        val entries = listOf(entry(LocalDate.of(2026, 9, 23), "5", "", "", taskId = 58L))
+
+        assertSame(entries, runningPlanEntriesWithoutTask(entries, 57L))
+    }
+
+    @Test
+    fun everyRowPointingAtTheSameTaskForgetsIt() {
+        val date = LocalDate.of(2026, 9, 23)
+        val entries = listOf(
+            entry(date, "5", "", "", taskId = 57L),
+            entry(date.plusDays(1), "7", "", "", taskId = 57L),
+        )
+
+        assertTrue(runningPlanEntriesWithoutTask(entries, 57L).all { it.taskId == null })
     }
 
     private fun entry(
