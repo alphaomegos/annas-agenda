@@ -5,4 +5,12 @@
     <string name="undone_empty">No undone tasks</string>
     <string name="undone_lamp_toggle">Toggle undone lamp</string>
     <string name="undone_lamp_open">Open undone tasks</string>
+
+    <!-- How far back debts are counted -->
+    <string name="undone_horizon_menu">Period</string>
+    <string name="undone_horizon_7">Last 7 days</string>
+    <string name="undone_horizon_30">Last 30 days</string>
+    <string name="undone_horizon_90">Last 90 days</string>
+    <string name="undone_horizon_365">Last year</string>
+    <string name="undone_horizon_all">All time</string>
 </resources>

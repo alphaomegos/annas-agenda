@@ -507,29 +507,33 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = cur.copy(undoneLampMuted = !cur.undoneLampMuted)
     }
 
-    fun hasUndonePastTasks(today: LocalDate = LocalDate.now()): Boolean {
-        val yesterday = today.minusDays(1)
-        return _state.value.tasks.any { task ->
-            val date = task.date
-            date != null &&
-                    !task.isDone &&
-                    !date.isAfter(yesterday)
-        }
+    fun setUndoneHorizonDays(days: Int) {
+        val normalized = normalizeUndoneHorizonDays(days)
+
+        val cur = _state.value
+        if (cur.undoneHorizonDays == normalized) return
+        _state.value = cur.copy(undoneHorizonDays = normalized)
     }
 
-    fun undonePastTaskDates(today: LocalDate = LocalDate.now()): List<LocalDate> {
-        val yesterday = today.minusDays(1)
-        return _state.value.tasks
-            .mapNotNull { task ->
-                val date = task.date
-                if (date != null && !task.isDone && !date.isAfter(yesterday)) {
-                    date
-                } else {
-                    null
-                }
-            }
-            .distinct()
-            .sorted()
+    /**
+     * Both of these go through [undoneDebt] so the lamp and the screen can
+     * never disagree again: the lamp used to ignore tombstones and light red
+     * for an occurrence the screen refused to show.
+     */
+    fun hasUndonePastTasks(today: LocalDate = LocalDate.now()): Boolean =
+        !currentUndoneDebt(today).isEmpty
+
+    fun undonePastTaskDates(today: LocalDate = LocalDate.now()): List<LocalDate> =
+        currentUndoneDebt(today).dates
+
+    private fun currentUndoneDebt(today: LocalDate): UndoneDebt {
+        val cur = _state.value
+        return undoneDebt(
+            tasks = cur.tasks,
+            suppressedRecurrences = cur.suppressedRecurrences,
+            today = today,
+            horizonDays = cur.undoneHorizonDays,
+        )
     }
 
 

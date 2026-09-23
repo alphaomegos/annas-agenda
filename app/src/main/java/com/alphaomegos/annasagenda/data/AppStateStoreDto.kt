@@ -30,6 +30,10 @@ internal data class AppStateDto(
     val mainMenuHiddenIds: List<String> = emptyList(),
     val undoneLampMuted: Boolean = false,
 
+    // Additive with a default: an older payload simply decodes to the default,
+    // so this needs no schema migration.
+    val undoneHorizonDays: Int = DEFAULT_UNDONE_HORIZON_DAYS,
+
     val readingBooks: List<ReadingBookDto> = emptyList(),
     val readingMovies: List<ReadingMovieDto> = emptyList(),
     val readingSeries: List<ReadingSeriesDto> = emptyList(),

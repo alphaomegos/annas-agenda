@@ -13,7 +13,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,7 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,8 +38,10 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.DateTasksBlock
+import com.alphaomegos.annasagenda.UNDONE_HORIZON_CHOICES
+import com.alphaomegos.annasagenda.UNDONE_HORIZON_UNLIMITED
+import com.alphaomegos.annasagenda.undoneDebt
 import com.alphaomegos.annasagenda.util.appLocale
-import com.alphaomegos.annasagenda.util.isSuppressedTemplateTaskOnItsDate
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -49,20 +56,16 @@ fun UndoneTasksScreen(
     val locale = appLocale()
 
     val today = remember { LocalDate.now() }
-    val yesterday = remember(today) { today.minusDays(1) }
 
-    val initialUndoneTaskIds = remember {
-        state.tasks
-            .asSequence()
-            .filter { task ->
-                val date = task.date
-                date != null &&
-                        !task.isDone &&
-                        !date.isAfter(yesterday) &&
-                        !isSuppressedTemplateTaskOnItsDate(task, state.suppressedRecurrences)
-            }
-            .map { it.id }
-            .toSet()
+    // Snapshotted on entry (and when the horizon changes) so that ticking a
+    // task off does not make it vanish from under the finger.
+    val initialUndoneTaskIds = remember(state.undoneHorizonDays) {
+        undoneDebt(
+            tasks = state.tasks,
+            suppressedRecurrences = state.suppressedRecurrences,
+            today = today,
+            horizonDays = state.undoneHorizonDays,
+        ).taskIds
     }
 
     val undoneDates = remember(state.tasks, initialUndoneTaskIds) {
@@ -76,6 +79,7 @@ fun UndoneTasksScreen(
     }
 
     val hasUndone = undoneDates.isNotEmpty()
+    var horizonMenuOpen by remember { mutableStateOf(false) }
 
     val lampIconRes = when {
         state.undoneLampMuted -> R.drawable.ic_undone_lamp_gray
@@ -99,6 +103,30 @@ fun UndoneTasksScreen(
                     }
                 },
                 actions = {
+                    Box {
+                        IconButton(onClick = { horizonMenuOpen = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.DateRange,
+                                contentDescription = stringResource(R.string.undone_horizon_menu)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = horizonMenuOpen,
+                            onDismissRequest = { horizonMenuOpen = false }
+                        ) {
+                            UNDONE_HORIZON_CHOICES.forEach { days ->
+                                DropdownMenuItem(
+                                    text = { Text(undoneHorizonLabel(days)) },
+                                    onClick = {
+                                        horizonMenuOpen = false
+                                        vm.setUndoneHorizonDays(days)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -164,3 +192,15 @@ fun UndoneTasksScreen(
         }
     }
 }
+
+@Composable
+private fun undoneHorizonLabel(days: Int): String = stringResource(
+    when (days) {
+        7 -> R.string.undone_horizon_7
+        30 -> R.string.undone_horizon_30
+        90 -> R.string.undone_horizon_90
+        365 -> R.string.undone_horizon_365
+        UNDONE_HORIZON_UNLIMITED -> R.string.undone_horizon_all
+        else -> R.string.undone_horizon_30
+    }
+)

@@ -45,6 +45,10 @@ data class AppState(
     // "Undone" lamp state.
     val undoneLampMuted: Boolean = false,
 
+    // How many days back the "Undone" screen and the lamp look for debts.
+    // UNDONE_HORIZON_UNLIMITED means no limit.
+    val undoneHorizonDays: Int = DEFAULT_UNDONE_HORIZON_DAYS,
+
     // Reading / media
     val readingBooks: List<ReadingBook> = emptyList(),
     val readingMovies: List<ReadingMovie> = emptyList(),

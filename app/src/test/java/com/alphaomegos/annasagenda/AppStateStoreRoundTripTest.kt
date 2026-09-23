@@ -29,6 +29,7 @@ class AppStateStoreRoundTripTest {
                 "someday",
                 "counters",
             ),
+            undoneHorizonDays = 90,
         )
 
         val json = appStateStoreJson.encodeToString(original.toDto())
@@ -38,6 +39,7 @@ class AppStateStoreRoundTripTest {
 
         assertTrue(json.contains("runningPlanApproved"))
         assertTrue(json.contains("mainMenuOrder"))
+        assertTrue(json.contains("undoneHorizonDays"))
         assertEquals(original, restored)
     }
 

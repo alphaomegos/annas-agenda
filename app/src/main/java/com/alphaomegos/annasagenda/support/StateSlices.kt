@@ -47,6 +47,7 @@ data class UndoneSlice(
     override val suppressedRecurrences: Set<String> = emptySet(),
     override val counters: List<Counter> = emptyList(),
     val undoneLampMuted: Boolean = false,
+    val undoneHorizonDays: Int = DEFAULT_UNDONE_HORIZON_DAYS,
 ) : DateTasksData
 
 fun calorimeterSliceOf(state: AppState): CalorimeterSlice = CalorimeterSlice(
@@ -71,4 +72,5 @@ fun undoneSliceOf(state: AppState): UndoneSlice = UndoneSlice(
     suppressedRecurrences = state.suppressedRecurrences,
     counters = state.counters,
     undoneLampMuted = state.undoneLampMuted,
+    undoneHorizonDays = state.undoneHorizonDays,
 )

@@ -29,6 +29,7 @@ class StateSlicesTest {
         foodLog = listOf(FoodEntry(id = 2, date = today, title = "Каша", kcal = 300)),
         counters = listOf(ManualCounter(id = 3, title = "Отжимания", balance = 10)),
         undoneLampMuted = true,
+        undoneHorizonDays = 90,
         mainMenuHiddenIds = setOf("someday"),
     )
 
@@ -139,6 +140,10 @@ class StateSlicesTest {
             undoneSliceOf(populated),
             undoneSliceOf(populated.copy(tasks = emptyList())),
         )
+        assertNotEquals(
+            undoneSliceOf(populated),
+            undoneSliceOf(populated.copy(undoneHorizonDays = 7)),
+        )
     }
 
     /* ---------------- slices carry the values verbatim ---------------- */
@@ -163,5 +168,6 @@ class StateSlicesTest {
             undoneSliceOf(populated).suppressedRecurrences,
         )
         assertEquals(populated.undoneLampMuted, undoneSliceOf(populated).undoneLampMuted)
+        assertEquals(populated.undoneHorizonDays, undoneSliceOf(populated).undoneHorizonDays)
     }
 }
