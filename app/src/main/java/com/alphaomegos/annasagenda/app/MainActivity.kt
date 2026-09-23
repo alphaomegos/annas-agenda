@@ -15,11 +15,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import com.alphaomegos.annasagenda.screens.StorageFailureScreen
-import com.alphaomegos.annasagenda.util.AUTO_BACKUP_FILE_NAME
-import com.alphaomegos.annasagenda.util.writeBackupToDocuments
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -64,21 +60,9 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
 
-        // don't write backup until initial state is loaded
-        if (!vm.isLoaded.value) return
-
-        // Never let an unreadable startup overwrite a good backup: the in-memory
-        // state is empty in that case, and writeBackupToDocuments truncates the
-        // existing archive.
-        if (vm.storageFailure.value != null) return
-
-        lifecycleScope.launch {
-            val json = vm.exportBackupJson()
-            writeBackupToDocuments(
-                context = applicationContext,
-                json = json,
-                fileName = AUTO_BACKUP_FILE_NAME,
-            )
-        }
+        // Whether it may run, and on what scope, is the view model's business:
+        // this used to launch in lifecycleScope, which is cancelled on destroy,
+        // and destroy follows onStop on every rotation.
+        vm.writeAutoBackupInBackground()
     }
 }

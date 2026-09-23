@@ -16,6 +16,8 @@ import com.alphaomegos.annasagenda.util.buildInternalCoverRef
 import com.alphaomegos.annasagenda.util.readZipBackupPackage
 import com.alphaomegos.annasagenda.util.writeBackupToDocuments
 import com.alphaomegos.annasagenda.util.zipEntryNameForCoverRef
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -233,6 +235,93 @@ class BackupExportInstrumentedTest {
     fun theAutomaticBackupDoesNotShareItsNameWithTheManualExport() {
         assertTrue(AUTO_BACKUP_FILE_NAME != MANUAL_BACKUP_FILE_NAME)
     }
+
+    /**
+     * A manual export and the automatic snapshot can overlap — tap Export, then
+     * leave the app. Two truncating streams over one entry produce neither
+     * archive, so the writer serialises them. This also pins that the lock does
+     * not deadlock when a second writer arrives while the first holds it.
+     */
+    @Test
+    fun writeBackupToDocuments_concurrentWritesLeaveAReadableArchive() = runBlocking {
+        assumeTrue(Build.VERSION.SDK_INT >= 29)
+
+        val fileName = uniqueBackupFileName("export_concurrent")
+        val store = AppStateStore(context)
+
+        val firstJson = store.encodeToJson(
+            AppState(mainMenuOrder = listOf("calendar"))
+        )
+        val secondJson = store.encodeToJson(
+            AppState(
+                runningPlanApproved = true,
+                mainMenuOrder = listOf("calendar", "reading", "running", "movies"),
+            )
+        )
+
+        val first = async(Dispatchers.Default) {
+            writeBackupToDocuments(
+                context = context,
+                json = firstJson,
+                coverFiles = emptyList(),
+                fileName = fileName,
+            )
+        }
+        val second = async(Dispatchers.Default) {
+            writeBackupToDocuments(
+                context = context,
+                json = secondJson,
+                coverFiles = emptyList(),
+                fileName = fileName,
+            )
+        }
+        first.await()
+        second.await()
+
+        val imported = readZipBackupPackage(context, requireBackupUri(fileName))
+
+        assertNotNull("the archive must open after two overlapping writes", imported)
+        assertTrue(
+            "the archive must be exactly one of the two payloads, not a mix",
+            imported!!.appStateJson == firstJson || imported.appStateJson == secondJson,
+        )
+        assertEquals(1, countBackupsWithFileName(fileName))
+    }
+
+    /**
+     * The file is flagged pending for the length of the write, so a process
+     * killed mid-archive leaves something hidden rather than something that
+     * looks like a backup. A write that finished must clear the flag.
+     */
+    @Test
+    fun writeBackupToDocuments_clearsThePendingFlagWhenItFinishes() = runBlocking {
+        assumeTrue(Build.VERSION.SDK_INT >= 29)
+
+        val fileName = uniqueBackupFileName("export_pending")
+        val json = AppStateStore(context).encodeToJson(
+            AppState(mainMenuOrder = listOf("calendar"))
+        )
+
+        writeBackupToDocuments(
+            context = context,
+            json = json,
+            coverFiles = emptyList(),
+            fileName = fileName,
+        )
+
+        assertEquals(0, pendingFlag(requireBackupUri(fileName)))
+    }
+
+    private fun pendingFlag(uri: Uri): Int =
+        context.contentResolver.query(
+            uri,
+            arrayOf(MediaStore.MediaColumns.IS_PENDING),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getInt(0) else -1
+        } ?: -1
 
     private fun backupSize(uri: Uri): Long =
         context.contentResolver.openInputStream(uri)?.use { it.readBytes().size.toLong() }

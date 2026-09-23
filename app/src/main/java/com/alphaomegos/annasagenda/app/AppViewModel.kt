@@ -3,6 +3,8 @@ package com.alphaomegos.annasagenda
 import android.app.Application
 import android.net.Uri
 import androidx.core.net.toUri
+import com.alphaomegos.annasagenda.util.AUTO_BACKUP_FILE_NAME
+import com.alphaomegos.annasagenda.util.appBackgroundScope
 import com.alphaomegos.annasagenda.util.isExternalCoverRef
 import com.alphaomegos.annasagenda.util.resolveStoredCoverFiles
 import com.alphaomegos.annasagenda.util.writeBackupToDocuments
@@ -369,6 +371,40 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun exportBackupJson(): String {
         return store.encodeToJson(_state.value)
+    }
+
+    /**
+     * The automatic snapshot taken when the app goes to the background.
+     *
+     * The state is serialised here and now, on the caller's thread, so what
+     * lands in the archive is what was on screen when the user left. The write
+     * itself goes to a scope that is not tied to the activity: onStop is
+     * routinely followed by destroy, and the backup used to be cancelled along
+     * with it — silently, since nobody watches a backup that did not happen.
+     *
+     * Failures are swallowed on purpose. This runs unattended on a detached
+     * scope, where an uncaught exception takes the whole process down; a
+     * backup that could not be written is not worth a crash on the way out.
+     */
+    fun writeAutoBackupInBackground() {
+        val allowed = shouldWriteAutoBackup(
+            isLoaded = _isLoaded.value,
+            hasStorageFailure = _storageFailure.value != null,
+        )
+        if (!allowed) return
+
+        val json = exportBackupJson()
+        val context = appContext
+
+        appBackgroundScope.launch {
+            runCatching {
+                writeBackupToDocuments(
+                    context = context,
+                    json = json,
+                    fileName = AUTO_BACKUP_FILE_NAME,
+                )
+            }
+        }
     }
 
     suspend fun exportBackupToDocuments() {
