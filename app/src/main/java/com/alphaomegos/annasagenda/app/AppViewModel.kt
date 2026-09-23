@@ -536,6 +536,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    /**
+     * Materialises recurrences across the Undone horizon.
+     *
+     * Until this existed, a debt only showed up if the calendar had happened to
+     * draw that month, because nothing else called ensureGeneratedInRange. The
+     * list therefore reflected browsing history rather than what was left
+     * undone. Callers run this before reading the debt.
+     *
+     * Bounded twice over: by the chosen horizon, and by the first day any
+     * repeating template starts. With nothing repeating it walks no days at all.
+     */
+    fun ensureUndoneHorizonGenerated(today: LocalDate = LocalDate.now()) {
+        val cur = _state.value
+
+        val start = undoneGenerationStart(
+            tasks = cur.tasks,
+            subtasks = cur.subtasks,
+            today = today,
+            horizonDays = cur.undoneHorizonDays,
+        ) ?: return
+
+        val end = today.minusDays(1)
+        if (start.isAfter(end)) return
+
+        ensureGeneratedInRange(start, end)
+    }
+
+    /** Generates the horizon, then reports what is owed. */
+    fun prepareUndoneDebt(today: LocalDate = LocalDate.now()): UndoneDebt {
+        ensureUndoneHorizonGenerated(today)
+        return currentUndoneDebt(today)
+    }
+
 
     /* ---------------------------
        Reading

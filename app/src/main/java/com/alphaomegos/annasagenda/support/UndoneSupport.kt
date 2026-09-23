@@ -67,3 +67,52 @@ fun undoneDebt(
         dates = overdue.mapNotNull { it.date }.distinct().sorted(),
     )
 }
+
+/**
+ * The earliest day worth generating recurrences for, when the Undone screen
+ * asks for its own horizon.
+ *
+ * Returns null when there is nothing that repeats — then there is nothing to
+ * generate and the caller should not walk any days at all.
+ *
+ * Two bounds apply and the later one wins: the chosen horizon, and the first
+ * day any repeating template actually starts. The second bound is what keeps
+ * "all time" finite — an occurrence cannot predate its own template.
+ */
+fun undoneGenerationStart(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    today: LocalDate,
+    horizonDays: Int,
+): LocalDate? {
+    val earliestTemplate = earliestRepeatingTemplateDate(tasks, subtasks) ?: return null
+
+    val horizon = normalizeUndoneHorizonDays(horizonDays)
+    val fromHorizon =
+        if (horizon == UNDONE_HORIZON_UNLIMITED) earliestTemplate
+        else today.minusDays(horizon.toLong())
+
+    return maxOf(earliestTemplate, fromHorizon)
+}
+
+/**
+ * The anchor day of the earliest template that repeats — either itself, or by
+ * carrying a subtask that repeats while the task does not.
+ */
+private fun earliestRepeatingTemplateDate(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+): LocalDate? {
+    val parentsOfRepeatingSubtasks = subtasks
+        .asSequence()
+        .filter { it.originSubtaskId == null && it.repeatRule != null }
+        .map { it.taskId }
+        .toSet()
+
+    return tasks
+        .asSequence()
+        .filter { it.originTaskId == null }
+        .filter { it.repeatRule != null || it.id in parentsOfRepeatingSubtasks }
+        .mapNotNull { it.date }
+        .minOrNull()
+}

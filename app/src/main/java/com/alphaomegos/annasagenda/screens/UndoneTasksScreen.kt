@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,7 +41,7 @@ import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.DateTasksBlock
 import com.alphaomegos.annasagenda.UNDONE_HORIZON_CHOICES
 import com.alphaomegos.annasagenda.UNDONE_HORIZON_UNLIMITED
-import com.alphaomegos.annasagenda.undoneDebt
+import com.alphaomegos.annasagenda.UndoneDebt
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -57,16 +58,17 @@ fun UndoneTasksScreen(
 
     val today = remember { LocalDate.now() }
 
-    // Snapshotted on entry (and when the horizon changes) so that ticking a
+    // Generation has to happen before the debt is read, and it mutates state,
+    // so it belongs in an effect rather than in composition. The result is
+    // snapshotted on entry (and when the horizon changes) so that ticking a
     // task off does not make it vanish from under the finger.
-    val initialUndoneTaskIds = remember(state.undoneHorizonDays) {
-        undoneDebt(
-            tasks = state.tasks,
-            suppressedRecurrences = state.suppressedRecurrences,
-            today = today,
-            horizonDays = state.undoneHorizonDays,
-        ).taskIds
+    var debt by remember { mutableStateOf(UndoneDebt()) }
+
+    LaunchedEffect(state.undoneHorizonDays) {
+        debt = vm.prepareUndoneDebt(today)
     }
+
+    val initialUndoneTaskIds = debt.taskIds
 
     val undoneDates = remember(state.tasks, initialUndoneTaskIds) {
         state.tasks

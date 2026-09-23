@@ -167,6 +167,13 @@ fun MainMenuScreen(
 
     val state by vm.state.collectAsState()
 
+    // The lamp reads the same debts as the Undone screen, so it needs the same
+    // horizon materialised. Without this it only went red for days the calendar
+    // had already drawn.
+    LaunchedEffect(state.undoneHorizonDays) {
+        vm.ensureUndoneHorizonGenerated()
+    }
+
     val undoneLampIconRes = when {
         state.undoneLampMuted -> R.drawable.ic_undone_lamp_gray
         vm.hasUndonePastTasks() -> R.drawable.ic_undone_lamp_red

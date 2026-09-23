@@ -2,6 +2,7 @@ package com.alphaomegos.annasagenda
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -165,6 +166,77 @@ class UndoneSupportTest {
 
         assertEquals(listOf(today.minusDays(5), today.minusDays(2)), result.dates)
         assertEquals(setOf(1L, 2L, 3L), result.taskIds)
+    }
+
+    /* ---------------- where generation should start ---------------- */
+
+    private fun subtask(id: Long, taskId: Long, repeatRule: RepeatRule? = null) = Subtask(
+        id = id,
+        taskId = taskId,
+        description = "Subtask $id",
+        repeatRule = repeatRule,
+    )
+
+    @Test
+    fun generationStartIsNullWhenNothingRepeats() {
+        val plain = listOf(task(1, today.minusDays(100)))
+
+        assertNull(
+            undoneGenerationStart(plain, emptyList(), today, DEFAULT_UNDONE_HORIZON_DAYS)
+        )
+    }
+
+    @Test
+    fun generationNeverStartsBeforeTheTemplateItself() {
+        val anchor = today.minusDays(5)
+        val tasks = listOf(task(1, anchor, repeatRule = RepeatRule(freq = RepeatFreq.DAILY)))
+
+        // The 30-day horizon reaches further back than the template exists.
+        assertEquals(anchor, undoneGenerationStart(tasks, emptyList(), today, 30))
+    }
+
+    @Test
+    fun generationStartsAtTheHorizonWhenTheTemplateIsOlder() {
+        val tasks = listOf(
+            task(1, today.minusDays(400), repeatRule = RepeatRule(freq = RepeatFreq.DAILY))
+        )
+
+        assertEquals(today.minusDays(30), undoneGenerationStart(tasks, emptyList(), today, 30))
+    }
+
+    @Test
+    fun unlimitedHorizonStartsAtTheOldestTemplate() {
+        val oldest = today.minusDays(400)
+        val tasks = listOf(
+            task(1, oldest, repeatRule = RepeatRule(freq = RepeatFreq.DAILY)),
+            task(2, today.minusDays(10), repeatRule = RepeatRule(freq = RepeatFreq.DAILY)),
+        )
+
+        assertEquals(
+            oldest,
+            undoneGenerationStart(tasks, emptyList(), today, UNDONE_HORIZON_UNLIMITED),
+        )
+    }
+
+    /** A subtask can repeat while its parent task does not. */
+    @Test
+    fun aTaskCountsAsRepeatingWhenOnlyItsSubtaskDoes() {
+        val anchor = today.minusDays(9)
+        val tasks = listOf(task(1, anchor))
+        val subtasks = listOf(
+            subtask(2, taskId = 1, repeatRule = RepeatRule(freq = RepeatFreq.DAILY))
+        )
+
+        assertEquals(anchor, undoneGenerationStart(tasks, subtasks, today, 30))
+    }
+
+    @Test
+    fun generatedInstancesDoNotCountAsTemplates() {
+        val tasks = listOf(
+            task(1, today.minusDays(3), originTaskId = 99),
+        )
+
+        assertNull(undoneGenerationStart(tasks, emptyList(), today, 30))
     }
 
     @Test
