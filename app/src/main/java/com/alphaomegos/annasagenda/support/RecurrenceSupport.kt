@@ -177,7 +177,15 @@ fun generateRecurrencesInRange(
             var d = start
             while (!d.isAfter(end)) {
                 if (matchesRepeat(anchor, d, rule, defaultWeekStart)) {
-                    if (!isSuppressed(subtaskSuppressionKey(s.id, d))) {
+                    // A deleted day stays deleted. This loop will happily build
+                    // a carrier task for a repeating subtask, and it used to do
+                    // so without asking whether the day's task had been deleted
+                    // — so deleting an occurrence undid itself the next time the
+                    // day was drawn, and there was no way to make it stick. The
+                    // loop above has always honoured this tombstone.
+                    val dayWasDeleted = isSuppressed(taskSuppressionKey(t.id, d))
+
+                    if (!dayWasDeleted && !isSuppressed(subtaskSuppressionKey(s.id, d))) {
                         val taskForSub = findGeneratedTask(t.id, d) ?: cloneTaskForDate(t, d)
                         val alreadySub = newSubtasks.any {
                             it.taskId == taskForSub.id && it.originSubtaskId == s.id

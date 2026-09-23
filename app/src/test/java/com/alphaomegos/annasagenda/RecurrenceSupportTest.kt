@@ -442,4 +442,118 @@ class RecurrenceSupportTest {
         assertEquals(1, result.tasks.count { it.originTaskId == 1L && it.date == day })
         assertEquals(1000L, result.nextId)
     }
+
+    /* ---------------- a deleted day stays deleted ---------------- */
+
+    /**
+     * The bug this guard exists for.
+     *
+     * The task loop has always honoured the day's tombstone. The subtask loop
+     * did not: it built a carrier task for the repeating subtask without ever
+     * asking whether the day had been deleted. So deleting an occurrence undid
+     * itself the next time that day was drawn, and no amount of deleting made
+     * it stick.
+     */
+    @Test
+    fun aDeletedDayIsNotRebuiltByARepeatingSubtask() {
+        val template = task(1, monday, RepeatRule(freq = RepeatFreq.DAILY))
+        val sub = subtask(2, taskId = 1, repeatRule = RepeatRule(freq = RepeatFreq.DAILY))
+        val deletedDay = monday.plusDays(2)
+
+        val result = generate(
+            tasks = listOf(template),
+            subtasks = listOf(sub),
+            suppressed = setOf(taskSuppressionKey(1L, deletedDay)),
+            start = monday.plusDays(1),
+            end = monday.plusDays(4),
+        )
+
+        assertTrue(
+            "the deleted day must not come back as a carrier for the subtask",
+            result.tasks.none { it.originTaskId == 1L && it.date == deletedDay },
+        )
+
+        val idsOnDeletedDay = result.tasks.filter { it.date == deletedDay }.map { it.id }.toSet()
+        assertTrue(
+            "and nothing may be hanging off it either",
+            result.subtasks.none { it.taskId in idsOnDeletedDay },
+        )
+
+        assertEquals(
+            "the other three days are unaffected",
+            listOf(monday.plusDays(1), monday.plusDays(3), monday.plusDays(4)),
+            result.tasks.filter { it.originTaskId == 1L }.mapNotNull { it.date }.sorted(),
+        )
+    }
+
+    /**
+     * The same day, but the task itself does not repeat — only its subtask
+     * does, so every occurrence exists purely as a carrier. Deleting one has to
+     * stick here too.
+     */
+    @Test
+    fun aDeletedDayStaysDeletedWhenOnlyTheSubtaskRepeats() {
+        val template = task(1, monday)
+        val sub = subtask(2, taskId = 1, repeatRule = RepeatRule(freq = RepeatFreq.DAILY))
+        val deletedDay = monday.plusDays(2)
+
+        val result = generate(
+            tasks = listOf(template),
+            subtasks = listOf(sub),
+            suppressed = setOf(taskSuppressionKey(1L, deletedDay)),
+            start = monday.plusDays(1),
+            end = monday.plusDays(3),
+        )
+
+        assertTrue(
+            result.tasks.none { it.originTaskId == 1L && it.date == deletedDay },
+        )
+        assertEquals(
+            listOf(monday.plusDays(1), monday.plusDays(3)),
+            result.tasks.filter { it.originTaskId == 1L }.mapNotNull { it.date }.sorted(),
+        )
+    }
+
+    /** The guard must not swallow days that were never deleted. */
+    @Test
+    fun aRepeatingSubtaskStillBuildsItsCarrierOnDaysThatWereNotDeleted() {
+        val template = task(1, monday)
+        val sub = subtask(2, taskId = 1, repeatRule = RepeatRule(freq = RepeatFreq.DAILY))
+
+        val result = generate(
+            tasks = listOf(template),
+            subtasks = listOf(sub),
+            start = monday.plusDays(1),
+            end = monday.plusDays(3),
+        )
+
+        assertEquals(3, result.tasks.count { it.originTaskId == 1L })
+        assertEquals(3, result.subtasks.count { it.originSubtaskId == 2L })
+    }
+
+    /**
+     * Deleting a single repeating subtask is a different thing from deleting
+     * the day: the task occurrence has to survive it.
+     */
+    @Test
+    fun deletingOnlyTheSubtaskLeavesTheTaskOccurrenceStanding() {
+        val template = task(1, monday, RepeatRule(freq = RepeatFreq.DAILY))
+        val sub = subtask(2, taskId = 1, repeatRule = RepeatRule(freq = RepeatFreq.DAILY))
+        val day = monday.plusDays(2)
+
+        val result = generate(
+            tasks = listOf(template),
+            subtasks = listOf(sub),
+            suppressed = setOf(subtaskSuppressionKey(2L, day)),
+            start = monday.plusDays(1),
+            end = monday.plusDays(3),
+        )
+
+        val occurrence = result.tasks.firstOrNull { it.originTaskId == 1L && it.date == day }
+        assertNotNull("the day itself was not deleted", occurrence)
+        assertTrue(
+            "only the subtask was",
+            result.subtasks.none { it.taskId == occurrence!!.id && it.originSubtaskId == 2L },
+        )
+    }
 }

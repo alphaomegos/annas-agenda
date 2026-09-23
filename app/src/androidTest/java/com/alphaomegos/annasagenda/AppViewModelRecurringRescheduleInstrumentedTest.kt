@@ -119,6 +119,64 @@ class AppViewModelRecurringRescheduleInstrumentedTest {
         )
     }
 
+    /**
+     * The whole path the user actually walks: delete one occurrence, come back
+     * to that day, and find it still gone.
+     *
+     * This needs both halves to be right — deleteTask writing the day's
+     * tombstone, and the generator honouring it in the subtask loop. The JVM
+     * tests pin the generator; this pins that the two agree.
+     */
+    @Test
+    fun deletedOccurrenceOfATaskWithARepeatingSubtaskDoesNotComeBack() = runBlocking {
+        val vm = AppViewModel(app)
+        awaitLoaded(vm)
+        vm.resetAllData()
+
+        val anchor = LocalDate.of(2026, 3, 23)
+        val deletedDay = anchor.plusDays(2)
+
+        val templateTaskId = vm.createTaskForDate(
+            date = anchor,
+            time = null,
+            description = "Morning"
+        )
+        vm.setTaskRepeatRule(templateTaskId, RepeatRule(freq = RepeatFreq.DAILY))
+
+        val templateSubtaskId = vm.createSubtask(
+            taskId = templateTaskId,
+            description = "Exercise"
+        )
+        vm.setSubtaskRepeatRule(templateSubtaskId, RepeatRule(freq = RepeatFreq.DAILY))
+
+        vm.ensureGeneratedInRange(anchor.plusDays(1), anchor.plusDays(3))
+
+        val occurrence = vm.state.value.tasks.single {
+            it.originTaskId == templateTaskId && it.date == deletedDay
+        }
+
+        vm.deleteTask(occurrence.id)
+
+        assertFalse(
+            "precondition: the occurrence is gone right after deleting it",
+            vm.state.value.tasks.any { it.date == deletedDay }
+        )
+
+        // Leaving the day and coming back is what used to resurrect it.
+        vm.ensureGeneratedInRange(anchor.plusDays(1), anchor.plusDays(3))
+        vm.ensureGeneratedInRange(deletedDay, deletedDay)
+
+        assertFalse(
+            "a deleted day must stay deleted",
+            vm.state.value.tasks.any { it.date == deletedDay }
+        )
+        assertTrue(
+            "the days around it are untouched",
+            vm.state.value.tasks.any { it.date == anchor.plusDays(1) } &&
+                vm.state.value.tasks.any { it.date == anchor.plusDays(3) }
+        )
+    }
+
     private suspend fun awaitLoaded(vm: AppViewModel) {
         repeat(100) {
             if (vm.isLoaded.value) return
