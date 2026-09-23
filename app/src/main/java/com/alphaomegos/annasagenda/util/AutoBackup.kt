@@ -15,11 +15,27 @@ const val BACKUP_APP_STATE_ENTRY_NAME = "app_state.json"
 const val BACKUP_META_ENTRY_NAME = "backup_meta.json"
 private const val BACKUP_FORMAT_VERSION = 1
 
+/**
+ * The full export the user asks for by hand: app state plus every cover image.
+ */
+const val MANUAL_BACKUP_FILE_NAME = "annas_agenda_backup.zip"
+
+/**
+ * The automatic snapshot written whenever the app goes to the background. It
+ * carries app state only — writing several megabytes of covers every time the
+ * user leaves the app is not something to do behind their back.
+ *
+ * It must NOT share a name with the manual export. It used to, and since it is
+ * far smaller it overwrote the full backup with a cover-less one, so the covers
+ * silently disappeared from the only archive that had them.
+ */
+const val AUTO_BACKUP_FILE_NAME = "annas_agenda_autobackup.zip"
+
 suspend fun writeBackupToDocuments(
     context: Context,
     json: String,
     coverFiles: List<StoredCoverFile> = emptyList(),
-    fileName: String = "annas_agenda_backup.zip",
+    fileName: String = MANUAL_BACKUP_FILE_NAME,
 ) = withContext(Dispatchers.IO) {
     if (Build.VERSION.SDK_INT < 29) return@withContext
 
@@ -51,7 +67,12 @@ suspend fun writeBackupToDocuments(
         resolver.insert(collection, values) ?: return@withContext
     }
 
-    resolver.openOutputStream(uri, "w")?.use { rawOut ->
+    // "wt" and not "w": MediaStore's plain "w" does not truncate. Writing a
+    // shorter archive over a longer one left the old bytes past the new end,
+    // and a reader looking for the central directory from the end of the file
+    // found the stale one, whose offsets pointed into the new data. The result
+    // was an archive that failed to open at all.
+    resolver.openOutputStream(uri, "wt")?.use { rawOut ->
         ZipOutputStream(rawOut).use { zip ->
             writeZipStringEntry(
                 zip = zip,

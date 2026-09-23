@@ -17,6 +17,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.alphaomegos.annasagenda.screens.StorageFailureScreen
+import com.alphaomegos.annasagenda.util.AUTO_BACKUP_FILE_NAME
 import com.alphaomegos.annasagenda.util.writeBackupToDocuments
 import kotlinx.coroutines.launch
 
@@ -75,7 +76,8 @@ class MainActivity : AppCompatActivity() {
             val json = vm.exportBackupJson()
             writeBackupToDocuments(
                 context = applicationContext,
-                json = json
+                json = json,
+                fileName = AUTO_BACKUP_FILE_NAME,
             )
         }
     }

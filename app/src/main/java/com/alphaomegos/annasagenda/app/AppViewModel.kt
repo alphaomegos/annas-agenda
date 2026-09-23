@@ -436,12 +436,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         val expectedRefs = collectInternalCoverRefs(decoded)
 
-        expectedRefs.forEach { ref ->
-            if (ref !in coverEntries.keys) {
-                deleteInternalCoverIfAny(appContext, ref)
-            }
-        }
-
+        // Deliberately NOT deleting covers the archive happens to lack. A
+        // state-only archive — which is what the automatic backup is — carries
+        // no covers at all, and deleting every cover it does not mention wiped
+        // the images for media the restored state still points at. A missing
+        // entry means "this archive does not carry the image", not "the image
+        // should be destroyed". Covers that the new state no longer references
+        // are removed below, by the orphan sweep, which is the correct place.
         coverEntries.forEach { (ref, bytes) ->
             if (ref in expectedRefs) {
                 writeInternalCoverBytes(

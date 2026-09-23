@@ -7,8 +7,10 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.alphaomegos.annasagenda.util.AUTO_BACKUP_FILE_NAME
 import com.alphaomegos.annasagenda.util.BACKUP_APP_STATE_ENTRY_NAME
 import com.alphaomegos.annasagenda.util.BACKUP_META_ENTRY_NAME
+import com.alphaomegos.annasagenda.util.MANUAL_BACKUP_FILE_NAME
 import com.alphaomegos.annasagenda.util.StoredCoverFile
 import com.alphaomegos.annasagenda.util.buildInternalCoverRef
 import com.alphaomegos.annasagenda.util.readZipBackupPackage
@@ -162,6 +164,79 @@ class BackupExportInstrumentedTest {
         assertEquals(setOf(coverRef), imported.coverEntries.keys)
         assertArrayEquals(coverBytes, imported.coverEntries.getValue(coverRef))
     }
+
+    /**
+     * The direction the old overwrite test never took.
+     *
+     * It wrote a small archive first and a larger one second, so the second
+     * write covered the first completely and nothing stale was left behind.
+     * Production does the opposite: a manual export with megabytes of covers,
+     * then an automatic state-only backup a fraction of the size. With
+     * MediaStore's non-truncating "w" the tail of the big archive survived, a
+     * reader found the stale central directory at the end of the file, and the
+     * backup would not open at all.
+     */
+    @Test
+    fun writeBackupToDocuments_overwritingALargerBackupWithASmallerOneStaysReadable() = runBlocking {
+        assumeTrue(Build.VERSION.SDK_INT >= 29)
+
+        val fileName = uniqueBackupFileName("export_shrink")
+
+        val bigJson = AppStateStore(context).encodeToJson(
+            AppState(mainMenuOrder = List(200) { "calendar_$it" })
+        )
+        val covers = (1..12).map { index ->
+            val ref = buildInternalCoverRef(mediaKind = "book", itemId = 900L + index)
+            storedCoverFile(ref = ref, bytes = ByteArray(40_000) { (index + it).toByte() })
+        }
+
+        writeBackupToDocuments(
+            context = context,
+            json = bigJson,
+            coverFiles = covers,
+            fileName = fileName,
+        )
+
+        val bigSize = backupSize(requireBackupUri(fileName))
+
+        // Now the small, cover-less write — the automatic backup's shape.
+        val smallJson = AppStateStore(context).encodeToJson(
+            AppState(mainMenuOrder = listOf("calendar"))
+        )
+
+        writeBackupToDocuments(
+            context = context,
+            json = smallJson,
+            coverFiles = emptyList(),
+            fileName = fileName,
+        )
+
+        val uri = requireBackupUri(fileName)
+        val smallSize = backupSize(uri)
+
+        assertTrue(
+            "the file must actually shrink, otherwise the old bytes are still there " +
+                "(was $bigSize, now $smallSize)",
+            smallSize < bigSize
+        )
+
+        val imported = readZipBackupPackage(context, uri)
+        assertNotNull("the overwritten archive must still be readable", imported)
+        assertEquals(smallJson, imported!!.appStateJson)
+        assertTrue(
+            "no covers should survive from the previous, larger archive",
+            imported.coverEntries.isEmpty()
+        )
+    }
+
+    @Test
+    fun theAutomaticBackupDoesNotShareItsNameWithTheManualExport() {
+        assertTrue(AUTO_BACKUP_FILE_NAME != MANUAL_BACKUP_FILE_NAME)
+    }
+
+    private fun backupSize(uri: Uri): Long =
+        context.contentResolver.openInputStream(uri)?.use { it.readBytes().size.toLong() }
+            ?: error("Cannot open $uri")
 
     private fun uniqueBackupFileName(prefix: String): String {
         val fileName = "annas_agenda_${prefix}_${UUID.randomUUID()}.zip"
