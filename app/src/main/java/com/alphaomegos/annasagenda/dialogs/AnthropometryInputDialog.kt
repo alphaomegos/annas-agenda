@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -22,12 +23,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AnthropometryEntry
 import com.alphaomegos.annasagenda.AnthropometryFieldIds
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.parseAnthropometryInputs
 import com.alphaomegos.annasagenda.util.formatOneDecimal
-import com.alphaomegos.annasagenda.util.parseOneDecimalOrNull
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -80,6 +82,38 @@ private val anthropometryInputFieldDefs = listOf(
     ) { it.weightKg },
 )
 
+/**
+ * One measurement field, shared by both dialogs so the keyboard and the error
+ * state cannot drift apart between them.
+ */
+@Composable
+private fun AnthropometryValueField(
+    def: AnthropometryInputFieldDef,
+    text: String,
+    isError: Boolean,
+    onTextChange: (String) -> Unit,
+) {
+    val supportingText: (@Composable () -> Unit)? =
+        if (isError) {
+            { Text(stringResource(R.string.anthropometry_invalid_value)) }
+        } else {
+            null
+        }
+
+    OutlinedTextField(
+        value = text,
+        onValueChange = onTextChange,
+        label = { Text(stringResource(def.labelRes)) },
+        singleLine = true,
+        isError = isError,
+        // A number field used to get the full text keyboard, which is how a
+        // unit ends up typed into it in the first place.
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        supportingText = supportingText,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
 private fun fillAnthropometryFieldsFromEntry(
     entry: AnthropometryEntry?,
     fieldDefs: List<AnthropometryInputFieldDef>
@@ -108,6 +142,10 @@ internal fun AnthropometryDayInputDialog(
         mutableStateOf(fillAnthropometryFieldsFromEntry(initialEntry, activeFieldDefs))
     }
 
+    var invalidFieldIds by remember(initialEntry, activeFieldDefs) {
+        mutableStateOf(emptySet<String>())
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.enter_data)) },
@@ -117,24 +155,31 @@ internal fun AnthropometryDayInputDialog(
                 Text(text = stringResource(R.string.anthropometry_hint))
 
                 activeFieldDefs.forEach { field ->
-                    OutlinedTextField(
-                        value = fields[field.id].orEmpty(),
-                        onValueChange = { newText ->
+                    AnthropometryValueField(
+                        def = field,
+                        text = fields[field.id].orEmpty(),
+                        isError = field.id in invalidFieldIds,
+                        onTextChange = { newText ->
                             fields = fields.toMutableMap().also { it[field.id] = newText }
+                            invalidFieldIds = invalidFieldIds - field.id
                         },
-                        label = { Text(stringResource(field.labelRes)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                val values = activeFieldDefs.associate { field ->
-                    field.id to parseOneDecimalOrNull(fields[field.id].orEmpty())
+                val parsed = parseAnthropometryInputs(
+                    activeFieldDefs.associate { it.id to fields[it.id].orEmpty() }
+                )
+
+                // Refusing to save is the whole point: a field that cannot be
+                // read must not be taken for "the user cleared this".
+                if (parsed.isValid) {
+                    onSave(parsed.values)
+                } else {
+                    invalidFieldIds = parsed.invalidFieldIds
                 }
-                onSave(values)
             }) {
                 Text(stringResource(R.string.anthropometry_save))
             }
@@ -168,6 +213,10 @@ internal fun AnthropometryInputDialog(
         mutableStateOf(fillAnthropometryFieldsFromEntry(entriesByDate[date], activeFieldDefs))
     }
 
+    var invalidFieldIds by remember(date, activeFieldDefs, entriesByDate) {
+        mutableStateOf(emptySet<String>())
+    }
+
     val showDatePicker = remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -187,24 +236,29 @@ internal fun AnthropometryInputDialog(
                 }
 
                 activeFieldDefs.forEach { field ->
-                    OutlinedTextField(
-                        value = fields[field.id].orEmpty(),
-                        onValueChange = { newText ->
+                    AnthropometryValueField(
+                        def = field,
+                        text = fields[field.id].orEmpty(),
+                        isError = field.id in invalidFieldIds,
+                        onTextChange = { newText ->
                             fields = fields.toMutableMap().also { it[field.id] = newText }
+                            invalidFieldIds = invalidFieldIds - field.id
                         },
-                        label = { Text(stringResource(field.labelRes)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                val values = activeFieldDefs.associate { field ->
-                    field.id to parseOneDecimalOrNull(fields[field.id].orEmpty())
+                val parsed = parseAnthropometryInputs(
+                    activeFieldDefs.associate { it.id to fields[it.id].orEmpty() }
+                )
+
+                if (parsed.isValid) {
+                    onSave(date, parsed.values)
+                } else {
+                    invalidFieldIds = parsed.invalidFieldIds
                 }
-                onSave(date, values)
             }) { Text(stringResource(R.string.ok)) }
         },
         dismissButton = {

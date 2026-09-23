@@ -151,6 +151,7 @@
     <string name="anthropometry_saved">Сохранено</string>
     <string name="anthropometry_hint">Оставьте пустым, если не измеряли. Используйте точку или запятую; будет сохранено с 1 знаком после запятой.</string>
     <string name="anthropometry_empty">Данных антропометрии пока нет</string>
+    <string name="anthropometry_invalid_value">Введите число от 0 до 999 или оставьте поле пустым</string>
     <string name="enter_data">Ввести данные</string>
     <string name="anthro_arm_cm">Рука, см</string>
     <string name="anthro_chest_cm">Грудь, см</string>

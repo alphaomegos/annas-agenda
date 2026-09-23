@@ -5,6 +5,7 @@
     <string name="anthropometry_saved">Saved</string>
     <string name="anthropometry_hint">Leave empty if not measured. Use dot or comma; will be saved with 1 decimal.</string>
     <string name="anthropometry_empty">No anthropometry data yet</string>
+    <string name="anthropometry_invalid_value">Enter a number from 0 to 999, or leave empty</string>
     <string name="enter_data">Enter data</string>
     <string name="anthro_arm_cm">Arm, cm</string>
     <string name="anthro_chest_cm">Chest, cm</string>

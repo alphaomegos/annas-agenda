@@ -27,12 +27,6 @@ internal fun formatSignedOneDecimal(v: Double): String {
     return sign + trimmed
 }
 
-internal fun parseOneDecimalOrNull(raw: String): Double? {
-    val t = raw.trim()
-    if (t.isEmpty()) return null
-    return t.replace(',', '.').toDoubleOrNull()
-}
-
 internal fun orderedWeekDays(first: DayOfWeek): List<DayOfWeek> {
     val all = DayOfWeek.entries.toList()
     val idx = all.indexOf(first)
