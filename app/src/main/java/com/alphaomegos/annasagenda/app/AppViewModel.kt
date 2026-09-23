@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -1127,10 +1128,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         expired.mapNotNull { it.taskId }.forEach { deleteTask(it) }
 
+        // Must read the state fresh. deleteTask() above removed tasks and
+        // subtasks; writing back the `st` snapshot taken before the loop put
+        // every one of them straight back, leaving orphaned running tasks in
+        // the calendar that no longer belonged to any plan entry.
         val expiredDates = expired.map { it.date }.toSet()
-        _state.value = st.copy(
-            runningPlanEntries = st.runningPlanEntries.filterNot { it.date in expiredDates }
-        )
+        _state.update { cur ->
+            cur.copy(
+                runningPlanEntries = cur.runningPlanEntries.filterNot { it.date in expiredDates }
+            )
+        }
     }
 
     private val _state = MutableStateFlow(AppState())
@@ -1146,8 +1153,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         (_state.value.subtasks.filter { it.taskId == taskId }.maxOfOrNull { it.order } ?: -1) + 1
 
     private fun suppress(key: String) {
-        val st = _state.value
-        _state.value = st.copy(suppressedRecurrences = st.suppressedRecurrences + key)
+        _state.update { cur ->
+            cur.copy(suppressedRecurrences = cur.suppressedRecurrences + key)
+        }
     }
 
     private fun refreshHasSubtasks() {
@@ -1582,29 +1590,36 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteSubtask(subtaskId: Long) {
-        val cur = _state.value
-        val victim = cur.subtasks.firstOrNull { it.id == subtaskId }
+        val victim = _state.value.subtasks.firstOrNull { it.id == subtaskId }
 
         if (victim?.originSubtaskId != null) {
-            val parentTask = cur.tasks.firstOrNull { it.id == victim.taskId }
+            val parentTask = _state.value.tasks.firstOrNull { it.id == victim.taskId }
             val epoch = parentTask?.date?.toEpochDay()
             if (epoch != null) {
                 suppress("S:${victim.originSubtaskId}:$epoch")
             }
         }
 
-        val newSubs = cur.subtasks.filterNot { it.id == subtaskId }
-        _state.value = cur.copy(subtasks = newSubs)
+        // Must read the state fresh. suppress() above has already written the
+        // tombstone; writing back a snapshot taken before it threw that
+        // tombstone away, so a deleted recurring subtask reappeared as soon as
+        // the day was generated again.
+        _state.update { cur ->
+            cur.copy(subtasks = cur.subtasks.filterNot { it.id == subtaskId })
+        }
         refreshHasSubtasks()
 
         val taskId = victim?.taskId ?: return
-        val remaining = newSubs.filter { it.taskId == taskId }
+        val remaining = _state.value.subtasks.filter { it.taskId == taskId }
         if (remaining.isNotEmpty()) {
             val allDone = remaining.all { it.isDone }
-            val newTasks = _state.value.tasks.map { t ->
-                if (t.id == taskId) t.copy(isDone = allDone) else t
+            _state.update { cur ->
+                cur.copy(
+                    tasks = cur.tasks.map { t ->
+                        if (t.id == taskId) t.copy(isDone = allDone) else t
+                    }
+                )
             }
-            _state.value = _state.value.copy(tasks = newTasks)
         }
     }
 
