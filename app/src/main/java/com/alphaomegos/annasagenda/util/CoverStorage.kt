@@ -20,29 +20,10 @@ import kotlin.math.min
 const val MEDIA_COVER_MAX_SIDE_PX: Int = 800
 const val MEDIA_COVER_JPEG_QUALITY: Int = 84
 
-private const val MEDIA_COVER_DIR_NAME = "media_covers"
-private const val MEDIA_COVER_REF_PREFIX = "internal://media_covers/"
-
 data class StoredCoverFile(
     val ref: String,
     val file: File,
 )
-
-fun isInternalCoverRef(ref: String?): Boolean {
-    return !ref.isNullOrBlank() && ref.startsWith(MEDIA_COVER_REF_PREFIX)
-}
-
-fun isExternalCoverRef(ref: String?): Boolean {
-    return !ref.isNullOrBlank() && !isInternalCoverRef(ref)
-}
-
-fun buildInternalCoverRef(
-    mediaKind: String,
-    itemId: Long,
-): String {
-    val safeKind = sanitizeMediaKind(mediaKind)
-    return "$MEDIA_COVER_REF_PREFIX${safeKind}_$itemId.jpg"
-}
 
 fun collectInternalCoverRefs(state: AppState): Set<String> {
     return buildSet {
@@ -190,37 +171,6 @@ suspend fun writeInternalCoverBytes(
     }.getOrDefault(false)
 }
 
-fun zipEntryNameForCoverRef(coverRef: String): String? {
-    if (!isInternalCoverRef(coverRef)) return null
-    val fileName = coverRef.removePrefix(MEDIA_COVER_REF_PREFIX)
-    if (fileName.isBlank()) return null
-    return "$MEDIA_COVER_DIR_NAME/$fileName"
-}
-
-fun coverRefFromZipEntryName(entryName: String): String? {
-    val prefix = "$MEDIA_COVER_DIR_NAME/"
-    if (!entryName.startsWith(prefix)) return null
-
-    val fileName = entryName.removePrefix(prefix)
-    if (fileName.isBlank()) return null
-
-    return "$MEDIA_COVER_REF_PREFIX$fileName"
-}
-
-private fun sanitizeMediaKind(raw: String): String {
-    val trimmed = raw.trim().lowercase()
-    return trimmed
-        .map { ch ->
-            when {
-                ch in 'a'..'z' -> ch
-                ch in '0'..'9' -> ch
-                else -> '_'
-            }
-        }
-        .joinToString("")
-        .ifBlank { "item" }
-}
-
 private fun internalCoverDir(context: Context): File {
     return File(context.filesDir, MEDIA_COVER_DIR_NAME)
 }
@@ -229,12 +179,7 @@ private fun internalCoverFileForRef(
     context: Context,
     ref: String?,
 ): File? {
-    val safeRef = ref?.takeIf(::isInternalCoverRef) ?: return null
-
-    val fileName = safeRef.removePrefix(MEDIA_COVER_REF_PREFIX)
-    if (fileName.isBlank()) return null
-    if (fileName.contains('/') || fileName.contains('\\')) return null
-
+    val fileName = coverFileNameForRef(ref) ?: return null
     return File(internalCoverDir(context), fileName)
 }
 
