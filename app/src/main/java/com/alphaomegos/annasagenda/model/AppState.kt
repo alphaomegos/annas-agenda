@@ -55,6 +55,10 @@ data class AppState(
     val readingSeries: List<ReadingSeries> = emptyList(),
     val readingSessions: List<ReadingSession> = emptyList(),
 
+    // A session that has started and not yet been written down. Saved, so that
+    // the process being reclaimed mid-chapter does not throw the time away.
+    val activeReading: ActiveReading? = null,
+
     val readingMediaFilter: ReadingMediaFilter = ReadingMediaFilter(),
 
     val readingPlansPrefs: ReadingTabPrefs = ReadingTabPrefs(),

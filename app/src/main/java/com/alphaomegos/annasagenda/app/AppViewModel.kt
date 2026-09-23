@@ -317,7 +317,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
             _state.value = empty
             nextId = 1L
-            _activeReading.value = null
 
             store.save(empty)
 
@@ -350,7 +349,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         _state.value = empty
         nextId = 1L
-        _activeReading.value = null
 
         cleanupRemovedInternalCoversAsync(before, empty)
 
@@ -439,7 +437,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
             _state.value = migrated
             nextId = nextIdAfter(migrated)
-            _activeReading.value = null
 
             cleanupRemovedInternalCoversAsync(before, migrated)
             store.save(migrated)
@@ -483,7 +480,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         _state.value = migrated
         nextId = nextIdAfter(migrated)
-        _activeReading.value = null
 
         cleanupRemovedInternalCoversAsync(before, migrated)
         store.save(migrated)
@@ -601,14 +597,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
        Reading
     ---------------------------- */
 
-    data class ActiveReading(
-        val bookId: Long,
-        val startedAtEpochMillis: Long,
-        val startPage: Int
-    )
-
-    private val _activeReading = MutableStateFlow<ActiveReading?>(null)
-    val activeReading: StateFlow<ActiveReading?> = _activeReading.asStateFlow()
 
 
     fun setReadingViewMode(shelf: ReadingShelf, mode: ReadingViewMode) {
@@ -672,13 +660,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st = _state.value
         val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return
 
-        if (_activeReading.value?.bookId == bookId) {
-            _activeReading.value = null
-        }
-
         _state.value = st.copy(
             readingBooks = st.readingBooks.filterNot { it.id == bookId },
-            readingSessions = st.readingSessions.filterNot { it.bookId == bookId }
+            readingSessions = st.readingSessions.filterNot { it.bookId == bookId },
+            activeReading = st.activeReading?.takeIf { it.bookId != bookId },
         )
 
         cleanupInternalCoverAsync(book.coverUri)
@@ -689,9 +674,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return
         if (book.shelf == shelf) return
 
-        if (_activeReading.value?.bookId == bookId && shelf != ReadingShelf.NOW) {
-            _activeReading.value = null
-        }
+        val stillReading =
+            st.activeReading?.takeIf { it.bookId != bookId || shelf == ReadingShelf.NOW }
 
         val currentYear = LocalDate.now().year
 
@@ -700,7 +684,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             else moveReadingBookToShelf(b, shelf, currentYear)
         }
 
-        _state.value = st.copy(readingBooks = updatedBooks)
+        _state.value = st.copy(readingBooks = updatedBooks, activeReading = stillReading)
     }
     fun updateReadingBook(
         bookId: Long,
@@ -735,17 +719,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             currentYear = currentYear,
         )
 
-        if (_activeReading.value?.bookId == bookId) {
-            _activeReading.value =
-                if (updated.shelf == ReadingShelf.NOW) {
-                    _activeReading.value?.copy(startPage = updated.currentPage)
-                } else {
-                    null
-                }
-        }
+        val active = st.activeReading
+        val newActive =
+            if (active?.bookId != bookId) {
+                active
+            } else if (updated.shelf == ReadingShelf.NOW) {
+                active.copy(startPage = updated.currentPage)
+            } else {
+                null
+            }
 
         _state.value = st.copy(
-            readingBooks = st.readingBooks.map { b -> if (b.id == bookId) updated else b }
+            readingBooks = st.readingBooks.map { b -> if (b.id == bookId) updated else b },
+            activeReading = newActive,
         )
 
         if (oldCover != updated.coverUri) {
@@ -948,21 +934,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val st = _state.value
         val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return false
 
+        // Opening the same book again is not a new session. Starting one from
+        // scratch here threw away however long had already been counted, which
+        // is what happened to anyone who left the session screen with the
+        // system back gesture and tapped Read again.
+        if (st.activeReading?.bookId == bookId) return true
+
         if (book.shelf == ReadingShelf.PLANS) {
             moveReadingBookToShelf(bookId, ReadingShelf.NOW)
         }
 
         val after = _state.value.readingBooks.firstOrNull { it.id == bookId } ?: return false
-        _activeReading.value = ActiveReading(
-            bookId = bookId,
-            startedAtEpochMillis = startedAtEpochMillis,
-            startPage = after.currentPage.coerceAtLeast(0)
-        )
+
+        _state.update { cur ->
+            cur.copy(
+                activeReading = ActiveReading(
+                    bookId = bookId,
+                    startedAtEpochMillis = startedAtEpochMillis,
+                    startPage = after.currentPage.coerceAtLeast(0),
+                )
+            )
+        }
         return true
     }
 
     fun cancelReading() {
-        _activeReading.value = null
+        _state.update { cur -> cur.copy(activeReading = null) }
     }
 
     // Backward-compatible wrapper.
@@ -972,8 +969,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         durationMinutes: Int,
         finishedAtEpochMillis: Long = System.currentTimeMillis()
     ): Boolean {
-        val active = _activeReading.value ?: return false
         val st = _state.value
+        val active = st.activeReading ?: return false
         val book = st.readingBooks.firstOrNull { it.id == active.bookId } ?: return false
 
         val pages = book.totalPages.coerceAtLeast(1)
@@ -997,10 +994,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         _state.value = st.copy(
             readingBooks = updatedBooks,
-            readingSessions = st.readingSessions + session
+            readingSessions = st.readingSessions + session,
+            activeReading = null,
         )
 
-        _activeReading.value = null
         return true
     }
 
@@ -1233,6 +1230,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val anthropometry: StateFlow<AnthropometrySlice> = stateSlice(::anthropometrySliceOf)
     val counters: StateFlow<CountersSlice> = stateSlice(::countersSliceOf)
     val undoneTasks: StateFlow<UndoneSlice> = stateSlice(::undoneSliceOf)
+
+    /**
+     * The session in progress, read straight out of the saved state.
+     *
+     * It used to be a MutableStateFlow of its own, which is why an hour of
+     * reading disappeared whenever Android reclaimed the process: nothing ever
+     * wrote it down, and the only way to record a session is the finish dialog,
+     * which is reachable only while one is running.
+     *
+     * Declared here, with the other slices and after _state, because property
+     * initialisers run in order: reading _state from further up the class gets
+     * a null it has not been assigned yet.
+     */
+    val activeReading: StateFlow<ActiveReading?> = stateSlice { it.activeReading }
 
     private var nextId: Long = 1L
     private fun newId(): Long = nextId++

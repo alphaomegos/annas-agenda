@@ -27,6 +27,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     readingMovies = readingMovies.map { it.toDto() },
     readingSeries = readingSeries.map { it.toDto() },
     readingSessions = readingSessions.map { it.toDto() },
+    activeReading = activeReading?.toDto(),
     readingMediaFilter = readingMediaFilter.toDto(),
     readingPlansPrefs = readingPlansPrefs.toDto(),
     readingNowPrefs = readingNowPrefs.toDto(),
@@ -63,6 +64,7 @@ internal fun AppStateDto.toDomain(): AppState = AppState(
     readingMovies = readingMovies.mapNotNull { it.toDomainOrNull() },
     readingSeries = readingSeries.mapNotNull { it.toDomainOrNull() },
     readingSessions = readingSessions.mapNotNull { it.toDomainOrNull() },
+    activeReading = activeReading?.toDomain(),
     readingMediaFilter = readingMediaFilter.toDomain(),
     readingPlansPrefs = readingPlansPrefs.toDomain(),
     readingNowPrefs = readingNowPrefs.toDomain(),
@@ -408,4 +410,16 @@ internal fun ReadingTabPrefs.toDto(): ReadingTabPrefsDto = ReadingTabPrefsDto(
 internal fun ReadingTabPrefsDto.toDomain(): ReadingTabPrefs = ReadingTabPrefs(
     viewMode = parseReadingViewMode(viewMode),
     sort = sort.toDomain(),
+)
+
+internal fun ActiveReading.toDto(): ActiveReadingDto = ActiveReadingDto(
+    bookId = bookId,
+    startedAtEpochMillis = startedAtEpochMillis,
+    startPage = startPage,
+)
+
+internal fun ActiveReadingDto.toDomain(): ActiveReading = ActiveReading(
+    bookId = bookId,
+    startedAtEpochMillis = startedAtEpochMillis,
+    startPage = startPage.coerceAtLeast(0),
 )

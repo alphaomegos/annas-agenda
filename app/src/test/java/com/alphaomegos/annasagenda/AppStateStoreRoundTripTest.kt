@@ -43,6 +43,53 @@ class AppStateStoreRoundTripTest {
         assertEquals(original, restored)
     }
 
+    /**
+     * A session in progress has to survive being written down and read back —
+     * that is the entire reason it lives in the state rather than in the view
+     * model, where a reclaimed process simply lost it.
+     */
+    @Test
+    fun appStateRoundTrip_keepsAReadingSessionInProgress() {
+        val original = AppState(
+            readingBooks = listOf(
+                ReadingBook(
+                    id = 1L,
+                    shelf = ReadingShelf.NOW,
+                    title = "Book",
+                    totalPages = 300,
+                    currentPage = 42,
+                    createdAtEpochMillis = 1_700_000_000_000L,
+                )
+            ),
+            activeReading = ActiveReading(
+                bookId = 1L,
+                startedAtEpochMillis = 1_700_000_123_000L,
+                startPage = 42,
+            ),
+        )
+
+        val json = appStateStoreJson.encodeToString(original.toDto())
+        val restored = appStateStoreJson
+            .decodeFromString<AppStateDto>(json)
+            .toDomain()
+
+        assertTrue(json.contains("activeReading"))
+        assertEquals(original.activeReading, restored.activeReading)
+        assertEquals(original, restored)
+    }
+
+    /** A payload written before sessions were saved simply has none. */
+    @Test
+    fun aPayloadWithoutASessionDecodesToNoSession() {
+        val json = """{"v":4,"readingBooks":[],"tasks":[]}"""
+
+        val restored = appStateStoreJson
+            .decodeFromString<AppStateDto>(json)
+            .toDomain()
+
+        assertEquals(null, restored.activeReading)
+    }
+
     @Test
     fun defaultAppStateRoundTrip_isStable() {
         val original = AppState()

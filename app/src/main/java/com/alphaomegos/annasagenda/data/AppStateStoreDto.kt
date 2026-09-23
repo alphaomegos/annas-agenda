@@ -39,6 +39,10 @@ internal data class AppStateDto(
     val readingSeries: List<ReadingSeriesDto> = emptyList(),
     val readingSessions: List<ReadingSessionDto> = emptyList(),
 
+    // Additive with a default: an older payload decodes to null, which is
+    // exactly "no session in progress". No migration needed.
+    val activeReading: ActiveReadingDto? = null,
+
     val readingMediaFilter: ReadingMediaFilterDto = ReadingMediaFilterDto(),
 
     val readingPlansPrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),
@@ -172,6 +176,13 @@ internal data class ReadingSeriesDto(
     val yearWatched: Int? = null,
     val yearAbandoned: Int? = null,
     val createdAtEpochMillis: Long = 0L,
+)
+
+@Serializable
+internal data class ActiveReadingDto(
+    val bookId: Long,
+    val startedAtEpochMillis: Long,
+    val startPage: Int,
 )
 
 @Serializable
