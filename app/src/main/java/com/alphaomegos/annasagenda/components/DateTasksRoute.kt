@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppState
+import com.alphaomegos.annasagenda.DateTasksData
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.RepeatRule
@@ -61,7 +61,7 @@ internal data class DateTasksActions(
 @Composable
 internal fun DateTasksBlock(
     vm: AppViewModel,
-    state: AppState,
+    state: DateTasksData,
     date: LocalDate?,
     includeDoneTasks: Boolean = true,
     visibleTaskIds: Set<Long>? = null,
@@ -136,7 +136,7 @@ internal fun DateTasksBlock(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DateTasksBlockContent(
-    state: AppState,
+    state: DateTasksData,
     date: LocalDate?,
     tasks: List<Task>,
     subtasksByTaskId: Map<Long, List<Subtask>>,

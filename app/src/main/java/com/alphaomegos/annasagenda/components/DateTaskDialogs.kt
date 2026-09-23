@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppState
+import com.alphaomegos.annasagenda.DateTasksData
 import com.alphaomegos.annasagenda.R
 import java.time.Instant
 import java.time.LocalDate
@@ -311,7 +311,7 @@ internal fun CopySubtaskDialogs(
 @Composable
 internal fun MoveSubtaskDialog(
     subtaskId: Long?,
-    state: AppState,
+    state: DateTasksData,
     onDismiss: () -> Unit,
     onMoveToTask: (Long, Long) -> Unit,
 ) {

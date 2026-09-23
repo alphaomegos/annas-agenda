@@ -61,7 +61,7 @@ import com.alphaomegos.annasagenda.util.formatSignedOneDecimal
 import java.time.LocalDate
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import com.alphaomegos.annasagenda.AppState
+import com.alphaomegos.annasagenda.AnthropometrySlice
 import com.alphaomegos.annasagenda.CalorieGoalChange
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.AnthropometryFieldIds
@@ -158,7 +158,7 @@ fun AnthropometryScreen(
     onBack: () -> Unit,
 ) {
     val ctx = LocalContext.current
-    val state by vm.state.collectAsState()
+    val state by vm.anthropometry.collectAsState()
     val today = remember { LocalDate.now() }
 
     val deficit30 = remember(state) {
@@ -597,7 +597,7 @@ private fun goalFor(date: LocalDate, changes: List<CalorieGoalChange>): Int {
     return last?.kcal ?: 2000
 }
 
-private fun sumDeficitInRange(state: AppState, start: LocalDate, end: LocalDate): Int {
+private fun sumDeficitInRange(state: AnthropometrySlice, start: LocalDate, end: LocalDate): Int {
     var d = start
     var total = 0
     while (!d.isAfter(end)) {

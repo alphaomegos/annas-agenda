@@ -45,7 +45,7 @@ fun UndoneTasksScreen(
     vm: AppViewModel,
     onBack: () -> Unit,
 ) {
-    val state by vm.state.collectAsState()
+    val state by vm.undoneTasks.collectAsState()
     val locale = appLocale()
 
     val today = remember { LocalDate.now() }

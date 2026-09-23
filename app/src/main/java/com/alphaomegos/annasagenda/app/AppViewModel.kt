@@ -17,11 +17,14 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -1139,6 +1142,33 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _state = MutableStateFlow(AppState())
     val state: StateFlow<AppState> = _state.asStateFlow()
+
+    /* ---------------------------
+       Feature-scoped state slices
+
+       Declared here, after _state, because property initialisers run in
+       declaration order and these read it eagerly.
+    ---------------------------- */
+
+    /**
+     * A StateFlow over one feature's fields. Because StateFlow only emits
+     * distinct values, a change elsewhere in AppState produces an equal slice
+     * and no emission — so a screen collecting this does not recompose on
+     * changes it does not care about.
+     */
+    private fun <T> stateSlice(transform: (AppState) -> T): StateFlow<T> =
+        _state
+            .map(transform)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = transform(_state.value),
+            )
+
+    val calorimeter: StateFlow<CalorimeterSlice> = stateSlice(::calorimeterSliceOf)
+    val anthropometry: StateFlow<AnthropometrySlice> = stateSlice(::anthropometrySliceOf)
+    val counters: StateFlow<CountersSlice> = stateSlice(::countersSliceOf)
+    val undoneTasks: StateFlow<UndoneSlice> = stateSlice(::undoneSliceOf)
 
     private var nextId: Long = 1L
     private fun newId(): Long = nextId++

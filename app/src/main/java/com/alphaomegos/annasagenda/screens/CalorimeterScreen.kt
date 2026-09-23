@@ -54,7 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppState
+import com.alphaomegos.annasagenda.CalorimeterSlice
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.CalorieGoalChange
 import com.alphaomegos.annasagenda.R
@@ -73,7 +73,7 @@ fun CalorimeterRoute(
     vm: AppViewModel,
     onBack: () -> Unit,
 ) {
-    val state by vm.state.collectAsState()
+    val state by vm.calorimeter.collectAsState()
 
     CalorimeterContent(
         state = state,
@@ -93,7 +93,7 @@ fun CalorimeterRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalorimeterContent(
-    state: AppState,
+    state: CalorimeterSlice,
     onBack: () -> Unit,
     onSetGoalFromToday: (Int) -> Unit,
     onAddFood: (LocalDate, String, Int) -> Long,
@@ -499,7 +499,7 @@ private fun goalFor(date: LocalDate, changes: List<CalorieGoalChange>): Int {
     return last?.kcal ?: DEFAULT_DAILY_GOAL_KCAL
 }
 
-private fun sumDeficitInRange(state: AppState, start: LocalDate, end: LocalDate): Int {
+private fun sumDeficitInRange(state: CalorimeterSlice, start: LocalDate, end: LocalDate): Int {
     var d = start
     var total = 0
     while (!d.isAfter(end)) {

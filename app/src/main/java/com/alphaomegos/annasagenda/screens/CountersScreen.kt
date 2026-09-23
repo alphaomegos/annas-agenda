@@ -34,7 +34,7 @@ fun CountersScreen(
     vm: AppViewModel,
     onBack: () -> Unit,
 ) {
-    val state by vm.state.collectAsState()
+    val state by vm.counters.collectAsState()
 
     val showAddTypeDialog = remember { mutableStateOf(false) }
     val showCreateManualDialog = remember { mutableStateOf(false) }

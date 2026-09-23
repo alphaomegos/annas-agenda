@@ -1,11 +1,25 @@
 package com.alphaomegos.annasagenda
 
+/**
+ * What the shared task-list components need in order to render a day.
+ *
+ * Declaring it as a contract lets those components accept either the whole
+ * [AppState] or a narrow slice, without every caller having to hold the full
+ * state just to satisfy a parameter type.
+ */
+interface DateTasksData {
+    val tasks: List<Task>
+    val subtasks: List<Subtask>
+    val suppressedRecurrences: Set<String>
+    val counters: List<Counter>
+}
+
 data class AppState(
-    val tasks: List<Task> = emptyList(),
-    val subtasks: List<Subtask> = emptyList(),
+    override val tasks: List<Task> = emptyList(),
+    override val subtasks: List<Subtask> = emptyList(),
 
     // Keys like: "T:<originTaskId>:<epochDay>", "S:<originSubtaskId>:<epochDay>"
-    val suppressedRecurrences: Set<String> = emptySet(),
+    override val suppressedRecurrences: Set<String> = emptySet(),
 
     // Per-day body measurements (any subset of fields can be filled).
     val anthropometry: List<AnthropometryEntry> = emptyList(),
@@ -20,7 +34,7 @@ data class AppState(
     val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
 
     // Counters
-    val counters: List<Counter> = emptyList(),
+    override val counters: List<Counter> = emptyList(),
 
     // Main menu ordering (stable ids like "calendar", "new_task", ...).
     val mainMenuOrder: List<String> = emptyList(),
@@ -43,4 +57,4 @@ data class AppState(
     val readingNowPrefs: ReadingTabPrefs = ReadingTabPrefs(),
     val readingDonePrefs: ReadingTabPrefs = ReadingTabPrefs(),
     val readingAbandonedPrefs: ReadingTabPrefs = ReadingTabPrefs(),
-)
+) : DateTasksData
