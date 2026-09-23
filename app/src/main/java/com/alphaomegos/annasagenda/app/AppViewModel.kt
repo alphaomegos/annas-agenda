@@ -26,9 +26,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.temporal.ChronoUnit
-import java.time.temporal.WeekFields
-import java.util.Locale
 
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -1166,146 +1163,35 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(tasks = updatedTasks)
     }
 
-    private fun refreshHasSubtasksForTask(
-        taskId: Long,
-        tasks: MutableList<Task>,
-        subs: List<Subtask>
-    ) {
-        val idx = tasks.indexOfFirst { it.id == taskId }
-        if (idx >= 0) {
-            val has = subs.any { it.taskId == taskId }
-            tasks[idx] = tasks[idx].copy(hasSubtasks = has)
-        }
-    }
-
     /* ---------------------------
        Recurrence (generated instances)
     ---------------------------- */
 
-    private fun matchesRepeat(anchor: LocalDate, date: LocalDate, rule: RepeatRule): Boolean {
-        if (!date.isAfter(anchor)) return false
-        val interval = rule.interval.coerceAtLeast(1)
-
-        return when (rule.freq) {
-            RepeatFreq.DAILY -> {
-                val days = ChronoUnit.DAYS.between(anchor, date)
-                days % interval == 0L
-            }
-
-            RepeatFreq.WEEKLY -> {
-                if (rule.weekDays.isNotEmpty() && date.dayOfWeek !in rule.weekDays) return false
-                val wf = WeekFields.of(Locale.getDefault())
-                val a = anchor.with(wf.dayOfWeek(), 1)
-                val d = date.with(wf.dayOfWeek(), 1)
-                val weeks = ChronoUnit.WEEKS.between(a, d)
-                weeks % interval == 0L
-            }
-
-            RepeatFreq.MONTHLY -> {
-                val dom = rule.dayOfMonth ?: anchor.dayOfMonth
-                if (date.dayOfMonth != dom) return false
-                val months =
-                    ChronoUnit.MONTHS.between(anchor.withDayOfMonth(1), date.withDayOfMonth(1))
-                months % interval == 0L
-            }
-        }
-    }
-
+    /**
+     * Materialises recurring occurrences for the given range.
+     *
+     * The algorithm itself lives in RecurrenceSupport as a pure function, so it
+     * can be covered by JVM tests; this only feeds it state and takes the
+     * result back. Reading `cur` once is safe precisely because that function
+     * touches nothing.
+     */
     fun ensureGeneratedInRange(start: LocalDate, end: LocalDate) {
         val cur = _state.value
 
-        val newTasks = cur.tasks.toMutableList()
-        val newSubtasks = cur.subtasks.toMutableList()
-        val subtasksByTask = cur.subtasks.groupBy { it.taskId }
+        val generated = generateRecurrencesInRange(
+            tasks = cur.tasks,
+            subtasks = cur.subtasks,
+            suppressedRecurrences = cur.suppressedRecurrences,
+            start = start,
+            end = end,
+            nextId = nextId,
+        )
 
-        fun isSuppressed(key: String) = cur.suppressedRecurrences.contains(key)
-
-        fun nextTaskOrderIn(date: LocalDate): Int =
-            (newTasks.filter { it.date == date }.maxOfOrNull { it.order } ?: -1) + 1
-
-        fun cloneSubtaskIntoTask(templateSub: Subtask, newTaskId: Long): Subtask {
-            val s = templateSub.copy(
-                id = newId(),
-                taskId = newTaskId,
-                isDone = false,
-                repeatRule = null,
-                originSubtaskId = templateSub.id
-            )
-            newSubtasks.add(s)
-            return s
-        }
-
-        fun findGeneratedTask(originTaskId: Long, targetDate: LocalDate): Task? {
-            return newTasks.firstOrNull { it.originTaskId == originTaskId && it.date == targetDate }
-        }
-
-        fun cloneTaskForDate(templateTask: Task, targetDate: LocalDate): Task {
-            val t = templateTask.copy(
-                id = newId(),
-                order = nextTaskOrderIn(targetDate),
-                date = targetDate,
-                isDone = false,
-                repeatRule = null,
-                originTaskId = templateTask.id
-            )
-            newTasks.add(t)
-            return t
-        }
-
-        val dateTemplates = cur.tasks.filter { it.originTaskId == null && it.date != null }
-
-        for (t in dateTemplates) {
-            val anchor = t.date ?: continue
-            val subs = subtasksByTask[t.id].orEmpty().filter { it.originSubtaskId == null }
-
-            val taskRule = t.repeatRule
-            if (taskRule != null) {
-                var d = start
-                while (!d.isAfter(end)) {
-                    val epoch = d.toEpochDay()
-                    if (matchesRepeat(anchor, d, taskRule)) {
-                        val suppressKey = "T:${t.id}:$epoch"
-                        if (!isSuppressed(suppressKey)) {
-                            val existing = findGeneratedTask(t.id, d)
-                            if (existing == null) {
-                                val createdTask = cloneTaskForDate(t, d)
-                                for (srcSub in subs) {
-                                    val suppressSubKey = "S:${srcSub.id}:$epoch"
-                                    if (!isSuppressed(suppressSubKey)) {
-                                        cloneSubtaskIntoTask(srcSub, createdTask.id)
-                                    }
-                                }
-                                refreshHasSubtasksForTask(createdTask.id, newTasks, newSubtasks)
-                            }
-                        }
-                    }
-                    d = d.plusDays(1)
-                }
-            }
-
-            for (s in subs) {
-                val rule = s.repeatRule ?: continue
-                var d = start
-                while (!d.isAfter(end)) {
-                    val epoch = d.toEpochDay()
-                    if (matchesRepeat(anchor, d, rule)) {
-                        val suppressKey = "S:${s.id}:$epoch"
-                        if (!isSuppressed(suppressKey)) {
-                            val taskForSub = findGeneratedTask(t.id, d) ?: cloneTaskForDate(t, d)
-                            val alreadySub =
-                                newSubtasks.any { it.taskId == taskForSub.id && it.originSubtaskId == s.id }
-                            if (!alreadySub) {
-                                cloneSubtaskIntoTask(s, taskForSub.id)
-                                refreshHasSubtasksForTask(taskForSub.id, newTasks, newSubtasks)
-                            }
-                        }
-                    }
-                    d = d.plusDays(1)
-                }
-            }
-        }
-
-        _state.value = cur.copy(tasks = newTasks, subtasks = newSubtasks)
+        nextId = generated.nextId
+        _state.value = cur.copy(
+            tasks = generated.tasks,
+            subtasks = generated.subtasks,
+        )
     }
 
     fun setTaskRepeatRule(taskId: Long, rule: RepeatRule?) {
@@ -1367,8 +1253,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val cur = _state.value
         val victim = cur.tasks.firstOrNull { it.id == taskId } ?: return
 
-        if (victim.originTaskId != null && victim.date != null) {
-            val key = "T:${victim.originTaskId}:${victim.date.toEpochDay()}"
+        val victimOriginTaskId = victim.originTaskId
+        val victimDate = victim.date
+
+        if (victimOriginTaskId != null && victimDate != null) {
+            val key = taskSuppressionKey(victimOriginTaskId, victimDate)
             val newTasks = cur.tasks.filterNot { it.id == taskId }
             val newSubs = cur.subtasks.filterNot { it.taskId == taskId }
 
@@ -1381,8 +1270,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
 
-        if (victim.originTaskId == null && victim.repeatRule != null && victim.date != null) {
-            suppress("T:${victim.id}:${victim.date.toEpochDay()}")
+        if (victimOriginTaskId == null && victim.repeatRule != null && victimDate != null) {
+            suppress(taskSuppressionKey(victim.id, victimDate))
             return
         }
 
@@ -1481,8 +1370,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             nextTaskOrderForDate(newDate)
         }
 
-        if (victim.originTaskId != null && oldDate != null && oldDate != newDate) {
-            val taskSuppressKey = "T:${victim.originTaskId}:${oldDate.toEpochDay()}"
+        val victimOriginTaskId = victim.originTaskId
+
+        if (victimOriginTaskId != null && oldDate != null && oldDate != newDate) {
+            val taskSuppressKey = taskSuppressionKey(victimOriginTaskId, oldDate)
 
             val movedTask = victim.copy(
                 date = newDate,
@@ -1492,8 +1383,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             )
 
             val generatedSubs = cur.subtasks.filter { it.taskId == taskId && it.originSubtaskId != null }
-            val subSuppressKeys = generatedSubs.map { sub ->
-                "S:${sub.originSubtaskId}:${oldDate.toEpochDay()}"
+            val subSuppressKeys = generatedSubs.mapNotNull { sub ->
+                sub.originSubtaskId?.let { subtaskSuppressionKey(it, oldDate) }
             }
 
             val updatedTasks = cur.tasks.map { task ->
@@ -1592,11 +1483,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteSubtask(subtaskId: Long) {
         val victim = _state.value.subtasks.firstOrNull { it.id == subtaskId }
 
-        if (victim?.originSubtaskId != null) {
-            val parentTask = _state.value.tasks.firstOrNull { it.id == victim.taskId }
-            val epoch = parentTask?.date?.toEpochDay()
-            if (epoch != null) {
-                suppress("S:${victim.originSubtaskId}:$epoch")
+        val victimOriginSubtaskId = victim?.originSubtaskId
+        if (victim != null && victimOriginSubtaskId != null) {
+            val parentDate = _state.value.tasks
+                .firstOrNull { it.id == victim.taskId }
+                ?.date
+            if (parentDate != null) {
+                suppress(subtaskSuppressionKey(victimOriginSubtaskId, parentDate))
             }
         }
 
