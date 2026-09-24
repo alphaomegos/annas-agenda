@@ -21,6 +21,18 @@ class AppStateCodecTest {
     @Test
     fun decode_returnsSuccess_forPayloadWrittenByEncoder() {
         val original = AppState(
+            // The task the tombstone names has to be here. Decoding drops
+            // tombstones whose template is gone, so a fixture naming a task
+            // that does not exist is not a payload the app could ever write —
+            // and a round-trip test built on one asserts something untrue.
+            tasks = listOf(
+                Task(
+                    id = 1L,
+                    date = LocalDate.ofEpochDay(20432),
+                    description = "Water the plants",
+                    repeatRule = RepeatRule(freq = RepeatFreq.DAILY),
+                )
+            ),
             suppressedRecurrences = setOf("T:1:20432"),
             runningPlanApproved = true,
             mainMenuOrder = listOf("calendar", "new_task"),
@@ -32,6 +44,26 @@ class AppStateCodecTest {
 
         assertTrue("expected Success, got $result", result is AppStateDecodeResult.Success)
         assertEquals(original, (result as AppStateDecodeResult.Success).state)
+    }
+
+    /**
+     * The interaction that broke the test above, now pinned on purpose rather
+     * than relied on by accident: decoding is also where orphaned tombstones
+     * are dropped, so a round trip is only lossless for a payload whose
+     * references hold.
+     */
+    @Test
+    fun decode_dropsATombstoneWhoseTaskIsNotInThePayload() {
+        val orphaned = AppState(suppressedRecurrences = setOf("T:1:20432"))
+
+        val raw = appStateStoreJson.encodeToString(orphaned.toDto())
+        val result = decodeAppStateJsonOrFailure(raw)
+
+        assertTrue(result is AppStateDecodeResult.Success)
+        assertEquals(
+            emptySet<String>(),
+            (result as AppStateDecodeResult.Success).state.suppressedRecurrences,
+        )
     }
 
     @Test
