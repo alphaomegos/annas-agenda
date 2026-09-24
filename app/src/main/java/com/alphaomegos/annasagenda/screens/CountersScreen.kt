@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.components.ConfirmDialog
 import java.time.LocalDate
 import java.time.Period
 import java.time.temporal.ChronoUnit
@@ -46,6 +47,11 @@ fun CountersScreen(
     // that lands while the dialog is open is not shadowed by a stale copy.
     val editManualId = rememberSaveable { mutableStateOf<Long?>(null) }
     val editDateRangeId = rememberSaveable { mutableStateOf<Long?>(null) }
+
+    // The bin sits on the card itself, beside the tap that opens the counter
+    // for editing. A counter is a running total the user has been keeping —
+    // there is no undo, and nothing else on the card is destructive.
+    val pendingDeleteId = rememberSaveable { mutableStateOf<Long?>(null) }
 
     val editManual = state.counters
         .filterIsInstance<ManualCounter>()
@@ -96,12 +102,12 @@ fun CountersScreen(
                         is ManualCounter -> ManualCounterCard(
                             counter = c,
                             onClick = { editManualId.value = c.id },
-                            onDelete = { vm.deleteCounter(c.id) }
+                            onDelete = { pendingDeleteId.value = c.id }
                         )
                         is DateRangeCounter -> DateRangeCounterCard(
                             counter = c,
                             onClick = { editDateRangeId.value = c.id },
-                            onDelete = { vm.deleteCounter(c.id) }
+                            onDelete = { pendingDeleteId.value = c.id }
                         )
                     }
                 }
@@ -163,16 +169,30 @@ fun CountersScreen(
         )
     }
 
+    pendingDeleteId.value?.let { counterId ->
+        ConfirmDialog(
+            titleRes = R.string.delete_counter_title,
+            textRes = R.string.action_cannot_be_undone,
+            confirmLabelRes = R.string.delete,
+            onConfirm = {
+                vm.deleteCounter(counterId)
+                pendingDeleteId.value = null
+                editManualId.value = null
+                editDateRangeId.value = null
+            },
+            onDismiss = { pendingDeleteId.value = null },
+        )
+    }
+
     editManual?.let { c ->
         ManualCounterDialog(
             title = stringResource(R.string.edit_counter),
             initialTitle = c.title,
             initialBalance = c.balance,
             onDismiss = { editManualId.value = null },
-            onDelete = {
-                vm.deleteCounter(c.id)
-                editManualId.value = null
-            },
+            // Asked the same way as from the card; the edit dialog closes by
+            // itself once the counter it was showing is gone.
+            onDelete = { pendingDeleteId.value = c.id },
             onSave = { t, b ->
                 vm.updateManualCounter(c.id, t, b)
                 editManualId.value = null
@@ -187,10 +207,7 @@ fun CountersScreen(
             initialStart = c.startDate,
             initialEnd = c.endDate,
             onDismiss = { editDateRangeId.value = null },
-            onDelete = {
-                vm.deleteCounter(c.id)
-                editDateRangeId.value = null
-            },
+            onDelete = { pendingDeleteId.value = c.id },
             onSave = { t, s, e ->
                 vm.updateDateRangeCounter(c.id, t, s, e)
                 editDateRangeId.value = null
@@ -223,7 +240,10 @@ private fun ManualCounterCard(
                 )
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = null)
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.delete)
+                )
             }
         }
     }
@@ -271,7 +291,10 @@ private fun DateRangeCounterCard(
                 )
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = null)
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.delete)
+                )
             }
         }
     }

@@ -20,4 +20,5 @@
     <string name="date_remaining_fmt">Remaining %1$s (%2$d%%)</string>
     <string name="attached_counter_fmt">Counter: %1$s</string>
     <string name="detach_counter">Detach</string>
+    <string name="delete_counter_title">Delete counter?</string>
 </resources>

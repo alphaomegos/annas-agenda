@@ -16,6 +16,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -39,6 +43,10 @@ internal fun EditTaskDialog(
     onDetachCounter: (Long) -> Unit,
 ) {
     if (taskId == null) return
+
+    // Deleting used to happen on the tap. It is the only button in this dialog
+    // that cannot be taken back, and it sits under the two that can.
+    var confirmingDelete by rememberSaveable { mutableStateOf(false) }
 
     val linkedId = editingTask?.linkedManualCounterId
     val linkedTitle = manualCounters.firstOrNull { it.id == linkedId }?.title
@@ -89,7 +97,7 @@ internal fun EditTaskDialog(
                 }
 
                 TextButton(
-                    onClick = { onDelete(taskId) },
+                    onClick = { confirmingDelete = true },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
@@ -110,6 +118,19 @@ internal fun EditTaskDialog(
             }
         }
     )
+
+    if (confirmingDelete) {
+        ConfirmDialog(
+            titleRes = R.string.delete_task_title,
+            textRes = R.string.action_cannot_be_undone,
+            confirmLabelRes = R.string.remove,
+            onConfirm = {
+                confirmingDelete = false
+                onDelete(taskId)
+            },
+            onDismiss = { confirmingDelete = false },
+        )
+    }
 }
 
 @Composable
@@ -176,6 +197,8 @@ internal fun EditSubtaskDialog(
 ) {
     if (subtaskId == null) return
 
+    var confirmingDelete by rememberSaveable { mutableStateOf(false) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.task_description_label)) },
@@ -199,7 +222,15 @@ internal fun EditSubtaskDialog(
                     Text(stringResource(R.string.repeat))
                 }
 
-                TextButton(onClick = { onDelete(subtaskId) }) {
+                // Red, like the same button in the task dialog above. It was
+                // the only one of the three that could not be taken back, and
+                // the only one that looked exactly like its neighbours.
+                TextButton(
+                    onClick = { confirmingDelete = true },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
                     Text(stringResource(R.string.remove))
                 }
 
@@ -209,4 +240,17 @@ internal fun EditSubtaskDialog(
             }
         }
     )
+
+    if (confirmingDelete) {
+        ConfirmDialog(
+            titleRes = R.string.delete_subtask_title,
+            textRes = R.string.action_cannot_be_undone,
+            confirmLabelRes = R.string.remove,
+            onConfirm = {
+                confirmingDelete = false
+                onDelete(subtaskId)
+            },
+            onDismiss = { confirmingDelete = false },
+        )
+    }
 }

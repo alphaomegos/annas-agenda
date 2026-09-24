@@ -31,6 +31,9 @@
     <string name="recurring_tasks_no_date">No date</string>
     <string name="recurring_tasks_starts_line">Starts: %1$s • %2$s</string>
     <string name="recurring_tasks_delete_from_today">Delete from today</string>
+    <string name="delete_task_title">Delete task?</string>
+    <string name="delete_subtask_title">Delete subtask?</string>
+    <string name="action_cannot_be_undone">This cannot be undone.</string>
     <string name="delete_repeating_task_title">Delete repeating task?</string>
     <string name="delete_repeating_task_text">This will remove the task from today and all future days. Past days will stay as history.</string>
     <string name="delete_repeating_subtask_title">Delete repeating subtask?</string>

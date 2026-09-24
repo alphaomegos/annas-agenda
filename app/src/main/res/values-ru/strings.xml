@@ -110,6 +110,10 @@
     <string name="recurring_tasks_no_date">Без даты</string>
     <string name="recurring_tasks_starts_line">Начинается: %1$s • %2$s</string>
     <string name="recurring_tasks_delete_from_today">Удалить с сегодняшнего дня</string>
+    <string name="delete_task_title">Удалить задачу?</string>
+    <string name="delete_subtask_title">Удалить подзадачу?</string>
+    <string name="action_cannot_be_undone">Это действие нельзя отменить.</string>
+    <string name="delete_counter_title">Удалить счётчик?</string>
     <string name="delete_repeating_task_title">Удалить повторяющуюся задачу?</string>
     <string name="delete_repeating_task_text">Задача будет удалена с сегодняшнего и всех будущих дней. Прошедшие дни сохранятся для истории.</string>
     <string name="delete_repeating_subtask_title">Удалить повторяющуюся подзадачу?</string>
