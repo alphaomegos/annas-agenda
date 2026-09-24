@@ -13,11 +13,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.RunningPlanEntry
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -58,7 +58,10 @@ fun RunningPlanScreen(
 
     val resetPhrase = rememberSaveable { mutableStateOf("") }
 
-    val locale = Locale.getDefault()
+    // The language chosen in the app, not the one the phone is set to. This
+    // table was the only screen still reading the system locale, so switching
+    // the app to Russian left the plan's dates in English.
+    val locale = appLocale()
     val dateFmt = remember(locale) { DateTimeFormatter.ofPattern("EEE, d MMMM", locale) }
 
     val approved = state.runningPlanApproved
@@ -66,11 +69,15 @@ fun RunningPlanScreen(
         state.runningPlanEntries.associateBy { it.date }
     }
 
-    val rows: List<LocalDate> = if (!approved) {
-        val today = LocalDate.now()
-        (0L..364L).map { today.plusDays(it) }
-    } else {
-        state.runningPlanEntries.sortedBy { it.date }.map { it.date }
+    // A year of dates, built once rather than on every keystroke in the
+    // distance field. Keyed on today as well, so it still moves at midnight.
+    val today = LocalDate.now()
+    val rows: List<LocalDate> = remember(approved, today, state.runningPlanEntries) {
+        if (!approved) {
+            (0L..364L).map { today.plusDays(it) }
+        } else {
+            state.runningPlanEntries.sortedBy { it.date }.map { it.date }
+        }
     }
 
     Scaffold(
@@ -273,7 +280,7 @@ private fun RunningRow(
     onTimeChange: (String) -> Unit,
     onPaceChange: (String) -> Unit,
 ) {
-    val locale = Locale.getDefault()
+    val locale = appLocale()
 
     val dateText = remember(date, dateFmt, locale) {
         val s = date.format(dateFmt)

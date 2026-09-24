@@ -92,11 +92,17 @@ internal fun DateTaskRow(
 
         Spacer(modifier = Modifier.width(6.dp))
 
+        // The description opens the editor. The colour is cycled by the narrow
+        // strip at the end of the row — see the Box after the buttons below.
+        //
+        // This Box used to carry a colour-cycling click of its own, and it
+        // could never fire: the Text inside fills it completely and takes
+        // every tap. Nothing changes by removing it except that the row stops
+        // claiming to handle a gesture it does not.
         Box(
             modifier = Modifier
                 .weight(1f)
                 .padding(end = 6.dp)
-                .clickable { onCycleColor() }
         ) {
             val deco = if (task.isDone) TextDecoration.LineThrough else null
             Text(
@@ -172,11 +178,12 @@ internal fun DateSubtaskRow(
 
         Spacer(modifier = Modifier.width(6.dp))
 
+        // Same as the task row above: the tap belongs to the Text, and the
+        // colour lives on the strip at the end.
         Box(
             modifier = Modifier
                 .weight(1f)
                 .padding(end = 6.dp)
-                .clickable { onCycleColor() }
         ) {
             val deco = if (subtask.isDone) TextDecoration.LineThrough else null
             Text(
