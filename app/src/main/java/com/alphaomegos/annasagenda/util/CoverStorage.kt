@@ -88,16 +88,24 @@ suspend fun importCoverIntoInternalStorage(
     }
 }
 
+/**
+ * The decoded cover for a ref, from memory when it has already been decoded.
+ *
+ * See CoverBitmapCache for why caching by ref is safe: a replaced cover always
+ * gets a new ref, so an entry can never be an out-of-date picture.
+ */
 suspend fun loadCoverBitmapForUi(
     context: Context,
     coverRef: String?,
     targetMaxSidePx: Int = MEDIA_COVER_MAX_SIDE_PX,
 ): ImageBitmap? = withContext(Dispatchers.IO) {
-    if (coverRef.isNullOrBlank()) return@withContext null
+    val ref = coverRef?.takeIf { it.isNotBlank() } ?: return@withContext null
+
+    cachedCoverBitmap(ref, targetMaxSidePx)?.let { return@withContext it }
 
     runCatching {
-        val bitmap = if (isInternalCoverRef(coverRef)) {
-            val file = internalCoverFileForRef(context, coverRef)
+        val bitmap = if (isInternalCoverRef(ref)) {
+            val file = internalCoverFileForRef(context, ref)
                 ?.takeIf { it.isFile }
                 ?: return@runCatching null
 
@@ -108,12 +116,18 @@ suspend fun loadCoverBitmapForUi(
         } else {
             decodeScaledBitmapFromUri(
                 context = context,
-                uri = coverRef.toUri(),
+                uri = ref.toUri(),
                 targetMaxSidePx = targetMaxSidePx
             )
         }
 
-        bitmap?.asImageBitmap()
+        bitmap?.asImageBitmap()?.also {
+            rememberCoverBitmap(
+                coverRef = ref,
+                targetMaxSidePx = targetMaxSidePx,
+                bitmap = it,
+            )
+        }
     }.getOrNull()
 }
 
@@ -122,6 +136,9 @@ suspend fun deleteInternalCoverIfAny(
     coverRef: String?,
 ): Boolean = withContext(Dispatchers.IO) {
     if (!isInternalCoverRef(coverRef)) return@withContext false
+
+    coverRef?.let(::forgetCachedCover)
+
     val file = internalCoverFileForRef(context, coverRef) ?: return@withContext false
     if (!file.exists()) return@withContext false
     file.delete()
