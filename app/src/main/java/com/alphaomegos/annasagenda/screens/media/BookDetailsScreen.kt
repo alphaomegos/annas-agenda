@@ -37,6 +37,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.ReadingMediaType
 import com.alphaomegos.annasagenda.ReadingShelf
 import java.time.LocalDate
 
@@ -76,8 +77,9 @@ fun BookDetailsScreen(
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
 
-        vm.setReadingBookCoverFromPickedUri(
-            bookId = bookId,
+        vm.setReadingMediaCoverFromPickedUri(
+            type = ReadingMediaType.BOOKS,
+            itemId = bookId,
             sourceUri = uri
         )
     }
@@ -173,7 +175,7 @@ fun BookDetailsScreen(
                 hasCover = !book.coverUri.isNullOrBlank(),
                 onChooseCover = { pickCover.launch(arrayOf("image/*")) },
                 onRemoveCover = {
-                    vm.removeReadingBookCover(bookId)
+                    vm.removeReadingMediaCover(ReadingMediaType.BOOKS, bookId)
                 }
             )
 

@@ -78,7 +78,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun migrateLegacyCoverRef(
         coverRef: String?,
-        mediaKind: String,
+        type: ReadingMediaType,
         itemId: Long,
     ): String? {
         val source = coverRef?.takeIf(::isExternalCoverRef) ?: return coverRef
@@ -86,7 +86,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return importCoverIntoInternalStorage(
             context = appContext,
             sourceUri = source.toUri(),
-            mediaKind = mediaKind,
+            mediaKind = coverMediaKind(type),
             itemId = itemId
         ) ?: coverRef
     }
@@ -95,42 +95,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         state: AppState,
     ): AppState {
         val migratedBooks = state.readingBooks.map { book ->
-            val migratedCover = migrateLegacyCoverRef(
-                coverRef = book.coverUri,
-                mediaKind = "book",
-                itemId = book.id
-            )
-            if (migratedCover == book.coverUri) {
-                book
-            } else {
-                book.copy(coverUri = migratedCover)
-            }
+            val migrated = migrateLegacyCoverRef(book.coverUri, ReadingMediaType.BOOKS, book.id)
+            if (migrated == book.coverUri) book else book.copy(coverUri = migrated)
         }
 
         val migratedMovies = state.readingMovies.map { movie ->
-            val migratedCover = migrateLegacyCoverRef(
-                coverRef = movie.coverUri,
-                mediaKind = "movie",
-                itemId = movie.id
-            )
-            if (migratedCover == movie.coverUri) {
-                movie
-            } else {
-                movie.copy(coverUri = migratedCover)
-            }
+            val migrated = migrateLegacyCoverRef(movie.coverUri, ReadingMediaType.MOVIES, movie.id)
+            if (migrated == movie.coverUri) movie else movie.copy(coverUri = migrated)
         }
 
         val migratedSeries = state.readingSeries.map { series ->
-            val migratedCover = migrateLegacyCoverRef(
-                coverRef = series.coverUri,
-                mediaKind = "series",
-                itemId = series.id
-            )
-            if (migratedCover == series.coverUri) {
-                series
-            } else {
-                series.copy(coverUri = migratedCover)
-            }
+            val migrated = migrateLegacyCoverRef(series.coverUri, ReadingMediaType.SERIES, series.id)
+            if (migrated == series.coverUri) series else series.copy(coverUri = migrated)
         }
 
         val changed =
@@ -149,94 +125,74 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun setReadingBookCoverFromPickedUri(bookId: Long, sourceUri: Uri) {
+    /** Whether the item is still there — asked before an import and again after. */
+    private fun readingMediaExists(type: ReadingMediaType, itemId: Long): Boolean {
+        val st = _state.value
+
+        return when (type) {
+            ReadingMediaType.BOOKS -> st.readingBooks.any { it.id == itemId }
+            ReadingMediaType.MOVIES -> st.readingMovies.any { it.id == itemId }
+            ReadingMediaType.SERIES -> st.readingSeries.any { it.id == itemId }
+        }
+    }
+
+    private fun setReadingMediaCoverRef(
+        type: ReadingMediaType,
+        itemId: Long,
+        coverUri: String?,
+        clearCover: Boolean,
+    ) {
+        when (type) {
+            ReadingMediaType.BOOKS ->
+                updateReadingBook(bookId = itemId, coverUri = coverUri, clearCover = clearCover)
+
+            ReadingMediaType.MOVIES ->
+                updateReadingMovie(movieId = itemId, coverUri = coverUri, clearCover = clearCover)
+
+            ReadingMediaType.SERIES ->
+                updateReadingSeries(seriesId = itemId, coverUri = coverUri, clearCover = clearCover)
+        }
+    }
+
+    /**
+     * Copies the picked image into internal storage and points the item at it.
+     *
+     * The item is checked for twice on purpose. Importing takes long enough for
+     * the user to delete the item while it runs, and a cover imported for
+     * something that no longer exists is a file nothing will ever mention
+     * again — so it is deleted rather than left behind.
+     */
+    fun setReadingMediaCoverFromPickedUri(
+        type: ReadingMediaType,
+        itemId: Long,
+        sourceUri: Uri,
+    ) {
         viewModelScope.launch {
-            val existsBefore = _state.value.readingBooks.any { it.id == bookId }
-            if (!existsBefore) return@launch
+            if (!readingMediaExists(type, itemId)) return@launch
 
             val importedRef = importCoverIntoInternalStorage(
                 context = appContext,
                 sourceUri = sourceUri,
-                mediaKind = "book",
-                itemId = bookId
+                mediaKind = coverMediaKind(type),
+                itemId = itemId
             ) ?: return@launch
 
-            val existsAfter = _state.value.readingBooks.any { it.id == bookId }
-            if (!existsAfter) {
+            if (!readingMediaExists(type, itemId)) {
                 cleanupInternalCoverAsync(importedRef)
                 return@launch
             }
 
-            updateReadingBook(
-                bookId = bookId,
+            setReadingMediaCoverRef(
+                type = type,
+                itemId = itemId,
                 coverUri = importedRef,
-                clearCover = false
+                clearCover = false,
             )
         }
     }
 
-    fun setReadingMovieCoverFromPickedUri(movieId: Long, sourceUri: Uri) {
-        viewModelScope.launch {
-            val existsBefore = _state.value.readingMovies.any { it.id == movieId }
-            if (!existsBefore) return@launch
-
-            val importedRef = importCoverIntoInternalStorage(
-                context = appContext,
-                sourceUri = sourceUri,
-                mediaKind = "movie",
-                itemId = movieId
-            ) ?: return@launch
-
-            val existsAfter = _state.value.readingMovies.any { it.id == movieId }
-            if (!existsAfter) {
-                cleanupInternalCoverAsync(importedRef)
-                return@launch
-            }
-
-            updateReadingMovie(
-                movieId = movieId,
-                coverUri = importedRef,
-                clearCover = false
-            )
-        }
-    }
-
-    fun setReadingSeriesCoverFromPickedUri(seriesId: Long, sourceUri: Uri) {
-        viewModelScope.launch {
-            val existsBefore = _state.value.readingSeries.any { it.id == seriesId }
-            if (!existsBefore) return@launch
-
-            val importedRef = importCoverIntoInternalStorage(
-                context = appContext,
-                sourceUri = sourceUri,
-                mediaKind = "series",
-                itemId = seriesId
-            ) ?: return@launch
-
-            val existsAfter = _state.value.readingSeries.any { it.id == seriesId }
-            if (!existsAfter) {
-                cleanupInternalCoverAsync(importedRef)
-                return@launch
-            }
-
-            updateReadingSeries(
-                seriesId = seriesId,
-                coverUri = importedRef,
-                clearCover = false
-            )
-        }
-    }
-
-    fun removeReadingBookCover(bookId: Long) {
-        updateReadingBook(bookId = bookId, clearCover = true)
-    }
-
-    fun removeReadingMovieCover(movieId: Long) {
-        updateReadingMovie(movieId = movieId, clearCover = true)
-    }
-
-    fun removeReadingSeriesCover(seriesId: Long) {
-        updateReadingSeries(seriesId = seriesId, clearCover = true)
+    fun removeReadingMediaCover(type: ReadingMediaType, itemId: Long) {
+        setReadingMediaCoverRef(type = type, itemId = itemId, coverUri = null, clearCover = true)
     }
 
     private val newTaskDraftSaveRequests = MutableSharedFlow<NewTaskDraft>(

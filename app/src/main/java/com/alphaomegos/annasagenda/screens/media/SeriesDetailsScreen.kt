@@ -37,6 +37,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.ReadingMediaType
 import com.alphaomegos.annasagenda.ReadingShelf
 import java.time.LocalDate
 
@@ -84,8 +85,9 @@ fun SeriesDetailsScreen(
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
 
-        vm.setReadingSeriesCoverFromPickedUri(
-            seriesId = seriesId,
+        vm.setReadingMediaCoverFromPickedUri(
+            type = ReadingMediaType.SERIES,
+            itemId = seriesId,
             sourceUri = uri
         )
     }
@@ -184,7 +186,7 @@ fun SeriesDetailsScreen(
                 hasCover = !series.coverUri.isNullOrBlank(),
                 onChooseCover = { pickCover.launch(arrayOf("image/*")) },
                 onRemoveCover = {
-                    vm.removeReadingSeriesCover(seriesId)
+                    vm.removeReadingMediaCover(ReadingMediaType.SERIES, seriesId)
                 }
             )
 

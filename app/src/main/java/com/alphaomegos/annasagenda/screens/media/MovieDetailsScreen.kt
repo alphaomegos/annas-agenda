@@ -37,6 +37,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.ReadingMediaType
 import com.alphaomegos.annasagenda.ReadingShelf
 import java.time.LocalDate
 
@@ -77,8 +78,9 @@ fun MovieDetailsScreen(
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
 
-        vm.setReadingMovieCoverFromPickedUri(
-            movieId = movieId,
+        vm.setReadingMediaCoverFromPickedUri(
+            type = ReadingMediaType.MOVIES,
+            itemId = movieId,
             sourceUri = uri
         )
     }
@@ -174,7 +176,7 @@ fun MovieDetailsScreen(
                 hasCover = !movie.coverUri.isNullOrBlank(),
                 onChooseCover = { pickCover.launch(arrayOf("image/*")) },
                 onRemoveCover = {
-                    vm.removeReadingMovieCover(movieId)
+                    vm.removeReadingMediaCover(ReadingMediaType.MOVIES, movieId)
                 }
             )
 

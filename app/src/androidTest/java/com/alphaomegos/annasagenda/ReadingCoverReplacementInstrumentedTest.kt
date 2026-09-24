@@ -62,13 +62,13 @@ class ReadingCoverReplacementInstrumentedTest {
             )
         )
 
-        vm.setReadingBookCoverFromPickedUri(bookId, imageUri(Color.RED))
+        vm.setReadingMediaCoverFromPickedUri(ReadingMediaType.BOOKS, bookId, imageUri(Color.RED))
         val firstRef = awaitCoverRef(vm, bookId, previous = null)
 
         assertTrue("the cover must be stored internally", isInternalCoverRef(firstRef))
         assertTrue("its file must exist", coverFile(firstRef).exists())
 
-        vm.setReadingBookCoverFromPickedUri(bookId, imageUri(Color.BLUE))
+        vm.setReadingMediaCoverFromPickedUri(ReadingMediaType.BOOKS, bookId, imageUri(Color.BLUE))
         val secondRef = awaitCoverRef(vm, bookId, previous = firstRef)
 
         assertNotEquals(
@@ -95,11 +95,11 @@ class ReadingCoverReplacementInstrumentedTest {
             )
         )
 
-        vm.setReadingBookCoverFromPickedUri(bookId, imageUri(Color.RED))
+        vm.setReadingMediaCoverFromPickedUri(ReadingMediaType.BOOKS, bookId, imageUri(Color.RED))
         val firstRef = awaitCoverRef(vm, bookId, previous = null)
         val firstFile = coverFile(firstRef)
 
-        vm.setReadingBookCoverFromPickedUri(bookId, imageUri(Color.BLUE))
+        vm.setReadingMediaCoverFromPickedUri(ReadingMediaType.BOOKS, bookId, imageUri(Color.BLUE))
         awaitCoverRef(vm, bookId, previous = firstRef)
 
         awaitGone(firstFile)
