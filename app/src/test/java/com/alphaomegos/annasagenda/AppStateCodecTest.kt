@@ -210,4 +210,111 @@ class AppStateCodecTest {
         val rule = (result as AppStateDecodeResult.Success).state.tasks.single().repeatRule
         assertEquals(DayOfWeek.SUNDAY, rule?.weekStart)
     }
+
+    /* ---------------- fields the DTO and the domain read differently ------- */
+
+    /**
+     * The two day fields of a repeat rule are handled differently and it is
+     * not an oversight, so both halves are pinned here.
+     *
+     * An unreadable week start has a meaning already — "not recorded, use the
+     * device's locale" — so it becomes null and the payload is still read.
+     */
+    @Test
+    fun anImpossibleWeekStartFallsBackInsteadOfRefusingThePayload() {
+        val raw = """
+            {
+              "v": $CURRENT_SCHEMA_VERSION,
+              "tasks": [
+                {
+                  "id": 1, "order": 0, "description": "Weekly",
+                  "repeatRule": {
+                    "freq": "WEEKLY", "interval": 1,
+                    "weekDaysIso": [1], "weekStartIso": 0
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = decodeAppStateJsonOrFailure(raw)
+
+        assertTrue("expected Success, got $result", result is AppStateDecodeResult.Success)
+        val rule = (result as AppStateDecodeResult.Success).state.tasks.single().repeatRule
+        assertNull(rule?.weekStart)
+        assertEquals(setOf(DayOfWeek.MONDAY), rule?.weekDays)
+    }
+
+    /**
+     * An unreadable weekday has no such meaning. Dropping it would turn "every
+     * Monday and Wednesday" into "every Monday", quietly and then permanently
+     * at the next save, so the payload is refused and stays on disk instead.
+     */
+    @Test
+    fun anImpossibleWeekdayRefusesThePayloadRatherThanLosingTheDay() {
+        val raw = """
+            {
+              "v": $CURRENT_SCHEMA_VERSION,
+              "tasks": [
+                {
+                  "id": 1, "order": 0, "description": "Weekly",
+                  "repeatRule": { "freq": "WEEKLY", "interval": 1, "weekDaysIso": [1, 0] }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        assertTrue(decodeAppStateJsonOrFailure(raw) is AppStateDecodeResult.Failure)
+    }
+
+    /**
+     * A session written before the field existed has no created-at time. The
+     * domain answers that with the start time; the DTO answered it with zero,
+     * and all-zero timestamps make "the latest session" mean "whichever comes
+     * first in the list" — which is what the remaining-time estimate reads.
+     */
+    @Test
+    fun aSessionWithNoCreatedAtFallsBackToWhenItStarted() {
+        val raw = """
+            {
+              "v": $CURRENT_SCHEMA_VERSION,
+              "readingSessions": [
+                {
+                  "id": 1, "bookId": 7, "startedAtEpochMillis": 1700000000000,
+                  "durationMinutes": 30, "startPage": 0, "endPage": 40
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = decodeAppStateJsonOrFailure(raw)
+
+        assertTrue("expected Success, got $result", result is AppStateDecodeResult.Success)
+        val session = (result as AppStateDecodeResult.Success).state.readingSessions.single()
+        assertEquals(1700000000000L, session.createdAtEpochMillis)
+    }
+
+    @Test
+    fun aSessionKeepsTheCreatedAtItWasWrittenWith() {
+        val raw = """
+            {
+              "v": $CURRENT_SCHEMA_VERSION,
+              "readingSessions": [
+                {
+                  "id": 1, "bookId": 7, "startedAtEpochMillis": 1700000000000,
+                  "durationMinutes": 30, "startPage": 0, "endPage": 40,
+                  "createdAtEpochMillis": 1700000999000
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = decodeAppStateJsonOrFailure(raw)
+
+        assertTrue(result is AppStateDecodeResult.Success)
+        assertEquals(
+            1700000999000L,
+            (result as AppStateDecodeResult.Success).state.readingSessions.single().createdAtEpochMillis,
+        )
+    }
 }

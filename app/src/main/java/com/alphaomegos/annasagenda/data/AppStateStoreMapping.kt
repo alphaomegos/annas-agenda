@@ -143,10 +143,28 @@ internal fun RepeatRule.toDto(): RepeatRuleDto = RepeatRuleDto(
     weekStartIso = weekStart?.value,
 )
 
+/**
+ * The two day fields are treated differently on purpose.
+ *
+ * [RepeatRuleDto.weekStartIso] out of range becomes null, which is a state the
+ * rule already has a meaning for: "not recorded, fall back to the device's
+ * locale". Nothing is lost by taking that route.
+ *
+ * [RepeatRuleDto.weekDaysIso] has no such state. Dropping an unreadable day
+ * would turn "every Monday and Wednesday" into "every Monday" — quietly, and
+ * permanently at the next save. So an impossible day refuses the whole payload
+ * instead, which leaves it on disk and quarantined, and is the same choice the
+ * app makes everywhere else it cannot read something without losing it.
+ */
 internal fun RepeatRuleDto.toDomain(): RepeatRule = RepeatRule(
     freq = RepeatFreq.valueOf(freq),
     interval = interval,
-    weekDays = weekDaysIso.map { DayOfWeek.of(it) }.toSet(),
+    weekDays = weekDaysIso
+        .map { iso ->
+            require(iso in 1..7) { "Repeat rule names an impossible weekday: $iso" }
+            DayOfWeek.of(iso)
+        }
+        .toSet(),
     dayOfMonth = dayOfMonth,
     weekStart = weekStartIso
         ?.takeIf { it in 1..7 }
@@ -389,7 +407,12 @@ internal fun ReadingSessionDto.toDomainOrNull(): ReadingSession? {
         durationMinutes = durationMinutes,
         startPage = startPage,
         endPage = endPage,
-        createdAtEpochMillis = createdAtEpochMillis,
+        // The domain falls back to the start time when this is not known; the
+        // DTO fell back to zero, and a payload written before the field
+        // existed decodes through the DTO. All-zero timestamps make
+        // "the latest session" mean "whichever came first in the list", and
+        // that is what the remaining-time estimate reads.
+        createdAtEpochMillis = createdAtEpochMillis.takeIf { it > 0L } ?: startedAtEpochMillis,
     )
 }
 
