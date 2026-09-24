@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -441,26 +442,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun importBackupJson(raw: String): Boolean {
+    /**
+     * Restores a plain JSON backup. True only once the data is on disk.
+     *
+     * It used to hand back true immediately and do the work in a coroutine
+     * nobody waited for, so "Imported" was shown before anything had been
+     * written — and if the write then failed, the app was running on data that
+     * existed only in memory while the disk still held the old, with no hint
+     * that the two disagreed.
+     */
+    suspend fun importBackupJson(raw: String): Boolean {
         val decoded = store.decodeFromJson(raw) ?: return false
-
-        viewModelScope.launch {
-            val migrated = migrateLegacyMediaCovers(decoded)
-            val before = _state.value
-
-            _state.value = migrated
-            nextId = nextIdAfter(migrated)
-
-            cleanupRemovedInternalCoversAsync(before, migrated)
-            store.save(migrated)
-
-            // A successful import is also a recovery: the payload we could not
-            // read has just been replaced by one we can.
-            _storageFailure.value = null
-            beginAutoSaveOnce()
-        }
-
-        return true
+        return adoptImportedState(decoded)
     }
 
     suspend fun importBackupPackage(
@@ -468,8 +461,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         coverEntries: Map<String, ByteArray>,
     ): Boolean {
         val decoded = store.decodeFromJson(appStateJson) ?: return false
-        val before = _state.value
-
         val expectedRefs = collectInternalCoverRefs(decoded)
 
         // Deliberately NOT deleting covers the archive happens to lack. A
@@ -489,14 +480,50 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
+        val adopted = adoptImportedState(decoded)
+
+        if (!adopted) {
+            // The cover files were written for a state that is not being
+            // adopted. Anything the current state does not reference is dead
+            // weight and goes.
+            cleanupRemovedInternalCoversAsync(decoded, _state.value)
+        }
+
+        return adopted
+    }
+
+    /**
+     * Puts a decoded backup in place, on disk first and in memory second.
+     *
+     * That order is the point. Adopting first and saving afterwards meant a
+     * failed save left the app showing data the disk knew nothing about: the
+     * next launch silently went back to the old data, and the user had been
+     * told the import worked.
+     */
+    private suspend fun adoptImportedState(decoded: AppState): Boolean {
+        val before = _state.value
         val migrated = migrateLegacyMediaCovers(decoded)
+
+        val saved = try {
+            store.save(migrated)
+            true
+        } catch (e: CancellationException) {
+            // Being cancelled is not a failed import; it must not be reported
+            // as one, and the rest of this must not run on a dead coroutine.
+            throw e
+        } catch (e: Throwable) {
+            false
+        }
+
+        if (!saved) return false
 
         _state.value = migrated
         nextId = nextIdAfter(migrated)
 
         cleanupRemovedInternalCoversAsync(before, migrated)
-        store.save(migrated)
 
+        // A successful import is also a recovery: the payload we could not read
+        // has just been replaced by one we can.
         _storageFailure.value = null
         beginAutoSaveOnce()
 
