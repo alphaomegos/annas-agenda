@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaType
+import com.alphaomegos.annasagenda.isPossibleReleaseYear
 import com.alphaomegos.annasagenda.ReadingShelf
 import com.alphaomegos.annasagenda.ReadingSortField
 
@@ -47,6 +48,29 @@ internal fun AddMediaDialog(
     var totalSeasonsText by rememberSaveable { mutableStateOf("1") }
     var currentSeasonText by rememberSaveable { mutableStateOf("1") }
     var currentEpisodeText by rememberSaveable { mutableStateOf("1") }
+
+    // What can actually be added. The fields only take digits, so the way to
+    // get here is to type more of them than an Int holds: "99999999999" parses
+    // to nothing, and "nothing" used to mean one season, or a book of no pages
+    // that the toast then refused without saying which field was wrong.
+    val pages = pagesText.toIntOrNull()
+    val releaseYear = releaseYearText.toIntOrNull()
+    val totalSeasons = totalSeasonsText.toIntOrNull()
+    val currentSeason = currentSeasonText.toIntOrNull()
+    val currentEpisode = currentEpisodeText.toIntOrNull()
+
+    val canAdd = title.isNotBlank() && when (mediaType) {
+        ReadingMediaType.BOOKS -> pages != null && pages > 0
+
+        ReadingMediaType.MOVIES ->
+            releaseYearText.isBlank() ||
+                (releaseYear != null && isPossibleReleaseYear(releaseYear))
+
+        ReadingMediaType.SERIES ->
+            totalSeasons != null && totalSeasons > 0 &&
+                currentSeason != null && currentSeason in 1..totalSeasons &&
+                currentEpisode != null && currentEpisode > 0
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -155,24 +179,22 @@ internal fun AddMediaDialog(
         },
         confirmButton = {
             TextButton(
+                enabled = canAdd,
                 onClick = {
                     when (mediaType) {
-                        ReadingMediaType.BOOKS -> {
-                            val pages = pagesText.toIntOrNull() ?: 0
-                            onAddBook(title, pages, author)
-                        }
+                        ReadingMediaType.BOOKS ->
+                            if (pages != null) onAddBook(title, pages, author)
 
-                        ReadingMediaType.MOVIES -> {
-                            val releaseYear = releaseYearText.toIntOrNull()
+                        ReadingMediaType.MOVIES ->
                             onAddMovie(title, releaseYear, translation)
-                        }
 
-                        ReadingMediaType.SERIES -> {
-                            val totalSeasons = totalSeasonsText.toIntOrNull() ?: 1
-                            val currentSeason = currentSeasonText.toIntOrNull() ?: 1
-                            val currentEpisode = currentEpisodeText.toIntOrNull() ?: 1
-                            onAddSeries(title, totalSeasons, currentSeason, currentEpisode)
-                        }
+                        ReadingMediaType.SERIES ->
+                            if (totalSeasons != null &&
+                                currentSeason != null &&
+                                currentEpisode != null
+                            ) {
+                                onAddSeries(title, totalSeasons, currentSeason, currentEpisode)
+                            }
                     }
                 }
             ) {
