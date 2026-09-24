@@ -45,22 +45,21 @@ internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<Stri
     return normalized.ifEmpty { defaultAnthropometryFieldIds() }
 }
 
+/**
+ * Every payload the app reads comes through here, and this is also the moment
+ * ids start being handed out again from whatever the data says is in use. So
+ * it is the one place where a reference to something that is gone can still be
+ * cleared before the number it holds is handed to something new.
+ *
+ * Order matters: dangling references are cleared first, tombstones are pruned
+ * against what is left. Dropping a subtask can orphan its tombstones, and
+ * pruning before that would leave them behind for one more save.
+ */
 internal fun AppStateDto.toDomain(): AppState {
-    val domainTasks = tasks.map { it.toDomain() }
-    val domainSubtasks = subtasks.map { it.toDomain() }
-
-    return AppState(
-        tasks = domainTasks,
-        subtasks = domainSubtasks,
-        // Every payload the app reads comes through here, and this is also the
-        // only moment ids start being handed out again from the live data — so it
-        // is the one place where a tombstone left over from a deleted template can
-        // still be thrown away before it can poison whatever inherits that id.
-        suppressedRecurrences = pruneOrphanedSuppressions(
-            suppressedRecurrences = suppressedRecurrences.toSet(),
-            tasks = domainTasks,
-            subtasks = domainSubtasks,
-        ),
+    val decoded = AppState(
+        tasks = tasks.map { it.toDomain() },
+        subtasks = subtasks.map { it.toDomain() },
+        suppressedRecurrences = suppressedRecurrences.toSet(),
         anthropometry = anthropometry.map { it.toDomain() },
         anthropometryEnabledFieldIds = normalizeAnthropometryFieldIdsForStore(anthropometryEnabledFieldIds),
         calorieGoalChanges = calorieGoalChanges.map { it.toDomain() },
@@ -82,6 +81,16 @@ internal fun AppStateDto.toDomain(): AppState {
         readingNowPrefs = readingNowPrefs.toDomain(),
         readingDonePrefs = readingDonePrefs.toDomain(),
         readingAbandonedPrefs = readingAbandonedPrefs.toDomain(),
+    )
+
+    val whole = stateWithDanglingReferencesCleared(decoded)
+
+    return whole.copy(
+        suppressedRecurrences = pruneOrphanedSuppressions(
+            suppressedRecurrences = whole.suppressedRecurrences,
+            tasks = whole.tasks,
+            subtasks = whole.subtasks,
+        ),
     )
 }
 

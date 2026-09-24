@@ -211,6 +211,45 @@ class AppStateCodecTest {
         assertEquals(DayOfWeek.SUNDAY, rule?.weekStart)
     }
 
+    /* ---------------- references that no longer point anywhere ------------- */
+
+    /**
+     * Also pins the order the two repairs run in. The subtask is dropped
+     * because its task is gone, which orphans the tombstone naming it — so
+     * pruning has to come second. Pruning first would leave the tombstone
+     * behind for one more save, where it could outlive the id it names.
+     */
+    @Test
+    fun decode_dropsASubtaskWithNoTaskAndThenTheTombstoneThatNamedIt() {
+        val day = LocalDate.ofEpochDay(20432)
+        val damaged = AppState(
+            subtasks = listOf(Subtask(id = 10L, taskId = 99L, description = "Orphan")),
+            suppressedRecurrences = setOf(subtaskSuppressionKey(10L, day)),
+        )
+
+        val result = decodeAppStateJsonOrFailure(appStateStoreJson.encodeToString(damaged.toDto()))
+
+        assertTrue("expected Success, got $result", result is AppStateDecodeResult.Success)
+        val state = (result as AppStateDecodeResult.Success).state
+        assertEquals(emptyList<Subtask>(), state.subtasks)
+        assertEquals(emptySet<String>(), state.suppressedRecurrences)
+    }
+
+    @Test
+    fun decode_cutsAPlanRowLooseFromATaskThatIsNotThere() {
+        val damaged = AppState(
+            runningPlanEntries = listOf(
+                RunningPlanEntry(date = LocalDate.ofEpochDay(20432), taskId = 99L)
+            ),
+        )
+
+        val result = decodeAppStateJsonOrFailure(appStateStoreJson.encodeToString(damaged.toDto()))
+
+        assertTrue(result is AppStateDecodeResult.Success)
+        val entry = (result as AppStateDecodeResult.Success).state.runningPlanEntries.single()
+        assertNull("a plan row must not hold an id that can be handed out again", entry.taskId)
+    }
+
     /* ---------------- fields the DTO and the domain read differently ------- */
 
     /**
