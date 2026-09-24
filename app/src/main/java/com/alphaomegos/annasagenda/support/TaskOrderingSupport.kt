@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda
 
+import java.time.LocalDate
+
 fun moveTaskWithinDate(
     tasks: List<Task>,
     taskId: Long,
@@ -49,3 +51,33 @@ fun moveSubtaskWithinTask(
         idToOrder[subtask.id]?.let { subtask.copy(order = it) } ?: subtask
     }
 }
+/**
+ * The tasks a subtask can be moved to.
+ *
+ * A subtask lives on its task's day, so moving it into a task with no date, or
+ * into one whose day has already passed, would either hide it from the day
+ * screens or bury it in the past. The dialog filtered for exactly this and
+ * said nothing about it, so a user whose only other tasks are in the past was
+ * shown an empty list with a Cancel button.
+ *
+ * Ordered the way the days are read: by date, then by the order inside the
+ * day, then by id so the list never shuffles between openings.
+ */
+fun subtaskMoveTargets(
+    tasks: List<Task>,
+    currentTaskId: Long?,
+    today: LocalDate,
+): List<Task> =
+    tasks
+        .filter { task ->
+            val date = task.date
+
+            task.id != currentTaskId && date != null && !date.isBefore(today)
+        }
+        .sortedWith(
+            compareBy(
+                { it.date?.toEpochDay() ?: Long.MAX_VALUE },
+                { it.order },
+                { it.id },
+            )
+        )

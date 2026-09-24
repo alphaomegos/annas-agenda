@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.DateTasksData
+import com.alphaomegos.annasagenda.subtaskMoveTargets
 import com.alphaomegos.annasagenda.R
 import java.time.LocalDate
 
@@ -179,32 +180,34 @@ internal fun MoveSubtaskDialog(
     val sub = state.subtasks.firstOrNull { it.id == subtaskId }
     val currentTaskId = sub?.taskId
 
+    val targets = subtaskMoveTargets(
+        tasks = state.tasks,
+        currentTaskId = currentTaskId,
+        today = LocalDate.now(),
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.move_subtask)) },
         text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
-                val today = LocalDate.now()
-                val targets = state.tasks
-                    .filter { it.id != currentTaskId }
-                    .filter { it.date != null && !it.date.isBefore(today) }
-                    .sortedWith(
-                        compareBy(
-                            { it.date!!.toEpochDay() },
-                            { it.order },
-                            { it.id }
-                        )
-                    )
+            // An empty list used to be an empty box with a Cancel button under
+            // it, which says nothing about why. A subtask lives on its task's
+            // day, so there is a rule here, and the user is entitled to it.
+            if (targets.isEmpty()) {
+                Text(stringResource(R.string.move_subtask_no_targets))
+            } else {
+                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                    items(targets, key = { it.id }) { t ->
+                        val dText = t.date?.toString().orEmpty()
 
-                items(targets, key = { it.id }) { t ->
-                    val dText = t.date?.toString() ?: stringResource(R.string.someday_tag)
-                    TextButton(
-                        onClick = {
-                            onMoveToTask(subtaskId, t.id)
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("${t.description} • $dText") }
+                        TextButton(
+                            onClick = {
+                                onMoveToTask(subtaskId, t.id)
+                                onDismiss()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("${t.description} • $dText") }
+                    }
                 }
             }
         },

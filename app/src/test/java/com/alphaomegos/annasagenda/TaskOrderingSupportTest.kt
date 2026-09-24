@@ -109,6 +109,72 @@ class TaskOrderingSupportTest {
         assertEquals(original, result)
     }
 
+    // -- where a subtask may be moved ----------------------------------------
+
+    @Test
+    fun aSubtaskCanOnlyMoveToADatedTaskFromTodayOnwards() {
+        val today = day2
+
+        val targets = subtaskMoveTargets(
+            tasks = listOf(
+                task(id = 1, order = 0, date = today, description = "Today"),
+                task(id = 2, order = 0, date = today.plusDays(1), description = "Tomorrow"),
+                task(id = 3, order = 0, date = today.minusDays(1), description = "Yesterday"),
+                task(id = 4, order = 0, date = null, description = "Someday"),
+            ),
+            currentTaskId = null,
+            today = today,
+        )
+
+        assertEquals(listOf("Today", "Tomorrow"), targets.map { it.description })
+    }
+
+    @Test
+    fun aSubtaskIsNotOfferedTheTaskItIsAlreadyOn() {
+        val targets = subtaskMoveTargets(
+            tasks = listOf(
+                task(id = 1, order = 0, date = day1, description = "Where it is"),
+                task(id = 2, order = 0, date = day1, description = "Somewhere else"),
+            ),
+            currentTaskId = 1L,
+            today = day1,
+        )
+
+        assertEquals(listOf("Somewhere else"), targets.map { it.description })
+    }
+
+    @Test
+    fun theTargetsAreInTheOrderTheDaysAreRead() {
+        val targets = subtaskMoveTargets(
+            tasks = listOf(
+                task(id = 9, order = 1, date = day2, description = "Second day, second"),
+                task(id = 8, order = 0, date = day2, description = "Second day, first"),
+                task(id = 7, order = 5, date = day1, description = "First day"),
+            ),
+            currentTaskId = null,
+            today = day1,
+        )
+
+        assertEquals(
+            listOf("First day", "Second day, first", "Second day, second"),
+            targets.map { it.description },
+        )
+    }
+
+    @Test
+    fun nowhereToMoveItIsAnEmptyListRatherThanEverything() {
+        val targets = subtaskMoveTargets(
+            tasks = listOf(
+                task(id = 1, order = 0, date = day1.minusDays(10), description = "Long gone"),
+                task(id = 2, order = 0, date = null, description = "Someday"),
+            ),
+            currentTaskId = null,
+            today = day1,
+        )
+
+        assertEquals(emptyList<String>(), targets.map { it.description })
+    }
+
     private fun task(
         id: Long,
         order: Int,

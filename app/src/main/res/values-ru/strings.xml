@@ -109,6 +109,7 @@
     <string name="subtask_label">Подзадача %1$d</string>
     <string name="add_subtask">Добавить подзадачу</string>
     <string name="move_subtask">Переместить подзадачу в…</string>
+    <string name="move_subtask_no_targets">Некуда переносить. Подзадачу можно перенести только в задачу, датированную сегодня или позже.</string>
     <string name="copy_subtask">Копировать подзадачу</string>
     <string name="toast_copied">Скопировано</string>
 

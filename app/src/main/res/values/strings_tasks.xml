@@ -27,6 +27,7 @@
     <string name="subtask_label">Subtask %1$d</string>
     <string name="add_subtask">Add subtask</string>
     <string name="move_subtask">Move subtask to…</string>
+    <string name="move_subtask_no_targets">Nowhere to move it. A subtask can only move to a task dated today or later.</string>
     <string name="copy_subtask">Copy subtask</string>
     <string name="toast_copied">Copied</string>
 
