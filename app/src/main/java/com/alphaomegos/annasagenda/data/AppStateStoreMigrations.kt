@@ -9,10 +9,21 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
-import java.time.temporal.WeekFields
+import java.time.DayOfWeek
 import java.util.Locale
 
-internal fun migrateAppStateRawJson(raw: String): JsonElement {
+/**
+ * Brings a stored payload up to the current schema.
+ *
+ * [weekStartForLegacyRules] is the first day of the week that the repeat rules
+ * in this payload were written under, or null when that is not known. See
+ * [migrateAppState3To4] — guessing it wrong moves schedules, so it is asked for
+ * rather than assumed.
+ */
+internal fun migrateAppStateRawJson(
+    raw: String,
+    weekStartForLegacyRules: DayOfWeek? = null,
+): JsonElement {
     val element = appStateStoreJson.decodeFromString<JsonElement>(raw)
     val root = element as? JsonObject ?: return element
 
@@ -36,7 +47,7 @@ internal fun migrateAppStateRawJson(raw: String): JsonElement {
             0 -> migrateAppState0To1(cur)
             1 -> migrateAppState1To2(cur)
             2 -> migrateAppState2To3(cur)
-            3 -> migrateAppState3To4(cur)
+            3 -> migrateAppState3To4(cur, weekStartForLegacyRules)
             else -> cur
         }
 
@@ -128,13 +139,30 @@ private fun migrateAppState2To3(obj: JsonObject): JsonObject {
  *
  * Until now WEEKLY rules took the first day of the week from the current
  * locale, so switching the app language could move an "every N weeks" rule by a
- * week. Writing the value the device is using right now into each rule keeps
- * every existing schedule exactly where it is, and stops the language from
- * moving it afterwards.
+ * week. Writing the value those rules have been running under into each one
+ * keeps every existing schedule exactly where it is.
+ *
+ * Which value that is depends on where the payload came from, and there is only
+ * one case where it is known. Upgrading in place, the app's own language is the
+ * language the schedules were built under, so it is the right answer. A payload
+ * arriving from somewhere else — a restored archive — was written under a
+ * language this device knows nothing about, and the device's own is not
+ * evidence of anything. Filling it in there would freeze a guess, and a wrong
+ * guess moves every "every N weeks" rule by a week, permanently.
+ *
+ * So when it is not known, the field is left out. Those rules keep falling back
+ * to the current locale, exactly as they did before any of this existed, and
+ * the first edit of a rule pins it properly.
  */
-private fun migrateAppState3To4(obj: JsonObject): JsonObject {
+private fun migrateAppState3To4(obj: JsonObject, weekStart: DayOfWeek?): JsonObject {
     val m = obj.toMutableMap()
-    val weekStartIso = WeekFields.of(Locale.getDefault()).firstDayOfWeek.value
+
+    if (weekStart == null) {
+        m["v"] = JsonPrimitive(4)
+        return JsonObject(m)
+    }
+
+    val weekStartIso = weekStart.value
 
     listOf("tasks", "subtasks").forEach { field ->
         val items = m[field] as? JsonArray ?: return@forEach

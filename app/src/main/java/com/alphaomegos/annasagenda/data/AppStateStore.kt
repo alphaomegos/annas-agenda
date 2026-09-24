@@ -160,6 +160,13 @@ class AppStateStore internal constructor(
     fun encodeToJson(state: AppState): String =
         appStateStoreJson.encodeToString(state.toDto())
 
+    /**
+     * Reads a payload that came from outside this device — an imported archive.
+     *
+     * No week start is passed on purpose: the rules inside were written under
+     * somebody else's language, and this device's is not evidence of what that
+     * was. See migrateAppState3To4.
+     */
     fun decodeFromJson(raw: String): AppState? =
         when (val result = decodeAppStateJsonOrFailure(raw)) {
             is AppStateDecodeResult.Success -> result.state
@@ -189,10 +196,18 @@ class AppStateStore internal constructor(
 
         val raw = prefs[key] ?: return@withContext AppStateLoadResult.Empty
 
-        when (val result = decodeAppStateJsonOrFailure(raw)) {
-            is AppStateDecodeResult.Success -> AppStateLoadResult.Loaded(result.state)
+        // Upgrading our own payload in place: the app's current language is
+        // the one its schedules were built under, so it is the right answer for
+        // rules that predate the week start being recorded.
+        val decoded = decodeAppStateJsonOrFailure(
+            raw = raw,
+            weekStartForLegacyRules = currentLocaleWeekStart(),
+        )
 
-            is AppStateDecodeResult.Failure -> when (val cause = result.cause) {
+        when (decoded) {
+            is AppStateDecodeResult.Success -> AppStateLoadResult.Loaded(decoded.state)
+
+            is AppStateDecodeResult.Failure -> when (val cause = decoded.cause) {
                 is AppStateTooNewException -> AppStateLoadResult.TooNew(
                     payloadVersion = cause.payloadVersion,
                     supportedVersion = cause.supportedVersion,

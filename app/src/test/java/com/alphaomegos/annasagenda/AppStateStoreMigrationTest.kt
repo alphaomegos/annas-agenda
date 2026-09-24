@@ -7,8 +7,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import java.time.temporal.WeekFields
-import java.util.Locale
+import java.time.DayOfWeek
 import org.junit.Test
 import java.time.LocalDate
 
@@ -64,8 +63,8 @@ class AppStateStoreMigrationTest {
             }
         """.trimIndent()
 
-        val root = migrateAppStateRawJson(raw) as JsonObject
-        val expected = WeekFields.of(Locale.getDefault()).firstDayOfWeek.value
+        val root = migrateAppStateRawJson(raw, DayOfWeek.MONDAY) as JsonObject
+        val expected = DayOfWeek.MONDAY.value
 
         assertEquals(CURRENT_SCHEMA_VERSION, root["v"]?.jsonPrimitive?.intOrNull)
 
@@ -98,10 +97,63 @@ class AppStateStoreMigrationTest {
             }
         """.trimIndent()
 
-        val root = migrateAppStateRawJson(raw) as JsonObject
+        val root = migrateAppStateRawJson(raw, DayOfWeek.MONDAY) as JsonObject
         val rule = ((root["tasks"] as JsonArray)[0] as JsonObject)["repeatRule"] as JsonObject
 
         assertEquals(7, rule["weekStartIso"]?.jsonPrimitive?.intOrNull)
+    }
+
+
+    /**
+     * A restored archive was written under somebody else's language, and this
+     * device's is not evidence of what that was. Freezing a guess here moves
+     * every "every N weeks" rule by a week, permanently — so the field is left
+     * out and the rule keeps falling back at evaluation time, exactly as it did
+     * before the field existed.
+     */
+    @Test
+    fun migrateVersion3_leavesTheWeekStartOutWhenItIsNotKnown() {
+        val raw = """
+            {
+              "v": 3,
+              "tasks": [
+                {
+                  "id": 1, "order": 0, "description": "Weekly",
+                  "repeatRule": { "freq": "WEEKLY", "interval": 2, "weekDaysIso": [1] }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val root = migrateAppStateRawJson(raw, weekStartForLegacyRules = null) as JsonObject
+        val rule = ((root["tasks"] as JsonArray)[0] as JsonObject)["repeatRule"] as JsonObject
+
+        assertEquals(CURRENT_SCHEMA_VERSION, root["v"]?.jsonPrimitive?.intOrNull)
+        assertFalse(
+            "a guess must not be frozen into the rule",
+            rule.containsKey("weekStartIso"),
+        )
+        assertEquals(2, rule["interval"]?.jsonPrimitive?.intOrNull)
+    }
+
+    @Test
+    fun migrateVersion3_recordsWhicheverWeekStartItIsGiven() {
+        val raw = """
+            {
+              "v": 3,
+              "tasks": [
+                {
+                  "id": 1, "order": 0, "description": "Weekly",
+                  "repeatRule": { "freq": "WEEKLY", "interval": 2, "weekDaysIso": [1] }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val root = migrateAppStateRawJson(raw, DayOfWeek.SUNDAY) as JsonObject
+        val rule = ((root["tasks"] as JsonArray)[0] as JsonObject)["repeatRule"] as JsonObject
+
+        assertEquals(DayOfWeek.SUNDAY.value, rule["weekStartIso"]?.jsonPrimitive?.intOrNull)
     }
 
     @Test

@@ -2,8 +2,10 @@ package com.alphaomegos.annasagenda
 
 import kotlinx.serialization.encodeToString
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.DayOfWeek
 import java.time.LocalDate
 
 /**
@@ -129,5 +131,51 @@ class AppStateCodecTest {
         val raw = """{"v":0,"dailyGoalKcal":1800}"""
 
         assertTrue(decodeAppStateJsonOrFailure(raw) is AppStateDecodeResult.Success)
+    }
+
+    /**
+     * The default matters: decodeFromJson is the import path, and an archive's
+     * rules were written under a language this device knows nothing about.
+     */
+    @Test
+    fun decodingWithoutAWeekStartLeavesLegacyRulesUnpinned() {
+        val raw = """
+            {
+              "v": 3,
+              "tasks": [
+                {
+                  "id": 1, "order": 0, "description": "Weekly",
+                  "repeatRule": { "freq": "WEEKLY", "interval": 2, "weekDaysIso": [1] }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = decodeAppStateJsonOrFailure(raw)
+
+        assertTrue(result is AppStateDecodeResult.Success)
+        val rule = (result as AppStateDecodeResult.Success).state.tasks.single().repeatRule
+        assertNull("an imported rule must not be pinned to a guess", rule?.weekStart)
+    }
+
+    @Test
+    fun decodingWithAWeekStartPinsLegacyRulesToIt() {
+        val raw = """
+            {
+              "v": 3,
+              "tasks": [
+                {
+                  "id": 1, "order": 0, "description": "Weekly",
+                  "repeatRule": { "freq": "WEEKLY", "interval": 2, "weekDaysIso": [1] }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = decodeAppStateJsonOrFailure(raw, weekStartForLegacyRules = DayOfWeek.SUNDAY)
+
+        assertTrue(result is AppStateDecodeResult.Success)
+        val rule = (result as AppStateDecodeResult.Success).state.tasks.single().repeatRule
+        assertEquals(DayOfWeek.SUNDAY, rule?.weekStart)
     }
 }

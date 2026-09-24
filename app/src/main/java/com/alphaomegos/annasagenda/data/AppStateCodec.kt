@@ -2,6 +2,8 @@
 
 package com.alphaomegos.annasagenda
 
+import java.time.DayOfWeek
+
 /**
  * Outcome of decoding a persisted app-state payload.
  *
@@ -40,7 +42,10 @@ sealed interface AppStateDecodeResult {
  * decision "is this payload readable?" unit-testable on a plain JVM instead of
  * requiring an instrumented test.
  */
-internal fun decodeAppStateJsonOrFailure(raw: String): AppStateDecodeResult {
+internal fun decodeAppStateJsonOrFailure(
+    raw: String,
+    weekStartForLegacyRules: DayOfWeek? = null,
+): AppStateDecodeResult {
     if (raw.isBlank()) {
         return AppStateDecodeResult.Failure(
             IllegalArgumentException("Stored app state payload is blank")
@@ -48,7 +53,7 @@ internal fun decodeAppStateJsonOrFailure(raw: String): AppStateDecodeResult {
     }
 
     return runCatching {
-        val migrated = migrateAppStateRawJson(raw)
+        val migrated = migrateAppStateRawJson(raw, weekStartForLegacyRules)
         appStateStoreJson
             .decodeFromJsonElement(AppStateDto.serializer(), migrated)
             .toDomain()
