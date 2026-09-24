@@ -26,7 +26,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.CardDefaults
@@ -852,7 +852,7 @@ private fun MenuRowCard(
                                 if (canMoveUp) onMoveUp()
                             },
                             icon = Icons.Default.KeyboardArrowUp,
-                            cd = "Move menu item up"
+                            cd = stringResource(R.string.move_menu_item_up)
                         )
                     }
 
@@ -862,7 +862,7 @@ private fun MenuRowCard(
                                 if (canMoveDown) onMoveDown()
                             },
                             icon = Icons.Default.KeyboardArrowDown,
-                            cd = "Move menu item down"
+                            cd = stringResource(R.string.move_menu_item_down)
                         )
                     }
 
@@ -871,8 +871,10 @@ private fun MenuRowCard(
                             onClick = {
                                 if (canHide) onHide()
                             },
-                            icon = Icons.AutoMirrored.Filled.ArrowBack,
-                            cd = "Hide menu item"
+                            // Was a back arrow, which says "go back", not
+                            // "hide this".
+                            icon = Icons.Default.VisibilityOff,
+                            cd = stringResource(R.string.hide_menu_item)
                         )
                     }
                 }

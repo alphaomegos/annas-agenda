@@ -117,17 +117,17 @@ internal fun DateTaskRow(
         TinyIconButton(
             onClick = onMoveUp,
             icon = Icons.Default.KeyboardArrowUp,
-            cd = "Move task up"
+            cd = stringResource(R.string.move_task_up)
         )
         TinyIconButton(
             onClick = onMoveDown,
             icon = Icons.Default.KeyboardArrowDown,
-            cd = "Move task down"
+            cd = stringResource(R.string.move_task_down)
         )
         TinyIconButton(
             onClick = onMove,
             icon = Icons.AutoMirrored.Filled.ArrowForward,
-            cd = "Move task"
+            cd = stringResource(R.string.move_task)
         )
         TinyIconButton(
             onClick = onCopy,
@@ -198,17 +198,17 @@ internal fun DateSubtaskRow(
         TinyIconButton(
             onClick = onMoveUp,
             icon = Icons.Default.KeyboardArrowUp,
-            cd = "Move subtask up"
+            cd = stringResource(R.string.move_subtask_up)
         )
         TinyIconButton(
             onClick = onMoveDown,
             icon = Icons.Default.KeyboardArrowDown,
-            cd = "Move subtask down"
+            cd = stringResource(R.string.move_subtask_down)
         )
         TinyIconButton(
             onClick = onMove,
             icon = Icons.AutoMirrored.Filled.ArrowForward,
-            cd = "Move subtask"
+            cd = stringResource(R.string.move_subtask)
         )
         TinyIconButton(
             onClick = onCopy,

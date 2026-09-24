@@ -12,6 +12,10 @@
     <string name="task_color">Task color</string>
     <string name="subtask_color">Subtask color</string>
     <string name="move_task">Move task</string>
+    <string name="move_task_up">Move task up</string>
+    <string name="move_task_down">Move task down</string>
+    <string name="move_subtask_up">Move subtask up</string>
+    <string name="move_subtask_down">Move subtask down</string>
     <string name="move_to_someday">Move to Someday</string>
     <string name="reschedule">Reschedule</string>
     <string name="repeat">Repeat</string>

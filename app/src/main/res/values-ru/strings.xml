@@ -91,6 +91,13 @@
     <string name="task_color">Цвет задачи</string>
     <string name="subtask_color">Цвет подзадачи</string>
     <string name="move_task">Переместить</string>
+    <string name="move_task_up">Переместить задачу выше</string>
+    <string name="move_task_down">Переместить задачу ниже</string>
+    <string name="move_subtask_up">Переместить подзадачу выше</string>
+    <string name="move_subtask_down">Переместить подзадачу ниже</string>
+    <string name="move_menu_item_up">Переместить пункт меню выше</string>
+    <string name="move_menu_item_down">Переместить пункт меню ниже</string>
+    <string name="hide_menu_item">Скрыть пункт меню</string>
     <string name="move_to_someday">В «Когда-нибудь»</string>
     <string name="reschedule">Перенести</string>
     <string name="repeat">Повторять</string>

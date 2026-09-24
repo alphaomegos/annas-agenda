@@ -208,7 +208,7 @@ private fun CalorimeterContent(
                 IconButton(onClick = { selectedEpochDay -= 1 }) {
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                        contentDescription = "Prev day"
+                        contentDescription = stringResource(R.string.prev_day)
                     )
                 }
 
@@ -227,7 +227,7 @@ private fun CalorimeterContent(
                 IconButton(onClick = { selectedEpochDay += 1 }) {
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Next day"
+                        contentDescription = stringResource(R.string.next_day)
                     )
                 }
             }
