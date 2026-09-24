@@ -33,6 +33,32 @@ fun calorieGoalOn(date: LocalDate, changes: List<CalorieGoalChange>): Int =
         ?: DEFAULT_DAILY_GOAL_KCAL
 
 /**
+ * Every day's goal in [start]..[end] added up.
+ *
+ * Not "today's goal times the number of days": a goal is a history, and a week
+ * the user changed their goal in the middle of has two goals in it. The week
+ * figure used to be computed the short way while the thirty-day figure was
+ * computed the long way, so the two numbers on the same screen disagreed.
+ */
+fun calorieGoalSumInRange(
+    changes: List<CalorieGoalChange>,
+    start: LocalDate,
+    end: LocalDate,
+): Int {
+    if (end.isBefore(start)) return 0
+
+    var day = start
+    var total = 0
+
+    while (!day.isAfter(end)) {
+        total += calorieGoalOn(day, changes)
+        day = day.plusDays(1)
+    }
+
+    return total
+}
+
+/**
  * Goal minus what was eaten, summed over [start]..[end] inclusive.
  *
  * Positive is a deficit and negative is a surplus. A day with nothing logged

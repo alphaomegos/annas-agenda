@@ -99,4 +99,52 @@ class CalorimeterSupportTest {
 
     private fun food(date: LocalDate, kcal: Int) =
         FoodEntry(id = date.toEpochDay() * 100 + kcal, date = date, title = "meal", kcal = kcal)
+
+    @Test
+    fun theGoalForARangeAddsUpEveryDaysOwnGoal() {
+        val changes = listOf(
+            CalorieGoalChange(day, 2000),
+            CalorieGoalChange(day.plusDays(3), 1600),
+        )
+
+        // Three days at 2000, four at 1600 — not seven times whichever one
+        // happens to be in force today.
+        assertEquals(
+            3 * 2000 + 4 * 1600,
+            calorieGoalSumInRange(changes, day, day.plusDays(6)),
+        )
+    }
+
+    @Test
+    fun aWeekWithNoGoalSetIsSevenDefaultDays() {
+        assertEquals(
+            DEFAULT_DAILY_GOAL_KCAL * 7,
+            calorieGoalSumInRange(emptyList(), day, day.plusDays(6)),
+        )
+    }
+
+    @Test
+    fun theGoalSumIsZeroForARangeThatEndsBeforeItStarts() {
+        assertEquals(0, calorieGoalSumInRange(emptyList(), day, day.minusDays(1)))
+    }
+
+    /**
+     * The two screens show both figures side by side, so they have to be the
+     * same arithmetic: what is left of the goal is the goal minus what was
+     * eaten, over the same days.
+     */
+    @Test
+    fun theDeficitIsTheGoalForThoseDaysMinusWhatWasEaten() {
+        val changes = listOf(
+            CalorieGoalChange(day, 2000),
+            CalorieGoalChange(day.plusDays(3), 1600),
+        )
+        val food = listOf(food(day, 1800), food(day.plusDays(4), 2100))
+        val end = day.plusDays(6)
+
+        assertEquals(
+            calorieGoalSumInRange(changes, day, end) - (1800 + 2100),
+            calorieDeficitInRange(changes, food, day, end),
+        )
+    }
 }

@@ -58,6 +58,7 @@ import com.alphaomegos.annasagenda.CalorimeterSlice
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.KCAL_PER_KG_FAT
 import com.alphaomegos.annasagenda.calorieDeficitInRange
+import com.alphaomegos.annasagenda.calorieGoalSumInRange
 import com.alphaomegos.annasagenda.calorieGoalOn
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.util.appLocale
@@ -122,15 +123,19 @@ private fun CalorimeterContent(
     val eatenSelectedSum = eatenSelected.sumOf { it.kcal }
     val dayBalance = goalSelected - eatenSelectedSum
 
-    // Only for today:
-    val weekGoal = goalSelected * 7
+    // Only for today. Both figures are worked out day by day, against the goal
+    // that was in force on each of them — the week used to be "today's goal
+    // times seven", which disagreed with the thirty-day figure on the same
+    // screen whenever the goal had changed inside the week.
     val start7 = today.minusDays(6)
-    val eaten7 = remember(state.foodLog, today) {
-        state.foodLog
-            .filter { !it.date.isBefore(start7) && !it.date.isAfter(today) }
-            .sumOf { it.kcal }
+
+    val weekGoal = remember(state.calorieGoalChanges, today) {
+        calorieGoalSumInRange(state.calorieGoalChanges, start7, today)
     }
-    val weekBalance = weekGoal - eaten7
+
+    val weekBalance = remember(state.calorieGoalChanges, state.foodLog, today) {
+        calorieDeficitInRange(state.calorieGoalChanges, state.foodLog, start7, today)
+    }
 
     val start30 = today.minusDays(29)
     val deficit30 = if (isToday) {
@@ -449,6 +454,14 @@ private fun CalorimeterContent(
     }
 
     if (showAddDialog.value) {
+        // What makes this meal addable, asked once. The button used to accept
+        // the tap and then quietly do nothing: a blank name was refused deep
+        // inside addFoodEntry, and unreadable kilocalories were dropped here,
+        // and either way the dialog closed as though the meal had been logged.
+        val parsedKcal = foodKcal.trim().toIntOrNull()
+        val kcalLooksWrong = foodKcal.isNotBlank() && (parsedKcal == null || parsedKcal <= 0)
+        val canAdd = foodName.trim().isNotEmpty() && parsedKcal != null && parsedKcal > 0
+
         AlertDialog(
             onDismissRequest = { showAddDialog.value = false },
             title = { Text(stringResource(R.string.calorimeter_add_eaten_title)) },
@@ -474,17 +487,26 @@ private fun CalorimeterContent(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    if (kcalLooksWrong) {
+                        Text(
+                            text = stringResource(R.string.invalid_number),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val kcal = foodKcal.trim().toIntOrNull()
-                    if (kcal != null && kcal > 0) {
-                        val id = onAddFood(selectedDate, foodName, kcal)
-                        if (id != -1L) playMunch()
-                    }
-                    showAddDialog.value = false
-                }) { Text(stringResource(R.string.ok)) }
+                TextButton(
+                    onClick = {
+                        if (parsedKcal != null) {
+                            val id = onAddFood(selectedDate, foodName, parsedKcal)
+                            if (id != -1L) playMunch()
+                            showAddDialog.value = false
+                        }
+                    },
+                    enabled = canAdd,
+                ) { Text(stringResource(R.string.ok)) }
             },
             dismissButton = {
                 TextButton(onClick = { showAddDialog.value = false }) {
