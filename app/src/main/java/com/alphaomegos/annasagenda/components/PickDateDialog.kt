@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.ZoneOffset
 
 /**
  * "Pick a date", once.
@@ -27,9 +27,16 @@ import java.time.ZoneId
  * what [extraDismissAction] is for.
  *
  * The conversion between a LocalDate and the milliseconds the picker speaks
- * lives here now. It was the same in all four copies, and it is also where the
- * open question of UTC versus the device's zone will have to be answered —
- * one place rather than four to remember.
+ * happens in UTC, because that is what the picker means by them: Material3
+ * documents both initialSelectedDateMillis and selectedDateMillis as UTC
+ * milliseconds since the epoch, and the calendar it draws reads them that way.
+ *
+ * All four copies used to hand it midnight in the device's own zone instead.
+ * East of Greenwich that is the previous day in UTC, so the dialog opened on
+ * the wrong date — in Moscow, asking to move a task dated the 23rd offered the
+ * 22nd preselected. West of it the shift lands on the way back out, and a
+ * picked date is stored as the day before. Nothing about this depended on
+ * which of the four copies you used; they were all wrong the same way.
  *
  * [onDismiss] is called after [onPicked], so a caller that clears its own
  * "show the picker" flag in it needs to do nothing else.
@@ -42,9 +49,8 @@ internal fun PickDateDialog(
     onPicked: (LocalDate) -> Unit,
     extraDismissAction: (@Composable () -> Unit)? = null,
 ) {
-    val zone = remember { ZoneId.systemDefault() }
-    val initialMillis = remember(initialDate, zone) {
-        (initialDate ?: LocalDate.now()).atStartOfDay(zone).toInstant().toEpochMilli()
+    val initialMillis = remember(initialDate) {
+        (initialDate ?: LocalDate.now()).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
     }
     val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
 
@@ -55,7 +61,7 @@ internal fun PickDateDialog(
                 onClick = {
                     val millis = pickerState.selectedDateMillis
                     if (millis != null) {
-                        onPicked(Instant.ofEpochMilli(millis).atZone(zone).toLocalDate())
+                        onPicked(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
                     }
                     onDismiss()
                 }

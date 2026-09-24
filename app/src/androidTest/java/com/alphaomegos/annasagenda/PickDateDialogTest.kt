@@ -20,11 +20,11 @@ import java.time.LocalDate
 /**
  * The one date picker, used by four screens.
  *
- * Nothing here asserts which date comes back, on purpose. The picker speaks
- * milliseconds and reads them as UTC, while the callers hand it midnight in
- * the device's own zone — so what the dialog opens at, and what it returns
- * untouched, is exactly the question still open in the findings. Pinning
- * today's answer here would make it harder to fix rather than easier.
+ * The date tests below are the ones that matter: the picker speaks UTC
+ * milliseconds, and handing it midnight in the device's own zone used to move
+ * the answer by a day. They pass in any time zone only because the conversion
+ * is now UTC on both sides — run the suite on an emulator set to Moscow or to
+ * Los Angeles and they say the same thing.
  */
 @RunWith(AndroidJUnit4::class)
 class PickDateDialogTest {
@@ -123,6 +123,56 @@ class PickDateDialogTest {
 
         composeRule.runOnIdle {
             assertEquals(1, noDateClicks)
+        }
+    }
+
+    @Test
+    fun theDialogOpensOnTheDateItWasGivenAndHandsItBackUntouched() {
+        val asked = LocalDate.of(2026, 3, 23)
+        var picked: LocalDate? = null
+
+        composeRule.setContent {
+            MaterialTheme {
+                PickDateDialog(
+                    initialDate = asked,
+                    onDismiss = {},
+                    onPicked = { picked = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.ok)).performClick()
+
+        composeRule.runOnIdle {
+            // Confirming without touching the calendar has to return exactly
+            // what the caller asked for. Before the conversion moved to UTC it
+            // did not: midnight in the device's zone is a different day to the
+            // picker, which reads its milliseconds as UTC.
+            assertEquals(asked, picked)
+        }
+    }
+
+    @Test
+    fun aDateOnTheTurnOfTheYearIsStillItself() {
+        // A day where being off by one hour is also off by one month, and by
+        // one year.
+        val asked = LocalDate.of(2026, 1, 1)
+        var picked: LocalDate? = null
+
+        composeRule.setContent {
+            MaterialTheme {
+                PickDateDialog(
+                    initialDate = asked,
+                    onDismiss = {},
+                    onPicked = { picked = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.ok)).performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(asked, picked)
         }
     }
 }
