@@ -1,1 +1,6 @@
 /build
+
+# Release artefacts are build output: they are rebuilt from a tag, and an APK
+# in git is a copy that quietly goes stale. The one that was tracked here was
+# version 1.4 (versionCode 5) while the project had moved on to 18.
+/release
