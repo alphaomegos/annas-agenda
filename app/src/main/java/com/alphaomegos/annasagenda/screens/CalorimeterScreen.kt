@@ -56,16 +56,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.CalorimeterSlice
 import com.alphaomegos.annasagenda.AppViewModel
-import com.alphaomegos.annasagenda.CalorieGoalChange
+import com.alphaomegos.annasagenda.KCAL_PER_KG_FAT
+import com.alphaomegos.annasagenda.calorieDeficitInRange
+import com.alphaomegos.annasagenda.calorieGoalOn
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
-
-private const val DEFAULT_DAILY_GOAL_KCAL = 2000
-private const val KCAL_PER_KG_FAT = 7800.0
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,7 +111,7 @@ private fun CalorimeterContent(
         selectedDate.format(fmt)
     }
 
-    val goalSelected = goalFor(selectedDate, state.calorieGoalChanges)
+    val goalSelected = calorieGoalOn(selectedDate, state.calorieGoalChanges)
 
     val eatenSelected = remember(state.foodLog, selectedDate) {
         state.foodLog
@@ -134,7 +133,11 @@ private fun CalorimeterContent(
     val weekBalance = weekGoal - eaten7
 
     val start30 = today.minusDays(29)
-    val deficit30 = if (isToday) sumDeficitInRange(state, start30, today) else 0
+    val deficit30 = if (isToday) {
+        calorieDeficitInRange(state.calorieGoalChanges, state.foodLog, start30, today)
+    } else {
+        0
+    }
     val potentialKg = if (isToday) deficit30 / KCAL_PER_KG_FAT else 0.0
 
     val okGreen = Color(0xFF2E7D32)
@@ -492,21 +495,3 @@ private fun CalorimeterContent(
     }
 }
 
-private fun goalFor(date: LocalDate, changes: List<CalorieGoalChange>): Int {
-    val last = changes
-        .filter { !it.date.isAfter(date) }
-        .maxByOrNull { it.date }
-    return last?.kcal ?: DEFAULT_DAILY_GOAL_KCAL
-}
-
-private fun sumDeficitInRange(state: CalorimeterSlice, start: LocalDate, end: LocalDate): Int {
-    var d = start
-    var total = 0
-    while (!d.isAfter(end)) {
-        val g = goalFor(d, state.calorieGoalChanges)
-        val eaten = state.foodLog.filter { it.date == d }.sumOf { it.kcal }
-        total += (g - eaten)
-        d = d.plusDays(1)
-    }
-    return total
-}

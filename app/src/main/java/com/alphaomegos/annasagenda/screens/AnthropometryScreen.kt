@@ -61,8 +61,8 @@ import com.alphaomegos.annasagenda.util.formatSignedOneDecimal
 import java.time.LocalDate
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import com.alphaomegos.annasagenda.AnthropometrySlice
-import com.alphaomegos.annasagenda.CalorieGoalChange
+import com.alphaomegos.annasagenda.KCAL_PER_KG_FAT
+import com.alphaomegos.annasagenda.calorieDeficitInRange
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.AnthropometryFieldIds
 import com.alphaomegos.annasagenda.defaultAnthropometryFieldIds
@@ -163,9 +163,9 @@ fun AnthropometryScreen(
 
     val deficit30 = remember(state) {
         val start30 = today.minusDays(29)
-        sumDeficitInRange(state, start30, today)
+        calorieDeficitInRange(state.calorieGoalChanges, state.foodLog, start30, today)
     }
-    val potentialKg = deficit30 / 7800.0
+    val potentialKg = deficit30 / KCAL_PER_KG_FAT
 
     val allEntries = remember(state.anthropometry) {
         state.anthropometry.sortedBy { it.date }
@@ -590,21 +590,3 @@ private fun AnthropometryFieldsDialog(
     )
 }
 
-private fun goalFor(date: LocalDate, changes: List<CalorieGoalChange>): Int {
-    val last = changes
-        .filter { !it.date.isAfter(date) }
-        .maxByOrNull { it.date }
-    return last?.kcal ?: 2000
-}
-
-private fun sumDeficitInRange(state: AnthropometrySlice, start: LocalDate, end: LocalDate): Int {
-    var d = start
-    var total = 0
-    while (!d.isAfter(end)) {
-        val g = goalFor(d, state.calorieGoalChanges)
-        val eaten = state.foodLog.filter { it.date == d }.sumOf { it.kcal }
-        total += (g - eaten)
-        d = d.plusDays(1)
-    }
-    return total
-}
