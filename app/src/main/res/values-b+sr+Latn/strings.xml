@@ -173,13 +173,11 @@
     <string name="attached_counter_fmt">Brojač: %1$s</string>
     <string name="detach_counter">Odvoji</string>
     <string name="menu_reading">Mediateka</string>
-    <string name="reading_title">Čitanje</string>
     <string name="reading_tab_plans">Planovi</string>
     <string name="reading_tab_now">Trenutno</string>
     <string name="reading_tab_done">Pročitano</string>
     <string name="reading_empty">Još nema knjiga</string>
     <string name="reading_view_list">Lista</string>
-    <string name="reading_menu_sort">Sortiranje</string>
     <string name="reading_button_read">Čitaj</string>
     <string name="reading_remaining_unknown">Preostalo: —</string>
     <string name="reading_remaining_hours">Preostalo: %1$d č</string>
@@ -233,7 +231,6 @@
     <string name="reading_book_choose_cover">Izaberi koricu</string>
     <string name="reading_book_remove_cover">Ukloni koricu</string>
     <string name="reading_session_start_page_label">Početna strana</string>
-    <string name="reading_menu_toggle_view">Promeni prikaz</string>
     <string name="reading_sort_descending">Opadajuće</string>
     <string name="reading_tab_abandoned">Ostavljene</string>
     <string name="reading_menu_move_to_abandoned">Premesti u ostavljene</string>

@@ -169,13 +169,11 @@
     <string name="attached_counter_fmt">Kaotioti: %1$s</string>
     <string name="detach_counter">Tia</string>
     <string name="menu_reading">Wareware</string>
-    <string name="reading_title">Mediateka</string>
     <string name="reading_tab_plans">I buokia</string>
     <string name="reading_tab_now">I aki toki</string>
     <string name="reading_tab_done">I toki</string>
     <string name="reading_empty">Ti aki kona te boki</string>
     <string name="reading_view_list">Tabela</string>
-    <string name="reading_menu_sort">Mwananga</string>
     <string name="reading_button_read">Wareware</string>
     <string name="reading_remaining_unknown">E aki kona: —</string>
     <string name="reading_remaining_hours">E aki kona: %1$d h</string>
@@ -229,8 +227,6 @@
     <string name="reading_book_choose_cover">Ewera te bwai n te itera</string>
     <string name="reading_book_remove_cover">Kamaucu te bwai n te itera</string>
     <string name="reading_session_start_page_label">Ira n te mwananga</string>
-    <string name="reading_menu_toggle_view">Taua te    <string name="reading_add_book_title">Kabin te boki</string>
- kaoti</string>
     <string name="reading_sort_descending">E nakon te buki</string>
     <string name="reading_tab_abandoned">Aongaia</string>
     <string name="reading_menu_move_to_abandoned">Tia n aongaia</string>
