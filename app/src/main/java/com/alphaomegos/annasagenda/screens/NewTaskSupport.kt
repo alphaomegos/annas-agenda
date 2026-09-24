@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
 import com.alphaomegos.annasagenda.NewTaskDraftSubtask
+import java.time.LocalDate
 
 data class EditableNewTaskSubtask(
     val description: String = "",
@@ -82,3 +83,25 @@ fun editableSubtasksFromSavedStrings(flat: List<String>): List<EditableNewTaskSu
                 colorOverridden = row[2] == "1",
             )
         }
+
+/**
+ * Which day the new-task screen opens on.
+ *
+ * Three cases, and they used to be squeezed into one nullable Long: a day the
+ * user tapped in the calendar, "today" when the screen is opened from the main
+ * menu, and "no day at all" when it is opened from Someday.
+ *
+ * The third was signalled by passing a negative epoch day, which is a real
+ * date — every day before 1970 is negative. Tapping one of those in the
+ * calendar opened the screen with no date instead of that date. The Someday
+ * route has always been a route of its own, so it can simply say so.
+ */
+fun newTaskInitialDate(
+    preselectedEpochDay: Long?,
+    startWithoutDate: Boolean,
+    today: LocalDate,
+): LocalDate? = when {
+    startWithoutDate -> null
+    preselectedEpochDay == null -> today
+    else -> LocalDate.ofEpochDay(preselectedEpochDay)
+}

@@ -54,6 +54,7 @@ import androidx.compose.runtime.collectAsState
 fun NewTaskScreen(
     vm: AppViewModel,
     preselectedEpochDay: Long? = null,
+    startWithoutDate: Boolean = false,
     onBack: () -> Unit,
 ) {
     var description by rememberSaveable { mutableStateOf("") }
@@ -68,15 +69,12 @@ fun NewTaskScreen(
         mutableStateListOf<EditableNewTaskSubtask>()
     }
 
-    // - null  -> default "today" (main menu)
-    // - >= 0  -> specific date (calendar)
-    // - < 0   -> Someday (no date)
-    val initialDate: LocalDate? = remember(preselectedEpochDay) {
-        when {
-            preselectedEpochDay == null -> LocalDate.now()
-            preselectedEpochDay < 0L -> null
-            else -> LocalDate.ofEpochDay(preselectedEpochDay)
-        }
+    val initialDate: LocalDate? = remember(preselectedEpochDay, startWithoutDate) {
+        newTaskInitialDate(
+            preselectedEpochDay = preselectedEpochDay,
+            startWithoutDate = startWithoutDate,
+            today = LocalDate.now(),
+        )
     }
 
     var selectedDate by rememberSaveable { mutableStateOf(initialDate) }

@@ -227,12 +227,15 @@ fun AppNav(vm: AppViewModel) {
             )
         }
 
-        // NEW: open NewTask with "Someday" default (no date)
+        // Opens NewTask with no date at all. It used to say so by passing
+        // -1 as the epoch day, which is a real date — the 31st of December
+        // 1969 — so tapping any day before 1970 in the calendar opened this
+        // screen with no date instead of that one.
         composable(Route.NEW_TASK_SOMEDAY) {
             NewTaskScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },
-                preselectedEpochDay = -1L
+                startWithoutDate = true
             )
         }
 

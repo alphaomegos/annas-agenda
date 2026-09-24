@@ -79,4 +79,57 @@ class NewTaskSupportTest {
         assertEquals(1, restored.size)
         assertEquals("Buy milk", restored.single().description)
     }
+
+    // -- which day the screen opens on ---------------------------------------
+
+    private val today = java.time.LocalDate.of(2026, 3, 23)
+
+    @Test
+    fun openedFromTheMainMenuTheScreenOpensOnToday() {
+        assertEquals(
+            today,
+            newTaskInitialDate(preselectedEpochDay = null, startWithoutDate = false, today = today),
+        )
+    }
+
+    @Test
+    fun openedFromADayTheScreenOpensOnThatDay() {
+        val picked = java.time.LocalDate.of(2026, 7, 1)
+
+        assertEquals(
+            picked,
+            newTaskInitialDate(
+                preselectedEpochDay = picked.toEpochDay(),
+                startWithoutDate = false,
+                today = today,
+            ),
+        )
+    }
+
+    @Test
+    fun openedFromSomedayTheScreenOpensWithNoDay() {
+        assertNull(
+            newTaskInitialDate(preselectedEpochDay = null, startWithoutDate = true, today = today),
+        )
+    }
+
+    /**
+     * Every day before 1970 has a negative epoch day, and "no date" used to be
+     * signalled by passing a negative one. Tapping the last day of 1969 in the
+     * calendar therefore opened the screen with no date at all.
+     */
+    @Test
+    fun aDayBeforeNineteenSeventyIsADayLikeAnyOther() {
+        val newYearsEve1969 = java.time.LocalDate.of(1969, 12, 31)
+        assertEquals(-1L, newYearsEve1969.toEpochDay())
+
+        assertEquals(
+            newYearsEve1969,
+            newTaskInitialDate(
+                preselectedEpochDay = newYearsEve1969.toEpochDay(),
+                startWithoutDate = false,
+                today = today,
+            ),
+        )
+    }
 }
