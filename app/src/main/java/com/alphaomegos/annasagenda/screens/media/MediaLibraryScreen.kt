@@ -19,12 +19,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaFilter
 import com.alphaomegos.annasagenda.ReadingShelf
@@ -50,6 +52,12 @@ fun MediaLibraryScreen(
     var searchEnabled by rememberSaveable { mutableStateOf(false) }
     val addDialogOpen = rememberSaveable { mutableStateOf(false) }
     val sortDialogOpen = rememberSaveable { mutableStateOf(false) }
+
+    // Deleting from the list menu used to happen on the tap, one item below
+    // four harmless "move to…" entries — and for a book it takes the reading
+    // history and the cover file with it. The same delete inside the item's
+    // own card has always asked first.
+    var pendingDelete by remember { mutableStateOf<ReadingUiItem?>(null) }
 
     val shelf = mediaLibraryShelfForTab(selectedTab)
 
@@ -153,12 +161,22 @@ fun MediaLibraryScreen(
                     to = to
                 )
             },
-            onDeleteItem = { item ->
-                deleteReadingItem(
-                    vm = vm,
-                    item = item
-                )
-            }
+            onDeleteItem = { item -> pendingDelete = item }
+        )
+    }
+
+    pendingDelete?.let { item ->
+        val strings = mediaDetailsStrings(mediaTypeOf(item))
+
+        ConfirmDialog(
+            titleRes = strings.deleteTitleRes,
+            textRes = strings.deleteTextRes,
+            confirmLabelRes = R.string.delete,
+            onConfirm = {
+                deleteReadingItem(vm = vm, item = item)
+                pendingDelete = null
+            },
+            onDismiss = { pendingDelete = null },
         )
     }
 

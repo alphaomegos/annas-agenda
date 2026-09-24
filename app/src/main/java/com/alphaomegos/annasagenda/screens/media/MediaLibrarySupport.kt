@@ -52,6 +52,13 @@ internal data class ReadingYearGroup(
     val items: List<ReadingUiItem>,
 )
 
+/** Which kind of media a list row is, for the strings that differ by kind. */
+internal fun mediaTypeOf(item: ReadingUiItem): ReadingMediaType = when (item) {
+    is ReadingBookItem -> ReadingMediaType.BOOKS
+    is ReadingMovieItem -> ReadingMediaType.MOVIES
+    is ReadingSeriesItem -> ReadingMediaType.SERIES
+}
+
 internal fun canReadItem(item: ReadingUiItem): Boolean {
     return item is ReadingBookItem &&
             (item.shelf == ReadingShelf.PLANS || item.shelf == ReadingShelf.NOW)
