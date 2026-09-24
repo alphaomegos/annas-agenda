@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppStateLoadResult
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.components.ConfirmDialog
 
 /**
  * Shown instead of the app when there is data on disk that this build must not
@@ -55,25 +55,15 @@ fun StorageFailureScreen(
     }
 
     if (confirming) {
-        AlertDialog(
-            onDismissRequest = { confirming = false },
-            title = { Text(stringResource(R.string.storage_failure_confirm_title)) },
-            text = { Text(stringResource(R.string.storage_failure_confirm_text)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirming = false
-                        onContinueEmpty()
-                    }
-                ) {
-                    Text(stringResource(R.string.storage_failure_continue_empty))
-                }
+        ConfirmDialog(
+            titleRes = R.string.storage_failure_confirm_title,
+            textRes = R.string.storage_failure_confirm_text,
+            confirmLabelRes = R.string.storage_failure_continue_empty,
+            onConfirm = {
+                confirming = false
+                onContinueEmpty()
             },
-            dismissButton = {
-                TextButton(onClick = { confirming = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
+            onDismiss = { confirming = false },
         )
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.RepeatFreq
 import com.alphaomegos.annasagenda.RepeatRule
 import com.alphaomegos.annasagenda.util.appLocale
@@ -238,52 +238,28 @@ fun RecurringTasksScreen(
     }
 
     if (confirmDeleteTaskId.value != null) {
-        AlertDialog(
-            onDismissRequest = { confirmDeleteTaskId.value = null },
-            title = { Text(stringResource(R.string.delete_repeating_task_title)) },
-            text = {
-                Text(
-                    stringResource(R.string.delete_repeating_task_text)
-                )
+        ConfirmDialog(
+            titleRes = R.string.delete_repeating_task_title,
+            textRes = R.string.delete_repeating_task_text,
+            confirmLabelRes = R.string.remove,
+            onConfirm = {
+                vm.deleteTaskSeriesFrom(confirmDeleteTaskId.value!!, today)
+                confirmDeleteTaskId.value = null
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    vm.deleteTaskSeriesFrom(confirmDeleteTaskId.value!!, today)
-                    confirmDeleteTaskId.value = null
-                }) { Text(stringResource(R.string.remove)) }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    confirmDeleteTaskId.value = null
-                }) { Text(stringResource(R.string.cancel)) }
-            }
+            onDismiss = { confirmDeleteTaskId.value = null },
         )
     }
 
     if (confirmDeleteSubtaskId.value != null) {
-        AlertDialog(
-            onDismissRequest = { confirmDeleteSubtaskId.value = null },
-            title = { Text(stringResource(R.string.delete_repeating_subtask_title)) },
-            text = {
-                Text(
-                    stringResource(R.string.delete_repeating_subtask_text)
-                )
+        ConfirmDialog(
+            titleRes = R.string.delete_repeating_subtask_title,
+            textRes = R.string.delete_repeating_subtask_text,
+            confirmLabelRes = R.string.remove,
+            onConfirm = {
+                vm.deleteSubtaskSeriesFrom(confirmDeleteSubtaskId.value!!, today)
+                confirmDeleteSubtaskId.value = null
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    vm.deleteSubtaskSeriesFrom(confirmDeleteSubtaskId.value!!, today)
-                    confirmDeleteSubtaskId.value = null
-                }) { Text(stringResource(R.string.remove)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmDeleteSubtaskId.value = null }) {
-                    Text(
-                        stringResource(
-                            R.string.cancel
-                        )
-                    )
-                }
-            }
+            onDismiss = { confirmDeleteSubtaskId.value = null },
         )
     }
 }

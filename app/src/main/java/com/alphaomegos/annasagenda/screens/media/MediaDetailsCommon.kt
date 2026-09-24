@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -26,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.ReadingShelf
 import java.time.LocalDate
 import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
@@ -264,20 +263,12 @@ fun MediaDetailsDeleteDialog(
 ) {
     if (!open) return
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(titleRes)) },
-        text = { Text(stringResource(textRes)) },
-        confirmButton = {
-            TextButton(onClick = onConfirmDelete) {
-                Text(stringResource(R.string.delete))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
+    ConfirmDialog(
+        titleRes = titleRes,
+        textRes = textRes,
+        confirmLabelRes = R.string.delete,
+        onConfirm = onConfirmDelete,
+        onDismiss = onDismiss,
     )
 }
 

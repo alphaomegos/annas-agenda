@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.RunningPlanEntry
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -169,23 +170,14 @@ fun RunningPlanScreen(
     }
 
     if (showApprove.value) {
-        AlertDialog(
-            onDismissRequest = { showApprove.value = false },
-            title = { Text(stringResource(R.string.running_approve_confirm_title)) },
-            text = { Text(stringResource(R.string.running_approve_confirm_text)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    showApprove.value = false
-                    vm.approveRunningPlan()
-                }) {
-                    Text(stringResource(android.R.string.ok))
-                }
+        ConfirmDialog(
+            titleRes = R.string.running_approve_confirm_title,
+            textRes = R.string.running_approve_confirm_text,
+            onConfirm = {
+                showApprove.value = false
+                vm.approveRunningPlan()
             },
-            dismissButton = {
-                TextButton(onClick = { showApprove.value = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            }
+            onDismiss = { showApprove.value = false },
         )
     }
 
