@@ -250,6 +250,29 @@ class AppStateCodecTest {
         assertNull("a plan row must not hold an id that can be handed out again", entry.taskId)
     }
 
+    /**
+     * The menu order is normalised when it is set, but a payload does not have
+     * to have come from the setter — an id named twice would put the same item
+     * on the menu twice.
+     */
+    @Test
+    fun decode_normalisesTheMainMenuOrder() {
+        val raw = """
+            {
+              "v": $CURRENT_SCHEMA_VERSION,
+              "mainMenuOrder": [" calendar ", "", "reading", "calendar", "   "]
+            }
+        """.trimIndent()
+
+        val result = decodeAppStateJsonOrFailure(raw)
+
+        assertTrue(result is AppStateDecodeResult.Success)
+        assertEquals(
+            listOf("calendar", "reading"),
+            (result as AppStateDecodeResult.Success).state.mainMenuOrder,
+        )
+    }
+
     /* ---------------- fields the DTO and the domain read differently ------- */
 
     /**

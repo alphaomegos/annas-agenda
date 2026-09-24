@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.itemsInMenuOrder
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.util.BackupImportPayload
 import com.alphaomegos.annasagenda.util.appLocale
@@ -279,18 +280,6 @@ private fun rememberMainMenuEntries(
     }
 }
 
-private fun applyMenuOrder(
-    allItems: List<MenuEntry>,
-    order: List<String>,
-): List<MenuEntry> {
-    if (order.isEmpty()) return allItems
-
-    val byId = allItems.associateBy { it.id }
-    val ordered = order.mapNotNull { byId[it] }
-    val missing = allItems.filterNot { it.id in order.toSet() }
-    return ordered + missing
-}
-
 @OptIn(
     androidx.compose.material3.ExperimentalMaterial3Api::class,
     ExperimentalFoundationApi::class
@@ -319,7 +308,7 @@ internal fun MainMenuContent(
     val listState = rememberLazyListState()
 
     val orderedFromState = remember(menuEntries, menuOrderIds) {
-        applyMenuOrder(menuEntries, menuOrderIds)
+        itemsInMenuOrder(menuEntries, menuOrderIds) { it.id }
     }
     val visibleOrderedFromState = remember(orderedFromState, menuHiddenIds) {
         orderedFromState.filterNot { it.id in menuHiddenIds }

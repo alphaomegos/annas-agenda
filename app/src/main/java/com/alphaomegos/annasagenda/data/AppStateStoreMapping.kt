@@ -67,7 +67,9 @@ internal fun AppStateDto.toDomain(): AppState {
         runningPlanApproved = runningPlanApproved,
         runningPlanEntries = runningPlanEntries.map { it.toDomain() },
         counters = counters.mapNotNull { it.toDomainOrNull() },
-        mainMenuOrder = mainMenuOrder,
+        // Normalised on the way in like the other preferences here: the
+        // setter normalises, but a payload does not have to have come from it.
+        mainMenuOrder = normalizeMainMenuOrderIds(mainMenuOrder),
         mainMenuHiddenIds = mainMenuHiddenIds.toSet(),
         undoneLampMuted = undoneLampMuted,
         undoneHorizonDays = normalizeUndoneHorizonDays(undoneHorizonDays),
