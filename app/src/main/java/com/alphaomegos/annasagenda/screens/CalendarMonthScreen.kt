@@ -23,7 +23,7 @@ import com.alphaomegos.annasagenda.AppState
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.util.appLocale
-import com.alphaomegos.annasagenda.util.isSuppressedTemplateTaskOnItsDate
+import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
 import com.alphaomegos.annasagenda.util.orderedWeekDays
 import java.time.LocalDate
 import java.time.YearMonth

@@ -23,7 +23,7 @@ import com.alphaomegos.annasagenda.RepeatRule
 import com.alphaomegos.annasagenda.Subtask
 import com.alphaomegos.annasagenda.Task
 import com.alphaomegos.annasagenda.dialogs.RepeatPickerDialog
-import com.alphaomegos.annasagenda.util.isSuppressedTemplateTaskOnItsDate
+import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
 import java.time.LocalDate
 import com.alphaomegos.annasagenda.ManualCounter
 

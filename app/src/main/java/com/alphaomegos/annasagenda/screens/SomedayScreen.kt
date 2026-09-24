@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.DateTasksBlock
-import com.alphaomegos.annasagenda.util.isSuppressedTemplateTaskOnItsDate
+import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
 
 @Composable
 fun SomedayScreen(

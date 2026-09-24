@@ -1,6 +1,5 @@
 package com.alphaomegos.annasagenda
 
-import com.alphaomegos.annasagenda.util.isSuppressedTemplateTaskOnItsDate
 import java.time.LocalDate
 
 /**

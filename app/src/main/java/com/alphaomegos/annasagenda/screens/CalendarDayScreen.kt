@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.dialogs.AnthropometryDayInputDialog
-import com.alphaomegos.annasagenda.util.isSuppressedTemplateTaskOnItsDate
+import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle

@@ -88,6 +88,29 @@ fun taskSuppressionKey(templateTaskId: Long, date: LocalDate): String =
 fun subtaskSuppressionKey(templateSubtaskId: Long, date: LocalDate): String =
     "$SUBTASK_SUPPRESSION_PREFIX$templateSubtaskId:${date.toEpochDay()}"
 
+/**
+ * Whether a template has been deleted on its own anchor day.
+ *
+ * A template is a real task sitting on a real date, so deleting that first
+ * occurrence cannot remove the row — the rule and its whole future live in it.
+ * It leaves a tombstone instead, and four screens filter the template out on
+ * the strength of it.
+ *
+ * Lives here, next to the key it asks about, because it used to build the key
+ * by hand in util/Formatters.kt: `"T:${task.id}:${d.toEpochDay()}"`. Changing
+ * the key format would have left four screens quietly showing a task the user
+ * had deleted, and nothing would have failed to compile.
+ *
+ * Generated occurrences are excluded on purpose: deleting one of those removes
+ * the row outright, so a tombstone naming it means something else.
+ */
+fun isSuppressedTemplateTaskOnItsDate(task: Task, suppressed: Set<String>): Boolean {
+    if (task.originTaskId != null) return false
+    val date = task.date ?: return false
+
+    return taskSuppressionKey(task.id, date) in suppressed
+}
+
 private enum class SuppressionKind { TASK, SUBTASK }
 
 private data class SuppressionOwner(val kind: SuppressionKind, val id: Long)

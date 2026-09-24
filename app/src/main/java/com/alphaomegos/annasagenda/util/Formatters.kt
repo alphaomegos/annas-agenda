@@ -2,7 +2,6 @@ package com.alphaomegos.annasagenda.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import com.alphaomegos.annasagenda.Task
 import java.time.DayOfWeek
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -37,9 +36,4 @@ internal fun parseDecimalOrNull(text: String): Double? {
     val t = text.trim()
     if (t.isEmpty()) return null
     return t.replace(',', '.').toDoubleOrNull()
-}
-
-internal fun isSuppressedTemplateTaskOnItsDate(task: Task, suppressed: Set<String>): Boolean {
-    val d = task.date ?: return false
-    return task.originTaskId == null && suppressed.contains("T:${task.id}:${d.toEpochDay()}")
 }

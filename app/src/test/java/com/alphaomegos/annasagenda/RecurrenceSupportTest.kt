@@ -652,4 +652,63 @@ class RecurrenceSupportTest {
 
         assertSame(keys, pruneOrphanedSuppressions(keys, emptyList(), emptyList()))
     }
+
+    // -- a template deleted on its own day ------------------------------------
+
+    @Test
+    fun aTemplateDeletedOnItsOwnDayIsHidden() {
+        val template = task(1L, monday, repeatRule = RepeatRule(freq = RepeatFreq.DAILY))
+
+        assertTrue(
+            isSuppressedTemplateTaskOnItsDate(template, setOf(taskSuppressionKey(1L, monday))),
+        )
+    }
+
+    /**
+     * The key is built by the same function that writes it. Asked by hand in
+     * util/Formatters.kt until now, which meant the format was written out in
+     * two places and only one of them was anywhere near the rest of the
+     * recurrence code.
+     */
+    @Test
+    fun aTemplateIsHiddenOnlyByATombstoneNamingItAndItsOwnDay() {
+        val template = task(1L, monday, repeatRule = RepeatRule(freq = RepeatFreq.DAILY))
+
+        assertFalse(isSuppressedTemplateTaskOnItsDate(template, emptySet()))
+        assertFalse(
+            "another day of the same task is a different occurrence",
+            isSuppressedTemplateTaskOnItsDate(
+                template,
+                setOf(taskSuppressionKey(1L, monday.plusDays(1))),
+            ),
+        )
+        assertFalse(
+            "another task's tombstone says nothing about this one",
+            isSuppressedTemplateTaskOnItsDate(template, setOf(taskSuppressionKey(2L, monday))),
+        )
+        assertFalse(
+            "a subtask tombstone is not a task tombstone",
+            isSuppressedTemplateTaskOnItsDate(template, setOf(subtaskSuppressionKey(1L, monday))),
+        )
+    }
+
+    /**
+     * Deleting a generated occurrence removes the row, so it never needs
+     * hiding — and a tombstone carrying its id means something else entirely.
+     */
+    @Test
+    fun aGeneratedOccurrenceIsNeverHiddenThisWay() {
+        val generated = task(7L, monday, originTaskId = 1L)
+
+        assertFalse(
+            isSuppressedTemplateTaskOnItsDate(generated, setOf(taskSuppressionKey(7L, monday))),
+        )
+    }
+
+    @Test
+    fun aTaskWithNoDateIsNeverHiddenThisWay() {
+        val someday = task(1L, date = null)
+
+        assertFalse(isSuppressedTemplateTaskOnItsDate(someday, setOf("T:1:0")))
+    }
 }
