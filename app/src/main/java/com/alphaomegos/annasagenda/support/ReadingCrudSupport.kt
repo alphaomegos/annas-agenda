@@ -194,7 +194,10 @@ fun updateReadingMovieEntity(
 
     val newReleaseYear = when {
         clearReleaseYear -> null
-        releaseYear != null -> releaseYear.takeIf { it in 1..9999 }
+        // A year that cannot be a year is bad input, and bad input must not
+        // erase what is already stored. Emptying the field is how the year is
+        // removed, and that arrives as clearReleaseYear.
+        releaseYear != null -> releaseYear.takeIf { it in 1..9999 } ?: old.releaseYear
         else -> old.releaseYear
     }
 

@@ -155,6 +155,21 @@ class ReadingCrudSupportTest {
         assertEquals(1980, updateMovie(movie, releaseYear = 1980).releaseYear)
     }
 
+    /**
+     * A year that cannot be one is bad input, and bad input must not destroy
+     * what is already stored — the same rule the anthropometry fields now
+     * follow. Emptying the field is how the year is removed, and that arrives
+     * as clearReleaseYear.
+     */
+    @Test
+    fun updateReadingMovieEntity_keepsTheStoredYearWhenTheNewOneIsImpossible() {
+        val movie = newMovie(releaseYear = 1977)!!
+
+        assertEquals(1977, updateMovie(movie, releaseYear = 20255).releaseYear)
+        assertEquals(1977, updateMovie(movie, releaseYear = 0).releaseYear)
+        assertEquals(1977, updateMovie(movie, releaseYear = -5).releaseYear)
+    }
+
     @Test
     fun moveReadingMovieToShelf_keepsOnlyTheYearTheNewShelfCanHave() {
         val watched = newMovie(shelf = ReadingShelf.DONE)!!
