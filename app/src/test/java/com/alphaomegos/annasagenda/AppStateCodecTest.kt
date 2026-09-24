@@ -92,4 +92,42 @@ class AppStateCodecTest {
             (result as AppStateDecodeResult.Success).state.calorieGoalChanges,
         )
     }
+
+    /* ---------------- a payload from the future ---------------- */
+
+    /**
+     * Reading it as best we can is the dangerous option, not the safe one:
+     * unknown fields are dropped on the way in, and the next save stamps the
+     * remains with the current version. The newer data would be gone with
+     * nothing left to show it ever existed.
+     */
+    @Test
+    fun aPayloadFromANewerSchemaIsRefused() {
+        val raw = """{"v":${CURRENT_SCHEMA_VERSION + 1},"tasks":[]}"""
+
+        val result = decodeAppStateJsonOrFailure(raw)
+
+        assertTrue(result is AppStateDecodeResult.Failure)
+
+        val cause = (result as AppStateDecodeResult.Failure).cause
+        assertTrue("the reason must be tellable apart", cause is AppStateTooNewException)
+
+        cause as AppStateTooNewException
+        assertEquals(CURRENT_SCHEMA_VERSION + 1, cause.payloadVersion)
+        assertEquals(CURRENT_SCHEMA_VERSION, cause.supportedVersion)
+    }
+
+    @Test
+    fun aPayloadOfTheCurrentSchemaIsStillRead() {
+        val raw = """{"v":$CURRENT_SCHEMA_VERSION,"tasks":[]}"""
+
+        assertTrue(decodeAppStateJsonOrFailure(raw) is AppStateDecodeResult.Success)
+    }
+
+    @Test
+    fun anOlderPayloadIsStillMigratedAndRead() {
+        val raw = """{"v":0,"dailyGoalKcal":1800}"""
+
+        assertTrue(decodeAppStateJsonOrFailure(raw) is AppStateDecodeResult.Success)
+    }
 }

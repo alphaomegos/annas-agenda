@@ -114,6 +114,15 @@ sealed interface AppStateLoadResult {
     data class Loaded(val state: AppState) : AppStateLoadResult
 
     /**
+     * There is data on disk and this build must not write over it.
+     *
+     * The two reasons differ in what the user should do about it, which is why
+     * they are told apart, but they are handled identically everywhere else:
+     * autosave never starts, so whatever is on disk stays exactly as it is.
+     */
+    sealed interface Failed : AppStateLoadResult
+
+    /**
      * Saved data exists but could not be read — either the DataStore file
      * itself is unparseable, or the JSON inside it is.
      *
@@ -123,7 +132,20 @@ sealed interface AppStateLoadResult {
     data class Corrupted(
         val cause: Throwable,
         val quarantineFile: File?,
-    ) : AppStateLoadResult
+    ) : Failed
+
+    /**
+     * The data was written by a newer version of the app.
+     *
+     * Nothing is wrong with it — this build simply cannot read it without
+     * throwing away the parts it does not know. There is nothing to salvage
+     * and nothing to quarantine: the payload is intact and the newer version
+     * will read it as it always did.
+     */
+    data class TooNew(
+        val payloadVersion: Int,
+        val supportedVersion: Int,
+    ) : Failed
 }
 
 class AppStateStore internal constructor(
@@ -170,10 +192,17 @@ class AppStateStore internal constructor(
         when (val result = decodeAppStateJsonOrFailure(raw)) {
             is AppStateDecodeResult.Success -> AppStateLoadResult.Loaded(result.state)
 
-            is AppStateDecodeResult.Failure -> AppStateLoadResult.Corrupted(
-                cause = result.cause,
-                quarantineFile = quarantineCorruptText(context, raw),
-            )
+            is AppStateDecodeResult.Failure -> when (val cause = result.cause) {
+                is AppStateTooNewException -> AppStateLoadResult.TooNew(
+                    payloadVersion = cause.payloadVersion,
+                    supportedVersion = cause.supportedVersion,
+                )
+
+                else -> AppStateLoadResult.Corrupted(
+                    cause = cause,
+                    quarantineFile = quarantineCorruptText(context, raw),
+                )
+            }
         }
     }
 

@@ -19,6 +19,17 @@ internal fun migrateAppStateRawJson(raw: String): JsonElement {
     var cur = root
     var v = cur["v"]?.jsonPrimitive?.intOrNull ?: 0
 
+    // A payload from the future is refused rather than read as best we can.
+    // Decoding drops the fields this build does not know, and the next save
+    // stamps the remains with the current version — which destroys the newer
+    // data and leaves no trace that it was ever there.
+    if (v > CURRENT_SCHEMA_VERSION) {
+        throw AppStateTooNewException(
+            payloadVersion = v,
+            supportedVersion = CURRENT_SCHEMA_VERSION,
+        )
+    }
+
     var safety = 0
     while (v < CURRENT_SCHEMA_VERSION && safety < 50) {
         val next = when (v) {

@@ -43,6 +43,32 @@ class AppStateStoreInstrumentedTest {
         assertEquals(AppStateLoadResult.Empty, loaded)
     }
 
+    /**
+     * A payload from a newer version is not damaged, so it must not be
+     * reported as damaged — and above all it must still be on disk afterwards,
+     * exactly as it was, for that newer version to read.
+     */
+    @Test
+    fun load_reportsTooNew_andKeepsPayload_whenStoredJsonIsFromANewerVersion() = runBlocking {
+        val fromTheFuture = """{"v":${CURRENT_SCHEMA_VERSION + 1},"tasks":[],"somethingNew":42}"""
+
+        appStateDataStore(appContext).edit { prefs ->
+            prefs[stringPreferencesKey(AppStateStore.APP_STATE_KEY_NAME)] = fromTheFuture
+        }
+
+        val loaded = store.load()
+
+        assertTrue("expected TooNew, got $loaded", loaded is AppStateLoadResult.TooNew)
+        loaded as AppStateLoadResult.TooNew
+        assertEquals(CURRENT_SCHEMA_VERSION + 1, loaded.payloadVersion)
+        assertEquals(CURRENT_SCHEMA_VERSION, loaded.supportedVersion)
+
+        val stillStored = appStateDataStore(appContext).data.first()[
+            stringPreferencesKey(AppStateStore.APP_STATE_KEY_NAME)
+        ]
+        assertEquals("the payload must be left exactly as it was", fromTheFuture, stillStored)
+    }
+
     @Test
     fun load_reportsCorrupted_andKeepsPayload_whenStoredJsonIsUnreadable() = runBlocking {
         val unreadable = """{"v":3,"tasks":[{"id":1,"order":0}"""

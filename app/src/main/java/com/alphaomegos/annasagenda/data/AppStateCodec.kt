@@ -11,6 +11,21 @@ package com.alphaomegos.annasagenda
  * first launch: the app would fall back to an empty state and autosave would
  * then overwrite the still-perfectly-recoverable payload 400 ms later.
  */
+/**
+ * The payload was written by a version of the app that knows a newer schema.
+ *
+ * Reading it anyway is not a harmless best effort: unknown fields are dropped
+ * on the way in, and the first save afterwards writes the reduced state back
+ * under the current version number, at which point the newer data is gone for
+ * good and nothing can tell it ever existed.
+ */
+class AppStateTooNewException(
+    val payloadVersion: Int,
+    val supportedVersion: Int,
+) : IllegalStateException(
+    "App state payload is version $payloadVersion, this build understands $supportedVersion"
+)
+
 sealed interface AppStateDecodeResult {
 
     data class Success(val state: AppState) : AppStateDecodeResult

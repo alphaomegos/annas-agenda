@@ -23,4 +23,7 @@
     <string name="storage_failure_continue_empty">Continue with empty data</string>
     <string name="storage_failure_confirm_title">Start with empty data?</string>
     <string name="storage_failure_confirm_text">The unreadable data stays on the device as a copy, but the app will start from scratch.</string>
+    <string name="storage_too_new_title">Data from a newer version</string>
+    <string name="storage_too_new_text">The saved data was written by a newer version of the app (format %1$d; this version understands %2$d). It has been left untouched.</string>
+    <string name="storage_too_new_hint">Install the newer version to open it. Nothing is lost while this screen is showing.</string>
 </resources>

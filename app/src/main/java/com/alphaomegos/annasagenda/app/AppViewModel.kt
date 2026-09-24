@@ -251,15 +251,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * Non-null when persisted state exists but could not be read. While this is
      * set, autosave stays off so the unreadable payload is never overwritten.
      */
-    private val _storageFailure = MutableStateFlow<AppStateLoadResult.Corrupted?>(null)
-    val storageFailure: StateFlow<AppStateLoadResult.Corrupted?> = _storageFailure.asStateFlow()
+    private val _storageFailure = MutableStateFlow<AppStateLoadResult.Failed?>(null)
+    val storageFailure: StateFlow<AppStateLoadResult.Failed?> = _storageFailure.asStateFlow()
 
     private var autoSaveStarted = false
 
     init {
         viewModelScope.launch {
             when (val result = store.load()) {
-                is AppStateLoadResult.Corrupted -> {
+                is AppStateLoadResult.Failed -> {
                     // Deliberately leave _state at its default and do NOT start
                     // autosave: the payload on disk stays untouched until the
                     // user decides what to do with it.

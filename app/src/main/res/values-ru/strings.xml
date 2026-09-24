@@ -59,6 +59,9 @@
     <string name="storage_failure_continue_empty">Продолжить с пустыми данными</string>
     <string name="storage_failure_confirm_title">Начать с пустых данных?</string>
     <string name="storage_failure_confirm_text">Нечитаемые данные останутся на устройстве в виде копии, но приложение запустится с нуля.</string>
+    <string name="storage_too_new_title">Данные более новой версии</string>
+    <string name="storage_too_new_text">Сохранённые данные записаны более новой версией приложения (формат %1$d, эта версия понимает %2$d). Они оставлены нетронутыми.</string>
+    <string name="storage_too_new_hint">Поставьте более новую версию, чтобы их открыть. Пока показан этот экран, ничего не теряется.</string>
 
     <!-- Calendar -->
     <string name="calendar_title">Календарь</string>
