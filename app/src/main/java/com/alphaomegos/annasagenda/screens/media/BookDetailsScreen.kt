@@ -1,28 +1,8 @@
 package com.alphaomegos.annasagenda.screens.media
 
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,29 +10,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.NoShelfYears
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaType
-import com.alphaomegos.annasagenda.ReadingShelf
-import com.alphaomegos.annasagenda.shelfYearsFromText
-import com.alphaomegos.annasagenda.shelfYearText
 import com.alphaomegos.annasagenda.ShelfYears
-import com.alphaomegos.annasagenda.NoShelfYears
+import com.alphaomegos.annasagenda.shelfYearText
+import com.alphaomegos.annasagenda.shelfYearsFromText
 import java.time.LocalDate
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookDetailsScreen(
     vm: AppViewModel,
     bookId: Long,
     onBack: () -> Unit,
 ) {
-    val ctx = LocalContext.current
     val st by vm.state.collectAsState()
 
     val book = st.readingBooks.firstOrNull { it.id == bookId }
@@ -73,9 +45,6 @@ fun BookDetailsScreen(
     var yearText by rememberSaveable(bookId) { mutableStateOf(book.yearRead?.toString() ?: "") }
     var shelf by rememberSaveable(bookId) { mutableStateOf(book.shelf) }
 
-    var shelfMenuExpanded by rememberSaveable { mutableStateOf(false) }
-    val confirmDelete = rememberSaveable { mutableStateOf(false) }
-
     val pickCover = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -87,8 +56,6 @@ fun BookDetailsScreen(
             sourceUri = uri
         )
     }
-
-    val coverBitmap = rememberMediaDetailsCoverBitmap(book.coverUri)
 
     LaunchedEffect(bookId, book.shelf, book.yearRead, book.yearAbandoned) {
         shelf = book.shelf
@@ -124,153 +91,40 @@ fun BookDetailsScreen(
         return true
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.reading_book_title)) },
-                navigationIcon = {},
-                actions = {
-                    TextButton(onClick = { confirmDelete.value = true }) {
-                        Text(stringResource(R.string.delete))
-                    }
-                    TextButton(
-                        onClick = {
-                            val ok = validateAndSave()
-                            if (!ok) {
-                                Toast.makeText(
-                                    ctx,
-                                    ctx.getString(R.string.reading_book_invalid_input),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                Toast.makeText(
-                                    ctx,
-                                    ctx.getString(R.string.saved),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    ) {
-                        Text(stringResource(R.string.save))
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            MediaDetailsCoverCard(
-                coverBitmap = coverBitmap,
-                hasCover = !book.coverUri.isNullOrBlank(),
-                onChooseCover = { pickCover.launch(arrayOf("image/*")) },
-                onRemoveCover = {
-                    vm.removeReadingMediaCover(ReadingMediaType.BOOKS, bookId)
-                }
-            )
+    MediaDetailsForm(
+        type = ReadingMediaType.BOOKS,
+        coverUri = book.coverUri,
+        onPickCover = { pickCover.launch(arrayOf("image/*")) },
+        onRemoveCover = { vm.removeReadingMediaCover(ReadingMediaType.BOOKS, bookId) },
+        onDelete = { vm.deleteReadingBook(bookId) },
+        onSave = { validateAndSave() },
+        onBack = onBack,
+        title = title,
+        onTitleChange = { title = it },
+        shelf = shelf,
+        onShelfChange = { selected ->
+            shelf = selected
+            yearText = shelfYearText(selected, NoShelfYears, LocalDate.now().year)
+        },
+        yearText = yearText,
+        onYearTextChange = { yearText = it },
+    ) {
+        MediaDetailsTextField(
+            value = author,
+            onValueChange = { author = it },
+            labelRes = R.string.reading_book_field_author,
+        )
 
-            ElevatedCard(
-                colors = CardDefaults.elevatedCardColors(),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text(stringResource(R.string.reading_book_field_title_required)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+        MediaDetailsNumberField(
+            value = pagesText,
+            onValueChange = { pagesText = it },
+            labelRes = R.string.reading_book_field_pages_required,
+        )
 
-                    OutlinedTextField(
-                        value = author,
-                        onValueChange = { author = it },
-                        label = { Text(stringResource(R.string.reading_book_field_author)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    OutlinedTextField(
-                        value = pagesText,
-                        onValueChange = { pagesText = it.filter { ch -> ch.isDigit() } },
-                        label = { Text(stringResource(R.string.reading_book_field_pages_required)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    OutlinedTextField(
-                        value = currentPageText,
-                        onValueChange = { currentPageText = it.filter { ch -> ch.isDigit() } },
-                        label = { Text(stringResource(R.string.reading_book_field_current_page)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    MediaDetailsShelfSelector(
-                        shelf = shelf,
-                        menuExpanded = shelfMenuExpanded,
-                        onMenuExpandedChange = { shelfMenuExpanded = it },
-                        onShelfSelected = { selectedShelf ->
-                            shelf = selectedShelf
-                            yearText = shelfYearText(selectedShelf, NoShelfYears, LocalDate.now().year)
-                        }
-                    )
-
-                    if (shelf == ReadingShelf.DONE || shelf == ReadingShelf.ABANDONED) {
-                        MediaDetailsYearField(
-                            value = yearText,
-                            onValueChange = { yearText = it },
-                            labelRes = if (shelf == ReadingShelf.DONE) {
-                                R.string.reading_book_field_year_read
-                            } else {
-                                R.string.reading_book_field_year_abandoned
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.size(12.dp))
-
-            Button(
-                onClick = {
-                    val ok = validateAndSave()
-                    if (!ok) {
-                        Toast.makeText(
-                            ctx,
-                            ctx.getString(R.string.reading_book_invalid_input),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        onBack()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.reading_book_done))
-            }
-        }
+        MediaDetailsNumberField(
+            value = currentPageText,
+            onValueChange = { currentPageText = it },
+            labelRes = R.string.reading_book_field_current_page,
+        )
     }
-
-    MediaDetailsDeleteDialog(
-        open = confirmDelete.value,
-        titleRes = R.string.reading_book_delete_title,
-        textRes = R.string.reading_book_delete_text,
-        onDismiss = { confirmDelete.value = false },
-        onConfirmDelete = {
-            vm.deleteReadingBook(bookId)
-            confirmDelete.value = false
-            onBack()
-        }
-    )
 }
