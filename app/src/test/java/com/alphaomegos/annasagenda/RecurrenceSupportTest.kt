@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.DayOfWeek
@@ -555,5 +556,100 @@ class RecurrenceSupportTest {
             "only the subtask was",
             result.subtasks.none { it.taskId == occurrence!!.id && it.originSubtaskId == 2L },
         )
+    }
+
+    /* ---------------- tombstones must not outlive their template ---------------- */
+
+    /**
+     * Ids are handed out as "one past the largest in use", recomputed from the
+     * live data whenever a payload is read. A tombstone left behind by a
+     * deleted template therefore lands on whatever inherits that id, and the
+     * new task quietly loses those days with nothing on screen to explain it.
+     */
+    @Test
+    fun aTombstoneWhoseTaskIsGoneIsDropped() {
+        val keys = setOf(
+            taskSuppressionKey(40L, monday),
+            taskSuppressionKey(41L, monday),
+        )
+
+        val kept = pruneOrphanedSuppressions(
+            suppressedRecurrences = keys,
+            tasks = listOf(task(41L, monday, RepeatRule(freq = RepeatFreq.DAILY))),
+            subtasks = emptyList(),
+        )
+
+        assertEquals(setOf(taskSuppressionKey(41L, monday)), kept)
+    }
+
+    @Test
+    fun aTombstoneWhoseSubtaskIsGoneIsDropped() {
+        val keys = setOf(
+            subtaskSuppressionKey(2L, monday),
+            subtaskSuppressionKey(3L, monday),
+        )
+
+        val kept = pruneOrphanedSuppressions(
+            suppressedRecurrences = keys,
+            tasks = listOf(task(1L, monday)),
+            subtasks = listOf(subtask(3L, taskId = 1L, repeatRule = RepeatRule(freq = RepeatFreq.DAILY))),
+        )
+
+        assertEquals(setOf(subtaskSuppressionKey(3L, monday)), kept)
+    }
+
+    /**
+     * A task that no longer repeats still owns its tombstones: its subtask may
+     * be the thing that repeats, and then those days were deleted on purpose.
+     */
+    @Test
+    fun aTombstoneOfATaskThatStillExistsIsKept() {
+        val keys = setOf(taskSuppressionKey(1L, monday))
+
+        val kept = pruneOrphanedSuppressions(
+            suppressedRecurrences = keys,
+            tasks = listOf(task(1L, monday)),
+            subtasks = emptyList(),
+        )
+
+        assertEquals(keys, kept)
+    }
+
+    /** A payload from a newer version may hold keys this one cannot read. */
+    @Test
+    fun aKeyInAnUnknownShapeIsLeftAlone() {
+        val keys = setOf(
+            "X:1:20000",
+            "T:not-a-number:20000",
+            "T:1",
+            "T:1:not-a-day",
+            "",
+        )
+
+        assertEquals(
+            keys,
+            pruneOrphanedSuppressions(keys, tasks = emptyList(), subtasks = emptyList()),
+        )
+    }
+
+    @Test
+    fun aSetWithNothingOrphanedIsHandedBackUnchanged() {
+        val keys = setOf(taskSuppressionKey(1L, monday))
+
+        assertSame(
+            keys,
+            pruneOrphanedSuppressions(
+                suppressedRecurrences = keys,
+                tasks = listOf(task(1L, monday)),
+                subtasks = emptyList(),
+            ),
+        )
+    }
+
+    @Test
+    fun anEmptySetIsHandedBackUnchanged() {
+        val keys = emptySet<String>()
+
+        assertSame(keys, pruneOrphanedSuppressions(keys, emptyList(), emptyList()))
     }
 }

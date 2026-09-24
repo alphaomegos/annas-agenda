@@ -45,32 +45,45 @@ internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<Stri
     return normalized.ifEmpty { defaultAnthropometryFieldIds() }
 }
 
-internal fun AppStateDto.toDomain(): AppState = AppState(
-    tasks = tasks.map { it.toDomain() },
-    subtasks = subtasks.map { it.toDomain() },
-    suppressedRecurrences = suppressedRecurrences.toSet(),
-    anthropometry = anthropometry.map { it.toDomain() },
-    anthropometryEnabledFieldIds = normalizeAnthropometryFieldIdsForStore(anthropometryEnabledFieldIds),
-    calorieGoalChanges = calorieGoalChanges.map { it.toDomain() },
-    foodLog = foodLog.map { it.toDomain() },
-    runningPlanApproved = runningPlanApproved,
-    runningPlanEntries = runningPlanEntries.map { it.toDomain() },
-    counters = counters.mapNotNull { it.toDomainOrNull() },
-    mainMenuOrder = mainMenuOrder,
-    mainMenuHiddenIds = mainMenuHiddenIds.toSet(),
-    undoneLampMuted = undoneLampMuted,
-    undoneHorizonDays = normalizeUndoneHorizonDays(undoneHorizonDays),
-    readingBooks = readingBooks.mapNotNull { it.toDomainOrNull() },
-    readingMovies = readingMovies.mapNotNull { it.toDomainOrNull() },
-    readingSeries = readingSeries.mapNotNull { it.toDomainOrNull() },
-    readingSessions = readingSessions.mapNotNull { it.toDomainOrNull() },
-    activeReading = activeReading?.toDomain(),
-    readingMediaFilter = readingMediaFilter.toDomain(),
-    readingPlansPrefs = readingPlansPrefs.toDomain(),
-    readingNowPrefs = readingNowPrefs.toDomain(),
-    readingDonePrefs = readingDonePrefs.toDomain(),
-    readingAbandonedPrefs = readingAbandonedPrefs.toDomain(),
-)
+internal fun AppStateDto.toDomain(): AppState {
+    val domainTasks = tasks.map { it.toDomain() }
+    val domainSubtasks = subtasks.map { it.toDomain() }
+
+    return AppState(
+        tasks = domainTasks,
+        subtasks = domainSubtasks,
+        // Every payload the app reads comes through here, and this is also the
+        // only moment ids start being handed out again from the live data — so it
+        // is the one place where a tombstone left over from a deleted template can
+        // still be thrown away before it can poison whatever inherits that id.
+        suppressedRecurrences = pruneOrphanedSuppressions(
+            suppressedRecurrences = suppressedRecurrences.toSet(),
+            tasks = domainTasks,
+            subtasks = domainSubtasks,
+        ),
+        anthropometry = anthropometry.map { it.toDomain() },
+        anthropometryEnabledFieldIds = normalizeAnthropometryFieldIdsForStore(anthropometryEnabledFieldIds),
+        calorieGoalChanges = calorieGoalChanges.map { it.toDomain() },
+        foodLog = foodLog.map { it.toDomain() },
+        runningPlanApproved = runningPlanApproved,
+        runningPlanEntries = runningPlanEntries.map { it.toDomain() },
+        counters = counters.mapNotNull { it.toDomainOrNull() },
+        mainMenuOrder = mainMenuOrder,
+        mainMenuHiddenIds = mainMenuHiddenIds.toSet(),
+        undoneLampMuted = undoneLampMuted,
+        undoneHorizonDays = normalizeUndoneHorizonDays(undoneHorizonDays),
+        readingBooks = readingBooks.mapNotNull { it.toDomainOrNull() },
+        readingMovies = readingMovies.mapNotNull { it.toDomainOrNull() },
+        readingSeries = readingSeries.mapNotNull { it.toDomainOrNull() },
+        readingSessions = readingSessions.mapNotNull { it.toDomainOrNull() },
+        activeReading = activeReading?.toDomain(),
+        readingMediaFilter = readingMediaFilter.toDomain(),
+        readingPlansPrefs = readingPlansPrefs.toDomain(),
+        readingNowPrefs = readingNowPrefs.toDomain(),
+        readingDonePrefs = readingDonePrefs.toDomain(),
+        readingAbandonedPrefs = readingAbandonedPrefs.toDomain(),
+    )
+}
 
 internal fun Task.toDto(): TaskDto = TaskDto(
     id = id,

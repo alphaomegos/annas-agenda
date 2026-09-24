@@ -90,6 +90,35 @@ class AppStateStoreRoundTripTest {
         assertEquals(null, restored.activeReading)
     }
 
+    /**
+     * Reading a payload is the one moment ids start being handed out again
+     * from the live data, so it is also the last chance to throw away a
+     * tombstone whose template is gone — before it can silently punch holes in
+     * whatever inherits that id.
+     */
+    @Test
+    fun decodingDropsATombstoneWhoseTemplateIsGone() {
+        val json = """
+            {
+              "v": 4,
+              "tasks": [ { "id": 5, "order": 0, "description": "Water the plants" } ],
+              "subtasks": [ { "id": 7, "order": 0, "taskId": 5, "description": "Balcony" } ],
+              "suppressedRecurrences": [
+                "T:5:20000", "T:40:20000", "S:7:20000", "S:8:20000", "X:1:20000"
+              ]
+            }
+        """.trimIndent()
+
+        val restored = appStateStoreJson
+            .decodeFromString<AppStateDto>(json)
+            .toDomain()
+
+        assertEquals(
+            setOf("T:5:20000", "S:7:20000", "X:1:20000"),
+            restored.suppressedRecurrences,
+        )
+    }
+
     @Test
     fun defaultAppStateRoundTrip_isStable() {
         val original = AppState()

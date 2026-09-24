@@ -77,13 +77,76 @@ fun startOfWeek(date: LocalDate, weekStart: DayOfWeek): LocalDate {
 /** What the device currently considers the first day of the week. */
 fun currentLocaleWeekStart(): DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
 
+private const val TASK_SUPPRESSION_PREFIX = "T:"
+private const val SUBTASK_SUPPRESSION_PREFIX = "S:"
+
 /** Tombstone key for a generated task occurrence. */
 fun taskSuppressionKey(templateTaskId: Long, date: LocalDate): String =
-    "T:$templateTaskId:${date.toEpochDay()}"
+    "$TASK_SUPPRESSION_PREFIX$templateTaskId:${date.toEpochDay()}"
 
 /** Tombstone key for a generated subtask occurrence. */
 fun subtaskSuppressionKey(templateSubtaskId: Long, date: LocalDate): String =
-    "S:$templateSubtaskId:${date.toEpochDay()}"
+    "$SUBTASK_SUPPRESSION_PREFIX$templateSubtaskId:${date.toEpochDay()}"
+
+private enum class SuppressionKind { TASK, SUBTASK }
+
+private data class SuppressionOwner(val kind: SuppressionKind, val id: Long)
+
+/** Who a tombstone belongs to, or null when the key is not one we wrote. */
+private fun suppressionOwner(key: String): SuppressionOwner? {
+    val kind = when {
+        key.startsWith(TASK_SUPPRESSION_PREFIX) -> SuppressionKind.TASK
+        key.startsWith(SUBTASK_SUPPRESSION_PREFIX) -> SuppressionKind.SUBTASK
+        else -> return null
+    }
+
+    val rest = key.substring(TASK_SUPPRESSION_PREFIX.length)
+    val separator = rest.indexOf(':')
+    if (separator <= 0) return null
+
+    val id = rest.substring(0, separator).toLongOrNull() ?: return null
+
+    // The tail is an epoch day. Not needed here, but a key without one is not
+    // a key of ours and is left alone rather than guessed at.
+    rest.substring(separator + 1).toLongOrNull() ?: return null
+
+    return SuppressionOwner(kind = kind, id = id)
+}
+
+/**
+ * Drops tombstones whose task or subtask no longer exists.
+ *
+ * A tombstone names its template by id and nothing ever removed one. Ids are
+ * handed out as "one past the largest in use", recomputed from the live data
+ * whenever a payload is read, so an id freed by a deletion is given to
+ * something new — which then inherits every day the deleted template had been
+ * deleted on. Those days simply never appear, with nothing on screen to
+ * explain it and no way to undo it.
+ *
+ * Keys in a shape this version does not recognise are kept: a payload may have
+ * been written by a newer one.
+ */
+fun pruneOrphanedSuppressions(
+    suppressedRecurrences: Set<String>,
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+): Set<String> {
+    if (suppressedRecurrences.isEmpty()) return suppressedRecurrences
+
+    val taskIds = tasks.mapTo(mutableSetOf()) { it.id }
+    val subtaskIds = subtasks.mapTo(mutableSetOf()) { it.id }
+
+    val kept = suppressedRecurrences.filterTo(mutableSetOf()) { key ->
+        val owner = suppressionOwner(key) ?: return@filterTo true
+
+        when (owner.kind) {
+            SuppressionKind.TASK -> owner.id in taskIds
+            SuppressionKind.SUBTASK -> owner.id in subtaskIds
+        }
+    }
+
+    return if (kept.size == suppressedRecurrences.size) suppressedRecurrences else kept
+}
 
 /**
  * Materialises every occurrence falling in [start]..[end] that is not already
