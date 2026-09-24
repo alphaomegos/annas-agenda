@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -144,30 +145,32 @@ private fun DateTasksBlockContent(
 ) {
     var expandedTaskIds by remember(date) { mutableStateOf<Set<Long>>(emptySet()) }
 
-    val moveTaskId = remember { mutableStateOf<Long?>(null) }
-    val showMoveTaskDatePicker = remember { mutableStateOf(false) }
+    // Saveable throughout: a dialog that is open, and the text typed into it,
+    // both have to survive a rotation. They used to be plain remembers, so
+    // turning the phone closed whatever was open and threw away what had been
+    // written in it.
+    val moveTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val showMoveTaskDatePicker = rememberSaveable { mutableStateOf(false) }
 
-    val copyTaskId = remember { mutableStateOf<Long?>(null) }
-    val showCopyTaskDatePicker = remember { mutableStateOf(false) }
+    val copyTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val showCopyTaskDatePicker = rememberSaveable { mutableStateOf(false) }
 
-    val copySubtaskId = remember { mutableStateOf<Long?>(null) }
-    val showCopySubtaskDatePicker = remember { mutableStateOf(false) }
+    val copySubtaskId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val showCopySubtaskDatePicker = rememberSaveable { mutableStateOf(false) }
 
-    val moveSubtaskId = remember { mutableStateOf<Long?>(null) }
+    val moveSubtaskId = rememberSaveable { mutableStateOf<Long?>(null) }
 
-    val addSubtaskToTaskId = remember { mutableStateOf<Long?>(null) }
-    val newSubtaskText = remember { mutableStateOf("") }
-    val newSubtaskColor = remember { mutableStateOf<Long?>(null) }
+    val addSubtaskToTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val newSubtaskText = rememberSaveable { mutableStateOf("") }
+    val newSubtaskColor = rememberSaveable { mutableStateOf<Long?>(null) }
 
-    var editTaskId by remember { mutableStateOf<Long?>(null) }
-    val editTaskText = remember { mutableStateOf("") }
-    val editTaskRepeatRule = remember { mutableStateOf<RepeatRule?>(null) }
-    val showTaskRepeatPicker = remember { mutableStateOf(false) }
-    val showCounterPicker = remember { mutableStateOf(false) }
-    var editSubtaskId by remember { mutableStateOf<Long?>(null) }
-    val editSubtaskText = remember { mutableStateOf("") }
-    val editSubtaskRepeatRule = remember { mutableStateOf<RepeatRule?>(null) }
-    val showSubtaskRepeatPicker = remember { mutableStateOf(false) }
+    var editTaskId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val editTaskText = rememberSaveable { mutableStateOf("") }
+    val showTaskRepeatPicker = rememberSaveable { mutableStateOf(false) }
+    val showCounterPicker = rememberSaveable { mutableStateOf(false) }
+    var editSubtaskId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val editSubtaskText = rememberSaveable { mutableStateOf("") }
+    val showSubtaskRepeatPicker = rememberSaveable { mutableStateOf(false) }
 
     tasks.forEach { task ->
         val subtasks = subtasksByTaskId[task.id].orEmpty()
@@ -188,7 +191,6 @@ private fun DateTasksBlockContent(
             onEdit = {
                 editTaskId = task.id
                 editTaskText.value = task.description
-                editTaskRepeatRule.value = task.repeatRule
                 showTaskRepeatPicker.value = false
             },
             onMoveUp = { actions.moveTaskUp(task.id) },
@@ -223,7 +225,6 @@ private fun DateTasksBlockContent(
                     onEdit = {
                         editSubtaskId = st.id
                         editSubtaskText.value = st.description
-                        editSubtaskRepeatRule.value = st.repeatRule
                         showSubtaskRepeatPicker.value = false
                     },
                     onMoveUp = { actions.moveSubtaskUp(st.id) },
@@ -386,12 +387,15 @@ private fun DateTasksBlockContent(
         },
     )
 
+    // The rule shown is the one the item has. It used to be kept in a second
+    // copy here, set when the dialog opened and updated when the picker
+    // confirmed — which is exactly the item's own rule, one rotation away from
+    // being null while the picker was still open.
     if (showTaskRepeatPicker.value && editTaskId != null) {
         RepeatPickerDialog(
-            initial = editTaskRepeatRule.value,
+            initial = tasks.firstOrNull { it.id == editTaskId }?.repeatRule,
             onDismiss = { showTaskRepeatPicker.value = false },
             onConfirm = { rule ->
-                editTaskRepeatRule.value = rule
                 actions.setTaskRepeatRule(editTaskId!!, rule)
                 showTaskRepeatPicker.value = false
             }
@@ -400,10 +404,13 @@ private fun DateTasksBlockContent(
 
     if (showSubtaskRepeatPicker.value && editSubtaskId != null) {
         RepeatPickerDialog(
-            initial = editSubtaskRepeatRule.value,
+            initial = subtasksByTaskId.values
+                .asSequence()
+                .flatten()
+                .firstOrNull { it.id == editSubtaskId }
+                ?.repeatRule,
             onDismiss = { showSubtaskRepeatPicker.value = false },
             onConfirm = { rule ->
-                editSubtaskRepeatRule.value = rule
                 actions.setSubtaskRepeatRule(editSubtaskId!!, rule)
                 showSubtaskRepeatPicker.value = false
             }

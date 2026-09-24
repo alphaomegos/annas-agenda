@@ -36,12 +36,24 @@ fun CountersScreen(
 ) {
     val state by vm.counters.collectAsState()
 
-    val showAddTypeDialog = remember { mutableStateOf(false) }
-    val showCreateManualDialog = remember { mutableStateOf(false) }
-    val showCreateDateDialog = remember { mutableStateOf(false) }
+    val showAddTypeDialog = rememberSaveable { mutableStateOf(false) }
+    val showCreateManualDialog = rememberSaveable { mutableStateOf(false) }
+    val showCreateDateDialog = rememberSaveable { mutableStateOf(false) }
 
-    val editManual = remember { mutableStateOf<ManualCounter?>(null) }
-    val editDateRange = remember { mutableStateOf<DateRangeCounter?>(null) }
+    // The id rather than the counter: only the id can be put in saved state,
+    // and holding the counter meant a rotation closed the dialog and took
+    // whatever had been typed into it. Looking it up again also means an edit
+    // that lands while the dialog is open is not shadowed by a stale copy.
+    val editManualId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val editDateRangeId = rememberSaveable { mutableStateOf<Long?>(null) }
+
+    val editManual = state.counters
+        .filterIsInstance<ManualCounter>()
+        .firstOrNull { it.id == editManualId.value }
+
+    val editDateRange = state.counters
+        .filterIsInstance<DateRangeCounter>()
+        .firstOrNull { it.id == editDateRangeId.value }
 
     Scaffold(
         topBar = {
@@ -83,12 +95,12 @@ fun CountersScreen(
                     when (c) {
                         is ManualCounter -> ManualCounterCard(
                             counter = c,
-                            onClick = { editManual.value = c },
+                            onClick = { editManualId.value = c.id },
                             onDelete = { vm.deleteCounter(c.id) }
                         )
                         is DateRangeCounter -> DateRangeCounterCard(
                             counter = c,
-                            onClick = { editDateRange.value = c },
+                            onClick = { editDateRangeId.value = c.id },
                             onDelete = { vm.deleteCounter(c.id) }
                         )
                     }
@@ -151,37 +163,37 @@ fun CountersScreen(
         )
     }
 
-    editManual.value?.let { c ->
+    editManual?.let { c ->
         ManualCounterDialog(
             title = stringResource(R.string.edit_counter),
             initialTitle = c.title,
             initialBalance = c.balance,
-            onDismiss = { editManual.value = null },
+            onDismiss = { editManualId.value = null },
             onDelete = {
                 vm.deleteCounter(c.id)
-                editManual.value = null
+                editManualId.value = null
             },
             onSave = { t, b ->
                 vm.updateManualCounter(c.id, t, b)
-                editManual.value = null
+                editManualId.value = null
             }
         )
     }
 
-    editDateRange.value?.let { c ->
+    editDateRange?.let { c ->
         DateRangeCounterDialog(
             title = stringResource(R.string.edit_counter),
             initialTitle = c.title,
             initialStart = c.startDate,
             initialEnd = c.endDate,
-            onDismiss = { editDateRange.value = null },
+            onDismiss = { editDateRangeId.value = null },
             onDelete = {
                 vm.deleteCounter(c.id)
-                editDateRange.value = null
+                editDateRangeId.value = null
             },
             onSave = { t, s, e ->
                 vm.updateDateRangeCounter(c.id, t, s, e)
-                editDateRange.value = null
+                editDateRangeId.value = null
             }
         )
     }

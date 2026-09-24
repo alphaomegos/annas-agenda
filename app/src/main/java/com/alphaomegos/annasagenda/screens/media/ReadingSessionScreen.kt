@@ -59,7 +59,10 @@ fun ReadingSessionScreen(
     val isActiveForThisBook = active?.bookId == bookId
 
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    val showFinishDialog = remember { mutableStateOf(false) }
+    // Saveable, so a rotation does not close the dialog: the three fields
+    // inside it already keep what was typed, and they only get the chance if
+    // the dialog itself comes back.
+    val showFinishDialog = rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(isActiveForThisBook) {
         while (isActiveForThisBook) {
