@@ -41,24 +41,47 @@ internal fun migrateAppStateRawJson(
         )
     }
 
-    var safety = 0
-    while (v < CURRENT_SCHEMA_VERSION && safety < 50) {
-        val next = when (v) {
+    while (v < CURRENT_SCHEMA_VERSION) {
+        val from = v
+
+        cur = when (v) {
             0 -> migrateAppState0To1(cur)
             1 -> migrateAppState1To2(cur)
             2 -> migrateAppState2To3(cur)
             3 -> migrateAppState3To4(cur, weekStartForLegacyRules)
-            else -> cur
+            else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
-        cur = next
-        val newV = cur["v"]?.jsonPrimitive?.intOrNull
-        v = if (newV != null && newV > v) newV else (v + 1)
-        safety++
+        // Every step has to say what it turned the payload into, and it has to
+        // be more than it was. Assuming otherwise is how data gets stamped as
+        // converted without being touched: the loop used to fall back to
+        // `v + 1`, so a missing branch and a migration that forgot to write "v"
+        // both ended with the payload claiming to be current.
+        v = cur["v"]?.jsonPrimitive?.intOrNull
+            ?: throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
+
+        if (v <= from) throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
     }
 
     return cur
 }
+
+/**
+ * A stored version that no migration handles, or one a migration failed to
+ * advance.
+ *
+ * This is a mistake in this file rather than anything the user did, and it can
+ * only appear after [CURRENT_SCHEMA_VERSION] is raised. Refusing the payload
+ * sends it to the unreadable-state screen, which keeps it on disk untouched —
+ * the alternative is writing the unconverted data back under the new version
+ * number, and there is no way back from that.
+ */
+internal class MissingMigrationException(
+    val fromVersion: Int,
+    val supportedVersion: Int,
+) : IllegalStateException(
+    "No migration takes app state from version $fromVersion towards $supportedVersion"
+)
 
 private fun migrateAppState0To1(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()

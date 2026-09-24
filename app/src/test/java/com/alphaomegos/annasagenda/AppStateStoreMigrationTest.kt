@@ -7,6 +7,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import java.time.DayOfWeek
 import org.junit.Test
 import java.time.LocalDate
@@ -156,6 +157,13 @@ class AppStateStoreMigrationTest {
         assertEquals(DayOfWeek.SUNDAY.value, rule["weekStartIso"]?.jsonPrimitive?.intOrNull)
     }
 
+    /**
+     * Asserted on the decoded state rather than on the JSON, because the JSON
+     * is not what the app runs on. A migration can leave the payload looking
+     * exactly right and still produce something the DTO layer drops on the
+     * floor — a renamed field, a number where a string is expected — and a test
+     * that stops at the JSON says nothing about that.
+     */
     @Test
     fun migrateVersion1_convertsDurationHmsTextIntoDurationHhMmText() {
         val raw = """
@@ -172,13 +180,42 @@ class AppStateStoreMigrationTest {
             }
         """.trimIndent()
 
-        val root = migrateAppStateRawJson(raw) as JsonObject
-        val entry = ((root["runningPlanEntries"] as JsonArray)[0] as JsonObject)
+        val entry = decoded(raw).runningPlanEntries.single()
 
-        assertEquals(CURRENT_SCHEMA_VERSION, root["v"]?.jsonPrimitive?.intOrNull)
-        assertFalse(entry.containsKey("durationHmsText"))
-        assertFalse(entry.containsKey("durationMinutesText"))
-        assertEquals("0103", entry["durationHhMmText"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(LocalDate.ofEpochDay(20000), entry.date)
+        assertEquals("0103", entry.durationHhMmText)
+        assertEquals("10.0", entry.distanceKmText)
+        assertEquals("06:12", entry.paceText)
+    }
+
+    /**
+     * The migration chain has to reach the current version from every version
+     * that has ever been written to a device, and it has to arrive at something
+     * that still decodes.
+     *
+     * The failure this guards against is silent by nature. Raising
+     * [CURRENT_SCHEMA_VERSION] without adding the branch that gets there used
+     * to leave the loop bumping the number on its own, so unconverted data was
+     * saved back stamped as current — readable, wrong, and no longer
+     * distinguishable from data that had been converted properly. The loop now
+     * refuses to invent that step, and this test is what notices.
+     */
+    @Test
+    fun everyStoredVersionHasAMigrationThatReachesTheCurrentSchema() {
+        (0 until CURRENT_SCHEMA_VERSION).forEach { version ->
+            val raw = """{ "v": $version }"""
+
+            val root = migrateAppStateRawJson(raw) as JsonObject
+
+            assertEquals(
+                "version $version does not reach the current schema",
+                CURRENT_SCHEMA_VERSION,
+                root["v"]?.jsonPrimitive?.intOrNull,
+            )
+
+            // And what comes out is still a payload the app can read.
+            decoded(raw)
+        }
     }
 
     @Test
@@ -226,5 +263,18 @@ class AppStateStoreMigrationTest {
             setOf(validId),
             normalizeAnthropometryFieldIdsForStore(listOf("  $validId  ", "bad", validId)),
         )
+    }
+
+    /** Migrates and decodes, failing with the reason when the payload does not survive. */
+    private fun decoded(raw: String): AppState {
+        val result = decodeAppStateJsonOrFailure(raw)
+
+        assertTrue(
+            "the migrated payload did not decode: " +
+                "${(result as? AppStateDecodeResult.Failure)?.cause}",
+            result is AppStateDecodeResult.Success,
+        )
+
+        return (result as AppStateDecodeResult.Success).state
     }
 }
