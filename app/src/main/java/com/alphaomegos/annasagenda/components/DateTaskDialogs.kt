@@ -12,15 +12,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -28,9 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.DateTasksData
 import com.alphaomegos.annasagenda.R
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,33 +84,11 @@ internal fun MoveTaskDialogs(
             }
         )
     } else {
-        val zone = remember { ZoneId.systemDefault() }
-        val initialMillis = remember(taskId, currentTaskDate) {
-            val d = currentTaskDate ?: LocalDate.now()
-            d.atStartOfDay(zone).toInstant().toEpochMilli()
-        }
-        val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
-
-        DatePickerDialog(
-            onDismissRequest = onDismissAll,
-            confirmButton = {
-                TextButton(onClick = {
-                    val millis = pickerState.selectedDateMillis
-                    if (millis != null) {
-                        val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-                        onMoveToDate(taskId, newDate)
-                    }
-                    onDismissAll()
-                }) { Text(stringResource(R.string.ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissAll) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
+        PickDateDialog(
+            initialDate = currentTaskDate,
+            onDismiss = onDismissAll,
+            onPicked = { newDate -> onMoveToDate(taskId, newDate) },
+        )
     }
 }
 
@@ -184,33 +156,14 @@ internal fun CopyToDateDialogs(
             }
         )
     } else {
-        val zone = remember { ZoneId.systemDefault() }
-        val initialMillis = remember {
-            LocalDate.now().atStartOfDay(zone).toInstant().toEpochMilli()
-        }
-        val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
-
-        DatePickerDialog(
-            onDismissRequest = onDismissAll,
-            confirmButton = {
-                TextButton(onClick = {
-                    val millis = pickerState.selectedDateMillis
-                    if (millis != null) {
-                        val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-                        onCopyToDate(itemId, newDate)
-                        copied()
-                    }
-                    onDismissAll()
-                }) { Text(stringResource(R.string.ok)) }
+        PickDateDialog(
+            initialDate = null,
+            onDismiss = onDismissAll,
+            onPicked = { newDate ->
+                onCopyToDate(itemId, newDate)
+                copied()
             },
-            dismissButton = {
-                TextButton(onClick = onDismissAll) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
+        )
     }
 }
 

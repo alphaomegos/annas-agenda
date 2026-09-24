@@ -14,15 +14,12 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -34,12 +31,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.components.ColorPickerRow
+import com.alphaomegos.annasagenda.components.PickDateDialog
 import com.alphaomegos.annasagenda.components.ColorDot
 import com.alphaomegos.annasagenda.components.nextPaletteColor
 import com.alphaomegos.annasagenda.R
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.BorderStroke
@@ -383,39 +379,19 @@ fun NewTaskScreen(
         }
 
         if (showDatePicker) {
-            val zone = remember { ZoneId.systemDefault() }
-            val initialMillis = remember(selectedDate) {
-                val d = selectedDate ?: LocalDate.now()
-                d.atStartOfDay(zone).toInstant().toEpochMilli()
-            }
-            val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
-
-            DatePickerDialog(
-                onDismissRequest = { showDatePicker = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        val millis = pickerState.selectedDateMillis
-                        if (millis != null) {
-                            selectedDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-                        }
-                        showDatePicker = false
-                    }) { Text(stringResource(R.string.ok)) }
-                },
-                dismissButton = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = {
+            PickDateDialog(
+                initialDate = selectedDate,
+                onDismiss = { showDatePicker = false },
+                onPicked = { picked -> selectedDate = picked },
+                extraDismissAction = {
+                    TextButton(
+                        onClick = {
                             selectedDate = null
                             showDatePicker = false
-                        }) { Text(stringResource(R.string.create_no_date)) }
-
-                        TextButton(onClick = { showDatePicker = false }) {
-                            Text(stringResource(R.string.cancel))
                         }
-                    }
-                }
-            ) {
-                DatePicker(state = pickerState)
-            }
+                    ) { Text(stringResource(R.string.create_no_date)) }
+                },
+            )
         }
     }
 }

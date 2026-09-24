@@ -6,15 +6,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,11 +25,10 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AnthropometryEntry
 import com.alphaomegos.annasagenda.AnthropometryFieldIds
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.components.PickDateDialog
 import com.alphaomegos.annasagenda.parseAnthropometryInputs
 import com.alphaomegos.annasagenda.util.formatOneDecimal
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 
 private data class AnthropometryInputFieldDef(
     val id: String,
@@ -199,8 +195,6 @@ internal fun AnthropometryInputDialog(
     onDismiss: () -> Unit,
     onSave: (LocalDate, Map<String, Double?>) -> Unit,
 ) {
-    val zone = remember { ZoneId.systemDefault() }
-
     val activeFieldDefs = remember(enabledFieldIds) {
         anthropometryInputFieldDefs
             .filter { it.id in enabledFieldIds }
@@ -267,29 +261,10 @@ internal fun AnthropometryInputDialog(
     )
 
     if (showDatePicker.value) {
-        val initialMillis = remember(date) {
-            date.atStartOfDay(zone).toInstant().toEpochMilli()
-        }
-        val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
-
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker.value = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    val millis = pickerState.selectedDateMillis
-                    if (millis != null) {
-                        date = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-                    }
-                    showDatePicker.value = false
-                }) { Text(stringResource(R.string.ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker.value = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
+        PickDateDialog(
+            initialDate = date,
+            onDismiss = { showDatePicker.value = false },
+            onPicked = { picked -> date = picked },
+        )
     }
 }
