@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -143,7 +144,12 @@ private fun DateTasksBlockContent(
     subtasksByTaskId: Map<Long, List<Subtask>>,
     actions: DateTasksActions,
 ) {
-    var expandedTaskIds by remember(date) { mutableStateOf<Set<Long>>(emptySet()) }
+    // Which tasks are open. Saveable like everything else in this screen: a
+    // rotation used to collapse every one of them, and on a busy day that is
+    // several taps to get back to where you were looking.
+    var expandedTaskIds by rememberSaveable(date, stateSaver = taskIdSetSaver) {
+        mutableStateOf<Set<Long>>(emptySet())
+    }
 
     // Saveable throughout: a dialog that is open, and the text typed into it,
     // both have to survive a rotation. They used to be plain remembers, so
@@ -417,3 +423,14 @@ private fun DateTasksBlockContent(
         )
     }
 }
+
+/**
+ * A set of task ids, for saved instance state.
+ *
+ * Saved state travels in a Bundle, which takes a list of longs but not a set
+ * of them.
+ */
+private val taskIdSetSaver = listSaver<Set<Long>, Long>(
+    save = { ids -> ids.toList() },
+    restore = { ids -> ids.toSet() },
+)
