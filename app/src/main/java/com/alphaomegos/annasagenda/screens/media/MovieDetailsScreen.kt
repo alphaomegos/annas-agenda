@@ -40,6 +40,10 @@ import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaType
 import com.alphaomegos.annasagenda.isPossibleReleaseYear
 import com.alphaomegos.annasagenda.ReadingShelf
+import com.alphaomegos.annasagenda.shelfYearsFromText
+import com.alphaomegos.annasagenda.shelfYearText
+import com.alphaomegos.annasagenda.ShelfYears
+import com.alphaomegos.annasagenda.NoShelfYears
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,12 +94,11 @@ fun MovieDetailsScreen(
 
     LaunchedEffect(movieId, movie.shelf, movie.yearWatched, movie.yearAbandoned) {
         shelf = movie.shelf
-        yearText = when (movie.shelf) {
-            ReadingShelf.DONE -> (movie.yearWatched ?: LocalDate.now().year).toString()
-            ReadingShelf.ABANDONED -> (movie.yearAbandoned ?: LocalDate.now().year).toString()
-            ReadingShelf.PLANS,
-            ReadingShelf.NOW -> ""
-        }
+        yearText = shelfYearText(
+            shelf = movie.shelf,
+            years = ShelfYears(finished = movie.yearWatched, abandoned = movie.yearAbandoned),
+            currentYear = LocalDate.now().year,
+        )
     }
 
     fun validateAndSave(): Boolean {
@@ -108,15 +111,7 @@ fun MovieDetailsScreen(
             releaseYearText.toIntOrNull()?.takeIf(::isPossibleReleaseYear) ?: return false
         }
 
-        val yearWatched: Int? = when (shelf) {
-            ReadingShelf.DONE -> yearText.toIntOrNull() ?: LocalDate.now().year
-            else -> null
-        }
-
-        val yearAbandoned: Int? = when (shelf) {
-            ReadingShelf.ABANDONED -> yearText.toIntOrNull() ?: LocalDate.now().year
-            else -> null
-        }
+        val years = shelfYearsFromText(shelf, yearText, LocalDate.now().year)
 
         vm.updateReadingMovie(
             movieId = movieId,
@@ -124,8 +119,8 @@ fun MovieDetailsScreen(
             releaseYear = releaseYear,
             clearReleaseYear = releaseYear == null,
             translation = translation.trim(),
-            yearWatched = yearWatched,
-            yearAbandoned = yearAbandoned,
+            yearWatched = years.finished,
+            yearAbandoned = years.abandoned,
             shelf = shelf
         )
         return true
@@ -220,7 +215,7 @@ fun MovieDetailsScreen(
                         onMenuExpandedChange = { shelfMenuExpanded = it },
                         onShelfSelected = { selectedShelf ->
                             shelf = selectedShelf
-                            yearText = mediaDetailsDefaultYearForShelf(selectedShelf)
+                            yearText = shelfYearText(selectedShelf, NoShelfYears, LocalDate.now().year)
                         }
                     )
 

@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.ReadingShelf
-import java.time.LocalDate
 import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
 
 @Composable
@@ -270,15 +269,5 @@ fun MediaDetailsDeleteDialog(
         onConfirm = onConfirmDelete,
         onDismiss = onDismiss,
     )
-}
-
-fun mediaDetailsDefaultYearForShelf(shelf: ReadingShelf): String {
-    return when (shelf) {
-        ReadingShelf.DONE,
-        ReadingShelf.ABANDONED -> LocalDate.now().year.toString()
-
-        ReadingShelf.PLANS,
-        ReadingShelf.NOW -> ""
-    }
 }
 

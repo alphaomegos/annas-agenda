@@ -82,3 +82,49 @@ fun coverAfterEdit(
     requested != null -> requested
     else -> existing
 }
+
+/** No year on either side: a newly chosen shelf, before anything is typed. */
+val NoShelfYears = ShelfYears(finished = null, abandoned = null)
+
+/**
+ * What the single year field on a details screen shows for [shelf].
+ *
+ * The screens keep one text field for both years, because only one of them can
+ * be set at a time — which shelf is chosen decides which year it means. On a
+ * shelf with no year it shows nothing, and the field is hidden.
+ *
+ * An item on a finished shelf with no year recorded shows [currentYear] rather
+ * than an empty field: it is the answer the user almost always wants, and an
+ * empty field there would save as this year anyway.
+ */
+fun shelfYearText(shelf: ReadingShelf, years: ShelfYears, currentYear: Int): String =
+    when (shelf) {
+        ReadingShelf.DONE -> (years.finished ?: currentYear).toString()
+        ReadingShelf.ABANDONED -> (years.abandoned ?: currentYear).toString()
+        ReadingShelf.PLANS,
+        ReadingShelf.NOW -> ""
+    }
+
+/**
+ * The other direction: what the year field means once it is filled in.
+ *
+ * Unreadable text falls back to [currentYear] rather than refusing the save.
+ * That is what the screens have always done, and it is defensible — the field
+ * only appears on a shelf where a year is required, and the user has already
+ * said the thing is finished.
+ */
+fun shelfYearsFromText(shelf: ReadingShelf, yearText: String, currentYear: Int): ShelfYears =
+    when (shelf) {
+        ReadingShelf.DONE -> ShelfYears(
+            finished = yearText.toIntOrNull() ?: currentYear,
+            abandoned = null,
+        )
+
+        ReadingShelf.ABANDONED -> ShelfYears(
+            finished = null,
+            abandoned = yearText.toIntOrNull() ?: currentYear,
+        )
+
+        ReadingShelf.PLANS,
+        ReadingShelf.NOW -> NoShelfYears
+    }

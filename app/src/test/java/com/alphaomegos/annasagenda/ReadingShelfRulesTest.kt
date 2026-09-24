@@ -130,4 +130,81 @@ class ReadingShelfRulesTest {
         assertFalse(isPossibleReleaseYear(-1))
         assertFalse(isPossibleReleaseYear(10000))
     }
+
+    // -- the single year field on a details screen ---------------------------
+
+    @Test
+    fun theYearFieldShowsTheYearTheItemHas() {
+        assertEquals(
+            "2019",
+            shelfYearText(ReadingShelf.DONE, ShelfYears(finished = 2019, abandoned = null), thisYear),
+        )
+
+        assertEquals(
+            "2018",
+            shelfYearText(
+                ReadingShelf.ABANDONED,
+                ShelfYears(finished = null, abandoned = 2018),
+                thisYear,
+            ),
+        )
+    }
+
+    @Test
+    fun theYearFieldOffersThisYearWhenTheItemHasNone() {
+        assertEquals("2026", shelfYearText(ReadingShelf.DONE, NoShelfYears, thisYear))
+        assertEquals("2026", shelfYearText(ReadingShelf.ABANDONED, NoShelfYears, thisYear))
+    }
+
+    @Test
+    fun theYearFieldIsEmptyOnAShelfWithNoYear() {
+        assertEquals("", shelfYearText(ReadingShelf.PLANS, ShelfYears(2019, 2018), thisYear))
+        assertEquals("", shelfYearText(ReadingShelf.NOW, ShelfYears(2019, 2018), thisYear))
+    }
+
+    @Test
+    fun whatIsTypedInTheYearFieldBelongsToWhicheverShelfIsChosen() {
+        assertEquals(
+            ShelfYears(finished = 1999, abandoned = null),
+            shelfYearsFromText(ReadingShelf.DONE, "1999", thisYear),
+        )
+
+        assertEquals(
+            ShelfYears(finished = null, abandoned = 1999),
+            shelfYearsFromText(ReadingShelf.ABANDONED, "1999", thisYear),
+        )
+
+        assertEquals(NoShelfYears, shelfYearsFromText(ReadingShelf.PLANS, "1999", thisYear))
+    }
+
+    @Test
+    fun anUnreadableYearSavesAsThisYearRatherThanRefusing() {
+        // The field only appears on a shelf that needs a year, and the user has
+        // already said the thing is finished — refusing the whole save over the
+        // year would be the wrong trade.
+        assertEquals(
+            ShelfYears(finished = thisYear, abandoned = null),
+            shelfYearsFromText(ReadingShelf.DONE, "", thisYear),
+        )
+
+        assertEquals(
+            ShelfYears(finished = thisYear, abandoned = null),
+            shelfYearsFromText(ReadingShelf.DONE, "nineteen", thisYear),
+        )
+    }
+
+    @Test
+    fun theTwoDirectionsAgreeWithEachOther() {
+        ReadingShelf.entries.forEach { shelf ->
+            val years = ShelfYears(finished = 2019, abandoned = 2018)
+            val text = shelfYearText(shelf, years, thisYear)
+            val backAgain = shelfYearsFromText(shelf, text, thisYear)
+
+            assertEquals(
+                "$shelf does not read back what it showed",
+                resolvedShelfYears(shelf, years, years, thisYear),
+                backAgain,
+            )
+        }
+    }
 }

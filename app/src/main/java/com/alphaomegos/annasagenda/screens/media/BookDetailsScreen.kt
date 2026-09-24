@@ -39,6 +39,10 @@ import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaType
 import com.alphaomegos.annasagenda.ReadingShelf
+import com.alphaomegos.annasagenda.shelfYearsFromText
+import com.alphaomegos.annasagenda.shelfYearText
+import com.alphaomegos.annasagenda.ShelfYears
+import com.alphaomegos.annasagenda.NoShelfYears
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,12 +92,11 @@ fun BookDetailsScreen(
 
     LaunchedEffect(bookId, book.shelf, book.yearRead, book.yearAbandoned) {
         shelf = book.shelf
-        yearText = when (book.shelf) {
-            ReadingShelf.DONE -> (book.yearRead ?: LocalDate.now().year).toString()
-            ReadingShelf.ABANDONED -> (book.yearAbandoned ?: LocalDate.now().year).toString()
-            ReadingShelf.PLANS,
-            ReadingShelf.NOW -> ""
-        }
+        yearText = shelfYearText(
+            shelf = book.shelf,
+            years = ShelfYears(finished = book.yearRead, abandoned = book.yearAbandoned),
+            currentYear = LocalDate.now().year,
+        )
     }
 
     fun validateAndSave(): Boolean {
@@ -106,15 +109,7 @@ fun BookDetailsScreen(
         val cur = currentPageText.toIntOrNull() ?: 0
         if (cur !in 0..pages) return false
 
-        val yearRead: Int? = when (shelf) {
-            ReadingShelf.DONE -> yearText.toIntOrNull() ?: LocalDate.now().year
-            else -> null
-        }
-
-        val yearAbandoned: Int? = when (shelf) {
-            ReadingShelf.ABANDONED -> yearText.toIntOrNull() ?: LocalDate.now().year
-            else -> null
-        }
+        val years = shelfYearsFromText(shelf, yearText, LocalDate.now().year)
 
         vm.updateReadingBook(
             bookId = bookId,
@@ -122,8 +117,8 @@ fun BookDetailsScreen(
             title = cleanTitle,
             totalPages = pages,
             currentPage = cur,
-            yearRead = yearRead,
-            yearAbandoned = yearAbandoned,
+            yearRead = years.finished,
+            yearAbandoned = years.abandoned,
             shelf = shelf
         )
         return true
@@ -227,7 +222,7 @@ fun BookDetailsScreen(
                         onMenuExpandedChange = { shelfMenuExpanded = it },
                         onShelfSelected = { selectedShelf ->
                             shelf = selectedShelf
-                            yearText = mediaDetailsDefaultYearForShelf(selectedShelf)
+                            yearText = shelfYearText(selectedShelf, NoShelfYears, LocalDate.now().year)
                         }
                     )
 

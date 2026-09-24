@@ -39,6 +39,10 @@ import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaType
 import com.alphaomegos.annasagenda.ReadingShelf
+import com.alphaomegos.annasagenda.shelfYearsFromText
+import com.alphaomegos.annasagenda.shelfYearText
+import com.alphaomegos.annasagenda.ShelfYears
+import com.alphaomegos.annasagenda.NoShelfYears
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,12 +100,11 @@ fun SeriesDetailsScreen(
 
     LaunchedEffect(seriesId, series.shelf, series.yearWatched, series.yearAbandoned) {
         shelf = series.shelf
-        yearText = when (series.shelf) {
-            ReadingShelf.DONE -> (series.yearWatched ?: LocalDate.now().year).toString()
-            ReadingShelf.ABANDONED -> (series.yearAbandoned ?: LocalDate.now().year).toString()
-            ReadingShelf.PLANS,
-            ReadingShelf.NOW -> ""
-        }
+        yearText = shelfYearText(
+            shelf = series.shelf,
+            years = ShelfYears(finished = series.yearWatched, abandoned = series.yearAbandoned),
+            currentYear = LocalDate.now().year,
+        )
     }
 
     fun validateAndSave(): Boolean {
@@ -117,15 +120,7 @@ fun SeriesDetailsScreen(
         val currentEpisode = currentEpisodeText.toIntOrNull() ?: 0
         if (currentEpisode <= 0) return false
 
-        val yearWatched: Int? = when (shelf) {
-            ReadingShelf.DONE -> yearText.toIntOrNull() ?: LocalDate.now().year
-            else -> null
-        }
-
-        val yearAbandoned: Int? = when (shelf) {
-            ReadingShelf.ABANDONED -> yearText.toIntOrNull() ?: LocalDate.now().year
-            else -> null
-        }
+        val years = shelfYearsFromText(shelf, yearText, LocalDate.now().year)
 
         vm.updateReadingSeries(
             seriesId = seriesId,
@@ -133,8 +128,8 @@ fun SeriesDetailsScreen(
             totalSeasons = totalSeasons,
             currentSeason = currentSeason,
             currentEpisode = currentEpisode,
-            yearWatched = yearWatched,
-            yearAbandoned = yearAbandoned,
+            yearWatched = years.finished,
+            yearAbandoned = years.abandoned,
             shelf = shelf
         )
         return true
@@ -239,7 +234,7 @@ fun SeriesDetailsScreen(
                         onMenuExpandedChange = { shelfMenuExpanded = it },
                         onShelfSelected = { selectedShelf ->
                             shelf = selectedShelf
-                            yearText = mediaDetailsDefaultYearForShelf(selectedShelf)
+                            yearText = shelfYearText(selectedShelf, NoShelfYears, LocalDate.now().year)
                         }
                     )
 
