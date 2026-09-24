@@ -120,10 +120,21 @@ internal fun MoveTaskDialogs(
     }
 }
 
+/**
+ * "Copy to…" for a task or a subtask.
+ *
+ * There were two of these, one per kind, and after renaming the parameter the
+ * diff between them was zero lines: the only difference is the title. They
+ * drifted apart exactly as far as you would expect from a copy — not at all —
+ * which is also why a fix to one of them would have been applied to one of
+ * them.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun CopyTaskDialogs(
-    taskId: Long?,
+internal fun CopyToDateDialogs(
+    itemId: Long?,
+    /** A string resource: R.string.copy_task or R.string.copy_subtask. */
+    titleRes: Int,
     showDatePicker: Boolean,
     onDismissAll: () -> Unit,
     onShowDatePicker: () -> Unit,
@@ -131,24 +142,21 @@ internal fun CopyTaskDialogs(
     onCopyToTomorrow: (Long) -> Unit,
     onCopyToDate: (Long, LocalDate) -> Unit,
 ) {
-    if (taskId == null) return
+    if (itemId == null) return
 
     val ctx = LocalContext.current
+    val copied = { Toast.makeText(ctx, ctx.getString(R.string.toast_copied), Toast.LENGTH_SHORT).show() }
 
     if (!showDatePicker) {
         AlertDialog(
             onDismissRequest = onDismissAll,
-            title = { Text(stringResource(R.string.copy_task)) },
+            title = { Text(stringResource(titleRes)) },
             text = {
                 Column {
                     TextButton(
                         onClick = {
-                            onCopyToToday(taskId)
-                            Toast.makeText(
-                                ctx,
-                                ctx.getString(R.string.toast_copied),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            onCopyToToday(itemId)
+                            copied()
                             onDismissAll()
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -156,12 +164,8 @@ internal fun CopyTaskDialogs(
 
                     TextButton(
                         onClick = {
-                            onCopyToTomorrow(taskId)
-                            Toast.makeText(
-                                ctx,
-                                ctx.getString(R.string.toast_copied),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            onCopyToTomorrow(itemId)
+                            copied()
                             onDismissAll()
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -193,106 +197,8 @@ internal fun CopyTaskDialogs(
                     val millis = pickerState.selectedDateMillis
                     if (millis != null) {
                         val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-                        onCopyToDate(taskId, newDate)
-                        Toast.makeText(
-                            ctx,
-                            ctx.getString(R.string.toast_copied),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    onDismissAll()
-                }) { Text(stringResource(R.string.ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissAll) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        ) {
-            DatePicker(state = pickerState)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun CopySubtaskDialogs(
-    subtaskId: Long?,
-    showDatePicker: Boolean,
-    onDismissAll: () -> Unit,
-    onShowDatePicker: () -> Unit,
-    onCopyToToday: (Long) -> Unit,
-    onCopyToTomorrow: (Long) -> Unit,
-    onCopyToDate: (Long, LocalDate) -> Unit,
-) {
-    if (subtaskId == null) return
-
-    val ctx = LocalContext.current
-
-    if (!showDatePicker) {
-        AlertDialog(
-            onDismissRequest = onDismissAll,
-            title = { Text(stringResource(R.string.copy_subtask)) },
-            text = {
-                Column {
-                    TextButton(
-                        onClick = {
-                            onCopyToToday(subtaskId)
-                            Toast.makeText(
-                                ctx,
-                                ctx.getString(R.string.toast_copied),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            onDismissAll()
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text(stringResource(R.string.schedule_today)) }
-
-                    TextButton(
-                        onClick = {
-                            onCopyToTomorrow(subtaskId)
-                            Toast.makeText(
-                                ctx,
-                                ctx.getString(R.string.toast_copied),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            onDismissAll()
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text(stringResource(R.string.schedule_tomorrow)) }
-
-                    TextButton(
-                        onClick = onShowDatePicker,
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text(stringResource(R.string.pick_date)) }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = onDismissAll) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    } else {
-        val zone = remember { ZoneId.systemDefault() }
-        val initialMillis = remember {
-            LocalDate.now().atStartOfDay(zone).toInstant().toEpochMilli()
-        }
-        val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
-
-        DatePickerDialog(
-            onDismissRequest = onDismissAll,
-            confirmButton = {
-                TextButton(onClick = {
-                    val millis = pickerState.selectedDateMillis
-                    if (millis != null) {
-                        val newDate = Instant.ofEpochMilli(millis).atZone(zone).toLocalDate()
-                        onCopyToDate(subtaskId, newDate)
-                        Toast.makeText(
-                            ctx,
-                            ctx.getString(R.string.toast_copied),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        onCopyToDate(itemId, newDate)
+                        copied()
                     }
                     onDismissAll()
                 }) { Text(stringResource(R.string.ok)) }

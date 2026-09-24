@@ -264,8 +264,9 @@ private fun DateTasksBlockContent(
         },
     )
 
-    CopyTaskDialogs(
-        taskId = copyTaskId.value,
+    CopyToDateDialogs(
+        itemId = copyTaskId.value,
+        titleRes = R.string.copy_task,
         showDatePicker = showCopyTaskDatePicker.value,
         onDismissAll = {
             showCopyTaskDatePicker.value = false
@@ -304,8 +305,9 @@ private fun DateTasksBlockContent(
         },
     )
 
-    CopySubtaskDialogs(
-        subtaskId = copySubtaskId.value,
+    CopyToDateDialogs(
+        itemId = copySubtaskId.value,
+        titleRes = R.string.copy_subtask,
         showDatePicker = showCopySubtaskDatePicker.value,
         onDismissAll = {
             showCopySubtaskDatePicker.value = false
