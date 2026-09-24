@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda
 
 import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -14,6 +15,7 @@ import com.alphaomegos.annasagenda.util.MANUAL_BACKUP_FILE_NAME
 import com.alphaomegos.annasagenda.util.StoredCoverFile
 import com.alphaomegos.annasagenda.util.buildInternalCoverRef
 import com.alphaomegos.annasagenda.util.readZipBackupPackage
+import com.alphaomegos.annasagenda.util.stagingFileNameFor
 import com.alphaomegos.annasagenda.util.writeBackupToDocuments
 import com.alphaomegos.annasagenda.util.zipEntryNameForCoverRef
 import kotlinx.coroutines.Dispatchers
@@ -137,7 +139,6 @@ class BackupExportInstrumentedTest {
             fileName = fileName,
         )
 
-        val firstUri = requireBackupUri(fileName)
 
         val coverRef = buildInternalCoverRef(mediaKind = "movie", itemId = 303)
         val coverBytes = "movie-cover".toByteArray(StandardCharsets.UTF_8)
@@ -156,8 +157,11 @@ class BackupExportInstrumentedTest {
             fileName = fileName,
         )
 
+        // The row id is deliberately not asserted: the archive is now built
+        // under a staging name and renamed into place, so a successful export
+        // is a different row every time. What matters is that there is exactly
+        // one file under this name and that it holds the newer archive.
         val secondUri = requireBackupUri(fileName)
-        assertEquals(firstUri, secondUri)
         assertEquals(1, countBackupsWithFileName(fileName))
 
         val imported = readZipBackupPackage(context, secondUri)
@@ -310,6 +314,73 @@ class BackupExportInstrumentedTest {
         )
 
         assertEquals(0, pendingFlag(requireBackupUri(fileName)))
+    }
+
+    /**
+     * The archive is built under a staging name and only takes the real one
+     * once it is whole. Nothing of that may be left lying around afterwards.
+     */
+    @Test
+    fun writeBackupToDocuments_leavesNoStagingFileBehind() = runBlocking {
+        assumeTrue(Build.VERSION.SDK_INT >= 29)
+
+        val fileName = uniqueBackupFileName("export_staging")
+        val stagingName = stagingFileNameFor(fileName)
+        createdFileNames += stagingName
+
+        writeBackupToDocuments(
+            context = context,
+            json = AppStateStore(context).encodeToJson(AppState()),
+            coverFiles = emptyList(),
+            fileName = fileName,
+        )
+
+        assertEquals(1, countBackupsWithFileName(fileName))
+        assertEquals("the staging file must be gone", 0, countBackupsWithFileName(stagingName))
+    }
+
+    /**
+     * A process killed mid-write leaves a staging row behind. The next export
+     * has to clear it out rather than trip over it — MediaStore would otherwise
+     * hand out "name (1)" and the backup would end up somewhere nobody looks.
+     */
+    @Test
+    fun writeBackupToDocuments_clearsAStagingFileLeftByAnEarlierRun() = runBlocking {
+        assumeTrue(Build.VERSION.SDK_INT >= 29)
+
+        val fileName = uniqueBackupFileName("export_stale_staging")
+        val stagingName = stagingFileNameFor(fileName)
+        createdFileNames += stagingName
+
+        // What a killed process leaves: a pending row holding a partial file.
+        val leftover = context.contentResolver.insert(
+            MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+            ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, stagingName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "Documents/AnnasAgenda/")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            },
+        )
+        assertNotNull(leftover)
+        context.contentResolver.openOutputStream(leftover!!, "wt")?.use { it.write(ByteArray(64)) }
+
+        val json = AppStateStore(context).encodeToJson(
+            AppState(mainMenuOrder = listOf("calendar"))
+        )
+
+        writeBackupToDocuments(
+            context = context,
+            json = json,
+            coverFiles = emptyList(),
+            fileName = fileName,
+        )
+
+        assertEquals(1, countBackupsWithFileName(fileName))
+
+        val imported = readZipBackupPackage(context, requireBackupUri(fileName))
+        assertNotNull(imported)
+        assertEquals(json, imported!!.appStateJson)
     }
 
     private fun pendingFlag(uri: Uri): Int =

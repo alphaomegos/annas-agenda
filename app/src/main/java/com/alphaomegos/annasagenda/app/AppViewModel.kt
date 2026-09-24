@@ -397,13 +397,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun exportBackupToDocuments() {
         val before = _state.value
-        val current = migrateLegacyMediaCovers(before)
+        val migrated = migrateLegacyMediaCovers(before)
 
-        if (current != before) {
-            _state.value = current
-            store.save(current)
+        if (migrated != before) {
+            // Copying covers is file I/O, and the user goes on using the app
+            // while it runs — the export is launched without so much as a
+            // dialog. Writing the pre-migration snapshot back wholesale undid
+            // everything they did in the meantime and then saved that over it.
+            // Only the three media lists can have changed here, so only those
+            // are carried across.
+            _state.update { cur ->
+                cur.copy(
+                    readingBooks = migrated.readingBooks,
+                    readingMovies = migrated.readingMovies,
+                    readingSeries = migrated.readingSeries,
+                )
+            }
+            store.save(_state.value)
         }
 
+        val current = _state.value
         val json = store.encodeToJson(current)
         val coverFiles = resolveStoredCoverFiles(appContext, current)
 

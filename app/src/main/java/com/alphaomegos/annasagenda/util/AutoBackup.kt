@@ -12,6 +12,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -48,12 +49,15 @@ const val AUTO_BACKUP_FILE_NAME = "annas_agenda_autobackup.zip"
 private val backupWriteMutex = Mutex()
 
 /**
- * Writes a backup archive into Documents/AnnasAgenda/.
+ * Writes a backup archive into Documents/AnnasAgenda/, or throws.
  *
- * Uncancellable once it starts: "wt" truncates the file the moment the stream
- * opens, so a cancellation between that and the last byte leaves a file that is
- * neither the old backup nor the new one. Waiting for the lock is still
- * cancellable — it is only the write itself that must run to the end.
+ * Either the archive is complete and in place, or the one that was already
+ * there is untouched. There is no third outcome, and in particular no outcome
+ * where the call returns quietly having written nothing.
+ *
+ * Uncancellable once it starts: the last two steps replace the old archive with
+ * the new one, and being interrupted between them would leave neither. Waiting
+ * for the lock is still cancellable.
  */
 suspend fun writeBackupToDocuments(
     context: Context,
@@ -85,59 +89,36 @@ private fun writeBackupArchive(
     val resolver = context.contentResolver
     val relativePath = "Documents/AnnasAgenda/"
     val collection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    val stagingName = stagingFileNameFor(fileName)
 
-    // A backup left pending by a killed process is invisible to everyone else,
-    // but it is still ours, and it is the entry we want to reuse rather than
-    // creating a second file beside it. On API 29 the owner has to ask for
-    // pending rows explicitly; from 30 on they are always included.
-    val queryCollection =
-        if (Build.VERSION.SDK_INT == 29) {
-            MediaStore.setIncludePending(collection)
-        } else {
-            collection
-        }
-
-    val existingUri = resolver.query(
-        queryCollection,
-        arrayOf(MediaStore.MediaColumns._ID),
-        "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
-        arrayOf(fileName, relativePath),
-        null
-    )?.use { c ->
-        if (c.moveToFirst()) {
-            val id = c.getLong(0)
-            ContentUris.withAppendedId(collection, id)
-        } else {
-            null
-        }
+    // The archive is built beside the real one and only takes its place once it
+    // is complete. Writing straight into the real one truncates it the instant
+    // the stream opens, so anything going wrong after that — a full disk is the
+    // obvious one — left the user with a stub where their only backup had been,
+    // and an error message they could do nothing about.
+    val staleStaging = findBackupUri(resolver, collection, stagingName, relativePath)
+    if (staleStaging != null) {
+        runCatching { resolver.delete(staleStaging, null, null) }
     }
 
-    val uri = existingUri ?: run {
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+    val stagingUri = resolver.insert(
+        collection,
+        ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, stagingName)
             put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
             put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
-            // Created hidden, so a brand new backup is never briefly visible as
-            // an empty file.
+            // Hidden while it is being written, so a half-finished archive is
+            // never offered to anyone — including a process that gets killed
+            // mid-write, where no code of ours runs to clean up.
             put(MediaStore.MediaColumns.IS_PENDING, 1)
-        }
-        resolver.insert(collection, values) ?: return
-    }
-
-    // The window this closes: the process is killed after the stream truncated
-    // the file and before the archive is complete. Nothing of ours runs then —
-    // no finally, no handler — so the only way to mark the file unusable is to
-    // mark it before the write and unmark it after. A file still flagged
-    // pending is hidden from other apps, and the next backup overwrites it.
-    setPending(resolver, uri, pending = true)
+        },
+    ) ?: throw IOException("MediaStore refused to create $stagingName")
 
     try {
-        // "wt" and not "w": MediaStore's plain "w" does not truncate. Writing a
-        // shorter archive over a longer one left the old bytes past the new end,
-        // and a reader looking for the central directory from the end of the file
-        // found the stale one, whose offsets pointed into the new data. The result
-        // was an archive that failed to open at all.
-        resolver.openOutputStream(uri, "wt")?.use { rawOut ->
+        val out = resolver.openOutputStream(stagingUri, "wt")
+            ?: throw IOException("MediaStore refused to open $stagingName for writing")
+
+        out.use { rawOut ->
             ZipOutputStream(rawOut).use { zip ->
                 writeZipStringEntry(
                     zip = zip,
@@ -168,24 +149,68 @@ private fun writeBackupArchive(
                     }
             }
         }
-    } finally {
-        // An exception here is a failure inside a living process: the next
-        // backup will overwrite this file anyway, and leaving it hidden would
-        // look to the user like the backup vanished. Only a killed process,
-        // which never reaches this line, leaves the file flagged.
-        setPending(resolver, uri, pending = false)
+    } catch (e: Throwable) {
+        // Leave nothing behind that could be mistaken for a backup. The one
+        // that was already there has not been touched.
+        runCatching { resolver.delete(stagingUri, null, null) }
+        throw e
     }
+
+    // From here the new archive is complete on disk. The previous one is
+    // removed and the new one takes its name.
+    val previous = findBackupUri(resolver, collection, fileName, relativePath)
+    if (previous != null && resolver.delete(previous, null, null) <= 0) {
+        // Renaming onto a name that is still taken gets "(1)" appended, and a
+        // backup under a name nobody looks at is worse than an error. The old
+        // archive is still whole; the staging row is cleaned up by the next run.
+        throw IOException("Could not replace the previous $fileName")
+    }
+
+    resolver.update(
+        stagingUri,
+        ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.IS_PENDING, 0)
+        },
+        null,
+        null,
+    )
 }
 
-private fun setPending(
+/** Named so it keeps the .zip extension MediaStore checks against the type. */
+internal fun stagingFileNameFor(fileName: String): String =
+    fileName.removeSuffix(".zip") + ".part.zip"
+
+@Suppress("DEPRECATION") // MediaStore.setIncludePending, needed on API 29 only
+private fun findBackupUri(
     resolver: ContentResolver,
-    uri: Uri,
-    pending: Boolean,
-) {
-    val values = ContentValues().apply {
-        put(MediaStore.MediaColumns.IS_PENDING, if (pending) 1 else 0)
+    collection: Uri,
+    fileName: String,
+    relativePath: String,
+): Uri? {
+    // A row left pending by a killed process is invisible to everyone else but
+    // is still ours, and it is exactly the leftover we want to find. On API 29
+    // the owner has to ask for pending rows; from 30 on they are always there.
+    val queryCollection =
+        if (Build.VERSION.SDK_INT == 29) {
+            MediaStore.setIncludePending(collection)
+        } else {
+            collection
+        }
+
+    return resolver.query(
+        queryCollection,
+        arrayOf(MediaStore.MediaColumns._ID),
+        "${MediaStore.MediaColumns.DISPLAY_NAME}=? AND ${MediaStore.MediaColumns.RELATIVE_PATH}=?",
+        arrayOf(fileName, relativePath),
+        null,
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) {
+            ContentUris.withAppendedId(collection, cursor.getLong(0))
+        } else {
+            null
+        }
     }
-    runCatching { resolver.update(uri, values, null, null) }
 }
 
 private fun buildBackupMetaJson(
