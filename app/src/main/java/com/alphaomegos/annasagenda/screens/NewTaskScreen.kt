@@ -79,7 +79,9 @@ fun NewTaskScreen(
 
     var draftLoaded by remember { mutableStateOf(false) }
 
-    val state by vm.state.collectAsState()
+    // Only the counters are read here. Collecting the whole AppState woke this
+    // screen up for every task, every meal and every page turned in a book.
+    val state by vm.counters.collectAsState()
 
     var linkedManualCounterId by rememberSaveable { mutableStateOf<Long?>(null) }
     val showCounterPicker = remember { mutableStateOf(false) }
