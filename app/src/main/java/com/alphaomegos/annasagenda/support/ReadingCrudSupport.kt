@@ -1,5 +1,16 @@
 package com.alphaomegos.annasagenda
 
+/**
+ * Creating, moving and editing the three kinds of media.
+ *
+ * The three kinds stay three types with three lists: they hold genuinely
+ * different things — pages, a release year, seasons and episodes — and merging
+ * them would cost a migration nobody can take back. What was worth merging is
+ * the part that is the same in all three, and that lives in ReadingShelfRules:
+ * which years a shelf allows, what an edit does to a title, what happens to a
+ * cover. Each function below is now the fields it owns, plus those rules.
+ */
+
 fun buildReadingBook(
     id: Long,
     shelf: ReadingShelf,
@@ -14,6 +25,8 @@ fun buildReadingBook(
     if (cleanTitle.isEmpty()) return null
     if (totalPages <= 0) return null
 
+    val years = yearsForShelf(shelf, currentYear)
+
     return ReadingBook(
         id = id,
         shelf = shelf,
@@ -22,8 +35,8 @@ fun buildReadingBook(
         coverUri = coverUri,
         totalPages = totalPages,
         currentPage = 0,
-        yearRead = if (shelf == ReadingShelf.DONE) currentYear else null,
-        yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
+        yearRead = years.finished,
+        yearAbandoned = years.abandoned,
         createdAtEpochMillis = createdAtEpochMillis,
     )
 }
@@ -33,26 +46,13 @@ fun moveReadingBookToShelf(
     shelf: ReadingShelf,
     currentYear: Int,
 ): ReadingBook {
-    return when (shelf) {
-        ReadingShelf.DONE -> book.copy(
-            shelf = shelf,
-            yearRead = currentYear,
-            yearAbandoned = null,
-        )
+    val years = yearsForShelf(shelf, currentYear)
 
-        ReadingShelf.ABANDONED -> book.copy(
-            shelf = shelf,
-            yearRead = null,
-            yearAbandoned = currentYear,
-        )
-
-        ReadingShelf.PLANS,
-        ReadingShelf.NOW -> book.copy(
-            shelf = shelf,
-            yearRead = null,
-            yearAbandoned = null,
-        )
-    }
+    return book.copy(
+        shelf = shelf,
+        yearRead = years.finished,
+        yearAbandoned = years.abandoned,
+    )
 }
 
 fun updateReadingBookEntity(
@@ -68,39 +68,29 @@ fun updateReadingBookEntity(
     shelf: ReadingShelf? = null,
     currentYear: Int,
 ): ReadingBook {
-    val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
-    val newAuthor = author?.trim() ?: old.author
+    val newShelf = shelf ?: old.shelf
 
+    val years = resolvedShelfYears(
+        shelf = newShelf,
+        requested = ShelfYears(finished = yearRead, abandoned = yearAbandoned),
+        existing = ShelfYears(finished = old.yearRead, abandoned = old.yearAbandoned),
+        currentYear = currentYear,
+    )
+
+    // A book is at least one page long, and the bookmark cannot be past the
+    // end — shortening a book pulls it back.
     val pages = (totalPages ?: old.totalPages).coerceAtLeast(1)
     val newCurrent = (currentPage ?: old.currentPage).coerceIn(0, pages)
 
-    val newShelf = shelf ?: old.shelf
-
-    val newYearRead = when (newShelf) {
-        ReadingShelf.DONE -> yearRead ?: old.yearRead ?: currentYear
-        else -> null
-    }
-
-    val newYearAbandoned = when (newShelf) {
-        ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
-        else -> null
-    }
-
-    val newCover = when {
-        clearCover -> null
-        coverUri != null -> coverUri
-        else -> old.coverUri
-    }
-
     return old.copy(
         shelf = newShelf,
-        author = newAuthor,
-        title = newTitle,
-        coverUri = newCover,
+        author = author?.trim() ?: old.author,
+        title = titleAfterEdit(title, old.title),
+        coverUri = coverAfterEdit(coverUri, old.coverUri, clearCover),
         totalPages = pages,
         currentPage = newCurrent,
-        yearRead = newYearRead,
-        yearAbandoned = newYearAbandoned,
+        yearRead = years.finished,
+        yearAbandoned = years.abandoned,
     )
 }
 
@@ -117,18 +107,17 @@ fun buildReadingMovie(
     val cleanTitle = title.trim()
     if (cleanTitle.isEmpty()) return null
 
-    val cleanReleaseYear = releaseYear?.takeIf { it in 1..9999 }
-    val cleanTranslation = translation.trim()
+    val years = yearsForShelf(shelf, currentYear)
 
     return ReadingMovie(
         id = id,
         shelf = shelf,
         title = cleanTitle,
         coverUri = coverUri,
-        releaseYear = cleanReleaseYear,
-        translation = cleanTranslation,
-        yearWatched = if (shelf == ReadingShelf.DONE) currentYear else null,
-        yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
+        releaseYear = releaseYear?.takeIf(::isPossibleReleaseYear),
+        translation = translation.trim(),
+        yearWatched = years.finished,
+        yearAbandoned = years.abandoned,
         createdAtEpochMillis = createdAtEpochMillis,
     )
 }
@@ -138,26 +127,13 @@ fun moveReadingMovieToShelf(
     shelf: ReadingShelf,
     currentYear: Int,
 ): ReadingMovie {
-    return when (shelf) {
-        ReadingShelf.DONE -> movie.copy(
-            shelf = shelf,
-            yearWatched = currentYear,
-            yearAbandoned = null,
-        )
+    val years = yearsForShelf(shelf, currentYear)
 
-        ReadingShelf.ABANDONED -> movie.copy(
-            shelf = shelf,
-            yearWatched = null,
-            yearAbandoned = currentYear,
-        )
-
-        ReadingShelf.PLANS,
-        ReadingShelf.NOW -> movie.copy(
-            shelf = shelf,
-            yearWatched = null,
-            yearAbandoned = null,
-        )
-    }
+    return movie.copy(
+        shelf = shelf,
+        yearWatched = years.finished,
+        yearAbandoned = years.abandoned,
+    )
 }
 
 fun updateReadingMovieEntity(
@@ -173,44 +149,32 @@ fun updateReadingMovieEntity(
     shelf: ReadingShelf? = null,
     currentYear: Int,
 ): ReadingMovie {
-    val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
     val newShelf = shelf ?: old.shelf
 
-    val newYearWatched = when (newShelf) {
-        ReadingShelf.DONE -> yearWatched ?: old.yearWatched ?: currentYear
-        else -> null
-    }
-
-    val newYearAbandoned = when (newShelf) {
-        ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
-        else -> null
-    }
-
-    val newCover = when {
-        clearCover -> null
-        coverUri != null -> coverUri
-        else -> old.coverUri
-    }
+    val years = resolvedShelfYears(
+        shelf = newShelf,
+        requested = ShelfYears(finished = yearWatched, abandoned = yearAbandoned),
+        existing = ShelfYears(finished = old.yearWatched, abandoned = old.yearAbandoned),
+        currentYear = currentYear,
+    )
 
     val newReleaseYear = when {
         clearReleaseYear -> null
         // A year that cannot be a year is bad input, and bad input must not
         // erase what is already stored. Emptying the field is how the year is
         // removed, and that arrives as clearReleaseYear.
-        releaseYear != null -> releaseYear.takeIf { it in 1..9999 } ?: old.releaseYear
+        releaseYear != null -> releaseYear.takeIf(::isPossibleReleaseYear) ?: old.releaseYear
         else -> old.releaseYear
     }
 
-    val newTranslation = translation?.trim() ?: old.translation
-
     return old.copy(
         shelf = newShelf,
-        title = newTitle,
-        coverUri = newCover,
+        title = titleAfterEdit(title, old.title),
+        coverUri = coverAfterEdit(coverUri, old.coverUri, clearCover),
         releaseYear = newReleaseYear,
-        translation = newTranslation,
-        yearWatched = newYearWatched,
-        yearAbandoned = newYearAbandoned,
+        translation = translation?.trim() ?: old.translation,
+        yearWatched = years.finished,
+        yearAbandoned = years.abandoned,
     )
 }
 
@@ -228,9 +192,9 @@ fun buildReadingSeries(
     val cleanTitle = title.trim()
     if (cleanTitle.isEmpty()) return null
 
+    val years = yearsForShelf(shelf, currentYear)
+
     val safeTotalSeasons = totalSeasons.coerceAtLeast(1)
-    val safeCurrentSeason = currentSeason.coerceIn(1, safeTotalSeasons)
-    val safeCurrentEpisode = currentEpisode.coerceAtLeast(1)
 
     return ReadingSeries(
         id = id,
@@ -238,10 +202,10 @@ fun buildReadingSeries(
         title = cleanTitle,
         coverUri = coverUri,
         totalSeasons = safeTotalSeasons,
-        currentSeason = safeCurrentSeason,
-        currentEpisode = safeCurrentEpisode,
-        yearWatched = if (shelf == ReadingShelf.DONE) currentYear else null,
-        yearAbandoned = if (shelf == ReadingShelf.ABANDONED) currentYear else null,
+        currentSeason = currentSeason.coerceIn(1, safeTotalSeasons),
+        currentEpisode = currentEpisode.coerceAtLeast(1),
+        yearWatched = years.finished,
+        yearAbandoned = years.abandoned,
         createdAtEpochMillis = createdAtEpochMillis,
     )
 }
@@ -251,26 +215,13 @@ fun moveReadingSeriesToShelf(
     shelf: ReadingShelf,
     currentYear: Int,
 ): ReadingSeries {
-    return when (shelf) {
-        ReadingShelf.DONE -> series.copy(
-            shelf = shelf,
-            yearWatched = currentYear,
-            yearAbandoned = null,
-        )
+    val years = yearsForShelf(shelf, currentYear)
 
-        ReadingShelf.ABANDONED -> series.copy(
-            shelf = shelf,
-            yearWatched = null,
-            yearAbandoned = currentYear,
-        )
-
-        ReadingShelf.PLANS,
-        ReadingShelf.NOW -> series.copy(
-            shelf = shelf,
-            yearWatched = null,
-            yearAbandoned = null,
-        )
-    }
+    return series.copy(
+        shelf = shelf,
+        yearWatched = years.finished,
+        yearAbandoned = years.abandoned,
+    )
 }
 
 fun updateReadingSeriesEntity(
@@ -286,37 +237,35 @@ fun updateReadingSeriesEntity(
     shelf: ReadingShelf? = null,
     currentYear: Int,
 ): ReadingSeries {
-    val newTitle = title?.trim()?.takeIf { it.isNotEmpty() } ?: old.title
     val newShelf = shelf ?: old.shelf
 
+    val years = resolvedShelfYears(
+        shelf = newShelf,
+        requested = ShelfYears(finished = yearWatched, abandoned = yearAbandoned),
+        existing = ShelfYears(finished = old.yearWatched, abandoned = old.yearAbandoned),
+        currentYear = currentYear,
+    )
+
+    // The season watched cannot be past the last season there is — shortening
+    // a show pulls it back, exactly as shortening a book pulls the bookmark.
     val safeTotalSeasons = (totalSeasons ?: old.totalSeasons).coerceAtLeast(1)
-    val safeCurrentSeason = (currentSeason ?: old.currentSeason).coerceIn(1, safeTotalSeasons)
-    val safeCurrentEpisode = (currentEpisode ?: old.currentEpisode).coerceAtLeast(1)
-
-    val newYearWatched = when (newShelf) {
-        ReadingShelf.DONE -> yearWatched ?: old.yearWatched ?: currentYear
-        else -> null
-    }
-
-    val newYearAbandoned = when (newShelf) {
-        ReadingShelf.ABANDONED -> yearAbandoned ?: old.yearAbandoned ?: currentYear
-        else -> null
-    }
-
-    val newCover = when {
-        clearCover -> null
-        coverUri != null -> coverUri
-        else -> old.coverUri
-    }
 
     return old.copy(
         shelf = newShelf,
-        title = newTitle,
-        coverUri = newCover,
+        title = titleAfterEdit(title, old.title),
+        coverUri = coverAfterEdit(coverUri, old.coverUri, clearCover),
         totalSeasons = safeTotalSeasons,
-        currentSeason = safeCurrentSeason,
-        currentEpisode = safeCurrentEpisode,
-        yearWatched = newYearWatched,
-        yearAbandoned = newYearAbandoned,
+        currentSeason = (currentSeason ?: old.currentSeason).coerceIn(1, safeTotalSeasons),
+        currentEpisode = (currentEpisode ?: old.currentEpisode).coerceAtLeast(1),
+        yearWatched = years.finished,
+        yearAbandoned = years.abandoned,
     )
 }
+
+/**
+ * Whether a number could be a release year at all.
+ *
+ * The same bound was written out four times as `it in 1..9999`, twice here and
+ * twice in the screen that validates the field before saving.
+ */
+fun isPossibleReleaseYear(year: Int): Boolean = year in 1..9999

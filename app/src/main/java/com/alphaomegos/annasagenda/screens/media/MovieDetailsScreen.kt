@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaType
+import com.alphaomegos.annasagenda.isPossibleReleaseYear
 import com.alphaomegos.annasagenda.ReadingShelf
 import java.time.LocalDate
 
@@ -104,7 +105,7 @@ fun MovieDetailsScreen(
         val releaseYear: Int? = if (releaseYearText.isBlank()) {
             null
         } else {
-            releaseYearText.toIntOrNull()?.takeIf { it in 1..9999 } ?: return false
+            releaseYearText.toIntOrNull()?.takeIf(::isPossibleReleaseYear) ?: return false
         }
 
         val yearWatched: Int? = when (shelf) {
