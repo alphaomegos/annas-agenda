@@ -24,7 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -56,7 +58,15 @@ fun NewTaskScreen(
 ) {
     var description by rememberSaveable { mutableStateOf("") }
     val maxSubtasks = 30
-    val subtasks = remember { mutableStateListOf<EditableNewTaskSubtask>() }
+
+    // Saveable, and not as a nicety. The description already survived rotation
+    // while the subtasks did not, and the draft that gets written a moment
+    // later is built from both — so turning the phone replaced a saved draft
+    // with a copy of itself that had no subtasks in it, and the typed ones were
+    // gone from the screen and from disk at once.
+    val subtasks = rememberSaveable(saver = editableSubtasksSaver) {
+        mutableStateListOf<EditableNewTaskSubtask>()
+    }
 
     // - null  -> default "today" (main menu)
     // - >= 0  -> specific date (calendar)
@@ -70,7 +80,7 @@ fun NewTaskScreen(
     }
 
     var selectedDate by rememberSaveable { mutableStateOf(initialDate) }
-    var showDatePicker by remember { mutableStateOf(false) }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
     var taskColor by rememberSaveable { mutableStateOf<Long?>(null) }
 
     var draftLoaded by remember { mutableStateOf(false) }
@@ -395,3 +405,20 @@ fun NewTaskScreen(
         }
     }
 }
+
+/**
+ * Keeps the half-typed subtask list across a rotation.
+ *
+ * Saved state travels in a Bundle, so the list is flattened into the three
+ * values each row actually holds — text, colour, and whether that colour was
+ * chosen by hand — and rebuilt from them.
+ */
+private val editableSubtasksSaver =
+    listSaver<SnapshotStateList<EditableNewTaskSubtask>, String>(
+        save = { list -> editableSubtasksToSavedStrings(list.toList()) },
+        restore = { flat ->
+            mutableStateListOf<EditableNewTaskSubtask>().apply {
+                addAll(editableSubtasksFromSavedStrings(flat))
+            }
+        },
+    )
