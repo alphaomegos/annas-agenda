@@ -84,24 +84,38 @@ fun MediaLibraryScreen(
 
     val isSearching = effectiveSearchQuery.isNotBlank()
 
-    val items = buildVisibleReadingItems(
-        state = st,
-        shelf = shelf,
-        sort = prefs.sort,
-        query = effectiveSearchQuery
-    )
+    // Built once per change rather than once per recomposition. Every
+    // character typed into the search field recomposes this screen, and this
+    // filters and sorts the whole shelf.
+    val items = remember(
+        st.readingBooks,
+        st.readingMovies,
+        st.readingSeries,
+        st.readingMediaFilter,
+        shelf,
+        prefs.sort,
+        effectiveSearchQuery,
+    ) {
+        buildVisibleReadingItems(
+            state = st,
+            shelf = shelf,
+            sort = prefs.sort,
+            query = effectiveSearchQuery
+        )
+    }
 
     val showYearGroups =
         !isSearching &&
                 prefs.sort.field == ReadingSortField.YEAR &&
                 (shelf == ReadingShelf.DONE || shelf == ReadingShelf.ABANDONED)
 
-    val yearGroups =
+    val yearGroups = remember(showYearGroups, items, shelf) {
         if (showYearGroups) {
             buildReadingYearGroups(items, shelf)
         } else {
             emptyList()
         }
+    }
 
     val showMediaTypeLabel = isSearching || enabledTypeCount > 1
 

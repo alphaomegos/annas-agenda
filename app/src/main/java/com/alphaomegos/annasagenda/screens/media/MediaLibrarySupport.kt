@@ -119,34 +119,50 @@ private fun buildAllVisibleReadingItems(
     }
 }
 
+/**
+ * Sorting keys are worked out once per item, not once per comparison.
+ *
+ * Every comparator here uses the title as its tiebreak, and the title key is
+ * `trim().lowercase()`. Computed inside the comparator that is n log n string
+ * allocations per sort — and the sort runs on every keystroke in the search
+ * field, over every item on the shelf.
+ */
 private fun sortReadingItems(
     items: List<ReadingUiItem>,
     sort: ReadingSort,
     shelf: ReadingShelf,
 ): List<ReadingUiItem> {
+    if (items.size < 2) return items
+
+    val titleKeys = items.associate { it.stableKey to itemTitleKey(it) }
+    val byTitle = Comparator<ReadingUiItem> { a, b ->
+        titleKeys.getValue(a.stableKey).compareTo(titleKeys.getValue(b.stableKey))
+    }
+
     val comparator = when (sort.field) {
-        ReadingSortField.AUTHOR ->
-            compareBy<ReadingUiItem> { itemAuthorKey(it) }
-                .thenBy { itemTitleKey(it) }
+        ReadingSortField.AUTHOR -> {
+            val authorKeys = items.associate { it.stableKey to itemAuthorKey(it) }
+            compareBy<ReadingUiItem> { authorKeys.getValue(it.stableKey) }
+                .then(byTitle)
                 .thenBy { it.createdAtEpochMillis }
+        }
 
         ReadingSortField.TITLE ->
-            compareBy<ReadingUiItem> { itemTitleKey(it) }
-                .thenBy { it.createdAtEpochMillis }
+            byTitle.thenBy { it.createdAtEpochMillis }
 
         ReadingSortField.PAGES ->
             compareBy<ReadingUiItem> { itemPagesKey(it) }
-                .thenBy { itemTitleKey(it) }
+                .then(byTitle)
                 .thenBy { it.createdAtEpochMillis }
 
         ReadingSortField.YEAR ->
             compareBy<ReadingUiItem> { readingItemYearForShelf(it, shelf) ?: Int.MIN_VALUE }
-                .thenBy { itemTitleKey(it) }
+                .then(byTitle)
                 .thenBy { it.createdAtEpochMillis }
 
         ReadingSortField.RELEASE_YEAR ->
             compareBy<ReadingUiItem> { itemReleaseYearKey(it) }
-                .thenBy { itemTitleKey(it) }
+                .then(byTitle)
                 .thenBy { it.createdAtEpochMillis }
     }
 
@@ -186,14 +202,19 @@ private fun searchReadingItems(
         }
     }
 
-    return items
-        .filter(::matches)
-        .sortedWith(
-            compareBy<ReadingUiItem> { shelfOrder(it.shelf) }
-                .thenBy { mediaTypeOrder(it) }
-                .thenBy { itemTitleKey(it) }
-                .thenBy { it.createdAtEpochMillis }
-        )
+    val found = items.filter(::matches)
+    if (found.size < 2) return found
+
+    // Same reason as in sortReadingItems: the title key is built once per
+    // item, and this one runs on every character typed into the search field.
+    val titleKeys = found.associate { it.stableKey to itemTitleKey(it) }
+
+    return found.sortedWith(
+        compareBy<ReadingUiItem> { shelfOrder(it.shelf) }
+            .thenBy { mediaTypeOrder(it) }
+            .thenBy { titleKeys.getValue(it.stableKey) }
+            .thenBy { it.createdAtEpochMillis }
+    )
 }
 
 private fun normalizeSearch(value: String): String {

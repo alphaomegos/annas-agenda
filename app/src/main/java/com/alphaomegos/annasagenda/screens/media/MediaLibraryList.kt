@@ -64,6 +64,15 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
+/**
+ * How many wall covers are kept decoded at once.
+ *
+ * A tile is decoded to 280 px on its longest side, so about 313 KB of ARGB
+ * pixels. Sixty of them is roughly nineteen megabytes, which is more than the
+ * viewport ever shows at once and small enough not to matter.
+ */
+private const val WALL_COVER_CACHE_LIMIT = 60
+
 @Composable
 internal fun ReadingItemsList(
     items: List<ReadingUiItem>,
@@ -248,6 +257,23 @@ internal fun ReadingItemsWall(
                         targetMaxSidePx = 280
                     )
                 }
+            }
+
+            // Bounded. Every cover that has ever been on screen used to stay
+            // in here until the shelf changed, and at 280x280 in ARGB_8888
+            // that is about 313 KB each — three hundred covers is ninety
+            // megabytes of live bitmaps in a wall the user can keep dragging.
+            //
+            // Anything off screen is equally discardable, so the ones being
+            // shown are kept and the rest go until the cache is back inside
+            // its limit.
+            if (coverCache.size > WALL_COVER_CACHE_LIMIT) {
+                val onScreen = visibleCoverRefs.toSet()
+
+                coverCache.keys
+                    .filterNot { it in onScreen }
+                    .take(coverCache.size - WALL_COVER_CACHE_LIMIT)
+                    .forEach { coverCache.remove(it) }
             }
         }
 

@@ -138,4 +138,71 @@ class MediaLibrarySupportTest {
 
         assertEquals(emptyList<String>(), found.map { it.title })
     }
+
+    // -- sorting --------------------------------------------------------------
+
+    private fun shelfOf(
+        books: List<ReadingBook> = emptyList(),
+        movies: List<ReadingMovie> = emptyList(),
+        sort: ReadingSort,
+        // The shelf a freshly built ReadingBook lands on.
+        shelf: ReadingShelf = ReadingShelf.PLANS,
+    ) = buildVisibleReadingItems(
+        state = AppState(readingBooks = books, readingMovies = movies),
+        shelf = shelf,
+        sort = sort,
+        query = "",
+    ).map { it.title }
+
+    @Test
+    fun titlesSortWithoutRegardToCaseOrSurroundingSpace() {
+        val books = listOf(
+            ReadingBook(id = 1L, title = "  zebra", totalPages = 10),
+            ReadingBook(id = 2L, title = "Apple", totalPages = 10),
+            ReadingBook(id = 3L, title = "banana", totalPages = 10),
+        )
+
+        assertEquals(
+            listOf("Apple", "banana", "  zebra"),
+            shelfOf(books = books, sort = ReadingSort(ReadingSortField.TITLE, ascending = true)),
+        )
+    }
+
+    @Test
+    fun descendingIsTheSameOrderTurnedAround() {
+        val books = listOf(
+            ReadingBook(id = 1L, title = "Apple", totalPages = 10),
+            ReadingBook(id = 2L, title = "banana", totalPages = 10),
+            ReadingBook(id = 3L, title = "Cherry", totalPages = 10),
+        )
+
+        val up = shelfOf(books = books, sort = ReadingSort(ReadingSortField.TITLE, ascending = true))
+        val down = shelfOf(books = books, sort = ReadingSort(ReadingSortField.TITLE, ascending = false))
+
+        assertEquals(up.reversed(), down)
+    }
+
+    /** The title is every sort's tiebreak, so a tie has one right answer. */
+    @Test
+    fun itemsThatTieOnTheSortFieldFallBackToTheTitle() {
+        val books = listOf(
+            ReadingBook(id = 1L, title = "Same length, later", totalPages = 100),
+            ReadingBook(id = 2L, title = "Another of the same", totalPages = 100),
+        )
+
+        assertEquals(
+            listOf("Another of the same", "Same length, later"),
+            shelfOf(books = books, sort = ReadingSort(ReadingSortField.PAGES, ascending = true)),
+        )
+    }
+
+    @Test
+    fun aShelfWithOneItemIsNotSortedIntoSomethingElse() {
+        val books = listOf(ReadingBook(id = 1L, title = "Only", totalPages = 10))
+
+        assertEquals(
+            listOf("Only"),
+            shelfOf(books = books, sort = ReadingSort(ReadingSortField.AUTHOR, ascending = false)),
+        )
+    }
 }
