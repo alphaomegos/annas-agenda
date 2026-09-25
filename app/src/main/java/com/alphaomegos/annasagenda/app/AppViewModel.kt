@@ -1264,7 +1264,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun newId(): Long = nextId++
 
     private fun nextTaskOrderForDate(date: LocalDate?): Int =
-        (_state.value.tasks.filter { it.date == date }.maxOfOrNull { it.order } ?: -1) + 1
+        nextTaskOrderOn(_state.value.tasks, date)
 
     private fun nextSubtaskOrderFor(taskId: Long): Int =
         (_state.value.subtasks.filter { it.taskId == taskId }.maxOfOrNull { it.order } ?: -1) + 1
@@ -1450,66 +1450,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Moves a task to another day, or off the calendar. The rules — including
+     * what happens when the task being moved is an occurrence of a repeat —
+     * live in RescheduleSupport, where a JVM test can state them.
+     */
     fun rescheduleTaskToDate(taskId: Long, newDate: LocalDate?) {
-        val cur = _state.value
-        val victim = cur.tasks.firstOrNull { it.id == taskId } ?: return
-
-        val oldDate = victim.date
-        val newOrder = if (oldDate == newDate) {
-            victim.order
-        } else {
-            nextTaskOrderForDate(newDate)
-        }
-
-        val victimOriginTaskId = victim.originTaskId
-
-        if (victimOriginTaskId != null && oldDate != null && oldDate != newDate) {
-            val taskSuppressKey = taskSuppressionKey(victimOriginTaskId, oldDate)
-
-            val movedTask = victim.copy(
-                date = newDate,
-                order = newOrder,
-                repeatRule = null,
-                originTaskId = null,
+        _state.update { cur ->
+            val after = stateAfterReschedulingTask(
+                tasks = cur.tasks,
+                subtasks = cur.subtasks,
+                suppressedRecurrences = cur.suppressedRecurrences,
+                taskId = taskId,
+                newDate = newDate,
             )
-
-            val generatedSubs = cur.subtasks.filter { it.taskId == taskId && it.originSubtaskId != null }
-            val subSuppressKeys = generatedSubs.mapNotNull { sub ->
-                sub.originSubtaskId?.let { subtaskSuppressionKey(it, oldDate) }
-            }
-
-            val updatedTasks = cur.tasks.map { task ->
-                if (task.id == taskId) movedTask else task
-            }
-
-            val updatedSubtasks = cur.subtasks.map { sub ->
-                if (sub.taskId == taskId && sub.originSubtaskId != null) {
-                    sub.copy(
-                        repeatRule = null,
-                        originSubtaskId = null,
-                    )
-                } else {
-                    sub
-                }
-            }
-
-            _state.value = cur.copy(
-                suppressedRecurrences = cur.suppressedRecurrences + taskSuppressKey + subSuppressKeys,
-                tasks = updatedTasks,
-                subtasks = updatedSubtasks,
+            cur.copy(
+                tasks = after.tasks,
+                subtasks = after.subtasks,
+                suppressedRecurrences = after.suppressedRecurrences,
             )
-            return
         }
-
-        val updatedTasks = cur.tasks.map { task ->
-            if (task.id == taskId) {
-                task.copy(date = newDate, order = newOrder)
-            } else {
-                task
-            }
-        }
-
-        _state.value = cur.copy(tasks = updatedTasks)
     }
 
     fun copyTaskToDate(taskId: Long, targetDate: LocalDate) {
