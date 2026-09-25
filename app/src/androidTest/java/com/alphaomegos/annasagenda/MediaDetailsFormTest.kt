@@ -84,7 +84,7 @@ class MediaDetailsFormTest {
         val activity = composeRule.activity
 
         composeRule
-            .onNodeWithText(activity.getString(R.string.reading_book_field_year_abandoned))
+            .onNodeWithText(activity.getString(R.string.reading_media_field_year_abandoned))
             .assertIsDisplayed()
         composeRule
             .onNodeWithText(activity.getString(R.string.reading_series_field_year_watched))

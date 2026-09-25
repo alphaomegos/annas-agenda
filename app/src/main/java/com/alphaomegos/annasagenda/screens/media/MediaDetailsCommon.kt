@@ -152,19 +152,19 @@ fun MediaDetailsCoverCard(
                     onClick = onChooseCover,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(stringResource(R.string.reading_book_choose_cover))
+                    Text(stringResource(R.string.reading_media_choose_cover))
                 }
 
                 if (hasCover) {
                     Button(onClick = onRemoveCover) {
-                        Text(stringResource(R.string.reading_book_remove_cover))
+                        Text(stringResource(R.string.reading_media_remove_cover))
                     }
                 }
             }
 
             if (hasCover) {
                 Text(
-                    text = stringResource(R.string.reading_book_cover_set),
+                    text = stringResource(R.string.reading_media_cover_set),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.alpha(0.9f)
@@ -186,7 +186,7 @@ fun MediaDetailsShelfSelector(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = stringResource(R.string.reading_book_field_shelf),
+            text = stringResource(R.string.reading_media_field_shelf),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f)
         )

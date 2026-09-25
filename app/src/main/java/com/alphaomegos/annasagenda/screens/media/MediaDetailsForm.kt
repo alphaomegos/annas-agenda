@@ -180,7 +180,7 @@ internal fun MediaDetailsForm(
                     OutlinedTextField(
                         value = title,
                         onValueChange = onTitleChange,
-                        label = { Text(stringResource(R.string.reading_book_field_title_required)) },
+                        label = { Text(stringResource(R.string.reading_media_field_title_required)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -201,7 +201,7 @@ internal fun MediaDetailsForm(
                             labelRes = if (shelf == ReadingShelf.DONE) {
                                 strings.yearFinishedLabelRes
                             } else {
-                                R.string.reading_book_field_year_abandoned
+                                R.string.reading_media_field_year_abandoned
                             }
                         )
                     }

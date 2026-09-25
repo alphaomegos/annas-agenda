@@ -2,7 +2,6 @@
 <resources>
     <!-- App -->
     <string name="app_name">Anna\'s Agenda</string>
-    <string name="coming_soon">Coming soon</string>
 
     <!-- Common actions -->
     <string name="ok">OK</string>

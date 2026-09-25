@@ -11,7 +11,6 @@
     <string name="reading_media_book">Book</string>
     <string name="reading_media_movie">Movie</string>
     <string name="reading_media_series">Series</string>
-    <string name="reading_view_list">List</string>
     <string name="reading_menu_delete">Delete</string>
     <string name="reading_menu_move_to_plans">Move to Plans</string>
     <string name="reading_menu_move_to_now">Move to Now</string>
@@ -59,20 +58,20 @@
     <!-- Media library: book details -->
     <string name="reading_book_title">Book</string>
     <string name="reading_book_not_found">Book not found</string>
-    <string name="reading_book_cover_set">Cover set</string>
-    <string name="reading_book_field_title_required">Title (required)</string>
+    <string name="reading_media_cover_set">Cover set</string>
+    <string name="reading_media_field_title_required">Title (required)</string>
     <string name="reading_book_field_author">Author</string>
     <string name="reading_book_field_pages_required">Pages (required)</string>
     <string name="reading_book_field_current_page">Current page</string>
-    <string name="reading_book_field_shelf">Shelf</string>
+    <string name="reading_media_field_shelf">Shelf</string>
     <string name="reading_book_field_year_read">Year read</string>
-    <string name="reading_book_field_year_abandoned">Year abandoned</string>
+    <string name="reading_media_field_year_abandoned">Year abandoned</string>
     <string name="reading_book_invalid_input">Please fill in the book correctly</string>
     <string name="reading_book_done">Done</string>
     <string name="reading_book_delete_title">Delete book?</string>
     <string name="reading_book_delete_text">Delete this book and all its sessions?</string>
-    <string name="reading_book_choose_cover">Choose cover</string>
-    <string name="reading_book_remove_cover">Remove cover</string>
+    <string name="reading_media_choose_cover">Choose cover</string>
+    <string name="reading_media_remove_cover">Remove cover</string>
 
     <!-- Media library: movie -->
     <string name="reading_movie_title">Movie</string>

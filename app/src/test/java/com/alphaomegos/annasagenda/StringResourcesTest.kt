@@ -151,6 +151,56 @@ class StringResourcesTest {
     private fun formatSpecifiers(text: String): List<String> =
         Regex("%(\\d+\\\$[a-zA-Z]|[a-zA-Z%])").findAll(text).map { it.value }.toList().sorted()
 
+    /**
+     * Nothing is translated into four languages for a screen that no longer
+     * shows it.
+     *
+     * A string outlives its screen silently: the build has nothing to say
+     * about it, the translators keep being asked for it, and the next person
+     * reading the file has to work out whether it is still wanted. Two were
+     * found this way — a "Coming soon" from before the menu was finished and a
+     * list-view label from before the media library had tabs.
+     *
+     * Dynamic lookups would be a false positive here, and there are none: the
+     * one place that chooses a string by kind of media (mediaDetailsStrings)
+     * is a table of R.string constants, which is exactly why it was written
+     * that way.
+     */
+    @Test
+    fun everyStringInTheBaseLocaleIsUsedSomewhere() {
+        val declared = entriesIn(baseDir()).map { it.name }.toSet()
+
+        val used = mutableSetOf<String>()
+        val fromKotlin = Regex("""R\.(?:string|plurals)\.([A-Za-z0-9_]+)""")
+        val fromXml = Regex("""@(?:string|plurals)/([A-Za-z0-9_]+)""")
+
+        mainSourceFiles().forEach { file ->
+            val text = file.readText()
+            val pattern = if (file.name.endsWith(".kt")) fromKotlin else fromXml
+            pattern.findAll(text).forEach { used += it.groupValues[1] }
+        }
+
+        val unused = (declared - used).sorted()
+
+        assertTrue(
+            "declared and translated but never used: $unused",
+            unused.isEmpty(),
+        )
+    }
+
+    /** Every Kotlin and XML file the app ships, resources included. */
+    private fun mainSourceFiles(): List<File> =
+        mainRoot()
+            .walkTopDown()
+            .filter { it.isFile && (it.name.endsWith(".kt") || it.name.endsWith(".xml")) }
+            .toList()
+
+    private fun mainRoot(): File =
+        listOf("src/main", "app/src/main", "../app/src/main")
+            .map { File(it) }
+            .firstOrNull { it.isDirectory }
+            ?: error("Cannot find src/main from ${File("").absolutePath}")
+
     private fun baseDir(): File = File(resRoot(), "values")
 
     private fun translationDirs(): List<File> =
