@@ -4,31 +4,30 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import java.io.File
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.util.UUID
 
 /**
- * The saved state, through a real DataStore file, without a device.
+ * The saved state, through a real DataStore file.
  *
- * This is the first test in the project to run Android's own framework on the
- * JVM, and it is deliberately the one that matters most: everything worth
- * moving off the emulator — the view model, the backup, the dialogs — needs a
- * Context and a DataStore underneath it. If those work here, the rest is a
- * matter of moving files. If they do not, nothing else was going to work
- * either, and better to find out from one class than from nineteen.
+ * This class lives in src/sharedTest, so it runs twice: on the JVM under
+ * Robolectric, and on a device under the instrumentation runner. Nothing in it
+ * is written for one of the two — no stub of DataStore, no pretending about
+ * files — which is what makes running it in both places worth anything. If the
+ * two ever disagree, the disagreement is the finding.
  *
- * The file is a real file. Nothing here is a stub of DataStore, and the
- * pruning the store does on the way out is exercised exactly as it is on a
- * phone.
+ * It is also the first thing worth proving before moving anything else off the
+ * emulator: everything that would follow — the view model, the backup, the
+ * dialogs — stands on a Context and a DataStore.
  *
  * Each test gets its own file, built with the store's internal constructor
  * rather than taken from [appStateDataStore]. That is not tidiness: the app's
@@ -36,16 +35,17 @@ import java.time.LocalDate
  * outlives any single test, and it keeps what it has read in memory. Deleting
  * the file underneath it changes nothing — the next read still answers from
  * memory, and a test that asks "what does an empty store say?" is answered
- * with the previous test's data. Every Robolectric test added here later
- * should build its own store the same way.
+ * with the previous test's data.
+ *
+ * The file goes under [Context.getCacheDir] rather than in a JUnit
+ * TemporaryFolder, because the temporary directory a JVM hands out and the one
+ * an app may write to on Android are not the same place.
  */
 @RunWith(AndroidJUnit4::class)
-class AppStateStoreOnTheJvmTest {
-
-    @get:Rule
-    val storeFolder = TemporaryFolder()
+class AppStateStoreContractTest {
 
     private lateinit var context: Context
+    private lateinit var storeDir: File
     private lateinit var store: AppStateStore
 
     private val monday = LocalDate.of(2026, 3, 2)
@@ -55,13 +55,22 @@ class AppStateStoreOnTheJvmTest {
         context = ApplicationProvider.getApplicationContext()
         AppStateStoreCorruption.clear()
 
+        storeDir = File(context.cacheDir, "store-contract-${UUID.randomUUID()}")
+        storeDir.mkdirs()
+
         store = AppStateStore(
             context = context,
             dataStore = buildAppStateDataStore(
                 context = context,
-                file = File(storeFolder.newFolder(), "app_state_store.preferences_pb"),
+                file = File(storeDir, "app_state_store.preferences_pb"),
             ),
         )
+    }
+
+    @After
+    fun tearDown() {
+        storeDir.deleteRecursively()
+        AppStateStoreCorruption.clear()
     }
 
     @Test

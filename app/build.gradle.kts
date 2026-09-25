@@ -128,6 +128,17 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    // Tests that describe a contract of this app rather than of a platform go
+    // in src/sharedTest and run twice: on the JVM under Robolectric with
+    // `test`, and on a real device with `androidTest`. One file, two runners.
+    //
+    // The alternative — a copy in each source set — drifts, and the drift
+    // shows up on the run nobody does often, which is the device one.
+    sourceSets {
+        getByName("test").java.srcDir("src/sharedTest/java")
+        getByName("androidTest").java.srcDir("src/sharedTest/java")
+    }
 }
 
 // Android 36's framework asks the JVM for a shared-memory file descriptor while
@@ -175,6 +186,8 @@ dependencies {
     testImplementation(libs.androidx.junit)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
