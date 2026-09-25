@@ -397,16 +397,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * existed only in memory while the disk still held the old, with no hint
      * that the two disagreed.
      */
-    suspend fun importBackupJson(raw: String): Boolean {
-        val decoded = store.decodeFromJson(raw) ?: return false
-        return adoptImportedState(decoded)
+    suspend fun importBackupJson(raw: String): ImportOutcome {
+        val decoded = store.decodeFromJson(raw) ?: return ImportOutcome.Failed
+        return ImportOutcome(adopted = adoptImportedState(decoded))
     }
 
     suspend fun importBackupPackage(
         appStateJson: String,
         coverEntries: Map<String, ByteArray>,
-    ): Boolean {
-        val decoded = store.decodeFromJson(appStateJson) ?: return false
+    ): ImportOutcome {
+        val decoded = store.decodeFromJson(appStateJson) ?: return ImportOutcome.Failed
         val expectedRefs = collectInternalCoverRefs(decoded)
 
         // Deliberately NOT deleting covers the archive happens to lack. A
@@ -416,13 +416,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         // entry means "this archive does not carry the image", not "the image
         // should be destroyed". Covers that the new state no longer references
         // are removed below, by the orphan sweep, which is the correct place.
+        // Counted rather than ignored. The state and the pictures are not
+        // worth the same — a restored library with no images is still the
+        // titles, the shelves and the pages read — so a cover that will not
+        // write does not fail the import. It does have to be said, though:
+        // this used to report plain success, and the missing pictures were
+        // found later with nothing to connect them to the restore.
+        var coversNotWritten = 0
+
         coverEntries.forEach { (ref, bytes) ->
             if (ref in expectedRefs) {
-                writeInternalCoverBytes(
+                val written = writeInternalCoverBytes(
                     context = appContext,
                     coverRef = ref,
                     bytes = bytes
                 )
+                if (!written) coversNotWritten++
             }
         }
 
@@ -435,7 +444,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             cleanupRemovedInternalCoversAsync(decoded, _state.value)
         }
 
-        return adopted
+        return ImportOutcome(adopted = adopted, coversNotWritten = coversNotWritten)
     }
 
     /**

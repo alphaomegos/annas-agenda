@@ -393,4 +393,12 @@
         <item quantity="many">%1$d страниц</item>
         <item quantity="other">%1$d страницы</item>
     </plurals>
+
+    <!-- Imported, but some covers could not be written -->
+    <plurals name="toast_imported_without_some_covers">
+        <item quantity="one">Импортировано, но %1$d обложку восстановить не удалось</item>
+        <item quantity="few">Импортировано, но %1$d обложки восстановить не удалось</item>
+        <item quantity="many">Импортировано, но %1$d обложек восстановить не удалось</item>
+        <item quantity="other">Импортировано, но %1$d обложки восстановить не удалось</item>
+    </plurals>
 </resources>

@@ -304,4 +304,11 @@
         <item quantity="few">%1$d strane</item>
         <item quantity="other">%1$d strana</item>
     </plurals>
+
+    <!-- Imported, but some covers could not be written -->
+    <plurals name="toast_imported_without_some_covers">
+        <item quantity="one">Uvezeno, ali %1$d omot nije vraćen</item>
+        <item quantity="few">Uvezeno, ali %1$d omota nije vraćeno</item>
+        <item quantity="other">Uvezeno, ali %1$d omota nije vraćeno</item>
+    </plurals>
 </resources>

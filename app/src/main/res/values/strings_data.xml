@@ -26,4 +26,10 @@
     <string name="storage_too_new_title">Data from a newer version</string>
     <string name="storage_too_new_text">The saved data was written by a newer version of the app (format %1$d; this version understands %2$d). It has been left untouched.</string>
     <string name="storage_too_new_hint">Install the newer version to open it. Nothing is lost while this screen is showing.</string>
+
+    <!-- The state arrived; some pictures did not. Their media is all there. -->
+    <plurals name="toast_imported_without_some_covers">
+        <item quantity="one">Imported, but %1$d cover could not be restored</item>
+        <item quantity="other">Imported, but %1$d covers could not be restored</item>
+    </plurals>
 </resources>

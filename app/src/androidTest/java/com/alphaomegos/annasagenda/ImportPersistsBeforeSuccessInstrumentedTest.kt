@@ -59,7 +59,7 @@ class ImportPersistsBeforeSuccessInstrumentedTest {
             )
         )
 
-        assertTrue(vm.importBackupJson(backup))
+        assertTrue(vm.importBackupJson(backup).adopted)
 
         // No waiting, no settling: a fresh view model reads the store directly,
         // and the import has already claimed to be done.
@@ -86,7 +86,7 @@ class ImportPersistsBeforeSuccessInstrumentedTest {
             description = "Still here afterwards",
         )
 
-        assertFalse(vm.importBackupJson("{ not json at all"))
+        assertFalse(vm.importBackupJson("{ not json at all").adopted)
 
         assertTrue(vm.state.value.tasks.any { it.id == taskId })
     }

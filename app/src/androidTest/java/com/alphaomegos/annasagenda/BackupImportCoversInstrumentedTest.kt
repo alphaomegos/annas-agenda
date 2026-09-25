@@ -72,7 +72,8 @@ class BackupImportCoversInstrumentedTest {
             coverEntries = emptyMap(),
         )
 
-        assertTrue("import should succeed", restored)
+        assertTrue("import should succeed", restored.adopted)
+        assertEquals("no covers were offered, so none could fail", 0, restored.coversNotWritten)
         assertEquals(
             listOf(coverRef),
             vm.state.value.readingBooks.mapNotNull { it.coverUri },

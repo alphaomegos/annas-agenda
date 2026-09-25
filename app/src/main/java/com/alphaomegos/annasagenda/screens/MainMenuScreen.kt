@@ -68,6 +68,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.alphaomegos.annasagenda.AppThemeMode
+import com.alphaomegos.annasagenda.ImportMessage
+import com.alphaomegos.annasagenda.ImportOutcome
+import com.alphaomegos.annasagenda.importMessageFor
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.itemsInMenuOrder
@@ -124,7 +127,7 @@ fun MainMenuScreen(
         scope.launch {
             val payload = readBackupImportPayload(context, uri)
 
-            val ok = when (payload) {
+            val outcome = when (payload) {
                 is BackupImportPayload.LegacyJson -> {
                     vm.importBackupJson(payload.json)
                 }
@@ -136,17 +139,28 @@ fun MainMenuScreen(
                     )
                 }
 
-                null -> false
+                null -> ImportOutcome.Failed
             }
+
+            val message = importMessageFor(
+                payloadWasReadable = payload != null,
+                outcome = outcome,
+            )
 
             Toast.makeText(
                 context,
-                when {
-                    ok -> context.getString(R.string.toast_imported)
-                    payload == null -> context.getString(R.string.toast_import_failed)
-                    else -> context.getString(R.string.toast_invalid_backup)
+                when (message) {
+                    ImportMessage.IMPORTED -> context.getString(R.string.toast_imported)
+                    ImportMessage.IMPORTED_WITHOUT_SOME_COVERS -> context.resources
+                        .getQuantityString(
+                            R.plurals.toast_imported_without_some_covers,
+                            outcome.coversNotWritten,
+                            outcome.coversNotWritten,
+                        )
+                    ImportMessage.COULD_NOT_READ_FILE -> context.getString(R.string.toast_import_failed)
+                    ImportMessage.NOT_A_BACKUP -> context.getString(R.string.toast_invalid_backup)
                 },
-                Toast.LENGTH_SHORT
+                Toast.LENGTH_LONG
             ).show()
         }
     }
