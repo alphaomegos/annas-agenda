@@ -55,6 +55,33 @@ fun moveReadingBookToShelf(
     )
 }
 
+/**
+ * What becomes of a session in progress when the book it is about changes.
+ *
+ * Three callers were deciding this separately — editing a book, moving it to
+ * another shelf, and the shelf move that editing can itself perform — with the
+ * same rule written slightly differently each time.
+ *
+ * The rule: a session survives only while its book is on the Now shelf, and it
+ * follows the book's current page, because that page is where the session is
+ * counting from. A book moved anywhere else is not being read any more, so the
+ * session ends.
+ *
+ * It ends by being dropped, not by being recorded. An hour of reading followed
+ * by marking the book finished leaves no session behind, and nothing says so.
+ * That is the behaviour as it stands, pinned here rather than changed, because
+ * what it should do instead — record it, or ask — is not a question this
+ * function gets to answer.
+ */
+fun activeReadingAfterBookChanged(
+    active: ActiveReading?,
+    changed: ReadingBook,
+): ActiveReading? = when {
+    active == null || active.bookId != changed.id -> active
+    changed.shelf == ReadingShelf.NOW -> active.copy(startPage = changed.currentPage)
+    else -> null
+}
+
 fun updateReadingBookEntity(
     old: ReadingBook,
     author: String? = null,

@@ -660,17 +660,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return
         if (book.shelf == shelf) return
 
-        val stillReading =
-            st.activeReading?.takeIf { it.bookId != bookId || shelf == ReadingShelf.NOW }
-
         val currentYear = LocalDate.now().year
+        val moved = moveReadingBookToShelf(book, shelf, currentYear)
 
-        val updatedBooks = st.readingBooks.map { b ->
-            if (b.id != bookId) b
-            else moveReadingBookToShelf(b, shelf, currentYear)
-        }
-
-        _state.value = st.copy(readingBooks = updatedBooks, activeReading = stillReading)
+        _state.value = st.copy(
+            readingBooks = st.readingBooks.map { b -> if (b.id == bookId) moved else b },
+            activeReading = activeReadingAfterBookChanged(st.activeReading, moved),
+        )
     }
     fun updateReadingBook(
         bookId: Long,
@@ -705,19 +701,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             currentYear = currentYear,
         )
 
-        val active = st.activeReading
-        val newActive =
-            if (active?.bookId != bookId) {
-                active
-            } else if (updated.shelf == ReadingShelf.NOW) {
-                active.copy(startPage = updated.currentPage)
-            } else {
-                null
-            }
-
         _state.value = st.copy(
             readingBooks = st.readingBooks.map { b -> if (b.id == bookId) updated else b },
-            activeReading = newActive,
+            activeReading = activeReadingAfterBookChanged(st.activeReading, updated),
         )
 
         if (oldCover != updated.coverUri) {

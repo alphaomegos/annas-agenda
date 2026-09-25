@@ -17,6 +17,66 @@ class ReadingCrudSupportTest {
 
     private val year = 2026
 
+    // -- a session in progress -----------------------------------------------
+
+    private val reading = ActiveReading(
+        bookId = 1L,
+        startedAtEpochMillis = 1_700_000_000_000L,
+        startPage = 40,
+    )
+
+    private fun book(
+        id: Long = 1L,
+        shelf: ReadingShelf = ReadingShelf.NOW,
+        currentPage: Int = 40,
+    ) = ReadingBook(id = id, title = "Dune", totalPages = 600, shelf = shelf, currentPage = currentPage)
+
+    @Test
+    fun activeReading_ignoresAChangeToSomeOtherBook() {
+        assertEquals(reading, activeReadingAfterBookChanged(reading, book(id = 2L)))
+        assertEquals(
+            reading,
+            activeReadingAfterBookChanged(reading, book(id = 2L, shelf = ReadingShelf.DONE)),
+        )
+    }
+
+    @Test
+    fun activeReading_survivesWhileItsBookIsOnTheNowShelf() {
+        assertEquals(reading, activeReadingAfterBookChanged(reading, book()))
+    }
+
+    /**
+     * The page the session counts from follows the book's own page. Editing
+     * the page while reading means the earlier number was wrong, so the
+     * session should not go on measuring from it.
+     */
+    @Test
+    fun activeReading_followsThePageTheBookIsOn() {
+        val after = activeReadingAfterBookChanged(reading, book(currentPage = 120))
+
+        assertEquals(120, after?.startPage)
+        assertEquals(reading.startedAtEpochMillis, after?.startedAtEpochMillis)
+    }
+
+    /**
+     * A book that is not on the Now shelf is not being read, so the session
+     * ends — and it ends by being dropped rather than recorded. An hour of
+     * reading followed by marking the book finished leaves nothing behind.
+     * That is what the app does today; this states it rather than fixes it.
+     */
+    @Test
+    fun activeReading_endsWhenItsBookLeavesTheNowShelf() {
+        listOf(ReadingShelf.DONE, ReadingShelf.ABANDONED, ReadingShelf.PLANS).forEach { shelf ->
+            assertNull("$shelf kept the session", activeReadingAfterBookChanged(reading, book(shelf = shelf)))
+        }
+    }
+
+    @Test
+    fun activeReading_hasNothingToSayWhenThereIsNoSession() {
+        assertNull(activeReadingAfterBookChanged(null, book()))
+        assertNull(activeReadingAfterBookChanged(null, book(shelf = ReadingShelf.DONE)))
+    }
+
     // -- books ---------------------------------------------------------------
 
     @Test
