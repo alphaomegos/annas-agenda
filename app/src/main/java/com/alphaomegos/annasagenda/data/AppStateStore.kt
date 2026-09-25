@@ -221,8 +221,20 @@ class AppStateStore internal constructor(
         }
     }
 
+    /**
+     * Writes the state, minus the future occurrences that loading it back and
+     * drawing the day would produce again.
+     *
+     * Deliberately here and not in [encodeToJson]: an export is read by a
+     * device whose language may put the week boundary somewhere else, and a
+     * rule saved before the week start was recorded would then regenerate onto
+     * different days. An archive keeps everything.
+     *
+     * The state held in memory is untouched, so nothing on screen moves and
+     * ids stay put for as long as the app is running.
+     */
     suspend fun save(state: AppState) = withContext(Dispatchers.IO) {
-        val raw = encodeToJson(state)
+        val raw = encodeToJson(stateWithDerivableOccurrencesDropped(state))
         dataStore.edit { prefs ->
             prefs[key] = raw
         }

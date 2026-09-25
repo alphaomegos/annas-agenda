@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.time.DayOfWeek
 import java.time.LocalDate
 
 @RunWith(AndroidJUnit4::class)
@@ -162,6 +163,70 @@ class AppStateStoreInstrumentedTest {
         assertTrue("expected Loaded, got $restored", restored is AppStateLoadResult.Loaded)
         assertEquals(original, (restored as AppStateLoadResult.Loaded).state)
     }
+
+    /**
+     * Saving leaves out the occurrences that can be worked out again, so the
+     * contract at this boundary is that drawing the days back gives the same
+     * days. Anything less and the user's calendar quietly changes overnight.
+     */
+    @Test
+    fun saveThenLoad_rebuildsTheFutureDaysThatWereLeftOut() = runBlocking {
+        val today = LocalDate.now()
+        val anchor = today.minusDays(1)
+        val end = today.plusDays(20)
+
+        val template = Task(
+            id = 1L,
+            order = 0,
+            date = anchor,
+            description = "water the plants",
+            repeatRule = RepeatRule(freq = RepeatFreq.DAILY, interval = 1, weekStart = DayOfWeek.MONDAY),
+        )
+
+        val materialised = generateRecurrencesInRange(
+            tasks = listOf(template),
+            subtasks = emptyList(),
+            suppressedRecurrences = emptySet(),
+            start = anchor,
+            end = end,
+            nextId = 100L,
+            defaultWeekStart = DayOfWeek.MONDAY,
+        )
+        val original = AppState(tasks = materialised.tasks, subtasks = materialised.subtasks)
+
+        store.save(original)
+        val restored = store.load()
+        assertTrue("expected Loaded, got $restored", restored is AppStateLoadResult.Loaded)
+        val loaded = (restored as AppStateLoadResult.Loaded).state
+
+        // Something really was left out, or this test proves nothing.
+        assertTrue(
+            "nothing was dropped: ${loaded.tasks.size} of ${original.tasks.size}",
+            loaded.tasks.size < original.tasks.size,
+        )
+
+        val rebuilt = generateRecurrencesInRange(
+            tasks = loaded.tasks,
+            subtasks = loaded.subtasks,
+            suppressedRecurrences = loaded.suppressedRecurrences,
+            start = anchor,
+            end = end,
+            nextId = 10_000L,
+            defaultWeekStart = DayOfWeek.MONDAY,
+        )
+
+        assertEquals(daySummary(original.tasks), daySummary(rebuilt.tasks))
+    }
+
+    /** Every day, in the order the screens draw it, with ids left out. */
+    private fun daySummary(tasks: List<Task>): Map<LocalDate, List<String>> =
+        tasks
+            .filter { it.date != null }
+            .groupBy { it.date!! }
+            .mapValues { (_, day) ->
+                day.sortedWith(compareBy({ it.order }, { it.id }))
+                    .map { "${it.order}:${it.description}:${it.isDone}:${it.originTaskId}" }
+            }
 
     @Test
     fun decodeFromJson_migratesLegacyVersion0Payload() {

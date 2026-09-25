@@ -231,3 +231,42 @@ private data class SubtaskSignature(
     val repeatRule: RepeatRule?,
     val originSubtaskId: Long?,
 )
+
+/**
+ * The state as it is worth writing down: without the occurrences that reading
+ * it back and drawing a day would produce again anyway.
+ *
+ * Only days after [today] are considered. Not because the past is any less
+ * derivable — it is derived by the same generator — but because the past is
+ * what the Undone lamp and screen read, and they read it straight out of the
+ * state. The lamp does ask for the horizon to be materialised when the main
+ * menu opens, so dropping past days would probably survive; "probably" is not
+ * a good enough reason to risk a debt going quiet.
+ *
+ * The future is also where the growth is. The horizon behind today is bounded
+ * by the chosen number of days; ahead of it there is no bound at all — the
+ * calendar materialises whatever month it is asked to draw, and a few idle
+ * swipes forward write a year of occurrences that will never be looked at
+ * again.
+ *
+ * Returns the same instance when there is nothing to drop, so a caller can
+ * compare by identity and skip the work that would follow.
+ */
+fun stateWithDerivableOccurrencesDropped(
+    state: AppState,
+    today: LocalDate = LocalDate.now(),
+    weekStart: DayOfWeek = currentLocaleWeekStart(),
+): AppState {
+    val result = pruneRedundantGeneratedOccurrences(
+        tasks = state.tasks,
+        subtasks = state.subtasks,
+        suppressedRecurrences = state.suppressedRecurrences,
+        runningPlanEntries = state.runningPlanEntries,
+        isPrunableDate = { it.isAfter(today) },
+        weekStart = weekStart,
+    )
+
+    if (!result.report.pruned) return state
+
+    return state.copy(tasks = result.tasks, subtasks = result.subtasks)
+}

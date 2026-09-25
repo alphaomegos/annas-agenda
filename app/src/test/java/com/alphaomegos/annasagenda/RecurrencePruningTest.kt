@@ -417,4 +417,81 @@ class RecurrencePruningTest {
         assertEquals(daily, result.tasks.single().repeatRule)
         assertFalse(result.report.pruned)
     }
+
+    /* ---------- what actually gets written down ---------- */
+
+    private fun stateFrom(generated: RecurrenceGenerationResult, vararg extra: RunningPlanEntry) =
+        AppState(
+            tasks = generated.tasks,
+            subtasks = generated.subtasks,
+            runningPlanEntries = extra.toList(),
+        )
+
+    @Test
+    fun onlyDaysAheadOfTodayAreLeftOutOfTheSavedState() {
+        val state = stateFrom(materialised(listOf(template())))
+        val today = monday.plusDays(2)
+
+        val saved = stateWithDerivableOccurrencesDropped(state, today, weekStart)
+
+        val datesLeft = saved.tasks
+            .filter { it.originTaskId != null }
+            .map { it.date }
+            .toSet()
+
+        assertEquals(setOf(monday.plusDays(1), monday.plusDays(2)), datesLeft)
+    }
+
+    /**
+     * Today is not "ahead of today". Its list is on screen while this runs, and
+     * the day is still being worked through.
+     */
+    @Test
+    fun todayIsKept() {
+        val state = stateFrom(materialised(listOf(template())))
+        val today = monday.plusDays(4)
+
+        val saved = stateWithDerivableOccurrencesDropped(state, today, weekStart)
+
+        assertEquals(4, saved.tasks.count { it.originTaskId != null })
+    }
+
+    @Test
+    fun aStateWithNothingToDropIsWrittenAsItStands() {
+        val state = AppState(tasks = listOf(Task(id = 1L, date = monday, description = "dentist")))
+
+        assertSame(state, stateWithDerivableOccurrencesDropped(state, monday.minusDays(1), weekStart))
+    }
+
+    @Test
+    fun everythingElseInTheStateSurvives() {
+        val generated = materialised(listOf(template()))
+        val state = AppState(
+            tasks = generated.tasks,
+            subtasks = generated.subtasks,
+            suppressedRecurrences = setOf(taskSuppressionKey(1L, monday.plusDays(9))),
+            undoneHorizonDays = 17,
+            readingBooks = listOf(ReadingBook(id = 77L, title = "Dune", totalPages = 600)),
+            foodLog = listOf(FoodEntry(id = 5L, date = monday, title = "soup", kcal = 300)),
+        )
+
+        val saved = stateWithDerivableOccurrencesDropped(state, monday, weekStart)
+
+        assertTrue(saved.tasks.size < state.tasks.size)
+        assertEquals(state.suppressedRecurrences, saved.suppressedRecurrences)
+        assertEquals(17, saved.undoneHorizonDays)
+        assertEquals(state.readingBooks, saved.readingBooks)
+        assertEquals(state.foodLog, saved.foodLog)
+    }
+
+    @Test
+    fun anOccurrenceTheRunningPlanPointsAtIsWrittenDownEvenThoughItIsDerivable() {
+        val generated = materialised(listOf(template()))
+        val victim = generated.tasks.first { it.date == monday.plusDays(3) && it.originTaskId != null }
+        val state = stateFrom(generated, RunningPlanEntry(date = victim.date!!, taskId = victim.id))
+
+        val saved = stateWithDerivableOccurrencesDropped(state, monday, weekStart)
+
+        assertTrue(saved.tasks.any { it.id == victim.id })
+    }
 }
