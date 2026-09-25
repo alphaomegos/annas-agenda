@@ -356,4 +356,24 @@
     <string name="theme_mode_system">Как на телефоне</string>
     <string name="theme_mode_light">Светлое</string>
     <string name="theme_mode_dark">Тёмное</string>
+
+    <!-- Countdown on a date counter -->
+    <plurals name="counter_remaining_years">
+        <item quantity="one">%1$d год</item>
+        <item quantity="few">%1$d года</item>
+        <item quantity="many">%1$d лет</item>
+        <item quantity="other">%1$d года</item>
+    </plurals>
+    <plurals name="counter_remaining_months">
+        <item quantity="one">%1$d месяц</item>
+        <item quantity="few">%1$d месяца</item>
+        <item quantity="many">%1$d месяцев</item>
+        <item quantity="other">%1$d месяца</item>
+    </plurals>
+    <plurals name="counter_remaining_days">
+        <item quantity="one">%1$d день</item>
+        <item quantity="few">%1$d дня</item>
+        <item quantity="many">%1$d дней</item>
+        <item quantity="other">%1$d дня</item>
+    </plurals>
 </resources>

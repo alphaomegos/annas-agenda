@@ -15,19 +15,21 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import java.time.LocalDate
-import java.time.Period
-import java.time.temporal.ChronoUnit
-import kotlin.math.max
 import kotlin.math.roundToInt
 import com.alphaomegos.annasagenda.ManualCounter
 import com.alphaomegos.annasagenda.DateRangeCounter
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.RemainingPart
+import com.alphaomegos.annasagenda.RemainingUnit
+import com.alphaomegos.annasagenda.remainingFractionOf
+import com.alphaomegos.annasagenda.remainingUntil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -256,14 +258,11 @@ private fun DateRangeCounterCard(
     onDelete: () -> Unit,
 ) {
     val today = LocalDate.now()
-    val totalDays = max(1L, ChronoUnit.DAYS.between(counter.startDate, counter.endDate))
-    val remainingDaysRaw = ChronoUnit.DAYS.between(today, counter.endDate)
-    val remainingDays = remainingDaysRaw.coerceIn(0L, totalDays)
 
-    val percentRemaining = (remainingDays.toDouble() / totalDays.toDouble()).coerceIn(0.0, 1.0)
+    val percentRemaining = remainingFractionOf(counter.startDate, counter.endDate, today)
     val percentInt = (percentRemaining * 100.0).roundToInt()
 
-    val remainingText = buildRemainingText(today, counter.endDate)
+    val remainingLabel = remainingText(remainingUntil(today, counter.endDate))
 
     Card(
         modifier = Modifier
@@ -278,7 +277,7 @@ private fun DateRangeCounterCard(
                 Text(counter.title, style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    stringResource(R.string.date_remaining_fmt, remainingText, percentInt),
+                    stringResource(R.string.date_remaining_fmt, remainingLabel, percentInt),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(10.dp))
@@ -300,15 +299,27 @@ private fun DateRangeCounterCard(
     }
 }
 
-private fun buildRemainingText(today: LocalDate, end: LocalDate): String {
-    if (!today.isBefore(end)) return "0"
-    val p = Period.between(today, end)
-    val parts = mutableListOf<String>()
-    if (p.years != 0) parts += "${p.years}y"
-    if (p.months != 0) parts += "${p.months}m"
-    if (p.days != 0) parts += "${p.days}d"
-    if (parts.isEmpty()) return "0"
-    return parts.joinToString(" ")
+/**
+ * The countdown as a phrase in the user's language.
+ *
+ * A plain loop rather than joinToString: pluralStringResource is a composable
+ * and cannot be called from the lambda that joinToString takes.
+ */
+@Composable
+private fun remainingText(parts: List<RemainingPart>): String {
+    val words = ArrayList<String>(parts.size)
+
+    for (part in parts) {
+        words += pluralStringResource(pluralResFor(part.unit), part.amount, part.amount)
+    }
+
+    return words.joinToString(" ")
+}
+
+private fun pluralResFor(unit: RemainingUnit): Int = when (unit) {
+    RemainingUnit.YEARS -> R.plurals.counter_remaining_years
+    RemainingUnit.MONTHS -> R.plurals.counter_remaining_months
+    RemainingUnit.DAYS -> R.plurals.counter_remaining_days
 }
 
 @Composable

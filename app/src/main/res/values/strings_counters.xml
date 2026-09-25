@@ -21,4 +21,19 @@
     <string name="attached_counter_fmt">Counter: %1$s</string>
     <string name="detach_counter">Detach</string>
     <string name="delete_counter_title">Delete counter?</string>
+
+    <!-- Countdown on a date counter. Written as plurals because the card used
+         to say "2y 3m 5d" in every language. -->
+    <plurals name="counter_remaining_years">
+        <item quantity="one">%1$d year</item>
+        <item quantity="other">%1$d years</item>
+    </plurals>
+    <plurals name="counter_remaining_months">
+        <item quantity="one">%1$d month</item>
+        <item quantity="other">%1$d months</item>
+    </plurals>
+    <plurals name="counter_remaining_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
 </resources>

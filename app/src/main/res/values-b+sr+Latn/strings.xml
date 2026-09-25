@@ -272,4 +272,21 @@
     <string name="theme_mode_system">Kao na telefonu</string>
     <string name="theme_mode_light">Svetlo</string>
     <string name="theme_mode_dark">Tamno</string>
+
+    <!-- Countdown on a date counter -->
+    <plurals name="counter_remaining_years">
+        <item quantity="one">%1$d godina</item>
+        <item quantity="few">%1$d godine</item>
+        <item quantity="other">%1$d godina</item>
+    </plurals>
+    <plurals name="counter_remaining_months">
+        <item quantity="one">%1$d mesec</item>
+        <item quantity="few">%1$d meseca</item>
+        <item quantity="other">%1$d meseci</item>
+    </plurals>
+    <plurals name="counter_remaining_days">
+        <item quantity="one">%1$d dan</item>
+        <item quantity="few">%1$d dana</item>
+        <item quantity="other">%1$d dana</item>
+    </plurals>
 </resources>
