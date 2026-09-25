@@ -1285,7 +1285,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         nextTaskOrderOn(_state.value.tasks, date)
 
     private fun nextSubtaskOrderFor(taskId: Long): Int =
-        (_state.value.subtasks.filter { it.taskId == taskId }.maxOfOrNull { it.order } ?: -1) + 1
+        nextSubtaskOrderIn(_state.value.subtasks, taskId)
 
     private fun refreshHasSubtasks() {
         _state.update { cur ->
@@ -1485,23 +1485,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
        Subtasks
     ---------------------------- */
 
+    /**
+     * Adds a part to a task. The rule about a part joining a task that is
+     * already finished lives in TaskDoneSupport, with the reason it matters.
+     */
     fun createSubtask(taskId: Long, description: String, colorArgb: Long? = null): Long {
         val id = newId()
-        val subtask = Subtask(
-            id = id,
-            order = nextSubtaskOrderFor(taskId),
+        val cur = _state.value
+
+        val after = stateAfterCreatingSubtask(
+            tasks = cur.tasks,
+            subtasks = cur.subtasks,
+            counters = cur.counters,
             taskId = taskId,
-            description = description.trim(),
+            description = description,
             colorArgb = colorArgb,
-            isDone = false
+            id = id,
         )
-        _state.value = _state.value.copy(subtasks = _state.value.subtasks + subtask)
-        refreshHasSubtasks()
 
-        val parent = _state.value.tasks.firstOrNull { it.id == taskId }
-        if (parent?.isDone == true) toggleSubtaskDone(id)
+        _state.value = cur.copy(
+            tasks = after.tasks,
+            subtasks = after.subtasks,
+            counters = after.counters,
+        )
 
-        return id
+        return after.createdId
     }
 
     fun updateSubtaskDescription(subtaskId: Long, description: String) {

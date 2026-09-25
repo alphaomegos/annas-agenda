@@ -353,4 +353,133 @@ class TaskDoneSupportTest {
         assertTrue(done.tasks.single().isDone)
         assertFalse(notDone.tasks.single().isDone)
     }
+
+    /* ---------- adding a part to a task ---------- */
+
+    @Test
+    fun aNewPartGoesAfterTheOnesAlreadyThere() {
+        val after = stateAfterCreatingSubtask(
+            tasks = listOf(task(1)),
+            subtasks = listOf(sub(10L, 1L), sub(11L, 1L).copy(order = 4)),
+            counters = emptyList(),
+            taskId = 1L,
+            description = "third",
+            colorArgb = null,
+            id = 99L,
+        )
+
+        assertEquals(5, after.subtasks.single { it.id == 99L }.order)
+        assertEquals(99L, after.createdId)
+    }
+
+    @Test
+    fun aNewPartIsCountedOnlyAgainstItsOwnTask() {
+        val after = stateAfterCreatingSubtask(
+            tasks = listOf(task(1), task(2)),
+            subtasks = listOf(sub(10L, 2L).copy(order = 9)),
+            counters = emptyList(),
+            taskId = 1L,
+            description = "first here",
+            colorArgb = null,
+            id = 99L,
+        )
+
+        assertEquals(0, after.subtasks.single { it.id == 99L }.order)
+    }
+
+    @Test
+    fun aTaskThatGainsItsFirstPartSaysSo() {
+        val after = stateAfterCreatingSubtask(
+            tasks = listOf(task(1)),
+            subtasks = emptyList(),
+            counters = emptyList(),
+            taskId = 1L,
+            description = "  padded  ",
+            colorArgb = 0xFF00FF00L,
+            id = 99L,
+        )
+
+        assertTrue(after.tasks.single().hasSubtasks)
+        assertEquals("padded", after.subtasks.single().description)
+        assertEquals(0xFF00FF00L, after.subtasks.single().colorArgb)
+        assertFalse(after.subtasks.single().isDone)
+    }
+
+    /**
+     * A task is finished exactly when all its parts are, and its counter has
+     * already been paid for that. An unticked part joining a finished task
+     * would leave the two disagreeing, and the next tick of that part would
+     * finish the task a second time and take another point off.
+     */
+    @Test
+    fun aPartJoiningAFinishedTaskArrivesFinished() {
+        val after = stateAfterCreatingSubtask(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L, isDone = true)),
+            counters = listOf(manual(10L, 4)),
+            taskId = 1L,
+            description = "one more",
+            colorArgb = null,
+            id = 99L,
+        )
+
+        assertTrue(after.subtasks.single { it.id == 99L }.isDone)
+        assertTrue(after.tasks.single().isDone)
+        assertEquals("the task did not finish twice", 4, balanceOf(after.counters, 10L))
+    }
+
+    @Test
+    fun aPartJoiningAnUnfinishedTaskArrivesUnfinished() {
+        val after = stateAfterCreatingSubtask(
+            tasks = listOf(task(1, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L, isDone = true)),
+            counters = listOf(manual(10L, 5)),
+            taskId = 1L,
+            description = "one more",
+            colorArgb = null,
+            id = 99L,
+        )
+
+        assertFalse(after.subtasks.single { it.id == 99L }.isDone)
+        assertFalse(after.tasks.single().isDone)
+        assertEquals(5, balanceOf(after.counters, 10L))
+    }
+
+    /**
+     * A finished task whose parts already disagreed with it — which a payload
+     * from an older version can hold — has the disagreement put right, and the
+     * counter gets back the point it should never have been charged.
+     */
+    @Test
+    fun aPartJoiningAFinishedTaskWhosePartsDisagreePutsItRight() {
+        val after = stateAfterCreatingSubtask(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L, isDone = false)),
+            counters = listOf(manual(10L, 4)),
+            taskId = 1L,
+            description = "one more",
+            colorArgb = null,
+            id = 99L,
+        )
+
+        assertFalse(after.tasks.single().isDone)
+        assertEquals(5, balanceOf(after.counters, 10L))
+    }
+
+    /** A part with no task is a dangling row, not an error. */
+    @Test
+    fun aPartCanBeMadeForATaskThatIsNotThere() {
+        val after = stateAfterCreatingSubtask(
+            tasks = listOf(task(1)),
+            subtasks = emptyList(),
+            counters = emptyList(),
+            taskId = 404L,
+            description = "orphan",
+            colorArgb = null,
+            id = 99L,
+        )
+
+        assertEquals(404L, after.subtasks.single().taskId)
+        assertFalse(after.tasks.single().hasSubtasks)
+    }
 }

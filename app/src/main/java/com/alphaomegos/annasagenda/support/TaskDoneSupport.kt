@@ -183,3 +183,63 @@ fun stateWithTaskDoneRecomputed(
         if (subs.isEmpty()) t.isDone else subs.all { it.isDone }
     }
 }
+
+/** A new subtask, and what making it did to the rest. */
+data class SubtaskCreation(
+    val tasks: List<Task>,
+    val subtasks: List<Subtask>,
+    val counters: List<Counter>,
+    val createdId: Long,
+)
+
+/** Where a new part lands under its task: after everything already there. */
+fun nextSubtaskOrderIn(subtasks: List<Subtask>, taskId: Long): Int =
+    (subtasks.filter { it.taskId == taskId }.maxOfOrNull { it.order } ?: -1) + 1
+
+/**
+ * Adds a part to a task, ticked if the task is already finished.
+ *
+ * That last clause is load-bearing rather than a nicety. A task is finished
+ * exactly when all its parts are, and the linked counter has already been paid
+ * for that. Adding an unticked part to a finished task would leave the two
+ * disagreeing, and the next tick of that part would "finish" the task a second
+ * time and take another point off the counter — the same drift this file was
+ * written to close, arriving by a different door.
+ *
+ * The task is not required to exist. A part with no task is a dangling row
+ * rather than an error, and refusing to make one here would only move the
+ * decision somewhere with less to say about it.
+ */
+fun stateAfterCreatingSubtask(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    counters: List<Counter>,
+    taskId: Long,
+    description: String,
+    colorArgb: Long?,
+    id: Long,
+): SubtaskCreation {
+    val created = Subtask(
+        id = id,
+        order = nextSubtaskOrderIn(subtasks, taskId),
+        taskId = taskId,
+        description = description.trim(),
+        colorArgb = colorArgb,
+        isDone = false,
+    )
+
+    val newSubtasks = subtasks + created
+    val refreshed = withHasSubtasksRefreshed(tasks, newSubtasks)
+
+    if (tasks.firstOrNull { it.id == taskId }?.isDone != true) {
+        return SubtaskCreation(refreshed, newSubtasks, counters, id)
+    }
+
+    // Ticked through the same path a tick takes, rather than born ticked, so
+    // that the task's flag is rebuilt from its parts exactly as it would be
+    // otherwise. On a task whose parts already disagreed with it, that is the
+    // difference between putting the disagreement right and preserving it.
+    val ticked = stateAfterTogglingSubtask(refreshed, newSubtasks, counters, id)
+
+    return SubtaskCreation(ticked.tasks, ticked.subtasks, ticked.counters, id)
+}
