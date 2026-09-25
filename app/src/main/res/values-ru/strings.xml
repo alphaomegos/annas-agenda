@@ -349,4 +349,11 @@
     <string name="undone_horizon_90">Последние 90 дней</string>
     <string name="undone_horizon_365">Последний год</string>
     <string name="undone_horizon_all">Всё время</string>
+
+    <!-- Appearance -->
+    <string name="theme_mode_menu">Оформление</string>
+    <string name="theme_mode_title">Оформление</string>
+    <string name="theme_mode_system">Как на телефоне</string>
+    <string name="theme_mode_light">Светлое</string>
+    <string name="theme_mode_dark">Тёмное</string>
 </resources>

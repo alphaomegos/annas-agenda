@@ -265,4 +265,11 @@
     <string name="reading_sort_field_release_year">Godina izdanja</string>
     <string name="reading_movie_field_release_year">Godina izdanja</string>
     <string name="reading_movie_field_translation">Prevodi</string>
+
+    <!-- Appearance -->
+    <string name="theme_mode_menu">Izgled</string>
+    <string name="theme_mode_title">Izgled</string>
+    <string name="theme_mode_system">Kao na telefonu</string>
+    <string name="theme_mode_light">Svetlo</string>
+    <string name="theme_mode_dark">Tamno</string>
 </resources>

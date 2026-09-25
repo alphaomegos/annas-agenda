@@ -1248,6 +1248,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      */
     val activeReading: StateFlow<ActiveReading?> = stateSlice { it.activeReading }
 
+    /**
+     * Collected by the activity, above everything else, so it is deliberately
+     * one field: wrapping the whole state there would recompose the entire app
+     * on every tick of every screen.
+     */
+    val themeMode: StateFlow<AppThemeMode> = stateSlice { it.themeMode }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        if (_state.value.themeMode == mode) return
+        _state.value = _state.value.copy(themeMode = mode)
+    }
+
     private var nextId: Long = 1L
     private fun newId(): Long = nextId++
 

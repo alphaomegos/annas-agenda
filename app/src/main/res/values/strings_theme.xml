@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Appearance -->
+    <string name="theme_mode_menu">Appearance</string>
+    <string name="theme_mode_title">Appearance</string>
+    <string name="theme_mode_system">Follow the phone</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
+</resources>

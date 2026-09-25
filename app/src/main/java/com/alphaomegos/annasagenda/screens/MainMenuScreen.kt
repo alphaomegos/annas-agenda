@@ -34,6 +34,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,10 +67,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.alphaomegos.annasagenda.AppThemeMode
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.itemsInMenuOrder
 import com.alphaomegos.annasagenda.components.ConfirmDialog
+import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.util.BackupImportPayload
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.readBackupImportPayload
@@ -203,6 +206,8 @@ fun MainMenuScreen(
         onHideMenuItem = vm::hideMainMenuItem,
         onShowAllMenuItems = vm::showAllMainMenuItems,
         onLanguage = onLanguage,
+        themeMode = state.themeMode,
+        onThemeModeChange = vm::setThemeMode,
         onUndone = onUndone,
         onExport = {
             scope.launch {
@@ -295,6 +300,8 @@ internal fun MainMenuContent(
     onHideMenuItem: (String) -> Unit,
     onShowAllMenuItems: () -> Unit,
     onLanguage: () -> Unit,
+    themeMode: AppThemeMode,
+    onThemeModeChange: (AppThemeMode) -> Unit,
     onUndone: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -303,6 +310,7 @@ internal fun MainMenuContent(
     var dataMenuExpanded by remember { mutableStateOf(false) }
     var reorderMode by rememberSaveable { mutableStateOf(false) }
     val confirmReset = rememberSaveable { mutableStateOf(false) }
+    val showThemeDialog = rememberSaveable { mutableStateOf(false) }
 
     val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState()
@@ -352,6 +360,10 @@ internal fun MainMenuContent(
                 onLanguage = onLanguage,
                 onOpenDataMenu = { dataMenuExpanded = true },
                 onDismissDataMenu = { dataMenuExpanded = false },
+                onTheme = {
+                    dataMenuExpanded = false
+                    showThemeDialog.value = true
+                },
                 onExport = {
                     dataMenuExpanded = false
                     onExport()
@@ -436,6 +448,14 @@ internal fun MainMenuContent(
             confirmReset.value = false
         }
     )
+
+    if (showThemeDialog.value) {
+        ThemeModeDialog(
+            current = themeMode,
+            onPick = onThemeModeChange,
+            onDismiss = { showThemeDialog.value = false }
+        )
+    }
 }
 
 @OptIn(
@@ -452,6 +472,7 @@ private fun MainMenuTopBar(
     onLanguage: () -> Unit,
     onOpenDataMenu: () -> Unit,
     onDismissDataMenu: () -> Unit,
+    onTheme: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onReset: () -> Unit,
@@ -501,6 +522,18 @@ private fun MainMenuTopBar(
                     expanded = dataMenuExpanded,
                     onDismissRequest = onDismissDataMenu
                 ) {
+                    // Above the divider: how the app looks. Below it: what
+                    // happens to the data. The button is labelled "Data", but
+                    // it is the only place in the app that holds settings at
+                    // all, and a second overflow button beside it would be
+                    // worse than one menu with a line across it.
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.theme_mode_menu)) },
+                        onClick = onTheme
+                    )
+
+                    HorizontalDivider()
+
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.export_backup_json)) },
                         onClick = onExport

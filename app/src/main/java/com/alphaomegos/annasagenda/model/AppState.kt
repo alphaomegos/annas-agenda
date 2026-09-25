@@ -42,6 +42,9 @@ data class AppState(
     // Hidden main menu items (stable ids like "calendar", "new_task", ...).
     val mainMenuHiddenIds: Set<String> = emptySet(),
 
+    // Light, dark, or whatever the phone is doing.
+    val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+
     // "Undone" lamp state.
     val undoneLampMuted: Boolean = false,
 

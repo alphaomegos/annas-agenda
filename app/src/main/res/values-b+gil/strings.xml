@@ -261,4 +261,11 @@
     <string name="reading_sort_field_release_year">Ririki n te karaoa</string>
     <string name="reading_movie_field_release_year">Ririki n te karaoa</string>
     <string name="reading_movie_field_translation">Ranibweh</string>
+
+    <!-- Appearance -->
+    <string name="theme_mode_menu">Taraan</string>
+    <string name="theme_mode_title">Taraan</string>
+    <string name="theme_mode_system">N\'aron te tareboon</string>
+    <string name="theme_mode_light">Oota</string>
+    <string name="theme_mode_dark">Roo</string>
 </resources>

@@ -34,6 +34,11 @@ internal data class AppStateDto(
     // so this needs no schema migration.
     val undoneHorizonDays: Int = DEFAULT_UNDONE_HORIZON_DAYS,
 
+    // Stored by name rather than by ordinal, like every other enum here, so
+    // that reordering the enum cannot silently change what the payload means.
+    // Additive with a default; no migration needed.
+    val themeMode: String = "SYSTEM",
+
     val readingBooks: List<ReadingBookDto> = emptyList(),
     val readingMovies: List<ReadingMovieDto> = emptyList(),
     val readingSeries: List<ReadingSeriesDto> = emptyList(),
