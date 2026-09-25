@@ -36,10 +36,15 @@ fun requiredSetting(name: String, env: String): String? =
 /**
  * A password, where blank and absent are different answers.
  *
- * A key entry is allowed to have no password at all, and this project's does —
- * which is how the first version of this file managed to read a correct,
- * empty password and conclude that no key was configured, silently producing
- * an unsigned APK. Present-and-empty is a value; only absent is absence.
+ * A key entry is allowed to have no password at all. Reading blank as absent
+ * would turn that correct answer into "no key configured" and produce an
+ * unsigned APK without a word, with the failure arriving on a phone as a
+ * refused install rather than here. Present-and-empty is a value; only absent
+ * is absence.
+ *
+ * This project's key does have a password. An earlier version of this comment
+ * said otherwise, on no evidence: a password typed into a hidden prompt looks
+ * exactly like one that was not typed at all.
  */
 fun passwordSetting(name: String, env: String): String? = settingOrNull(name, env)
 

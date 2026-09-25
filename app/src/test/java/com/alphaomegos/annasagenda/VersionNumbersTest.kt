@@ -110,11 +110,11 @@ class VersionNumbersTest {
     /**
      * An empty password is a password.
      *
-     * A key entry may have no password at all, and this project's has none.
-     * The first version of the signing block treated blank as absent for
-     * every setting alike, so it read the correct answer, decided no key was
-     * configured, and produced an unsigned APK without a word — the failure
-     * only showing up on the phone, as a refused install.
+     * A key entry may have no password at all. The first version of the
+     * signing block treated blank as absent for every setting alike, so such
+     * a key would have read as no key configured and produced an unsigned APK
+     * without a word — the failure only showing up on the phone, as a refused
+     * install.
      *
      * A path and an alias are different: blank neither names a file nor names
      * a key, so blank there really is absence. The two are read through
