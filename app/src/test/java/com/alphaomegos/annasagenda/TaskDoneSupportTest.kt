@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -173,5 +174,183 @@ class TaskDoneSupportTest {
         val counters = listOf(manual(10L, 0))
 
         assertEquals(-1, balanceOf(countersWithManualCounterDelta(counters, 10L, -1), 10L))
+    }
+
+    /* ---------- ticking a box, which is what the user actually does ---------- */
+
+    private fun sub(id: Long, taskId: Long, isDone: Boolean = false) =
+        Subtask(id = id, taskId = taskId, description = "Subtask $id", isDone = isDone)
+
+    @Test
+    fun tickingATaskWithNoPartsJustTicksIt() {
+        val after = stateAfterTogglingTask(
+            tasks = listOf(task(1, linkedManualCounterId = 10L)),
+            subtasks = emptyList(),
+            counters = listOf(manual(10L, 5)),
+            taskId = 1L,
+        )
+
+        assertTrue(after.tasks.single().isDone)
+        assertEquals(4, balanceOf(after.counters, 10L))
+    }
+
+    @Test
+    fun untickingATaskGivesThePointBack() {
+        val after = stateAfterTogglingTask(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L)),
+            subtasks = emptyList(),
+            counters = listOf(manual(10L, 4)),
+            taskId = 1L,
+        )
+
+        assertFalse(after.tasks.single().isDone)
+        assertEquals(5, balanceOf(after.counters, 10L))
+    }
+
+    /**
+     * A task with parts is done because its parts are, so ticking the task
+     * ticks them — and unticking it unticks them. The counter moves once, for
+     * the task, never once per part.
+     */
+    @Test
+    fun tickingATaskTicksEverythingUnderIt() {
+        val after = stateAfterTogglingTask(
+            tasks = listOf(task(1, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L), sub(11L, 1L, isDone = true)),
+            counters = listOf(manual(10L, 5)),
+            taskId = 1L,
+        )
+
+        assertTrue(after.subtasks.all { it.isDone })
+        assertEquals("the counter moved once, not once per part", 4, balanceOf(after.counters, 10L))
+    }
+
+    @Test
+    fun untickingATaskUnticksEverythingUnderIt() {
+        val after = stateAfterTogglingTask(
+            tasks = listOf(task(1, isDone = true)),
+            subtasks = listOf(sub(10L, 1L, isDone = true), sub(11L, 1L, isDone = true)),
+            counters = emptyList(),
+            taskId = 1L,
+        )
+
+        assertTrue(after.subtasks.none { it.isDone })
+    }
+
+    @Test
+    fun tickingATaskLeavesOtherTasksParts() {
+        val after = stateAfterTogglingTask(
+            tasks = listOf(task(1), task(2)),
+            subtasks = listOf(sub(10L, 1L), sub(20L, 2L)),
+            counters = emptyList(),
+            taskId = 1L,
+        )
+
+        assertTrue(after.subtasks.single { it.id == 10L }.isDone)
+        assertFalse(after.subtasks.single { it.id == 20L }.isDone)
+    }
+
+    @Test
+    fun tickingTheLastPartFinishesTheTaskAndMovesItsCounter() {
+        val after = stateAfterTogglingSubtask(
+            tasks = listOf(task(1, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L, isDone = true), sub(11L, 1L)),
+            counters = listOf(manual(10L, 5)),
+            subtaskId = 11L,
+        )
+
+        assertTrue(after.tasks.single().isDone)
+        assertEquals(4, balanceOf(after.counters, 10L))
+    }
+
+    /**
+     * The other direction, in one write. These two used to be able to come
+     * apart, and that is how a balance could be walked upward.
+     */
+    @Test
+    fun untickingOnePartUnfinishesTheTaskAndGivesThePointBack() {
+        val after = stateAfterTogglingSubtask(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L, isDone = true), sub(11L, 1L, isDone = true)),
+            counters = listOf(manual(10L, 4)),
+            subtaskId = 11L,
+        )
+
+        assertFalse(after.tasks.single().isDone)
+        assertEquals(5, balanceOf(after.counters, 10L))
+    }
+
+    @Test
+    fun tickingOneOfSeveralPartsLeavesTheTaskUnfinished() {
+        val after = stateAfterTogglingSubtask(
+            tasks = listOf(task(1, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L), sub(11L, 1L)),
+            counters = listOf(manual(10L, 5)),
+            subtaskId = 10L,
+        )
+
+        assertFalse(after.tasks.single().isDone)
+        assertEquals("nothing finished, so nothing moved", 5, balanceOf(after.counters, 10L))
+    }
+
+    /**
+     * A subtask whose task is gone is a dangling row. Ticking it must not
+     * invent a task to finish.
+     */
+    @Test
+    fun aPartWithNoTaskChangesNothing() {
+        val tasks = listOf(task(1))
+        val subtasks = listOf(sub(99L, 404L))
+
+        val after = stateAfterTogglingSubtask(tasks, subtasks, emptyList(), 99L)
+
+        assertSame(tasks, after.tasks)
+        assertSame(subtasks, after.subtasks)
+    }
+
+    @Test
+    fun anIdThatNamesNothingChangesNothing() {
+        val tasks = listOf(task(1))
+        val subtasks = listOf(sub(10L, 1L))
+
+        assertSame(tasks, stateAfterTogglingTask(tasks, subtasks, emptyList(), 404L).tasks)
+        assertSame(subtasks, stateAfterTogglingSubtask(tasks, subtasks, emptyList(), 404L).subtasks)
+    }
+
+    /* ---------- rebuilding a flag after a part has moved ---------- */
+
+    @Test
+    fun recomputing_finishesATaskWhoseLastUnfinishedPartLeft() {
+        val after = stateWithTaskDoneRecomputed(
+            tasks = listOf(task(1, linkedManualCounterId = 10L), task(2)),
+            subtasks = listOf(sub(10L, 1L, isDone = true), sub(11L, 2L)),
+            counters = listOf(manual(10L, 5)),
+        )
+
+        assertTrue(after.tasks.single { it.id == 1L }.isDone)
+        assertFalse(after.tasks.single { it.id == 2L }.isDone)
+        assertEquals(4, balanceOf(after.counters, 10L))
+    }
+
+    @Test
+    fun recomputing_unfinishesATaskThatJustGainedAnUnfinishedPart() {
+        val after = stateWithTaskDoneRecomputed(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L, isDone = true), sub(11L, 1L)),
+            counters = listOf(manual(10L, 4)),
+        )
+
+        assertFalse(after.tasks.single().isDone)
+        assertEquals(5, balanceOf(after.counters, 10L))
+    }
+
+    /** Nothing to derive it from, so it keeps what it had. */
+    @Test
+    fun recomputing_leavesATaskWithNoPartsAlone() {
+        val done = stateWithTaskDoneRecomputed(listOf(task(1, isDone = true)), emptyList(), emptyList())
+        val notDone = stateWithTaskDoneRecomputed(listOf(task(2)), emptyList(), emptyList())
+
+        assertTrue(done.tasks.single().isDone)
+        assertFalse(notDone.tasks.single().isDone)
     }
 }

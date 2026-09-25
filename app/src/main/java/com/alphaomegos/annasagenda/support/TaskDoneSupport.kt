@@ -83,3 +83,103 @@ fun countersWithManualCounterDeltas(
         }
     }
 }
+
+/** Tasks, subtasks and counters after a tick. All three move together. */
+data class DoneChange(
+    val tasks: List<Task>,
+    val subtasks: List<Subtask>,
+    val counters: List<Counter>,
+)
+
+/**
+ * Ticking a task, which ticks everything under it.
+ *
+ * A task with subtasks is not done on its own account — it is done because its
+ * parts are — so ticking the task ticks them all, and unticking it unticks
+ * them all. The counter moves once, for the task, never for the parts.
+ *
+ * Nothing changes if [taskId] names nothing.
+ */
+fun stateAfterTogglingTask(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    counters: List<Counter>,
+    taskId: Long,
+): DoneChange {
+    val task = tasks.firstOrNull { it.id == taskId }
+        ?: return DoneChange(tasks, subtasks, counters)
+
+    val newDone = !task.isDone
+
+    val applied = applyTaskDoneFlags(tasks, counters) { t ->
+        if (t.id == taskId) newDone else t.isDone
+    }
+
+    val newSubtasks =
+        if (subtasks.none { it.taskId == taskId }) {
+            subtasks
+        } else {
+            subtasks.map { s -> if (s.taskId == taskId) s.copy(isDone = newDone) else s }
+        }
+
+    return DoneChange(applied.tasks, newSubtasks, applied.counters)
+}
+
+/**
+ * Ticking one subtask, which can finish or unfinish the task above it.
+ *
+ * The task follows its parts: done exactly when all of them are. So unticking
+ * one part of a finished task unfinishes the task and gives the counter its
+ * point back, in the same write — the two used to be able to come apart, and
+ * that is how a balance could be walked upward.
+ *
+ * Nothing changes if [subtaskId] names nothing, or if it names a subtask whose
+ * task is missing: that is a dangling row, and inventing a task to tick would
+ * be worse than doing nothing.
+ */
+fun stateAfterTogglingSubtask(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    counters: List<Counter>,
+    subtaskId: Long,
+): DoneChange {
+    val victim = subtasks.firstOrNull { it.id == subtaskId }
+        ?: return DoneChange(tasks, subtasks, counters)
+
+    if (tasks.none { it.id == victim.taskId }) return DoneChange(tasks, subtasks, counters)
+
+    val newSubtasks = subtasks.map { s ->
+        if (s.id == subtaskId) s.copy(isDone = !s.isDone) else s
+    }
+
+    val siblings = newSubtasks.filter { it.taskId == victim.taskId }
+    val allDone = siblings.isNotEmpty() && siblings.all { it.isDone }
+
+    val applied = applyTaskDoneFlags(tasks, counters) { t ->
+        if (t.id == victim.taskId) allDone else t.isDone
+    }
+
+    return DoneChange(applied.tasks, newSubtasks, applied.counters)
+}
+
+/**
+ * Every task's flag rebuilt from the subtasks it now has.
+ *
+ * For after a subtask has moved between tasks, where both the task it left and
+ * the one it joined may have changed their minds about being finished.
+ *
+ * A task with no subtasks keeps its flag: there is nothing to derive it from,
+ * and choosing either answer would be inventing one.
+ */
+fun stateWithTaskDoneRecomputed(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    counters: List<Counter>,
+): TasksAndCounters {
+    val subsByTask = subtasks.groupBy { it.taskId }
+
+    return applyTaskDoneFlags(tasks, counters) { t ->
+        val subs = subsByTask[t.id].orEmpty()
+        if (subs.isEmpty()) t.isDone else subs.all { it.isDone }
+    }
+}

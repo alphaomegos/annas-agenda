@@ -1747,67 +1747,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    /**
+     * Ticking a task and ticking a subtask, and rebuilding a task's flag from
+     * the parts it has. All three move the linked counter, and all three live
+     * in TaskDoneSupport so the counter cannot be left behind again.
+     */
     fun toggleTaskDone(taskId: Long) {
-        val cur = _state.value
-        val task = cur.tasks.firstOrNull { it.id == taskId } ?: return
-
-        val newDone = !task.isDone
-
-        val applied = applyTaskDoneFlags(cur.tasks, cur.counters) { t ->
-            if (t.id == taskId) newDone else t.isDone
+        _state.update { cur ->
+            val after = stateAfterTogglingTask(cur.tasks, cur.subtasks, cur.counters, taskId)
+            cur.copy(tasks = after.tasks, subtasks = after.subtasks, counters = after.counters)
         }
-
-        val hasSubs = cur.subtasks.any { it.taskId == taskId }
-        val newSubs = if (!hasSubs) {
-            cur.subtasks
-        } else {
-            cur.subtasks.map { s ->
-                if (s.taskId == taskId) s.copy(isDone = newDone) else s
-            }
-        }
-
-        _state.value = cur.copy(
-            tasks = applied.tasks,
-            subtasks = newSubs,
-            counters = applied.counters
-        )
     }
 
     fun toggleSubtaskDone(subtaskId: Long) {
-        val cur = _state.value
-        val st0 = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
-
-        val taskId = st0.taskId
-        if (cur.tasks.none { it.id == taskId }) return
-
-        val newSubs = cur.subtasks.map { s ->
-            if (s.id == subtaskId) s.copy(isDone = !s.isDone) else s
+        _state.update { cur ->
+            val after = stateAfterTogglingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId)
+            cur.copy(tasks = after.tasks, subtasks = after.subtasks, counters = after.counters)
         }
-
-        val related = newSubs.filter { it.taskId == taskId }
-        val allDone = related.isNotEmpty() && related.all { it.isDone }
-
-        val applied = applyTaskDoneFlags(cur.tasks, cur.counters) { t ->
-            if (t.id == taskId) allDone else t.isDone
-        }
-
-        _state.value = cur.copy(
-            tasks = applied.tasks,
-            subtasks = newSubs,
-            counters = applied.counters
-        )
     }
 
     private fun recomputeTaskDoneFromSubtasks() {
-        val cur = _state.value
-        val subsByTask = cur.subtasks.groupBy { it.taskId }
-
-        val applied = applyTaskDoneFlags(cur.tasks, cur.counters) { t ->
-            val subs = subsByTask[t.id].orEmpty()
-            if (subs.isEmpty()) t.isDone else subs.all { it.isDone }
+        _state.update { cur ->
+            val after = stateWithTaskDoneRecomputed(cur.tasks, cur.subtasks, cur.counters)
+            cur.copy(tasks = after.tasks, counters = after.counters)
         }
-
-        _state.value = cur.copy(tasks = applied.tasks, counters = applied.counters)
     }
 
     /* ---------------------------
