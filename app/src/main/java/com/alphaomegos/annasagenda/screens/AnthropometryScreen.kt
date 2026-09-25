@@ -59,6 +59,8 @@ import com.alphaomegos.annasagenda.AppViewModel
 import androidx.compose.ui.graphics.toArgb
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appExtraColors
+import com.alphaomegos.annasagenda.formatShortDate
+import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.formatOneDecimal
 import com.alphaomegos.annasagenda.util.formatTwoDecimals
 import com.alphaomegos.annasagenda.util.formatSignedOneDecimal
@@ -425,6 +427,10 @@ private fun AnthropometryChart(
         val gridColor = appExtraColors.chartGrid
         val labelArgb = appExtraColors.chartLabel.toArgb()
 
+        val locale = appLocale()
+        val firstDateLabel = formatShortDate(entries.first().date, locale)
+        val lastDateLabel = formatShortDate(entries.last().date, locale)
+
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -504,9 +510,11 @@ private fun AnthropometryChart(
                 drawLabel(formatOneDecimal(kg), size.width - padRight + 6f, y + 4f)
             }
 
-            // Date labels (start/end)
-            drawLabel(entries.first().date.toString(), padLeft, size.height - 6f)
-            drawLabel(entries.last().date.toString(), plotRight - 72f, size.height - 6f)
+            // Date labels (start/end). Formatted before the draw scope, for
+            // the same reason the colours are read before it: a DrawScope is
+            // not a composition and cannot ask what language the app is in.
+            drawLabel(firstDateLabel, padLeft, size.height - 6f)
+            drawLabel(lastDateLabel, plotRight - 72f, size.height - 6f)
 
             // Series lines
             series.forEach { s ->

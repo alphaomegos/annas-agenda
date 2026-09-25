@@ -29,9 +29,11 @@ import com.alphaomegos.annasagenda.AnthropometryEntry
 import com.alphaomegos.annasagenda.AnthropometryFieldIds
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.PickDateDialog
+import com.alphaomegos.annasagenda.formatMediumDate
 import com.alphaomegos.annasagenda.parseAnthropometryInputs
 import com.alphaomegos.annasagenda.typedFieldsFromSavedStrings
 import com.alphaomegos.annasagenda.typedFieldsToSavedStrings
+import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.formatOneDecimal
 import java.time.LocalDate
 
@@ -187,7 +189,10 @@ internal fun AnthropometryDayInputDialog(
         title = { Text(stringResource(R.string.enter_data)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(text = date.toString(), style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = formatMediumDate(date, appLocale()),
+                    style = MaterialTheme.typography.labelLarge,
+                )
                 Text(text = stringResource(R.string.anthropometry_hint))
 
                 activeFieldDefs.forEach { field ->
@@ -275,7 +280,10 @@ internal fun AnthropometryInputDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = date.toString(), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = formatMediumDate(date, appLocale()),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                     OutlinedButton(onClick = { showDatePicker.value = true }) {
                         Text(stringResource(R.string.pick_date))
                     }
