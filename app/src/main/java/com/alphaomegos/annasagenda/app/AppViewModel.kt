@@ -1269,12 +1269,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun nextSubtaskOrderFor(taskId: Long): Int =
         (_state.value.subtasks.filter { it.taskId == taskId }.maxOfOrNull { it.order } ?: -1) + 1
 
-    private fun suppress(key: String) {
-        _state.update { cur ->
-            cur.copy(suppressedRecurrences = cur.suppressedRecurrences + key)
-        }
-    }
-
     private fun refreshHasSubtasks() {
         _state.update { cur ->
             cur.copy(tasks = withHasSubtasksRefreshed(cur.tasks, cur.subtasks))
@@ -1381,44 +1375,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(tasks = updated)
     }
 
+    /**
+     * Deletes a task. What that means depends on whether it is an occurrence,
+     * a template that repeats, or neither; the three answers live in
+     * TaskDeletionSupport, where a JVM test can state them.
+     */
     fun deleteTask(taskId: Long) {
-        val cur = _state.value
-        val victim = cur.tasks.firstOrNull { it.id == taskId } ?: return
-
-        val victimOriginTaskId = victim.originTaskId
-        val victimDate = victim.date
-
-        if (victimOriginTaskId != null && victimDate != null) {
-            val key = taskSuppressionKey(victimOriginTaskId, victimDate)
-            val newTasks = cur.tasks.filterNot { it.id == taskId }
-            val newSubs = cur.subtasks.filterNot { it.taskId == taskId }
-
-            _state.value = cur.copy(
-                suppressedRecurrences = cur.suppressedRecurrences + key,
-                tasks = newTasks,
-                subtasks = newSubs,
-                runningPlanEntries = runningPlanEntriesWithoutTask(cur.runningPlanEntries, taskId),
+        _state.update { cur ->
+            val after = stateAfterDeletingTask(
+                tasks = cur.tasks,
+                subtasks = cur.subtasks,
+                suppressedRecurrences = cur.suppressedRecurrences,
+                runningPlanEntries = cur.runningPlanEntries,
+                taskId = taskId,
             )
-            refreshHasSubtasks()
-            return
+            cur.copy(
+                tasks = after.tasks,
+                subtasks = after.subtasks,
+                suppressedRecurrences = after.suppressedRecurrences,
+                runningPlanEntries = after.runningPlanEntries,
+            )
         }
-
-        if (victimOriginTaskId == null && victim.repeatRule != null && victimDate != null) {
-            suppress(taskSuppressionKey(victim.id, victimDate))
-            return
-        }
-
-        val newTasks = cur.tasks.filterNot { it.id == taskId }
-        val newSubs = cur.subtasks.filterNot { it.taskId == taskId }
-
-        // A plan row must never outlive the task it points at: see
-        // runningPlanEntriesWithoutTask.
-        _state.value = cur.copy(
-            tasks = newTasks,
-            subtasks = newSubs,
-            runningPlanEntries = runningPlanEntriesWithoutTask(cur.runningPlanEntries, taskId),
-        )
-        refreshHasSubtasks()
     }
 
     /**
@@ -1531,38 +1508,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(subtasks = updated)
     }
 
+    /**
+     * Deletes a subtask, which can finish the task it was under and move the
+     * counter that task is linked to.
+     *
+     * This used to be three separate writes to the state with reads in
+     * between — the shape two earlier bugs in this file had. It is one now,
+     * and what it does is stated in TaskDeletionSupport.
+     */
     fun deleteSubtask(subtaskId: Long) {
-        val victim = _state.value.subtasks.firstOrNull { it.id == subtaskId }
-
-        val victimOriginSubtaskId = victim?.originSubtaskId
-        if (victim != null && victimOriginSubtaskId != null) {
-            val parentDate = _state.value.tasks
-                .firstOrNull { it.id == victim.taskId }
-                ?.date
-            if (parentDate != null) {
-                suppress(subtaskSuppressionKey(victimOriginSubtaskId, parentDate))
-            }
-        }
-
-        // Must read the state fresh. suppress() above has already written the
-        // tombstone; writing back a snapshot taken before it threw that
-        // tombstone away, so a deleted recurring subtask reappeared as soon as
-        // the day was generated again.
         _state.update { cur ->
-            cur.copy(subtasks = cur.subtasks.filterNot { it.id == subtaskId })
-        }
-        refreshHasSubtasks()
-
-        val taskId = victim?.taskId ?: return
-        val remaining = _state.value.subtasks.filter { it.taskId == taskId }
-        if (remaining.isNotEmpty()) {
-            val allDone = remaining.all { it.isDone }
-            _state.update { cur ->
-                val applied = applyTaskDoneFlags(cur.tasks, cur.counters) { t ->
-                    if (t.id == taskId) allDone else t.isDone
-                }
-                cur.copy(tasks = applied.tasks, counters = applied.counters)
-            }
+            val after = stateAfterDeletingSubtask(
+                tasks = cur.tasks,
+                subtasks = cur.subtasks,
+                suppressedRecurrences = cur.suppressedRecurrences,
+                counters = cur.counters,
+                subtaskId = subtaskId,
+            )
+            cur.copy(
+                tasks = after.tasks,
+                subtasks = after.subtasks,
+                suppressedRecurrences = after.suppressedRecurrences,
+                counters = after.counters,
+            )
         }
     }
 
