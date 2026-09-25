@@ -61,21 +61,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun nextIdAfter(state: AppState): Long {
-        val maxId =
-            (state.tasks.map { it.id }
-                    + state.subtasks.map { it.id }
-                    + state.foodLog.map { it.id }
-                    + state.counters.map { it.id }
-                    + state.readingBooks.map { it.id }
-                    + state.readingMovies.map { it.id }
-                    + state.readingSeries.map { it.id }
-                    + state.readingSessions.map { it.id })
-                .maxOrNull() ?: 0L
-
-        return maxId + 1L
-    }
-
     private suspend fun migrateLegacyCoverRef(
         coverRef: String?,
         type: ReadingMediaType,
@@ -225,7 +210,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 AppStateLoadResult.Empty -> {
-                    nextId = nextIdAfter(_state.value)
+                    nextId = nextIdFor(_state.value)
                     _isLoaded.value = true
                     beginAutoSaveOnce()
                 }
@@ -235,10 +220,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     val migrated = migrateLegacyMediaCovers(loaded)
 
                     _state.value = migrated
-                    nextId = nextIdAfter(migrated)
+                    nextId = nextIdFor(migrated)
 
                     if (migrated != loaded) {
-                        store.save(migrated)
+                        persist(migrated)
                     }
 
                     _isLoaded.value = true
@@ -275,7 +260,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = empty
             nextId = 1L
 
-            store.save(empty)
+            persist(empty)
 
             _storageFailure.value = null
             beginAutoSaveOnce()
@@ -297,7 +282,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         state
             .drop(1)
             .debounce(400)
-            .collect { store.save(it) }
+            .collect { persist(it) }
     }
 
     fun resetAllData() {
@@ -310,12 +295,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         cleanupRemovedInternalCoversAsync(before, empty)
 
         viewModelScope.launch {
-            store.save(empty)
+            persist(empty)
         }
     }
 
+    /**
+     * The archive carries the id counter's position too, so that restoring it
+     * on another device does not start handing out ids that the archive's own
+     * tombstones and plan rows still refer to.
+     */
     fun exportBackupJson(): String {
-        return store.encodeToJson(_state.value)
+        return store.encodeToJson(stateWithIdHighWaterAtLeast(_state.value, nextId))
     }
 
     /**
@@ -370,10 +360,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     readingSeries = migrated.readingSeries,
                 )
             }
-            store.save(_state.value)
+            persist(_state.value)
         }
 
-        val current = _state.value
+        val current = stateWithIdHighWaterAtLeast(_state.value, nextId)
         val json = store.encodeToJson(current)
         val coverFiles = resolveStoredCoverFiles(appContext, current)
 
@@ -461,7 +451,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val migrated = migrateLegacyMediaCovers(decoded)
 
         val saved = try {
-            store.save(migrated)
+            persist(migrated)
             true
         } catch (e: CancellationException) {
             // Being cancelled is not a failed import; it must not be reported
@@ -474,7 +464,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (!saved) return false
 
         _state.value = migrated
-        nextId = nextIdAfter(migrated)
+        nextId = nextIdFor(migrated)
 
         cleanupRemovedInternalCoversAsync(before, migrated)
 
@@ -1262,6 +1252,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private var nextId: Long = 1L
     private fun newId(): Long = nextId++
+
+    /**
+     * Writes the state down, with the id counter's position recorded in it.
+     *
+     * Every save goes through here rather than straight to the store, because
+     * the mark cannot be kept in the state itself: several creators snapshot
+     * the state, call newId(), and write the snapshot back, which would throw
+     * the bump away. The counter in this view model is the live authority for
+     * the session; this is where it is handed to the next one.
+     *
+     * See nextIdFor for why an id must never be given out twice.
+     */
+    private suspend fun persist(state: AppState) {
+        store.save(stateWithIdHighWaterAtLeast(state, nextId))
+    }
 
     private fun nextTaskOrderForDate(date: LocalDate?): Int =
         nextTaskOrderOn(_state.value.tasks, date)

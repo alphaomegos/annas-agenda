@@ -130,4 +130,44 @@ class AppStateStoreRoundTripTest {
 
         assertEquals(original, restored)
     }
+
+    /* ---------- the id counter's position ---------- */
+
+    /**
+     * The mark has to survive the store or it is worthless: its whole job is
+     * to tell the next launch what the last one had already handed out. See
+     * nextIdFor for what goes wrong when an id is given out twice.
+     */
+    @Test
+    fun idHighWater_survivesTheStore() {
+        val json = appStateStoreJson.encodeToString(AppState(idHighWater = 4321L).toDto())
+        val restored = appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain()
+
+        assertTrue(json.contains("idHighWater"))
+        assertEquals(4321L, restored.idHighWater)
+    }
+
+    @Test
+    fun idHighWater_isAbsentFromAnOlderPayloadAndFallsBackToCounting() {
+        val withoutTheField = """{"v":$CURRENT_SCHEMA_VERSION,"tasks":[],"subtasks":[]}"""
+
+        val restored = appStateStoreJson
+            .decodeFromString<AppStateDto>(withoutTheField)
+            .toDomain()
+
+        assertEquals(0L, restored.idHighWater)
+        assertEquals(1L, nextIdFor(restored))
+    }
+
+    /** A negative mark is nonsense; it must not make things worse than none. */
+    @Test
+    fun idHighWater_readsANegativeMarkAsNone() {
+        val payload = """{"v":$CURRENT_SCHEMA_VERSION,"idHighWater":-9}"""
+
+        val restored = appStateStoreJson
+            .decodeFromString<AppStateDto>(payload)
+            .toDomain()
+
+        assertEquals(0L, restored.idHighWater)
+    }
 }

@@ -39,6 +39,11 @@ internal data class AppStateDto(
     // Additive with a default; no migration needed.
     val themeMode: String = "SYSTEM",
 
+    // Additive with a default. A payload from before this existed decodes to
+    // zero, which makes nextIdFor fall back to counting what is there — the
+    // old behaviour — and the mark starts rising from the next thing created.
+    val idHighWater: Long = 0L,
+
     val readingBooks: List<ReadingBookDto> = emptyList(),
     val readingMovies: List<ReadingMovieDto> = emptyList(),
     val readingSeries: List<ReadingSeriesDto> = emptyList(),

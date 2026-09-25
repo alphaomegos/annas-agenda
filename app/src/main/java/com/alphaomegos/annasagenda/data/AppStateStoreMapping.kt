@@ -24,6 +24,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     undoneLampMuted = undoneLampMuted,
     undoneHorizonDays = undoneHorizonDays,
     themeMode = themeMode.name,
+    idHighWater = idHighWater,
     readingBooks = readingBooks.map { it.toDto() },
     readingMovies = readingMovies.map { it.toDto() },
     readingSeries = readingSeries.map { it.toDto() },
@@ -75,6 +76,9 @@ internal fun AppStateDto.toDomain(): AppState {
         undoneLampMuted = undoneLampMuted,
         undoneHorizonDays = normalizeUndoneHorizonDays(undoneHorizonDays),
         themeMode = parseAppThemeMode(themeMode),
+        // Never below zero: a payload claiming a negative mark would make
+        // nextIdFor no safer than counting, but it must not make it worse.
+        idHighWater = idHighWater.coerceAtLeast(0L),
         readingBooks = readingBooks.mapNotNull { it.toDomainOrNull() },
         readingMovies = readingMovies.mapNotNull { it.toDomainOrNull() },
         readingSeries = readingSeries.mapNotNull { it.toDomainOrNull() },
