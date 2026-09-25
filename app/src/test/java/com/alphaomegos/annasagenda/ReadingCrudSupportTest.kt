@@ -19,9 +19,12 @@ class ReadingCrudSupportTest {
 
     // -- a session in progress -----------------------------------------------
 
+    private val startedAt = 1_700_000_000_000L
+    private val anHourLater = startedAt + 60 * 60_000L
+
     private val reading = ActiveReading(
         bookId = 1L,
-        startedAtEpochMillis = 1_700_000_000_000L,
+        startedAtEpochMillis = startedAt,
         startPage = 40,
     )
 
@@ -29,20 +32,40 @@ class ReadingCrudSupportTest {
         id: Long = 1L,
         shelf: ReadingShelf = ReadingShelf.NOW,
         currentPage: Int = 40,
-    ) = ReadingBook(id = id, title = "Dune", totalPages = 600, shelf = shelf, currentPage = currentPage)
+        totalPages: Int = 600,
+    ) = ReadingBook(id = id, title = "Dune", totalPages = totalPages, shelf = shelf, currentPage = currentPage)
+
+    private fun changed(
+        active: ActiveReading? = reading,
+        book: ReadingBook = book(),
+        pending: ReadingSession? = null,
+        autoRecord: Boolean = false,
+        now: Long = anHourLater,
+        idFrom: Long = 900L,
+    ) = readingAfterBookChanged(
+        active = active,
+        changed = book,
+        pending = pending,
+        autoRecord = autoRecord,
+        nowEpochMillis = now,
+        newSessionId = { idFrom },
+    )
 
     @Test
-    fun activeReading_ignoresAChangeToSomeOtherBook() {
-        assertEquals(reading, activeReadingAfterBookChanged(reading, book(id = 2L)))
-        assertEquals(
-            reading,
-            activeReadingAfterBookChanged(reading, book(id = 2L, shelf = ReadingShelf.DONE)),
-        )
+    fun readingChange_ignoresAChangeToSomeOtherBook() {
+        val after = changed(book = book(id = 2L, shelf = ReadingShelf.DONE))
+
+        assertEquals(reading, after.activeReading)
+        assertEquals(emptyList<ReadingSession>(), after.sessionsToRecord)
+        assertNull(after.pendingReadingSession)
     }
 
     @Test
-    fun activeReading_survivesWhileItsBookIsOnTheNowShelf() {
-        assertEquals(reading, activeReadingAfterBookChanged(reading, book()))
+    fun readingChange_survivesWhileItsBookIsOnTheNowShelf() {
+        val after = changed()
+
+        assertEquals(reading, after.activeReading)
+        assertNull(after.pendingReadingSession)
     }
 
     /**
@@ -51,30 +74,122 @@ class ReadingCrudSupportTest {
      * session should not go on measuring from it.
      */
     @Test
-    fun activeReading_followsThePageTheBookIsOn() {
-        val after = activeReadingAfterBookChanged(reading, book(currentPage = 120))
+    fun readingChange_followsThePageTheBookIsOn() {
+        val after = changed(book = book(currentPage = 120))
 
-        assertEquals(120, after?.startPage)
-        assertEquals(reading.startedAtEpochMillis, after?.startedAtEpochMillis)
+        assertEquals(120, after.activeReading?.startPage)
+        assertEquals(startedAt, after.activeReading?.startedAtEpochMillis)
+    }
+
+    @Test
+    fun readingChange_hasNothingToSayWhenThereIsNoSession() {
+        val after = changed(active = null, book = book(shelf = ReadingShelf.DONE))
+
+        assertNull(after.activeReading)
+        assertNull(after.pendingReadingSession)
+        assertEquals(emptyList<ReadingSession>(), after.sessionsToRecord)
     }
 
     /**
-     * A book that is not on the Now shelf is not being read, so the session
-     * ends — and it ends by being dropped rather than recorded. An hour of
-     * reading followed by marking the book finished leaves nothing behind.
-     * That is what the app does today; this states it rather than fixes it.
+     * The case this was written for: an hour of reading followed by marking
+     * the book finished used to leave nothing behind, and say nothing.
      */
     @Test
-    fun activeReading_endsWhenItsBookLeavesTheNowShelf() {
+    fun readingChange_turnsAnInterruptedSessionIntoAQuestion() {
         listOf(ReadingShelf.DONE, ReadingShelf.ABANDONED, ReadingShelf.PLANS).forEach { shelf ->
-            assertNull("$shelf kept the session", activeReadingAfterBookChanged(reading, book(shelf = shelf)))
+            val after = changed(book = book(shelf = shelf, currentPage = 90))
+
+            assertNull("$shelf kept reading", after.activeReading)
+            assertEquals(emptyList<ReadingSession>(), after.sessionsToRecord)
+
+            val asked = after.pendingReadingSession
+            assertEquals("$shelf asked nothing", 1L, asked?.bookId)
+            assertEquals(60, asked?.durationMinutes)
+            assertEquals(40, asked?.startPage)
+            assertEquals(90, asked?.endPage)
+            assertEquals(startedAt, asked?.startedAtEpochMillis)
+            assertEquals(anHourLater, asked?.createdAtEpochMillis)
         }
     }
 
     @Test
-    fun activeReading_hasNothingToSayWhenThereIsNoSession() {
-        assertNull(activeReadingAfterBookChanged(null, book()))
-        assertNull(activeReadingAfterBookChanged(null, book(shelf = ReadingShelf.DONE)))
+    fun readingChange_recordsItOutrightOnceTheUserHasSaidToStopAsking() {
+        val after = changed(book = book(shelf = ReadingShelf.DONE, currentPage = 90), autoRecord = true)
+
+        assertNull(after.activeReading)
+        assertNull(after.pendingReadingSession)
+        assertEquals(1, after.sessionsToRecord.size)
+        assertEquals(60, after.sessionsToRecord.single().durationMinutes)
+    }
+
+    /**
+     * A question nobody has answered yet is not thrown away to make room for a
+     * second one — losing it is the exact thing this is here to prevent.
+     */
+    @Test
+    fun readingChange_keepsAnOlderQuestionByRecordingIt() {
+        val older = ReadingSession(
+            id = 11L,
+            bookId = 2L,
+            startedAtEpochMillis = 1L,
+            durationMinutes = 15,
+            startPage = 0,
+            endPage = 10,
+        )
+
+        val after = changed(book = book(shelf = ReadingShelf.DONE), pending = older)
+
+        assertEquals(listOf(older), after.sessionsToRecord)
+        assertEquals(900L, after.pendingReadingSession?.id)
+    }
+
+    @Test
+    fun readingChange_leavesAnOlderQuestionAloneWhileNothingEnds() {
+        val older = ReadingSession(
+            id = 11L,
+            bookId = 2L,
+            startedAtEpochMillis = 1L,
+            durationMinutes = 15,
+            startPage = 0,
+            endPage = 10,
+        )
+
+        assertEquals(older, changed(pending = older).pendingReadingSession)
+        assertEquals(older, changed(book = book(id = 2L), pending = older).pendingReadingSession)
+    }
+
+    /**
+     * Nought pages is the honest answer when the user never said they had
+     * moved: the app cannot know, and inventing a number would put a made-up
+     * reading speed into the estimate.
+     */
+    @Test
+    fun readingChange_recordsNoughtPagesWhenTheBookmarkNeverMoved() {
+        val after = changed(book = book(shelf = ReadingShelf.DONE))
+
+        assertEquals(40, after.pendingReadingSession?.startPage)
+        assertEquals(40, after.pendingReadingSession?.endPage)
+    }
+
+    /** A session of no minutes reads as a bug, so there is never one. */
+    @Test
+    fun readingChange_neverProducesASessionOfNoTime() {
+        val instant = changed(book = book(shelf = ReadingShelf.DONE), now = startedAt)
+        assertEquals(1, instant.pendingReadingSession?.durationMinutes)
+
+        val clockWentBack = changed(book = book(shelf = ReadingShelf.DONE), now = startedAt - 90_000L)
+        assertEquals(1, clockWentBack.pendingReadingSession?.durationMinutes)
+    }
+
+    @Test
+    fun readingChange_keepsThePagesInsideTheBook() {
+        val after = changed(
+            active = reading.copy(startPage = 9_000),
+            book = book(shelf = ReadingShelf.DONE, currentPage = 9_000, totalPages = 300),
+        )
+
+        assertEquals(300, after.pendingReadingSession?.startPage)
+        assertEquals(300, after.pendingReadingSession?.endPage)
     }
 
     // -- books ---------------------------------------------------------------

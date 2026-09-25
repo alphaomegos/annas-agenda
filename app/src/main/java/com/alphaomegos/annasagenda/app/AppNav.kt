@@ -1,11 +1,14 @@
 package com.alphaomegos.annasagenda
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.alphaomegos.annasagenda.components.PendingReadingSessionDialog
 import com.alphaomegos.annasagenda.screens.AnthropometryScreen
 import com.alphaomegos.annasagenda.screens.media.BookDetailsScreen
 import com.alphaomegos.annasagenda.screens.CalendarDayRoute
@@ -58,6 +61,21 @@ private object Route {
 @Composable
 fun AppNav(vm: AppViewModel) {
     val nav = rememberNavController()
+
+    // Above the graph on purpose: a session can be interrupted from the
+    // library list or from a book's own screen, and the user may have walked
+    // away from either by the time they answer.
+    val pendingReading by vm.pendingReadingPrompt.collectAsState()
+
+    pendingReading?.let { prompt ->
+        PendingReadingSessionDialog(
+            bookTitle = prompt.bookTitle,
+            minutes = prompt.session.durationMinutes,
+            pagesRead = (prompt.session.endPage - prompt.session.startPage).coerceAtLeast(0),
+            onKeep = vm::keepPendingReadingSession,
+            onDiscard = vm::discardPendingReadingSession,
+        )
+    }
 
     NavHost(navController = nav, startDestination = Route.MENU) {
 

@@ -53,6 +53,10 @@ internal data class AppStateDto(
     // exactly "no session in progress". No migration needed.
     val activeReading: ActiveReadingDto? = null,
 
+    // Likewise: no question outstanding, and nobody has been asked yet.
+    val pendingReadingSession: ReadingSessionDto? = null,
+    val autoRecordInterruptedReading: Boolean = false,
+
     val readingMediaFilter: ReadingMediaFilterDto = ReadingMediaFilterDto(),
 
     val readingPlansPrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),

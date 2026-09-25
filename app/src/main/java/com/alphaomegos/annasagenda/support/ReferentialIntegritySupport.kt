@@ -53,10 +53,16 @@ fun stateWithDanglingReferencesCleared(state: AppState): AppState {
 
     val activeReading = state.activeReading?.takeIf { it.bookId in bookIds }
 
+    // The same for a question waiting to be answered. Deleting the book clears
+    // it already; this is for a payload that arrived from somewhere else, where
+    // nothing had to keep the two in step.
+    val pendingReadingSession = state.pendingReadingSession?.takeIf { it.bookId in bookIds }
+
     val unchanged = subtasks.size == state.subtasks.size &&
         tasks == state.tasks &&
         runningPlanEntries == state.runningPlanEntries &&
-        activeReading == state.activeReading
+        activeReading == state.activeReading &&
+        pendingReadingSession == state.pendingReadingSession
 
     if (unchanged) return state
 
@@ -65,5 +71,6 @@ fun stateWithDanglingReferencesCleared(state: AppState): AppState {
         subtasks = subtasks,
         runningPlanEntries = runningPlanEntries,
         activeReading = activeReading,
+        pendingReadingSession = pendingReadingSession,
     )
 }

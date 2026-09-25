@@ -67,6 +67,14 @@ data class AppState(
     // the process being reclaimed mid-chapter does not throw the time away.
     val activeReading: ActiveReading? = null,
 
+    // A session that ended because its book left the Now shelf, waiting for
+    // the user to say whether to keep it. Saved for the same reason as the one
+    // above: the question can outlive the process that asked it.
+    val pendingReadingSession: ReadingSession? = null,
+
+    // "Don't ask again, just record it." Set from the dialog that asks.
+    val autoRecordInterruptedReading: Boolean = false,
+
     val readingMediaFilter: ReadingMediaFilter = ReadingMediaFilter(),
 
     val readingPlansPrefs: ReadingTabPrefs = ReadingTabPrefs(),

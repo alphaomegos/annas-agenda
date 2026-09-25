@@ -650,6 +650,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             readingBooks = st.readingBooks.filterNot { it.id == bookId },
             readingSessions = st.readingSessions.filterNot { it.bookId == bookId },
             activeReading = st.activeReading?.takeIf { it.bookId != bookId },
+            // A question about a book that no longer exists has no answer
+            // worth having: its whole history has just gone with it.
+            pendingReadingSession = st.pendingReadingSession?.takeIf { it.bookId != bookId },
         )
 
         cleanupInternalCoverAsync(book.coverUri)
@@ -663,9 +666,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val currentYear = LocalDate.now().year
         val moved = moveReadingBookToShelf(book, shelf, currentYear)
 
-        _state.value = st.copy(
-            readingBooks = st.readingBooks.map { b -> if (b.id == bookId) moved else b },
-            activeReading = activeReadingAfterBookChanged(st.activeReading, moved),
+        _state.value = stateWithBookChanged(
+            state = st,
+            changed = moved,
+            books = st.readingBooks.map { b -> if (b.id == bookId) moved else b },
         )
     }
     fun updateReadingBook(
@@ -701,9 +705,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             currentYear = currentYear,
         )
 
-        _state.value = st.copy(
-            readingBooks = st.readingBooks.map { b -> if (b.id == bookId) updated else b },
-            activeReading = activeReadingAfterBookChanged(st.activeReading, updated),
+        _state.value = stateWithBookChanged(
+            state = st,
+            changed = updated,
+            books = st.readingBooks.map { b -> if (b.id == bookId) updated else b },
         )
 
         if (oldCover != updated.coverUri) {
@@ -930,8 +935,63 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return true
     }
 
+    /**
+     * Applies a change to one book, and with it whatever that change does to a
+     * session in progress. Both callers go through here so the rule about
+     * sessions cannot drift apart from the rule about books again.
+     */
+    private fun stateWithBookChanged(
+        state: AppState,
+        changed: ReadingBook,
+        books: List<ReadingBook>,
+    ): AppState {
+        val after = readingAfterBookChanged(
+            active = state.activeReading,
+            changed = changed,
+            pending = state.pendingReadingSession,
+            autoRecord = state.autoRecordInterruptedReading,
+            nowEpochMillis = System.currentTimeMillis(),
+            newSessionId = ::newId,
+        )
+
+        return state.copy(
+            readingBooks = books,
+            activeReading = after.activeReading,
+            pendingReadingSession = after.pendingReadingSession,
+            readingSessions = state.readingSessions + after.sessionsToRecord,
+        )
+    }
+
     fun cancelReading() {
         _state.update { cur -> cur.copy(activeReading = null) }
+    }
+
+    /**
+     * Keeps the session the user was asked about, and optionally stops asking.
+     *
+     * The id was handed out when the question was raised, so the session goes
+     * into the history exactly as it was shown.
+     */
+    fun keepPendingReadingSession(alwaysFromNowOn: Boolean) {
+        _state.update { cur ->
+            val pending = cur.pendingReadingSession ?: return@update cur
+
+            cur.copy(
+                readingSessions = cur.readingSessions + pending,
+                pendingReadingSession = null,
+                autoRecordInterruptedReading = cur.autoRecordInterruptedReading || alwaysFromNowOn,
+            )
+        }
+    }
+
+    /**
+     * Throws the session away, because the user said so.
+     *
+     * No "always" here on purpose: an answer that discards data is not one to
+     * start giving on the user's behalf.
+     */
+    fun discardPendingReadingSession() {
+        _state.update { cur -> cur.copy(pendingReadingSession = null) }
     }
 
     // Backward-compatible wrapper.
@@ -1223,6 +1283,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * a null it has not been assigned yet.
      */
     val activeReading: StateFlow<ActiveReading?> = stateSlice { it.activeReading }
+
+    /**
+     * The question about an interrupted session, if one is outstanding.
+     *
+     * Collected above the navigation graph, because the change that raises it
+     * can come from the library list or from a details screen, and the answer
+     * must not depend on which one the user happens to still be looking at.
+     */
+    val pendingReadingPrompt: StateFlow<PendingReadingPrompt?> =
+        stateSlice(::pendingReadingPromptOf)
 
     /**
      * Collected by the activity, above everything else, so it is deliberately

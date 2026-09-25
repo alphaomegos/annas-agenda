@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import java.time.LocalDate
@@ -169,5 +170,49 @@ class StateSlicesTest {
         )
         assertEquals(populated.undoneLampMuted, undoneSliceOf(populated).undoneLampMuted)
         assertEquals(populated.undoneHorizonDays, undoneSliceOf(populated).undoneHorizonDays)
+    }
+
+    /* ---------- the question about an interrupted session ---------- */
+
+    private fun pendingSession(bookId: Long) = ReadingSession(
+        id = 900L,
+        bookId = bookId,
+        startedAtEpochMillis = 1_700_000_000_000L,
+        durationMinutes = 60,
+        startPage = 40,
+        endPage = 90,
+    )
+
+    @Test
+    fun pendingReadingPrompt_isNothingWhenNothingIsOutstanding() {
+        assertNull(pendingReadingPromptOf(AppState()))
+    }
+
+    @Test
+    fun pendingReadingPrompt_namesTheBookTheSessionWasAbout() {
+        val state = AppState(
+            readingBooks = listOf(
+                ReadingBook(id = 1L, title = "Dune", totalPages = 600),
+                ReadingBook(id = 2L, title = "Solaris", totalPages = 300),
+            ),
+            pendingReadingSession = pendingSession(bookId = 2L),
+        )
+
+        val prompt = pendingReadingPromptOf(state)
+
+        assertEquals("Solaris", prompt?.bookTitle)
+        assertEquals(60, prompt?.session?.durationMinutes)
+    }
+
+    /**
+     * The book can be gone by the time the question is answered — deleting it
+     * clears the question, but a payload from elsewhere need not be tidy. The
+     * dialog still has to draw.
+     */
+    @Test
+    fun pendingReadingPrompt_survivesABookItCannotFind() {
+        val state = AppState(pendingReadingSession = pendingSession(bookId = 99L))
+
+        assertEquals("", pendingReadingPromptOf(state)?.bookTitle)
     }
 }

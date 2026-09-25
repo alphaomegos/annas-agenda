@@ -55,6 +55,15 @@ fun moveReadingBookToShelf(
     )
 }
 
+/** The reading part of the state, after a book changed under a live session. */
+data class ReadingAfterBookChange(
+    val activeReading: ActiveReading?,
+    /** A session waiting for the user to say keep or discard. */
+    val pendingReadingSession: ReadingSession?,
+    /** Sessions to add to the history, now, without asking. */
+    val sessionsToRecord: List<ReadingSession>,
+)
+
 /**
  * What becomes of a session in progress when the book it is about changes.
  *
@@ -62,24 +71,87 @@ fun moveReadingBookToShelf(
  * another shelf, and the shelf move that editing can itself perform — with the
  * same rule written slightly differently each time.
  *
- * The rule: a session survives only while its book is on the Now shelf, and it
- * follows the book's current page, because that page is where the session is
- * counting from. A book moved anywhere else is not being read any more, so the
- * session ends.
+ * A session survives only while its book is on the Now shelf, and it follows
+ * the book's current page, because that page is what the session counts from.
+ * Editing the page while reading means the earlier number was wrong, so the
+ * session stops measuring from it.
  *
- * It ends by being dropped, not by being recorded. An hour of reading followed
- * by marking the book finished leaves no session behind, and nothing says so.
- * That is the behaviour as it stands, pinned here rather than changed, because
- * what it should do instead — record it, or ask — is not a question this
- * function gets to answer.
+ * A book that leaves the Now shelf is not being read any more, so the session
+ * ends. It used to end by being dropped: an hour of reading followed by
+ * marking the book finished left nothing behind, and nothing said so. Now the
+ * time is kept either way — recorded outright if the user has said to stop
+ * asking, and otherwise put in front of them as a question they can answer
+ * later, since the question is saved with everything else and outlives the
+ * process that asked it.
+ *
+ * A question that is still unanswered when a second one arrives is recorded
+ * rather than overwritten. The user has not said to discard it, and dropping
+ * it to make room would be the exact loss this is here to stop.
+ *
+ * [newSessionId] is a function because a book being edited must not burn an id
+ * on the far more common path where no session is ending.
  */
-fun activeReadingAfterBookChanged(
+fun readingAfterBookChanged(
     active: ActiveReading?,
     changed: ReadingBook,
-): ActiveReading? = when {
-    active == null || active.bookId != changed.id -> active
-    changed.shelf == ReadingShelf.NOW -> active.copy(startPage = changed.currentPage)
-    else -> null
+    pending: ReadingSession?,
+    autoRecord: Boolean,
+    nowEpochMillis: Long,
+    newSessionId: () -> Long,
+): ReadingAfterBookChange {
+    if (active == null || active.bookId != changed.id) {
+        return ReadingAfterBookChange(active, pending, emptyList())
+    }
+
+    if (changed.shelf == ReadingShelf.NOW) {
+        return ReadingAfterBookChange(
+            activeReading = active.copy(startPage = changed.currentPage),
+            pendingReadingSession = pending,
+            sessionsToRecord = emptyList(),
+        )
+    }
+
+    val ended = interruptedReadingSession(active, changed, nowEpochMillis, newSessionId())
+
+    return if (autoRecord) {
+        ReadingAfterBookChange(null, pending, listOf(ended))
+    } else {
+        ReadingAfterBookChange(null, ended, listOfNotNull(pending))
+    }
+}
+
+/**
+ * The session a live reading turns into when its book stops being read.
+ *
+ * The end page is wherever the book says it is, which may be exactly where the
+ * session started: the app cannot know what was read without being told, and
+ * recording nought pages is more honest than inventing a number. The time is
+ * real either way, and the time is what would otherwise be lost.
+ *
+ * At least a minute, even when the clock says less or says backwards — a
+ * session of zero minutes reads as a bug, and a device whose clock moved
+ * during a chapter should not produce one.
+ */
+private fun interruptedReadingSession(
+    active: ActiveReading,
+    book: ReadingBook,
+    nowEpochMillis: Long,
+    id: Long,
+): ReadingSession {
+    val pages = book.totalPages.coerceAtLeast(1)
+    val minutes = ((nowEpochMillis - active.startedAtEpochMillis) / 60_000L)
+        .coerceIn(1L, Int.MAX_VALUE.toLong())
+        .toInt()
+
+    return ReadingSession(
+        id = id,
+        bookId = book.id,
+        startedAtEpochMillis = active.startedAtEpochMillis,
+        durationMinutes = minutes,
+        startPage = active.startPage.coerceIn(0, pages),
+        endPage = book.currentPage.coerceIn(0, pages),
+        createdAtEpochMillis = nowEpochMillis,
+    )
 }
 
 fun updateReadingBookEntity(

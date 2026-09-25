@@ -50,6 +50,27 @@ data class UndoneSlice(
     val undoneHorizonDays: Int = DEFAULT_UNDONE_HORIZON_DAYS,
 ) : DateTasksData
 
+/**
+ * The question raised when a session ended because its book stopped being read.
+ *
+ * Carries the title as well as the session, because the dialog names the book
+ * and the session only holds its id. Null when nothing is outstanding, which
+ * is what the dialog reads as "do not show me".
+ */
+data class PendingReadingPrompt(
+    val session: ReadingSession,
+    val bookTitle: String,
+)
+
+fun pendingReadingPromptOf(state: AppState): PendingReadingPrompt? {
+    val session = state.pendingReadingSession ?: return null
+
+    return PendingReadingPrompt(
+        session = session,
+        bookTitle = state.readingBooks.firstOrNull { it.id == session.bookId }?.title.orEmpty(),
+    )
+}
+
 fun calorimeterSliceOf(state: AppState): CalorimeterSlice = CalorimeterSlice(
     calorieGoalChanges = state.calorieGoalChanges,
     foodLog = state.foodLog,

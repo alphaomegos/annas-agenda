@@ -287,4 +287,21 @@
         <item quantity="few">%1$d dana</item>
         <item quantity="other">%1$d dana</item>
     </plurals>
+
+    <!-- A session that ended because its book stopped being read -->
+    <string name="reading_session_unfinished_title">Sesija čitanja nije zabeležena</string>
+    <string name="reading_session_unfinished_text">Čitali ste \u201E%1$s\u201C: %2$s, %3$s. Sačuvati ovu sesiju?</string>
+    <string name="reading_session_unfinished_keep">Sačuvaj</string>
+    <string name="reading_session_unfinished_discard">Odbaci</string>
+    <string name="reading_session_unfinished_always">Uvek čuvaj, ne pitaj više</string>
+    <plurals name="reading_session_minutes">
+        <item quantity="one">%1$d minut</item>
+        <item quantity="few">%1$d minuta</item>
+        <item quantity="other">%1$d minuta</item>
+    </plurals>
+    <plurals name="reading_session_pages">
+        <item quantity="one">%1$d strana</item>
+        <item quantity="few">%1$d strane</item>
+        <item quantity="other">%1$d strana</item>
+    </plurals>
 </resources>

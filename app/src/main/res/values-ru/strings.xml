@@ -374,4 +374,23 @@
         <item quantity="many">%1$d дней</item>
         <item quantity="other">%1$d дня</item>
     </plurals>
+
+    <!-- A session that ended because its book stopped being read -->
+    <string name="reading_session_unfinished_title">Сессия чтения не записана</string>
+    <string name="reading_session_unfinished_text">Вы читали \u00ab%1$s\u00bb: %2$s, %3$s. Записать эту сессию?</string>
+    <string name="reading_session_unfinished_keep">Записать</string>
+    <string name="reading_session_unfinished_discard">Отбросить</string>
+    <string name="reading_session_unfinished_always">Всегда записывать, больше не спрашивать</string>
+    <plurals name="reading_session_minutes">
+        <item quantity="one">%1$d минута</item>
+        <item quantity="few">%1$d минуты</item>
+        <item quantity="many">%1$d минут</item>
+        <item quantity="other">%1$d минуты</item>
+    </plurals>
+    <plurals name="reading_session_pages">
+        <item quantity="one">%1$d страница</item>
+        <item quantity="few">%1$d страницы</item>
+        <item quantity="many">%1$d страниц</item>
+        <item quantity="other">%1$d страницы</item>
+    </plurals>
 </resources>

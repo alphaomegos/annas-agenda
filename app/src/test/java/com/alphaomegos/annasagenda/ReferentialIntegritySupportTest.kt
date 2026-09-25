@@ -164,4 +164,45 @@ class ReferentialIntegritySupportTest {
     )
 
     private fun book(id: Long) = ReadingBook(id = id, title = "Dune", totalPages = 400)
+
+    /**
+     * A question about a book that is not there cannot be answered, and would
+     * put a dialog on screen naming nothing. Deleting a book clears it, so
+     * this is about a payload that came from somewhere else.
+     */
+    @Test
+    fun aQuestionAboutAMissingBookIsCleared() {
+        val session = ReadingSession(
+            id = 900L,
+            bookId = 77L,
+            startedAtEpochMillis = 1_700_000_000_000L,
+            durationMinutes = 60,
+            startPage = 0,
+            endPage = 10,
+        )
+
+        val cleared = stateWithDanglingReferencesCleared(
+            AppState(pendingReadingSession = session)
+        )
+
+        assertNull(cleared.pendingReadingSession)
+    }
+
+    @Test
+    fun aQuestionAboutABookThatIsThereIsKept() {
+        val session = ReadingSession(
+            id = 900L,
+            bookId = 7L,
+            startedAtEpochMillis = 1_700_000_000_000L,
+            durationMinutes = 60,
+            startPage = 0,
+            endPage = 10,
+        )
+        val state = AppState(
+            readingBooks = listOf(ReadingBook(id = 7L, title = "Dune", totalPages = 600)),
+            pendingReadingSession = session,
+        )
+
+        assertSame(state, stateWithDanglingReferencesCleared(state))
+    }
 }
