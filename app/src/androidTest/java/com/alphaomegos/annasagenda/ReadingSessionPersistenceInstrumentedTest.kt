@@ -115,6 +115,91 @@ class ReadingSessionPersistenceInstrumentedTest {
         assertNull(vm.activeReading.value)
     }
 
+    /* ---------- a session interrupted by the book leaving Now ---------- */
+
+    /**
+     * The claim 0069 makes: the question outlives the process that asked it.
+     * Marking a book finished mid-session used to leave nothing behind at all.
+     */
+    @Test
+    fun aQuestionAboutAnInterruptedSessionSurvivesTheViewModelBeingRecreated() = runBlocking {
+        val vm = AppViewModel(app)
+        awaitLoaded(vm)
+        vm.resetAllData()
+
+        val bookId = addBook(vm)
+        vm.beginReading(bookId, startedAtEpochMillis = System.currentTimeMillis() - 3_600_000L)
+
+        vm.moveReadingBookToShelf(bookId, ReadingShelf.DONE)
+
+        assertNull("the session ended", vm.activeReading.value)
+        assertNotNull("but it was not thrown away", vm.state.value.pendingReadingSession)
+
+        awaitAutoSave()
+
+        val revived = AppViewModel(app)
+        awaitLoaded(revived)
+
+        val asked = revived.pendingReadingPrompt.value
+        assertNotNull("the question must still be there", asked)
+        assertEquals(bookId, asked!!.session.bookId)
+        assertEquals(60, asked.session.durationMinutes)
+        assertTrue("and it must name the book", asked.bookTitle.isNotBlank())
+    }
+
+    @Test
+    fun keepingTheSessionWritesItIntoTheHistory() = runBlocking {
+        val vm = AppViewModel(app)
+        awaitLoaded(vm)
+        vm.resetAllData()
+
+        val bookId = addBook(vm)
+        vm.beginReading(bookId, startedAtEpochMillis = System.currentTimeMillis() - 1_800_000L)
+        vm.moveReadingBookToShelf(bookId, ReadingShelf.DONE)
+
+        vm.keepPendingReadingSession(alwaysFromNowOn = false)
+
+        assertNull(vm.state.value.pendingReadingSession)
+        assertEquals(1, vm.state.value.readingSessions.count { it.bookId == bookId })
+        assertEquals(false, vm.state.value.autoRecordInterruptedReading)
+    }
+
+    @Test
+    fun discardingTheSessionLeavesTheHistoryAlone() = runBlocking {
+        val vm = AppViewModel(app)
+        awaitLoaded(vm)
+        vm.resetAllData()
+
+        val bookId = addBook(vm)
+        vm.beginReading(bookId, startedAtEpochMillis = System.currentTimeMillis() - 1_800_000L)
+        vm.moveReadingBookToShelf(bookId, ReadingShelf.DONE)
+
+        vm.discardPendingReadingSession()
+
+        assertNull(vm.state.value.pendingReadingSession)
+        assertTrue(vm.state.value.readingSessions.none { it.bookId == bookId })
+    }
+
+    /** Once the user has said to stop asking, nothing is asked again. */
+    @Test
+    fun sayingAlwaysRecordsTheNextOneWithoutAsking() = runBlocking {
+        val vm = AppViewModel(app)
+        awaitLoaded(vm)
+        vm.resetAllData()
+
+        val first = addBook(vm)
+        vm.beginReading(first, startedAtEpochMillis = System.currentTimeMillis() - 1_800_000L)
+        vm.moveReadingBookToShelf(first, ReadingShelf.DONE)
+        vm.keepPendingReadingSession(alwaysFromNowOn = true)
+
+        val second = addBook(vm)
+        vm.beginReading(second, startedAtEpochMillis = System.currentTimeMillis() - 1_800_000L)
+        vm.moveReadingBookToShelf(second, ReadingShelf.ABANDONED)
+
+        assertNull("nothing should have been asked", vm.state.value.pendingReadingSession)
+        assertEquals(1, vm.state.value.readingSessions.count { it.bookId == second })
+    }
+
     private fun addBook(vm: AppViewModel): Long = requireNotNull(
         vm.addReadingBook(
             shelf = ReadingShelf.NOW,

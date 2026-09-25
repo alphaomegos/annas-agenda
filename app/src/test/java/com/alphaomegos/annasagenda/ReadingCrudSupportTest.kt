@@ -456,14 +456,49 @@ class ReadingCrudSupportTest {
         currentYear = year,
     )
 
+    /**
+     * The same rule as for books and films, which is exactly why it is worth
+     * asking: three near-identical functions are where one quietly stops
+     * matching the other two.
+     */
+    @Test
+    fun moveReadingSeriesToShelf_keepsOnlyTheYearTheNewShelfCanHave() {
+        val watched = newSeries(shelf = ReadingShelf.DONE)!!
+        assertEquals(year, watched.yearWatched)
+
+        val abandoned = moveReadingSeriesToShelf(watched, ReadingShelf.ABANDONED, year)
+        assertNull(abandoned.yearWatched)
+        assertEquals(year, abandoned.yearAbandoned)
+
+        val planned = moveReadingSeriesToShelf(abandoned, ReadingShelf.PLANS, year)
+        assertNull(planned.yearWatched)
+        assertNull(planned.yearAbandoned)
+
+        val watchingAgain = moveReadingSeriesToShelf(planned, ReadingShelf.NOW, year)
+        assertNull(watchingAgain.yearWatched)
+        assertNull(watchingAgain.yearAbandoned)
+    }
+
+    /** Where it was left off is not a year, so a shelf move does not touch it. */
+    @Test
+    fun moveReadingSeriesToShelf_leavesTheSeasonAndEpisodeWhereTheyWere() {
+        val watching = newSeries(totalSeasons = 5, currentSeason = 3, currentEpisode = 7)!!
+
+        val done = moveReadingSeriesToShelf(watching, ReadingShelf.DONE, year)
+
+        assertEquals(3, done.currentSeason)
+        assertEquals(7, done.currentEpisode)
+    }
+
     private fun newSeries(
         title: String = "Twin Peaks",
         totalSeasons: Int = 2,
         currentSeason: Int = 1,
         currentEpisode: Int = 1,
+        shelf: ReadingShelf = ReadingShelf.NOW,
     ) = buildReadingSeries(
         id = 3L,
-        shelf = ReadingShelf.NOW,
+        shelf = shelf,
         title = title,
         totalSeasons = totalSeasons,
         currentSeason = currentSeason,
