@@ -107,6 +107,45 @@ class VersionNumbersTest {
         )
     }
 
+    /**
+     * An empty password is a password.
+     *
+     * A key entry may have no password at all, and this project's has none.
+     * The first version of the signing block treated blank as absent for
+     * every setting alike, so it read the correct answer, decided no key was
+     * configured, and produced an unsigned APK without a word — the failure
+     * only showing up on the phone, as a refused install.
+     *
+     * A path and an alias are different: blank neither names a file nor names
+     * a key, so blank there really is absence. The two are read through
+     * differently named functions so that the distinction is visible at the
+     * point it is made, and this holds the passwords to the right one.
+     */
+    @Test
+    fun anEmptyPasswordIsNotMistakenForNoPasswordAtAll() {
+        val build = buildFile().readText()
+
+        listOf("releaseStorePassword", "releaseKeyPassword").forEach { setting ->
+            val line = build.lines().firstOrNull { it.contains("""$setting"""") && it.contains("=") }
+
+            requireNotNull(line) { "$setting is not read at all" }
+            assertTrue(
+                "$setting is read as though blank meant absent: $line",
+                line.contains("passwordSetting("),
+            )
+        }
+
+        listOf("releaseStoreFile", "releaseKeyAlias").forEach { setting ->
+            val line = build.lines().firstOrNull { it.contains("""$setting"""") && it.contains("=") }
+
+            requireNotNull(line) { "$setting is not read at all" }
+            assertTrue(
+                "$setting should treat blank as absent: $line",
+                line.contains("requiredSetting("),
+            )
+        }
+    }
+
     private fun buildFile(): File =
         listOf("build.gradle.kts", "app/build.gradle.kts", "../app/build.gradle.kts")
             .map { File(it) }

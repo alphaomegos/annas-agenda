@@ -24,13 +24,29 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
-fun signingSetting(name: String, env: String): String? =
-    (localProperties.getProperty(name) ?: System.getenv(env))?.takeIf { it.isNotBlank() }
+fun settingOrNull(name: String, env: String): String? =
+    localProperties.getProperty(name) ?: System.getenv(env)
 
-val releaseStorePath = signingSetting("releaseStoreFile", "ANNAS_AGENDA_STORE_FILE")
-val releaseStorePassword = signingSetting("releaseStorePassword", "ANNAS_AGENDA_STORE_PASSWORD")
-val releaseKeyAlias = signingSetting("releaseKeyAlias", "ANNAS_AGENDA_KEY_ALIAS")
-val releaseKeyPassword = signingSetting("releaseKeyPassword", "ANNAS_AGENDA_KEY_PASSWORD")
+/**
+ * A path or an alias. Blank means nobody filled it in: neither names anything.
+ */
+fun requiredSetting(name: String, env: String): String? =
+    settingOrNull(name, env)?.takeIf { it.isNotBlank() }
+
+/**
+ * A password, where blank and absent are different answers.
+ *
+ * A key entry is allowed to have no password at all, and this project's does —
+ * which is how the first version of this file managed to read a correct,
+ * empty password and conclude that no key was configured, silently producing
+ * an unsigned APK. Present-and-empty is a value; only absent is absence.
+ */
+fun passwordSetting(name: String, env: String): String? = settingOrNull(name, env)
+
+val releaseStorePath = requiredSetting("releaseStoreFile", "ANNAS_AGENDA_STORE_FILE")
+val releaseStorePassword = passwordSetting("releaseStorePassword", "ANNAS_AGENDA_STORE_PASSWORD")
+val releaseKeyAlias = requiredSetting("releaseKeyAlias", "ANNAS_AGENDA_KEY_ALIAS")
+val releaseKeyPassword = passwordSetting("releaseKeyPassword", "ANNAS_AGENDA_KEY_PASSWORD")
 
 val releaseKeystore = releaseStorePath
     ?.let { rootProject.file(it) }
