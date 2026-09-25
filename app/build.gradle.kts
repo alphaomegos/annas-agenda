@@ -181,9 +181,14 @@ dependencies {
 
     // Tests that need a Context, run on the JVM rather than on a device. See
     // app/src/test/resources/robolectric.properties for which Android they get.
+    testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.junit)
+
+    // Compose's own test rules, on the JVM. The same artifact androidTest
+    // uses; ui-test-manifest below supplies the activity both of them need.
+    testImplementation(libs.androidx.compose.ui.test.junit4)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.junit)
