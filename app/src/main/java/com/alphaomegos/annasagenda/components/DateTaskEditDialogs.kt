@@ -179,7 +179,7 @@ internal fun TaskCounterPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(android.R.string.ok))
+                Text(stringResource(R.string.ok))
             }
         }
     )

@@ -139,7 +139,7 @@ fun CountersScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showAddTypeDialog.value = false }) {
-                    Text(stringResource(android.R.string.cancel))
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -386,14 +386,14 @@ private fun ManualCounterDialog(
             TextButton(
                 onClick = { onSave(t, parsedBalance ?: 0) },
                 enabled = t.trim().isNotEmpty() && (parsedBalance != null || balanceText.isBlank())
-            ) { Text(stringResource(android.R.string.ok)) }
+            ) { Text(stringResource(R.string.ok)) }
         },
         dismissButton = {
             Row {
                 if (onDelete != null) {
                     TextButton(onClick = onDelete) { Text(stringResource(R.string.delete)) }
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         }
     )
@@ -456,14 +456,14 @@ private fun DateRangeCounterDialog(
             TextButton(
                 onClick = { onSave(t, start!!, end!!) },
                 enabled = t.trim().isNotEmpty() && datesOk
-            ) { Text(stringResource(android.R.string.ok)) }
+            ) { Text(stringResource(R.string.ok)) }
         },
         dismissButton = {
             Row {
                 if (onDelete != null) {
                     TextButton(onClick = onDelete) { Text(stringResource(R.string.delete)) }
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.cancel)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         }
     )

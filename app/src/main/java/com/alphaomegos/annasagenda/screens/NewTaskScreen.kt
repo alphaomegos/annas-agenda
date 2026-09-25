@@ -157,7 +157,7 @@ fun NewTaskScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showCounterPicker.value = false }) {
-                    Text(stringResource(android.R.string.ok))
+                    Text(stringResource(R.string.ok))
                 }
             }
         )

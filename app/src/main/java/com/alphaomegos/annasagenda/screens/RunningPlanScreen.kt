@@ -223,7 +223,7 @@ fun RunningPlanScreen(
                         vm.resetRunningPlan()
                     }
                 ) {
-                    Text(stringResource(android.R.string.ok))
+                    Text(stringResource(R.string.ok))
                 }
             },
             dismissButton = {
@@ -231,7 +231,7 @@ fun RunningPlanScreen(
                     showReset.value = false
                     resetPhrase.value = ""
                 }) {
-                    Text(stringResource(android.R.string.cancel))
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

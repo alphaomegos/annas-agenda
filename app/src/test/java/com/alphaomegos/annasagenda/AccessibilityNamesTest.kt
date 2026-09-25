@@ -2,7 +2,6 @@ package com.alphaomegos.annasagenda
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.io.File
 
 /**
  * Buttons made of nothing but a picture have to say what they are.
@@ -27,7 +26,7 @@ class AccessibilityNamesTest {
     fun everyIconOnlyButtonSaysWhatItIs() {
         val unnamed = mutableListOf<String>()
 
-        sourceFiles().forEach { file ->
+        mainSourceFiles().forEach { file ->
             val lines = file.readText().lines()
 
             lines.forEachIndexed { index, line ->
@@ -74,16 +73,4 @@ class AccessibilityNamesTest {
 
         return null
     }
-
-    private fun sourceFiles(): List<File> =
-        sourceRoot()
-            .walkTopDown()
-            .filter { it.isFile && it.name.endsWith(".kt") }
-            .toList()
-
-    private fun sourceRoot(): File =
-        listOf("src/main/java", "app/src/main/java", "../app/src/main/java")
-            .map { File(it) }
-            .firstOrNull { it.isDirectory }
-            ?: error("Cannot find src/main/java from ${File("").absolutePath}")
 }
