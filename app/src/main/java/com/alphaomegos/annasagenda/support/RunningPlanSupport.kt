@@ -147,3 +147,42 @@ fun runningPlanEntriesAfterEdit(
 
     return RunningPlanEdit((without + updated).sortedBy { it.date })
 }
+
+/**
+ * The plan as it is worth approving: trimmed, with the blank days left out,
+ * in date order.
+ *
+ * Approving turns rows into tasks in the calendar, so a row that says nothing
+ * must not become a task that says nothing. Whitespace counts as nothing —
+ * a stray space in a distance field is not a plan for that day.
+ */
+fun runningPlanEntriesCleanedForApproval(
+    entries: List<RunningPlanEntry>,
+): List<RunningPlanEntry> =
+    entries
+        .map {
+            it.copy(
+                distanceKmText = it.distanceKmText.trim(),
+                durationHhMmText = it.durationHhMmText.trim(),
+                paceText = it.paceText.trim(),
+            )
+        }
+        .filter {
+            it.distanceKmText.isNotBlank() ||
+                it.durationHhMmText.isNotBlank() ||
+                it.paceText.isNotBlank()
+        }
+        .sortedBy { it.date }
+
+/**
+ * The days the plan has given up on: long enough past, and never filled in.
+ *
+ * "Long enough" is more than one whole day, so a run the user has not yet
+ * written up in the evening, or the morning after, is still theirs to record.
+ * Only from the day after that does the plan stop waiting.
+ */
+fun expiredRunningPlanEntries(
+    entries: List<RunningPlanEntry>,
+    today: LocalDate,
+): List<RunningPlanEntry> =
+    entries.filter { today.isAfter(it.date.plusDays(1)) && isRunningPlanEntryIncomplete(it) }

@@ -308,4 +308,95 @@ class RunningPlanSupportTest {
 
         assertTrue(after.entries.single().isBonus)
     }
+
+    /* ---------- approving the plan ---------- */
+
+    @Test
+    fun approvingDropsTheBlankDays() {
+        val cleaned = runningPlanEntriesCleanedForApproval(
+            listOf(row(km = "5"), row(date = day.plusDays(1)), row(date = day.plusDays(2), duration = "0030"))
+        )
+
+        assertEquals(listOf(day, day.plusDays(2)), cleaned.map { it.date })
+    }
+
+    /** A stray space is not a plan for that day. */
+    @Test
+    fun approvingTreatsWhitespaceAsNothing() {
+        val cleaned = runningPlanEntriesCleanedForApproval(
+            listOf(row(km = "   ", duration = " ", pace = "\t"))
+        )
+
+        assertTrue(cleaned.isEmpty())
+    }
+
+    @Test
+    fun approvingTrimsWhatIsKept() {
+        val cleaned = runningPlanEntriesCleanedForApproval(
+            listOf(row(km = "  5 ", duration = " 0030 ", pace = " 0530 "))
+        )
+
+        assertEquals("5", cleaned.single().distanceKmText)
+        assertEquals("0030", cleaned.single().durationHhMmText)
+        assertEquals("0530", cleaned.single().paceText)
+    }
+
+    @Test
+    fun approvingPutsTheDaysInOrder() {
+        val cleaned = runningPlanEntriesCleanedForApproval(
+            listOf(row(date = day.plusDays(3), km = "3"), row(km = "1"), row(date = day.plusDays(1), km = "2"))
+        )
+
+        assertEquals(listOf(day, day.plusDays(1), day.plusDays(3)), cleaned.map { it.date })
+    }
+
+    @Test
+    fun approvingKeepsWhateverTaskARowAlreadyHad() {
+        val cleaned = runningPlanEntriesCleanedForApproval(listOf(row(km = "5", taskId = 77L)))
+
+        assertEquals(77L, cleaned.single().taskId)
+    }
+
+    /* ---------- the days the plan gives up on ---------- */
+
+    private fun incomplete(date: LocalDate) = row(date = date, km = "5")
+
+    private fun complete(date: LocalDate) =
+        row(date = date, km = "5", duration = "0030", pace = "0530")
+
+    /**
+     * A run is still the user's to write up on the evening and the morning
+     * after. Only from the day past that does the plan stop waiting.
+     */
+    @Test
+    fun aDayIsGivenUpOnOnlyAfterMoreThanAWholeDayHasPassed() {
+        val today = day
+
+        assertTrue(expiredRunningPlanEntries(listOf(incomplete(today)), today).isEmpty())
+        assertTrue(expiredRunningPlanEntries(listOf(incomplete(today.minusDays(1))), today).isEmpty())
+        assertEquals(1, expiredRunningPlanEntries(listOf(incomplete(today.minusDays(2))), today).size)
+    }
+
+    @Test
+    fun aDayThatWasWrittenUpIsNeverGivenUpOn() {
+        val today = day
+
+        assertTrue(expiredRunningPlanEntries(listOf(complete(today.minusDays(30))), today).isEmpty())
+    }
+
+    @Test
+    fun aDayStillAheadIsNeverGivenUpOn() {
+        val today = day
+
+        assertTrue(expiredRunningPlanEntries(listOf(incomplete(today.plusDays(5))), today).isEmpty())
+    }
+
+    @Test
+    fun onlyTheDaysGivenUpOnComeBack() {
+        val today = day
+        val old = incomplete(today.minusDays(10))
+        val entries = listOf(old, complete(today.minusDays(10)), incomplete(today))
+
+        assertEquals(listOf(old), expiredRunningPlanEntries(entries, today))
+    }
 }

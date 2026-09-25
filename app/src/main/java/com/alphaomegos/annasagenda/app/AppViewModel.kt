@@ -1130,18 +1130,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
 
     fun approveRunningPlan() {
+        // Does nothing the first time, since nothing is approved yet to prune.
+        // It earns its place when a plan is approved a second time, where the
+        // days it has already given up on should not come back as tasks.
         pruneRunningPlanNow()
 
-        val before = _state.value
-        val cleaned = before.runningPlanEntries
-            .map {
-                it.copy(
-                    distanceKmText = it.distanceKmText.trim(),
-                    durationHhMmText = it.durationHhMmText.trim(),
-                    paceText = it.paceText.trim(),
-                )
-            }
-            .filter { it.distanceKmText.isNotBlank() || it.durationHhMmText.isNotBlank() || it.paceText.isNotBlank() }
+        val cleaned = runningPlanEntriesCleanedForApproval(_state.value.runningPlanEntries)
 
         val updated = cleaned.map { e0 ->
             var e = e0
@@ -1185,11 +1179,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (!st.runningPlanApproved) return
         if (st.runningPlanEntries.isEmpty()) return
 
-        val today = LocalDate.now()
-
-        val expired = st.runningPlanEntries.filter { e ->
-            today.isAfter(e.date.plusDays(1)) && isRunningPlanEntryIncomplete(e)
-        }
+        val expired = expiredRunningPlanEntries(st.runningPlanEntries, LocalDate.now())
 
         if (expired.isEmpty()) return
 
