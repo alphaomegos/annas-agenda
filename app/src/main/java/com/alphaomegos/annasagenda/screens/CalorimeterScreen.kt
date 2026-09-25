@@ -63,10 +63,10 @@ import com.alphaomegos.annasagenda.calorieGoalOn
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.appLocale
+import com.alphaomegos.annasagenda.util.formatTwoDecimals
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -349,7 +349,7 @@ private fun CalorimeterContent(
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        val kgText = String.format(Locale.US, "%.2f", potentialKg)
+                        val kgText = formatTwoDecimals(potentialKg)
                         Text(
                             text = stringResource(R.string.calorimeter_month_projection) +
                                     ": $kgText ${stringResource(R.string.kg_short)}",

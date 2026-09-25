@@ -7,6 +7,7 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import java.util.Locale
 
 class RunningPlanSupportTest {
 
@@ -34,6 +35,30 @@ class RunningPlanSupportTest {
         assertEquals("10", formatRunningKmForTitle("10.0"))
         assertEquals("10.5", formatRunningKmForTitle("10,5"))
         assertEquals("abc", formatRunningKmForTitle(" abc "))
+    }
+
+    /**
+     * The test above asserts "10.5" and used to get it for the wrong reason:
+     * the machine running it speaks English. Nothing about the code said so,
+     * and on a machine — or a phone — that does not, the same call produced
+     * "10,5" and the same assertion failed.
+     *
+     * Said out loud here, in the only way that is honest: change the default
+     * locale to one that writes a comma, and ask for the same answer.
+     */
+    @Test
+    fun theDistanceInATitleDoesNotFollowWhateverLanguageTheMachineSpeaks() {
+        val original = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.GERMANY)
+            assertEquals("10.5", formatRunningKmForTitle("10,5"))
+            assertEquals("10", formatRunningKmForTitle("10.0"))
+
+            Locale.setDefault(Locale.forLanguageTag("ru-RU"))
+            assertEquals("10.5", formatRunningKmForTitle("10.5"))
+        } finally {
+            Locale.setDefault(original)
+        }
     }
 
     @Test

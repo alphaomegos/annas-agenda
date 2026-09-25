@@ -60,13 +60,13 @@ import androidx.compose.ui.graphics.toArgb
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.formatOneDecimal
+import com.alphaomegos.annasagenda.util.formatTwoDecimals
 import com.alphaomegos.annasagenda.util.formatSignedOneDecimal
 import java.time.LocalDate
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.alphaomegos.annasagenda.KCAL_PER_KG_FAT
 import com.alphaomegos.annasagenda.calorieDeficitInRange
-import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.AnthropometryFieldIds
 import com.alphaomegos.annasagenda.defaultAnthropometryFieldIds
 
@@ -272,7 +272,7 @@ fun AnthropometryScreen(
                             val badRed = MaterialTheme.colorScheme.error
                             val color = if (potentialKg >= 0.0) okGreen else badRed
 
-                            val kgText = String.format(appLocale(), "%.2f", potentialKg)
+                            val kgText = formatTwoDecimals(potentialKg)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,

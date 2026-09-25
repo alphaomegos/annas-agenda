@@ -1,7 +1,9 @@
 package com.alphaomegos.annasagenda
 
 import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.time.LocalDate
+import java.util.Locale
 
 fun parseRunningDurationToMinutes(raw: String): Int? {
     val digitsAll = raw.filter { it.isDigit() }
@@ -28,9 +30,27 @@ fun parseRunningKm(raw: String): Double? {
     return clean.toDoubleOrNull()
 }
 
+/**
+ * The distance as it goes into a task's name.
+ *
+ * The symbols are named rather than taken from the default locale, and that
+ * is the whole change here. `DecimalFormat("0.#")` alone asks whatever
+ * `Locale.getDefault()` happens to be, so the same 10.5 became "10.5" or
+ * "10,5" depending on the machine — and this is the one number in the app
+ * that ends up **written into a task's description and saved**, where it then
+ * outlives the language it was written under.
+ *
+ * Every other number the user reads is formatted with a dot (see
+ * util/Formatters). Whether that is the right choice for a Russian reader is
+ * a real question and a separate one; having two answers in one app is not a
+ * choice at all.
+ *
+ * It also made the test below pass for the wrong reason: it asserted "10.5"
+ * and got it because this machine speaks English.
+ */
 fun formatRunningKmForTitle(raw: String): String {
     val km = parseRunningKm(raw) ?: return raw.trim()
-    return DecimalFormat("0.#").format(km)
+    return DecimalFormat("0.#", DecimalFormatSymbols(Locale.US)).format(km)
 }
 
 fun isRunningPlanEntryIncomplete(entry: RunningPlanEntry): Boolean {

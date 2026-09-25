@@ -32,3 +32,21 @@ internal fun mainSourceRoot(): File =
         .map { File(it) }
         .firstOrNull { it.isDirectory }
         ?: error("Cannot find src/main/java from ${File("").absolutePath}")
+
+/**
+ * True for a line that is only a comment.
+ *
+ * A rule about what the code does should not be broken by a sentence
+ * explaining that rule. The first version of the number-formatting check
+ * failed on the KDoc that describes it, which is funny once and misleading
+ * afterwards.
+ *
+ * Deliberately shallow: it does not track whether a block comment is still
+ * open, because every comment in this project starts its lines with a marker.
+ * A line of real code that only looks like a comment does not exist here, and
+ * if it ever does, the cost is one missed finding rather than a false one.
+ */
+internal fun isCommentLine(line: String): Boolean {
+    val t = line.trimStart()
+    return t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")
+}
