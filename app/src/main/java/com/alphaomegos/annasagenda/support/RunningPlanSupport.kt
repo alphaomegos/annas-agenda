@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda
 
 import java.text.DecimalFormat
+import java.time.LocalDate
 
 fun parseRunningDurationToMinutes(raw: String): Int? {
     val digitsAll = raw.filter { it.isDigit() }
@@ -74,4 +75,75 @@ fun runningPlanEntriesWithoutTask(
     return entries.map { entry ->
         if (entry.taskId == taskId) entry.copy(taskId = null) else entry
     }
+}
+
+/** The plan after one row was typed into, and whatever that left behind. */
+data class RunningPlanEdit(
+    val entries: List<RunningPlanEntry>,
+    /**
+     * The task the row was holding, now that the row is gone. Nothing points
+     * at it any more, so it has to be deleted rather than left in the
+     * calendar as a run nobody planned.
+     */
+    val orphanedTaskId: Long? = null,
+)
+
+/**
+ * One day's row of the running plan, after the user typed into it.
+ *
+ * A null argument means "not this field" rather than "clear this field", so
+ * that a screen editing distance does not have to resend the other two.
+ *
+ * Pace is only taken before the plan is approved... the other way round:
+ * before approval the pace column is not the user's to fill, so what they type
+ * there is ignored and the row keeps whatever it had. After approval it is a
+ * record of what actually happened, and it is theirs.
+ *
+ * Emptying a row means two different things either side of approval. Before,
+ * the plan is still being written, so the row goes and takes its task with it.
+ * After, the row is a day of the plan that happens to have nothing filled in
+ * yet; it stays, and so does its task, until pruneRunningPlanNow decides the
+ * day is long past.
+ *
+ * Rows come back in date order, because the screen draws them in the order it
+ * is given.
+ */
+fun runningPlanEntriesAfterEdit(
+    entries: List<RunningPlanEntry>,
+    approved: Boolean,
+    date: LocalDate,
+    distanceKmText: String? = null,
+    durationHhMmText: String? = null,
+    paceText: String? = null,
+): RunningPlanEdit {
+    val existing = entries.firstOrNull { it.date == date }
+    val base = existing ?: RunningPlanEntry(date = date)
+
+    val updated = base.copy(
+        distanceKmText = distanceKmText ?: base.distanceKmText,
+        durationHhMmText = durationHhMmText ?: base.durationHhMmText,
+        paceText = if (approved) (paceText ?: base.paceText) else base.paceText,
+    )
+
+    val nowEmpty = updated.distanceKmText.isBlank() &&
+        updated.durationHhMmText.isBlank() &&
+        updated.paceText.isBlank()
+
+    if (nowEmpty && !approved) {
+        if (existing == null) return RunningPlanEdit(entries)
+
+        return RunningPlanEdit(
+            entries = entries.filterNot { it.date == date },
+            orphanedTaskId = updated.taskId,
+        )
+    }
+
+    // An approved row that has been emptied stays, so that the plan keeps its
+    // shape; an approved day that never existed is not conjured up by typing
+    // nothing into it.
+    if (nowEmpty && existing == null) return RunningPlanEdit(entries)
+
+    val without = entries.filterNot { it.date == date }
+
+    return RunningPlanEdit((without + updated).sortedBy { it.date })
 }

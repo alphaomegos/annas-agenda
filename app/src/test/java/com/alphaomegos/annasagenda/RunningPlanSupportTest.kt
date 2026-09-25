@@ -155,4 +155,157 @@ class RunningPlanSupportTest {
         paceText = paceText,
         taskId = taskId,
     )
+
+    /* ---------- typing into one day's row ---------- */
+
+    private val day = LocalDate.of(2026, 3, 10)
+
+    private fun row(
+        date: LocalDate = day,
+        km: String = "",
+        duration: String = "",
+        pace: String = "",
+        taskId: Long? = null,
+    ) = RunningPlanEntry(
+        date = date,
+        distanceKmText = km,
+        durationHhMmText = duration,
+        paceText = pace,
+        taskId = taskId,
+    )
+
+    private fun edit(
+        entries: List<RunningPlanEntry>,
+        approved: Boolean = false,
+        date: LocalDate = day,
+        km: String? = null,
+        duration: String? = null,
+        pace: String? = null,
+    ) = runningPlanEntriesAfterEdit(entries, approved, date, km, duration, pace)
+
+    @Test
+    fun typingIntoADayThatHasNoRowMakesOne() {
+        val after = edit(emptyList(), km = "5")
+
+        assertEquals(1, after.entries.size)
+        assertEquals("5", after.entries.single().distanceKmText)
+        assertNull(after.orphanedTaskId)
+    }
+
+    /**
+     * A field nobody sent is a field nobody touched. The screen edits one
+     * column at a time and must not have to resend the other two.
+     */
+    @Test
+    fun aFieldThatWasNotSentIsNotCleared() {
+        val after = edit(listOf(row(km = "5", duration = "0030")), km = "7")
+
+        assertEquals("7", after.entries.single().distanceKmText)
+        assertEquals("0030", after.entries.single().durationHhMmText)
+    }
+
+    @Test
+    fun theRowsComeBackInDateOrder() {
+        val after = edit(
+            listOf(row(date = day.plusDays(2), km = "3"), row(date = day.minusDays(1), km = "4")),
+            km = "5",
+        )
+
+        assertEquals(
+            listOf(day.minusDays(1), day, day.plusDays(2)),
+            after.entries.map { it.date },
+        )
+    }
+
+    /**
+     * Before the plan is approved the pace column is not the user's to fill:
+     * it is what the plan will ask of them, not what they did.
+     */
+    @Test
+    fun paceIsIgnoredUntilThePlanIsApproved() {
+        val after = edit(listOf(row(km = "5")), approved = false, pace = "0530")
+
+        assertEquals("", after.entries.single().paceText)
+    }
+
+    @Test
+    fun paceIsTheirsOnceThePlanIsApproved() {
+        val after = edit(listOf(row(km = "5")), approved = true, pace = "0530")
+
+        assertEquals("0530", after.entries.single().paceText)
+    }
+
+    /**
+     * Emptying a row means two different things either side of approval.
+     * Before, the plan is still being written: the row goes, and its task goes
+     * with it or it sits in the calendar as a run nobody planned.
+     */
+    @Test
+    fun emptyingARowBeforeApprovalRemovesItAndOrphansItsTask() {
+        val after = edit(listOf(row(km = "5", taskId = 77L)), approved = false, km = "")
+
+        assertTrue(after.entries.isEmpty())
+        assertEquals(77L, after.orphanedTaskId)
+    }
+
+    @Test
+    fun emptyingARowBeforeApprovalWithNoTaskOrphansNothing() {
+        val after = edit(listOf(row(km = "5")), approved = false, km = "")
+
+        assertTrue(after.entries.isEmpty())
+        assertNull(after.orphanedTaskId)
+    }
+
+    /** After approval the row is a day of the plan, empty or not. */
+    @Test
+    fun emptyingARowAfterApprovalKeepsItAndItsTask() {
+        val after = edit(listOf(row(km = "5", taskId = 77L)), approved = true, km = "")
+
+        assertEquals(1, after.entries.size)
+        assertEquals(77L, after.entries.single().taskId)
+        assertEquals("", after.entries.single().distanceKmText)
+        assertNull(after.orphanedTaskId)
+    }
+
+    @Test
+    fun typingNothingIntoADayThatHasNoRowMakesNothing() {
+        val entries = listOf(row(date = day.plusDays(1), km = "5"))
+
+        assertSame(entries, edit(entries, approved = true, km = "").entries)
+        assertSame(entries, edit(entries, approved = false, km = "").entries)
+    }
+
+    @Test
+    fun aRowIsEmptyOnlyWhenAllThreeFieldsAre() {
+        val kept = edit(listOf(row(km = "5", pace = "0530")), approved = true, km = "")
+
+        assertEquals(1, kept.entries.size)
+        assertEquals("0530", kept.entries.single().paceText)
+    }
+
+    @Test
+    fun otherDaysAreNotTouched() {
+        val other = row(date = day.plusDays(1), km = "9", taskId = 5L)
+
+        val after = edit(listOf(other, row(km = "5", taskId = 6L)), approved = false, km = "")
+
+        assertEquals(listOf(other), after.entries)
+        assertEquals(6L, after.orphanedTaskId)
+    }
+
+    @Test
+    fun editingARowKeepsWhateverTaskItHeld() {
+        val after = edit(listOf(row(km = "5", taskId = 77L)), approved = true, km = "6")
+
+        assertEquals(77L, after.entries.single().taskId)
+    }
+
+    @Test
+    fun aBonusRowStaysABonusRow() {
+        val bonus = row(km = "5").copy(isBonus = true)
+
+        val after = edit(listOf(bonus), approved = true, km = "6")
+
+        assertTrue(after.entries.single().isBonus)
+    }
 }

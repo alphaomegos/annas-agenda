@@ -1052,100 +1052,67 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
        Running plan ("On the run")
     ---------------------------- */
 
+    /**
+     * One day's row of the running plan, after the user typed into it.
+     *
+     * What a row does when it is emptied, and whether the pace column is the
+     * user's to fill, are rules rather than details; they live in
+     * RunningPlanSupport where a test can say what they are. What is left here
+     * is the part that cannot move: the plan's task has a title built from
+     * translated strings, and creating one hands out an id.
+     */
     fun updateRunningPlanEntry(
         date: LocalDate,
         distanceKmText: String? = null,
         durationHhMmText: String? = null,
         paceText: String? = null,
     ) {
-        val st = _state.value
+        val approved = _state.value.runningPlanApproved
 
-        val list = st.runningPlanEntries.toMutableList()
-        val idx = list.indexOfFirst { it.date == date }
-        val base = if (idx >= 0) list[idx] else RunningPlanEntry(date = date)
-
-        val updatedRaw = base.copy(
-            distanceKmText = distanceKmText ?: base.distanceKmText,
-            durationHhMmText = durationHhMmText ?: base.durationHhMmText,
-            paceText = if (st.runningPlanApproved) (paceText ?: base.paceText) else base.paceText,
+        val edit = runningPlanEntriesAfterEdit(
+            entries = _state.value.runningPlanEntries,
+            approved = approved,
+            date = date,
+            distanceKmText = distanceKmText,
+            durationHhMmText = durationHhMmText,
+            paceText = paceText,
         )
 
-        val nowEmpty =
-            updatedRaw.distanceKmText.isBlank() &&
-                    updatedRaw.durationHhMmText.isBlank() &&
-                    updatedRaw.paceText.isBlank()
+        // The row goes first, so that deleting its task afterwards finds
+        // nothing still pointing at it. The other order works too, but only by
+        // accident of what gets written back last.
+        _state.update { cur -> cur.copy(runningPlanEntries = edit.entries) }
+        edit.orphanedTaskId?.let { deleteTask(it) }
 
-        if (nowEmpty) {
-            if (st.runningPlanApproved) {
-                if (idx >= 0) {
-                    list[idx] = updatedRaw
-                } else {
-                    return
-                }
-            } else {
-                if (updatedRaw.taskId != null) deleteTask(updatedRaw.taskId)
-                if (idx >= 0) list.removeAt(idx)
-            }
-        } else {
-            if (idx >= 0) {
-                list[idx] = updatedRaw
-            } else {
-                list.add(updatedRaw)
-            }
+        if (!approved) return
+
+        val after = _state.value.runningPlanEntries.firstOrNull { it.date == date } ?: return
+        val title = buildRunningPlanTaskTitle(
+            entry = after,
+            formatKmTitle = ::formatRunningTaskKmTitle,
+            formatMinutesTitle = ::formatRunningTaskMinutesTitle,
+        ) ?: return
+
+        // Asking whether the task still exists, rather than whether the row
+        // remembers an id: a row whose task was deleted used to be stuck,
+        // renaming nothing and never getting a task back.
+        val linkedTask = after.taskId?.let { id -> _state.value.tasks.firstOrNull { it.id == id } }
+
+        if (linkedTask != null) {
+            updateTaskDescription(linkedTask.id, title)
+            return
         }
 
-        _state.value = _state.value.copy(
-            runningPlanEntries = list.sortedBy { it.date }
-        )
+        val newTaskId = createTaskForDate(date = after.date, time = null, description = title)
 
-        if (st.runningPlanApproved) {
-            val after = _state.value.runningPlanEntries.firstOrNull { it.date == date } ?: return
-            val title = buildRunningPlanTaskTitle(
-                entry = after,
-                formatKmTitle = ::formatRunningTaskKmTitle,
-                formatMinutesTitle = ::formatRunningTaskMinutesTitle,
+        _state.update { cur ->
+            cur.copy(
+                runningPlanEntries = cur.runningPlanEntries
+                    .map { entry -> if (entry.date == date) entry.copy(taskId = newTaskId) else entry }
+                    .sortedBy { it.date }
             )
-
-            // Asking whether the task still exists, rather than whether the row
-            // remembers an id: a row whose task was deleted used to be stuck,
-            // renaming nothing and never getting a task back.
-            val linkedTask = after.taskId?.let { id ->
-                _state.value.tasks.firstOrNull { it.id == id }
-            }
-
-            when {
-                title == null -> {
-                    // Keep the approved row (and any existing task) untouched.
-                    // Timeout cleanup is handled later by pruneRunningPlanNow().
-                }
-
-                linkedTask != null -> {
-                    updateTaskDescription(linkedTask.id, title)
-                }
-
-                else -> {
-                    val newTaskId = createTaskForDate(
-                        date = after.date,
-                        time = null,
-                        description = title,
-                    )
-
-                    _state.value = _state.value.copy(
-                        runningPlanEntries = _state.value.runningPlanEntries
-                            .map { entry ->
-                                if (entry.date == date) {
-                                    entry.copy(taskId = newTaskId)
-                                } else {
-                                    entry
-                                }
-                            }
-                            .sortedBy { it.date }
-                    )
-                }
-            }
         }
     }
-
 
     fun addRunningPlanBonusEntry(date: LocalDate): Boolean {
         val st = _state.value
