@@ -311,4 +311,9 @@
         <item quantity="few">Uvezeno, ali %1$d omota nije vraćeno</item>
         <item quantity="other">Uvezeno, ali %1$d omota nije vraćeno</item>
     </plurals>
+
+    <!-- Spoken names for icon-only buttons -->
+    <string name="finish_reordering">Završi preuređivanje</string>
+    <string name="anthropometry_settings_open">Podešavanja merenja</string>
+    <string name="reading_item_actions">Radnje za ovu stavku</string>
 </resources>

@@ -14,4 +14,11 @@
     <string name="pick_date">Pick date</string>
     <string name="selected_label">Selected:</string>
     <string name="invalid_number">Invalid number</string>
+
+    <!-- Spoken names for buttons that are only an icon. A tappable icon with
+         nothing to announce is read out as "button", which says nothing about
+         what pressing it would do. -->
+    <string name="finish_reordering">Done reordering</string>
+    <string name="anthropometry_settings_open">Measurement settings</string>
+    <string name="reading_item_actions">Actions for this item</string>
 </resources>

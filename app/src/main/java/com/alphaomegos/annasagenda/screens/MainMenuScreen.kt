@@ -514,7 +514,10 @@ private fun MainMenuTopBar(
                 }
 
                 IconButton(onClick = onFinishReorder) {
-                    Icon(Icons.Default.Check, contentDescription = null)
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = stringResource(R.string.finish_reordering)
+                    )
                 }
             } else {
                 IconButton(onClick = onLanguage) {

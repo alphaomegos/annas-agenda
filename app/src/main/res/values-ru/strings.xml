@@ -401,4 +401,9 @@
         <item quantity="many">Импортировано, но %1$d обложек восстановить не удалось</item>
         <item quantity="other">Импортировано, но %1$d обложки восстановить не удалось</item>
     </plurals>
+
+    <!-- Названия для кнопок, состоящих из одной иконки -->
+    <string name="finish_reordering">Закончить перестановку</string>
+    <string name="anthropometry_settings_open">Настройки измерений</string>
+    <string name="reading_item_actions">Действия с этим элементом</string>
 </resources>

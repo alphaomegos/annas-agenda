@@ -86,7 +86,10 @@ fun ReadingSessionScreen(
                 title = { Text(stringResource(R.string.reading_session_title)) },
                 navigationIcon = {
                     IconButton(onClick = { goBackCancel() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
                     }
                 }
             )

@@ -222,7 +222,7 @@ fun AnthropometryScreen(
                     IconButton(onClick = { showSettings.value = true }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = null
+                            contentDescription = stringResource(R.string.anthropometry_settings_open)
                         )
                     }
                 }

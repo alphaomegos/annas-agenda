@@ -759,7 +759,10 @@ private fun ReadingItemMenu(
     val expanded = remember { mutableStateOf(false) }
 
     IconButton(onClick = { expanded.value = true }) {
-        Icon(Icons.Default.MoreVert, contentDescription = null)
+        Icon(
+            Icons.Default.MoreVert,
+            contentDescription = stringResource(R.string.reading_item_actions)
+        )
     }
 
     DropdownMenu(
