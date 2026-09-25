@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -196,9 +197,9 @@ fun AnthropometryScreen(
         }
     }
 
-    val showInput = remember { mutableStateOf(false) }
+    val showInput = rememberSaveable { mutableStateOf(false) }
 
-    val showSettings = remember { mutableStateOf(false) }
+    val showSettings = rememberSaveable { mutableStateOf(false) }
 
     val visibleFieldDefs = remember(state.anthropometryEnabledFieldIds) {
         anthropometryFieldDefs

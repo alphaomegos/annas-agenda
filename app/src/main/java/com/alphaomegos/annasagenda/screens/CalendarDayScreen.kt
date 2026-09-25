@@ -107,7 +107,7 @@ private fun CalendarDayContent(
 
     val ctx = LocalContext.current
     val savedMsg = stringResource(R.string.anthropometry_saved)
-    var showAnthroDialog by remember { mutableStateOf(false) }
+    var showAnthroDialog by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier

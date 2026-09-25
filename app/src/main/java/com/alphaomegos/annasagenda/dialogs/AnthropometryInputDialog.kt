@@ -16,6 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,8 +30,37 @@ import com.alphaomegos.annasagenda.AnthropometryFieldIds
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.PickDateDialog
 import com.alphaomegos.annasagenda.parseAnthropometryInputs
+import com.alphaomegos.annasagenda.typedFieldsFromSavedStrings
+import com.alphaomegos.annasagenda.typedFieldsToSavedStrings
 import com.alphaomegos.annasagenda.util.formatOneDecimal
 import java.time.LocalDate
+
+/**
+ * What these dialogs have to carry across a rotation.
+ *
+ * Turning the phone tears the activity down and builds it again, so anything
+ * held in a plain `remember` is gone. Here that is the half-typed numbers, the
+ * red marks on the ones that could not be read, and the day they belong to —
+ * in other words, everything the user has done since opening the dialog.
+ *
+ * Only Bundle-shaped values survive, hence the three savers: a map of text
+ * becomes a flat list of strings, a set of ids becomes a list of them, and a
+ * date becomes the day count it already is underneath.
+ */
+private val typedFieldsSaver = listSaver<Map<String, String>, String>(
+    save = { typedFieldsToSavedStrings(it) },
+    restore = { typedFieldsFromSavedStrings(it) },
+)
+
+private val fieldIdSetSaver = listSaver<Set<String>, String>(
+    save = { it.toList() },
+    restore = { it.toSet() },
+)
+
+private val localDateSaver = Saver<LocalDate, Long>(
+    save = { it.toEpochDay() },
+    restore = { LocalDate.ofEpochDay(it) },
+)
 
 private data class AnthropometryInputFieldDef(
     val id: String,
@@ -134,11 +166,19 @@ internal fun AnthropometryDayInputDialog(
             .ifEmpty { anthropometryInputFieldDefs }
     }
 
-    var fields by remember(initialEntry, activeFieldDefs) {
+    var fields by rememberSaveable(
+        initialEntry,
+        activeFieldDefs,
+        stateSaver = typedFieldsSaver,
+    ) {
         mutableStateOf(fillAnthropometryFieldsFromEntry(initialEntry, activeFieldDefs))
     }
 
-    var invalidFieldIds by remember(initialEntry, activeFieldDefs) {
+    var invalidFieldIds by rememberSaveable(
+        initialEntry,
+        activeFieldDefs,
+        stateSaver = fieldIdSetSaver,
+    ) {
         mutableStateOf(emptySet<String>())
     }
 
@@ -201,17 +241,29 @@ internal fun AnthropometryInputDialog(
             .ifEmpty { anthropometryInputFieldDefs }
     }
 
-    var date by remember { mutableStateOf(LocalDate.now()) }
+    var date by rememberSaveable(stateSaver = localDateSaver) {
+        mutableStateOf(LocalDate.now())
+    }
 
-    var fields by remember(date, activeFieldDefs, entriesByDate) {
+    var fields by rememberSaveable(
+        date,
+        activeFieldDefs,
+        entriesByDate,
+        stateSaver = typedFieldsSaver,
+    ) {
         mutableStateOf(fillAnthropometryFieldsFromEntry(entriesByDate[date], activeFieldDefs))
     }
 
-    var invalidFieldIds by remember(date, activeFieldDefs, entriesByDate) {
+    var invalidFieldIds by rememberSaveable(
+        date,
+        activeFieldDefs,
+        entriesByDate,
+        stateSaver = fieldIdSetSaver,
+    ) {
         mutableStateOf(emptySet<String>())
     }
 
-    val showDatePicker = remember { mutableStateOf(false) }
+    val showDatePicker = rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
