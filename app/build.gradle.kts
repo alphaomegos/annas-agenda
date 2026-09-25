@@ -118,6 +118,31 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric reads the app's real resources — strings, the locale
+            // list, the backup rules — rather than a stub. Without this, every
+            // test that touches a resource fails in a way that looks like a
+            // missing translation.
+            isIncludeAndroidResources = true
+        }
+    }
+}
+
+// Android 36's framework asks the JVM for a shared-memory file descriptor while
+// the test environment is starting, and Robolectric answers that by reaching
+// into jdk.internal.access.SharedSecrets. Since Java 9 that package is sealed
+// inside java.base, so the call fails before any test of ours has run:
+//
+//   IllegalAccessException: ... cannot access class jdk.internal.access.SharedSecrets
+//   (in module java.base) because module java.base does not export
+//   jdk.internal.access to unnamed module
+//
+// Opening exactly that one package, and nothing else, is what the message asks
+// for. It affects only the unit-test JVM — not the app, not the build.
+tasks.withType<Test>().configureEach {
+    jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
 }
 
 dependencies {
@@ -142,6 +167,12 @@ dependencies {
     coreLibraryDesugaring(libs.android.desugar.jdk.libs)
 
     testImplementation(libs.junit)
+
+    // Tests that need a Context, run on the JVM rather than on a device. See
+    // app/src/test/resources/robolectric.properties for which Android they get.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.junit)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.junit)
