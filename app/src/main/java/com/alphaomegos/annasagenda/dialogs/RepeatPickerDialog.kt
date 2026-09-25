@@ -38,14 +38,43 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.RepeatFreq
 import com.alphaomegos.annasagenda.RepeatRule
+import com.alphaomegos.annasagenda.repeatFreqFromSavedName
+import com.alphaomegos.annasagenda.weekDaysFromSavedNames
+import com.alphaomegos.annasagenda.weekDaysToSavedNames
 import com.alphaomegos.annasagenda.util.orderedWeekDays
 import com.alphaomegos.annasagenda.util.appLocale
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 
+
+/**
+ * What this dialog has to carry across a rotation.
+ *
+ * Turning the phone rebuilds the activity, so a plain `remember` is gone and
+ * the dialog reopens showing the rule the task already had — which looks like
+ * nothing happened, and is exactly what makes it hard to notice that the
+ * choices just made were thrown away.
+ *
+ * Only Bundle-shaped values survive, so the frequency and the chosen days
+ * travel as their own names. Giving nothing back for a name this build cannot
+ * read is deliberate: see RepeatDraftSaving.
+ */
+private val repeatFreqSaver = Saver<RepeatFreq, String>(
+    save = { it.name },
+    restore = { repeatFreqFromSavedName(it) },
+)
+
+private val weekDaysSaver = listSaver<Set<DayOfWeek>, String>(
+    save = { weekDaysToSavedNames(it) },
+    restore = { weekDaysFromSavedNames(it) },
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -59,18 +88,22 @@ internal fun RepeatPickerDialog(
     val defaultDow = remember { LocalDate.now().dayOfWeek }
     val defaultDom = remember { LocalDate.now().dayOfMonth }
 
-    var enabled by remember { mutableStateOf(initial != null) }
-    var freq by remember { mutableStateOf(initial?.freq ?: RepeatFreq.WEEKLY) }
+    var enabled by rememberSaveable { mutableStateOf(initial != null) }
+    var freq by rememberSaveable(stateSaver = repeatFreqSaver) {
+        mutableStateOf(initial?.freq ?: RepeatFreq.WEEKLY)
+    }
 
-    var interval by remember { mutableIntStateOf((initial?.interval ?: 1).coerceAtLeast(1)) }
+    var interval by rememberSaveable {
+        mutableIntStateOf((initial?.interval ?: 1).coerceAtLeast(1))
+    }
 
-    var weekDays by remember {
+    var weekDays by rememberSaveable(stateSaver = weekDaysSaver) {
         mutableStateOf(
             initial?.weekDays?.takeIf { it.isNotEmpty() } ?: setOf(defaultDow)
         )
     }
 
-    var dayOfMonth by remember {
+    var dayOfMonth by rememberSaveable {
         mutableIntStateOf((initial?.dayOfMonth ?: defaultDom).coerceIn(1, 31))
     }
 
