@@ -55,7 +55,9 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AnthropometryEntry
 import com.alphaomegos.annasagenda.dialogs.AnthropometryInputDialog
 import com.alphaomegos.annasagenda.AppViewModel
+import androidx.compose.ui.graphics.toArgb
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.formatOneDecimal
 import com.alphaomegos.annasagenda.util.formatSignedOneDecimal
 import java.time.LocalDate
@@ -265,7 +267,7 @@ fun AnthropometryScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         item {
-                            val okGreen = Color(0xFF2E7D32)
+                            val okGreen = appExtraColors.positive
                             val badRed = MaterialTheme.colorScheme.error
                             val color = if (potentialKg >= 0.0) okGreen else badRed
 
@@ -416,6 +418,12 @@ private fun AnthropometryChart(
             return@Surface
         }
 
+        // Read before the draw scope: a DrawScope is not a composition, so it
+        // cannot reach the theme. These used to be black literals, which is
+        // why the chart vanished into a dark background.
+        val gridColor = appExtraColors.chartGrid
+        val labelArgb = appExtraColors.chartLabel.toArgb()
+
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -466,7 +474,6 @@ private fun AnthropometryChart(
             }
 
             // Grid lines (3)
-            val gridColor = Color.Black.copy(alpha = 0.08f)
             for (i in 0..2) {
                 val t = i / 2f
                 val y = plotBottom - t * (plotBottom - padTop)
@@ -477,7 +484,7 @@ private fun AnthropometryChart(
             val paint = Paint().apply {
                 isAntiAlias = true
                 textSize = 11.dp.toPx()
-                color = android.graphics.Color.argb(180, 0, 0, 0)
+                color = labelArgb
             }
 
             fun drawLabel(text: String, x: Float, y: Float) {

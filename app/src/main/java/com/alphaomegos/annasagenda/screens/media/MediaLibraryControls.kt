@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.ReadingMediaFilter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -124,7 +125,7 @@ private fun MediaTypeToggleIcon(
     val shape = RoundedCornerShape(10.dp)
 
     val backgroundColor = if (checked) {
-        Color(0xFFDDF4D8)
+        appExtraColors.gentleHighlight
     } else {
         Color.Transparent
     }
@@ -158,7 +159,7 @@ private fun MediaActionIconButton(
     var flashed by remember { mutableStateOf(false) }
 
     val backgroundColor = if (flashed) {
-        Color(0xFFDDF4D8)
+        appExtraColors.gentleHighlight
     } else {
         Color.Transparent
     }

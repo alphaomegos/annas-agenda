@@ -61,6 +61,7 @@ import com.alphaomegos.annasagenda.calorieDeficitInRange
 import com.alphaomegos.annasagenda.calorieGoalSumInRange
 import com.alphaomegos.annasagenda.calorieGoalOn
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -145,7 +146,7 @@ private fun CalorimeterContent(
     }
     val potentialKg = if (isToday) deficit30 / KCAL_PER_KG_FAT else 0.0
 
-    val okGreen = Color(0xFF2E7D32)
+    val okGreen = appExtraColors.positive
     val badRed = MaterialTheme.colorScheme.error
     fun balanceColor(v: Int): Color = if (v >= 0) okGreen else badRed
     fun kgColor(v: Double): Color = if (v >= 0.0) okGreen else badRed

@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -22,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.AppState
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
 import com.alphaomegos.annasagenda.util.orderedWeekDays
@@ -255,10 +255,11 @@ private fun CalendarMonthContent(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (hasAnthro) {
+                                        val markerColor = appExtraColors.dayMarker
                                         Canvas(modifier = Modifier.matchParentSize()) {
                                             val stroke = 2.dp.toPx()
                                             drawCircle(
-                                                color = Color(0xFFB7E6B0),
+                                                color = markerColor,
                                                 radius = (size.minDimension - stroke) / 2f,
                                                 style = Stroke(width = stroke)
                                             )

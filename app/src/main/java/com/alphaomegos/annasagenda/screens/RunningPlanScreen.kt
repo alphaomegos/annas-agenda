@@ -13,6 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.RunningPlanEntry
@@ -311,7 +312,7 @@ private fun RunningRow(
     val shape = RoundedCornerShape(12.dp)
     val completeBg = when {
         !isComplete -> Color.Transparent
-        isBonus -> Color(0xFFE3F2FD)
+        isBonus -> appExtraColors.bonusHighlight
         else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
     }
     val fieldTextStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.Center)
