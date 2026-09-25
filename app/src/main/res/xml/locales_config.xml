@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   The languages this app is translated into, so that Android 13 and newer
+   offer it its own language in system settings, and so that the choice the
+   user makes inside the app and the one the system remembers are the same
+   choice rather than two.
+
+   Written out rather than generated from the values-* folders: what the
+   generator needs in order to work is a moving target between plugin
+   versions, and StringResourcesTest holds this file to the folders anyway —
+   a translation added without a line here fails the build's tests.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="ru" />
+    <locale android:name="sr-Latn" />
+    <locale android:name="gil" />
+</locale-config>

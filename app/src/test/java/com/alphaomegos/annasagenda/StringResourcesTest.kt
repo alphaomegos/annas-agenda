@@ -201,6 +201,44 @@ class StringResourcesTest {
             .firstOrNull { it.isDirectory }
             ?: error("Cannot find src/main from ${File("").absolutePath}")
 
+    /**
+     * Every language the app is translated into is offered in system settings.
+     *
+     * locales_config.xml is what Android 13 and newer read in order to put
+     * this app in the per-app language list, and it is written by hand. A
+     * translation added without a line there is invisible to the system: the
+     * user sees no way to pick it, and the work is done but unreachable.
+     *
+     * The base locale counts as English, which is what it is.
+     */
+    @Test
+    fun everyTranslationIsOfferedInSystemSettings() {
+        val fromFolders = translationDirs().map { bcp47Of(it.name) }.toSet() + "en"
+
+        val declared = File(resRoot(), "xml/locales_config.xml")
+            .readText()
+            .let { Regex("""android:name="([^"]+)"""").findAll(it) }
+            .map { it.groupValues[1] }
+            .toSet()
+
+        assertEquals(
+            "locales_config.xml and the values-* folders disagree",
+            fromFolders,
+            declared,
+        )
+    }
+
+    /** "values-ru" is "ru"; "values-b+sr+Latn" is "sr-Latn". */
+    private fun bcp47Of(folderName: String): String {
+        val qualifier = folderName.removePrefix("values-")
+
+        return if (qualifier.startsWith("b+")) {
+            qualifier.removePrefix("b+").replace('+', '-')
+        } else {
+            qualifier
+        }
+    }
+
     private fun baseDir(): File = File(resRoot(), "values")
 
     private fun translationDirs(): List<File> =

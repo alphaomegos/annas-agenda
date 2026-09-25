@@ -1,13 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   What the system may take a copy of, on Android 11 and older.
+
+   Everything the app keeps is worth restoring onto a new phone — the tasks,
+   the measurements, the media library — so this says what must NOT go rather
+   than what may.
+
+   corrupt_state holds verbatim copies of payloads this app could not read.
+   They exist so that a parsing bug cannot destroy anything, which is a
+   question about this device and this install; carrying them to a new phone
+   restores nothing and can be several megabytes of it.
+
+   The covers stay out of the cloud copy because of the quota. Auto-backup
+   stops at 25 MB per app, and a media library of three hundred covers reaches
+   that on its own — at which point the system gives up on the whole backup,
+   tasks included, and says nothing. A cover can be picked again; a year of
+   tasks cannot. The app's own export does carry the covers.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <exclude domain="file" path="corrupt_state" />
+    <exclude domain="file" path="media_covers" />
 </full-backup-content>

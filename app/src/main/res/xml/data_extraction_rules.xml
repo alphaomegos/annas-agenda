@@ -1,19 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   What the system may take a copy of, on Android 12 and newer.
+
+   Two different answers, because the two transfers have different limits and
+   different risks. See backup_rules.xml for why corrupt_state and the covers
+   are treated the way they are.
+
+   A device-to-device transfer has no 25 MB ceiling and never leaves the
+   user's hands, so the covers go with everything else. A cloud copy does have
+   that ceiling, and a library large enough to hit it would take the tasks
+   down with it.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="file" path="corrupt_state" />
+        <exclude domain="file" path="media_covers" />
     </cloud-backup>
-    <!--
+
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="file" path="corrupt_state" />
     </device-transfer>
-    -->
 </data-extraction-rules>
