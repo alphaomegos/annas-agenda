@@ -243,3 +243,70 @@ fun stateAfterCreatingSubtask(
 
     return SubtaskCreation(ticked.tasks, ticked.subtasks, ticked.counters, id)
 }
+
+/**
+ * Moves one part to another task, or reorders it within its own.
+ *
+ * Both tasks can change their minds about being finished, and both can move a
+ * counter. The task losing its last unfinished part becomes finished; the task
+ * gaining an unfinished part stops being. It is one answer rather than two
+ * because the two used to arrive as separate writes, with the lists briefly
+ * saying something neither task agreed with.
+ *
+ * A task left with no parts at all keeps its flag, as everywhere else: there
+ * is nothing left to derive it from.
+ *
+ * Nothing changes if [subtaskId] names nothing, or if it is already where it
+ * is being sent.
+ */
+fun stateAfterMovingSubtask(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    counters: List<Counter>,
+    subtaskId: Long,
+    targetTaskId: Long,
+): DoneChange {
+    val victim = subtasks.firstOrNull { it.id == subtaskId }
+        ?: return DoneChange(tasks, subtasks, counters)
+
+    val newOrder =
+        if (victim.taskId == targetTaskId) victim.order
+        else nextSubtaskOrderIn(subtasks, targetTaskId)
+
+    val moved = subtasks.map { s ->
+        if (s.id == subtaskId) s.copy(taskId = targetTaskId, order = newOrder) else s
+    }
+
+    return doneChangeAfterSubtasksMoved(tasks, moved, counters)
+}
+
+/**
+ * Shifts one part up or down among its siblings.
+ *
+ * Reordering cannot change whether a task is finished, so the recomputation
+ * below has nothing to do — it runs anyway, because the alternative is a
+ * caller who has to know that, and be right.
+ */
+fun stateAfterReorderingSubtask(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    counters: List<Counter>,
+    subtaskId: Long,
+    step: Int,
+): DoneChange {
+    val reordered = moveSubtaskWithinTask(subtasks, subtaskId, step)
+    if (reordered == subtasks) return DoneChange(tasks, subtasks, counters)
+
+    return doneChangeAfterSubtasksMoved(tasks, reordered, counters)
+}
+
+private fun doneChangeAfterSubtasksMoved(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    counters: List<Counter>,
+): DoneChange {
+    val refreshed = withHasSubtasksRefreshed(tasks, subtasks)
+    val applied = stateWithTaskDoneRecomputed(refreshed, subtasks, counters)
+
+    return DoneChange(applied.tasks, subtasks, applied.counters)
+}

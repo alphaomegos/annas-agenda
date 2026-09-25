@@ -1287,12 +1287,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun nextSubtaskOrderFor(taskId: Long): Int =
         nextSubtaskOrderIn(_state.value.subtasks, taskId)
 
-    private fun refreshHasSubtasks() {
-        _state.update { cur ->
-            cur.copy(tasks = withHasSubtasksRefreshed(cur.tasks, cur.subtasks))
-        }
-    }
-
     /* ---------------------------
        Recurrence (generated instances)
     ---------------------------- */
@@ -1351,8 +1345,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val updated = st.subtasks.map { s ->
             if (s.id == subtaskId) s.copy(repeatRule = recorded) else s
         }
+        // No refreshHasSubtasks here: a repeat rule does not change which
+        // tasks have parts, and the call that used to follow was a second
+        // write to the state that could not say anything new.
         _state.value = st.copy(subtasks = updated)
-        refreshHasSubtasks()
     }
 
     /* ---------------------------
@@ -1554,19 +1550,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = cur.copy(tasks = after.tasks, subtasks = after.subtasks)
     }
 
+    /**
+     * Moves a part to another task. Both tasks can change their minds about
+     * being finished and both can move a counter, so it is one write; the
+     * rules are in TaskDoneSupport.
+     */
     fun moveSubtask(subtaskId: Long, targetTaskId: Long) {
         val cur = _state.value
-        val victim = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
 
-        val newOrder =
-            if (victim.taskId == targetTaskId) victim.order else nextSubtaskOrderFor(targetTaskId)
+        val after = stateAfterMovingSubtask(
+            cur.tasks, cur.subtasks, cur.counters, subtaskId, targetTaskId,
+        )
 
-        val updated = cur.subtasks.map { s ->
-            if (s.id == subtaskId) s.copy(taskId = targetTaskId, order = newOrder) else s
-        }
-        _state.value = cur.copy(subtasks = updated)
-        refreshHasSubtasks()
-        recomputeTaskDoneFromSubtasks()
+        _state.value = cur.copy(
+            tasks = after.tasks,
+            subtasks = after.subtasks,
+            counters = after.counters,
+        )
     }
 
     fun moveTaskUp(taskId: Long) {
@@ -1584,20 +1584,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun moveSubtaskUp(subtaskId: Long) {
         val cur = _state.value
-        val newSubs = moveSubtaskWithinTask(cur.subtasks, subtaskId, step = -1)
-        if (newSubs == cur.subtasks) return
-        _state.value = cur.copy(subtasks = newSubs)
-        refreshHasSubtasks()
-        recomputeTaskDoneFromSubtasks()
+        val after = stateAfterReorderingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId, step = -1)
+
+        _state.value = cur.copy(
+            tasks = after.tasks,
+            subtasks = after.subtasks,
+            counters = after.counters,
+        )
     }
 
     fun moveSubtaskDown(subtaskId: Long) {
         val cur = _state.value
-        val newSubs = moveSubtaskWithinTask(cur.subtasks, subtaskId, step = 1)
-        if (newSubs == cur.subtasks) return
-        _state.value = cur.copy(subtasks = newSubs)
-        refreshHasSubtasks()
-        recomputeTaskDoneFromSubtasks()
+        val after = stateAfterReorderingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId, step = 1)
+
+        _state.value = cur.copy(
+            tasks = after.tasks,
+            subtasks = after.subtasks,
+            counters = after.counters,
+        )
     }
 
     fun addManualCounter(title: String, balance: Int) {
@@ -1700,13 +1704,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { cur ->
             val after = stateAfterTogglingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId)
             cur.copy(tasks = after.tasks, subtasks = after.subtasks, counters = after.counters)
-        }
-    }
-
-    private fun recomputeTaskDoneFromSubtasks() {
-        _state.update { cur ->
-            val after = stateWithTaskDoneRecomputed(cur.tasks, cur.subtasks, cur.counters)
-            cur.copy(tasks = after.tasks, counters = after.counters)
         }
     }
 

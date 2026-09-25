@@ -482,4 +482,160 @@ class TaskDoneSupportTest {
         assertEquals(404L, after.subtasks.single().taskId)
         assertFalse(after.tasks.single().hasSubtasks)
     }
+
+    /* ---------- moving a part between tasks ---------- */
+
+    private fun moveSub(
+        tasks: List<Task>,
+        subtasks: List<Subtask>,
+        counters: List<Counter> = emptyList(),
+        subtaskId: Long,
+        to: Long,
+    ) = stateAfterMovingSubtask(tasks, subtasks, counters, subtaskId, to)
+
+    @Test
+    fun aMovedPartGoesToTheBottomOfItsNewTask() {
+        val after = moveSub(
+            tasks = listOf(task(1), task(2)),
+            subtasks = listOf(sub(10L, 1L), sub(20L, 2L).copy(order = 3)),
+            subtaskId = 10L,
+            to = 2L,
+        )
+
+        val moved = after.subtasks.single { it.id == 10L }
+        assertEquals(2L, moved.taskId)
+        assertEquals(4, moved.order)
+    }
+
+    @Test
+    fun aPartSentToTheTaskItIsAlreadyOnKeepsItsPlace() {
+        val after = moveSub(
+            tasks = listOf(task(1)),
+            subtasks = listOf(sub(10L, 1L), sub(11L, 1L).copy(order = 1)),
+            subtaskId = 10L,
+            to = 1L,
+        )
+
+        assertEquals(0, after.subtasks.single { it.id == 10L }.order)
+    }
+
+    @Test
+    fun bothTasksAreToldWhetherTheyStillHaveParts() {
+        val after = moveSub(
+            tasks = listOf(task(1).copy(hasSubtasks = true), task(2)),
+            subtasks = listOf(sub(10L, 1L)),
+            subtaskId = 10L,
+            to = 2L,
+        )
+
+        assertFalse(after.tasks.single { it.id == 1L }.hasSubtasks)
+        assertTrue(after.tasks.single { it.id == 2L }.hasSubtasks)
+    }
+
+    /**
+     * The task gaining an unfinished part stops being finished, and gets its
+     * counter's point back in the same write.
+     */
+    @Test
+    fun theTaskThatGainsAnUnfinishedPartStopsBeingFinished() {
+        val after = moveSub(
+            tasks = listOf(task(1), task(2, isDone = true, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L, isDone = false), sub(20L, 2L, isDone = true)),
+            counters = listOf(manual(10L, 4)),
+            subtaskId = 10L,
+            to = 2L,
+        )
+
+        assertFalse(after.tasks.single { it.id == 2L }.isDone)
+        assertEquals(5, balanceOf(after.counters, 10L))
+    }
+
+    /**
+     * And the task left holding only finished parts becomes finished, and pays
+     * for it. Both halves happen at once, which is the point.
+     */
+    @Test
+    fun theTaskLeftWithOnlyFinishedPartsBecomesFinished() {
+        val after = moveSub(
+            tasks = listOf(task(1, linkedManualCounterId = 10L), task(2)),
+            subtasks = listOf(sub(10L, 1L, isDone = false), sub(11L, 1L, isDone = true)),
+            counters = listOf(manual(10L, 5)),
+            subtaskId = 10L,
+            to = 2L,
+        )
+
+        assertTrue(after.tasks.single { it.id == 1L }.isDone)
+        assertEquals(4, balanceOf(after.counters, 10L))
+    }
+
+    /** Nothing left to derive it from, so it keeps what it had. */
+    @Test
+    fun theTaskLeftWithNoPartsAtAllKeepsItsFlag()  {
+        val after = moveSub(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L), task(2)),
+            subtasks = listOf(sub(10L, 1L, isDone = true)),
+            counters = listOf(manual(10L, 4)),
+            subtaskId = 10L,
+            to = 2L,
+        )
+
+        assertTrue(after.tasks.single { it.id == 1L }.isDone)
+        assertEquals(4, balanceOf(after.counters, 10L))
+    }
+
+    @Test
+    fun movingSomethingThatIsNotThereChangesNothing() {
+        val tasks = listOf(task(1))
+        val subtasks = listOf(sub(10L, 1L))
+
+        val after = moveSub(tasks, subtasks, subtaskId = 404L, to = 1L)
+
+        assertSame(tasks, after.tasks)
+        assertSame(subtasks, after.subtasks)
+    }
+
+    /* ---------- shifting a part among its siblings ---------- */
+
+    @Test
+    fun shiftingAPartSwapsItWithItsNeighbour() {
+        val after = stateAfterReorderingSubtask(
+            tasks = listOf(task(1)),
+            subtasks = listOf(sub(10L, 1L), sub(11L, 1L).copy(order = 1)),
+            counters = emptyList(),
+            subtaskId = 11L,
+            step = -1,
+        )
+
+        assertEquals(0, after.subtasks.single { it.id == 11L }.order)
+        assertEquals(1, after.subtasks.single { it.id == 10L }.order)
+    }
+
+    /** Order says nothing about being finished, so nothing else moves. */
+    @Test
+    fun shiftingAPartMovesNoCounter() {
+        val counters = listOf(manual(10L, 4))
+
+        val after = stateAfterReorderingSubtask(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L)),
+            subtasks = listOf(sub(10L, 1L, isDone = true), sub(11L, 1L, isDone = true).copy(order = 1)),
+            counters = counters,
+            subtaskId = 11L,
+            step = -1,
+        )
+
+        assertTrue(after.tasks.single().isDone)
+        assertEquals(4, balanceOf(after.counters, 10L))
+    }
+
+    @Test
+    fun shiftingAPartOffTheEndChangesNothing() {
+        val tasks = listOf(task(1))
+        val subtasks = listOf(sub(10L, 1L), sub(11L, 1L).copy(order = 1))
+
+        val up = stateAfterReorderingSubtask(tasks, subtasks, emptyList(), 10L, step = -1)
+        val down = stateAfterReorderingSubtask(tasks, subtasks, emptyList(), 11L, step = 1)
+
+        assertSame(subtasks, up.subtasks)
+        assertSame(subtasks, down.subtasks)
+    }
 }
