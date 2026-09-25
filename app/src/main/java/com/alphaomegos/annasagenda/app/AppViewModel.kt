@@ -1276,11 +1276,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun refreshHasSubtasks() {
-        val idsWithSubs = _state.value.subtasks.map { it.taskId }.toSet()
-        val updatedTasks = _state.value.tasks.map { t ->
-            t.copy(hasSubtasks = idsWithSubs.contains(t.id))
+        _state.update { cur ->
+            cur.copy(tasks = withHasSubtasksRefreshed(cur.tasks, cur.subtasks))
         }
-        _state.value = _state.value.copy(tasks = updatedTasks)
     }
 
     /* ---------------------------
@@ -1423,82 +1421,33 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         refreshHasSubtasks()
     }
 
+    /**
+     * Stops a repeat from a day onward. The rules live in SeriesDeletionSupport
+     * so they can be stated as tests; this only hands the state over and takes
+     * it back, in one update rather than in three.
+     */
     fun deleteTaskSeriesFrom(templateTaskId: Long, fromDate: LocalDate = LocalDate.now()) {
-        val cur = _state.value
-        val template =
-            cur.tasks.firstOrNull { it.id == templateTaskId && it.originTaskId == null } ?: return
-
-        val idsToDelete = mutableSetOf<Long>()
-
-        val td = template.date
-        if (td == null || !td.isBefore(fromDate)) {
-            idsToDelete.add(template.id)
+        _state.update { cur ->
+            val after = tasksAfterDeletingTaskSeriesFrom(
+                tasks = cur.tasks,
+                subtasks = cur.subtasks,
+                templateTaskId = templateTaskId,
+                fromDate = fromDate,
+            )
+            cur.copy(tasks = after.tasks, subtasks = after.subtasks)
         }
-
-        cur.tasks.filter { it.originTaskId == templateTaskId }.forEach { inst ->
-            val d = inst.date
-            if (d == null || !d.isBefore(fromDate)) {
-                idsToDelete.add(inst.id)
-            }
-        }
-
-        val newTasks = cur.tasks
-            .filterNot { it.id in idsToDelete }
-            .map { t -> if (t.id == templateTaskId) t.copy(repeatRule = null) else t }
-
-        val newSubs = cur.subtasks.filterNot { it.taskId in idsToDelete }
-
-        _state.value = cur.copy(tasks = newTasks, subtasks = newSubs)
-        refreshHasSubtasks()
     }
 
     fun deleteSubtaskSeriesFrom(templateSubtaskId: Long, fromDate: LocalDate = LocalDate.now()) {
-        val cur = _state.value
-        val templateSub =
-            cur.subtasks.firstOrNull { it.id == templateSubtaskId && it.originSubtaskId == null }
-                ?: return
-        val parentTemplateTask =
-            cur.tasks.firstOrNull { it.id == templateSub.taskId && it.originTaskId == null }
-                ?: return
-
-        val tasksById = cur.tasks.associateBy { it.id }
-
-        val subIdsToDelete = cur.subtasks
-            .filter { it.originSubtaskId == templateSubtaskId }
-            .filter { inst ->
-                val d = tasksById[inst.taskId]?.date
-                d == null || !d.isBefore(fromDate)
-            }
-            .mapTo(mutableSetOf()) { it.id }
-
-        val newSubs = cur.subtasks
-            .filterNot { it.id in subIdsToDelete }
-            .map { s -> if (s.id == templateSubtaskId) s.copy(repeatRule = null) else s }
-
-        val parentIsRepeating = parentTemplateTask.repeatRule != null
-        if (!parentIsRepeating) {
-            val remainingByTask = newSubs.groupBy { it.taskId }
-
-            val emptyGeneratedTaskIds = cur.tasks
-                .filter { it.originTaskId == parentTemplateTask.id }
-                .filter { inst ->
-                    val d = inst.date
-                    (d == null || !d.isBefore(fromDate)) && remainingByTask[inst.id].isNullOrEmpty()
-                }
-                .map { it.id }
-                .toSet()
-
-            val newTasks =
-                if (emptyGeneratedTaskIds.isEmpty()) cur.tasks else cur.tasks.filterNot { it.id in emptyGeneratedTaskIds }
-            val newSubs2 =
-                if (emptyGeneratedTaskIds.isEmpty()) newSubs else newSubs.filterNot { it.taskId in emptyGeneratedTaskIds }
-
-            _state.value = cur.copy(tasks = newTasks, subtasks = newSubs2)
-        } else {
-            _state.value = cur.copy(subtasks = newSubs)
+        _state.update { cur ->
+            val after = tasksAfterDeletingSubtaskSeriesFrom(
+                tasks = cur.tasks,
+                subtasks = cur.subtasks,
+                templateSubtaskId = templateSubtaskId,
+                fromDate = fromDate,
+            )
+            cur.copy(tasks = after.tasks, subtasks = after.subtasks)
         }
-
-        refreshHasSubtasks()
     }
 
     fun rescheduleTaskToDate(taskId: Long, newDate: LocalDate?) {
