@@ -1467,31 +1467,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Copies a task to another day, with everything under it. What a copy
+     * keeps and what it deliberately leaves behind is stated in CopySupport.
+     */
     fun copyTaskToDate(taskId: Long, targetDate: LocalDate) {
+        // Read and write rather than update {}: update's lambda is a
+        // compare-and-set loop and may run more than once, and newId() is not
+        // something to run twice for one copy. Nothing suspends in between.
         val cur = _state.value
-        val srcTask = cur.tasks.firstOrNull { it.id == taskId } ?: return
+        val after = stateAfterCopyingTask(cur.tasks, cur.subtasks, taskId, targetDate, ::newId)
 
-        val srcSubs = cur.subtasks
-            .filter { it.taskId == taskId }
-            .sortedWith(compareBy({ it.order }, { it.id }))
-
-        val newTaskId = createTaskForDate(
-            date = targetDate,
-            time = srcTask.time,
-            description = srcTask.description,
-            colorArgb = srcTask.colorArgb,
-            hasSubtasks = srcSubs.isNotEmpty(),
-            linkedManualCounterId = srcTask.linkedManualCounterId,
-            repeatRule = null
-        )
-
-        for (s in srcSubs) {
-            createSubtask(
-                taskId = newTaskId,
-                description = s.description,
-                colorArgb = s.colorArgb
-            )
-        }
+        _state.value = cur.copy(tasks = after.tasks, subtasks = after.subtasks)
     }
 
     /* ---------------------------
@@ -1554,24 +1541,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun copySubtaskToDate(subtaskId: Long, targetDate: LocalDate) {
         val cur = _state.value
-        val srcSub = cur.subtasks.firstOrNull { it.id == subtaskId } ?: return
-        val parent = cur.tasks.firstOrNull { it.id == srcSub.taskId } ?: return
+        val after = stateAfterCopyingSubtask(cur.tasks, cur.subtasks, subtaskId, targetDate, ::newId)
 
-        val newTaskId = createTaskForDate(
-            date = targetDate,
-            time = parent.time,
-            description = parent.description,
-            colorArgb = parent.colorArgb,
-            hasSubtasks = true,
-            linkedManualCounterId = parent.linkedManualCounterId,
-            repeatRule = null
-        )
-
-        createSubtask(
-            taskId = newTaskId,
-            description = srcSub.description,
-            colorArgb = srcSub.colorArgb
-        )
+        _state.value = cur.copy(tasks = after.tasks, subtasks = after.subtasks)
     }
 
     fun moveSubtask(subtaskId: Long, targetTaskId: Long) {
