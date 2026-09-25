@@ -56,6 +56,57 @@ class VersionNumbersTest {
         assertTrue("versionCode $code is not above the 18 already installed", code > 18)
     }
 
+    /* ---------- the release key ---------- */
+
+    /**
+     * No password, no key path, no alias written into a file that is in git.
+     *
+     * This is the accident worth a test rather than a convention: the build
+     * file is where a signing block goes, the values are right there in the
+     * dialog that generates one, and pasting them in is the thing that works
+     * immediately and cannot be taken back once it is pushed. The repository
+     * is public.
+     *
+     * Everything is read from local.properties or the environment, both of
+     * which stay off git, so a literal here can only be a mistake.
+     */
+    @Test
+    fun theSigningDetailsAreNeverWrittenIntoTheBuildFile() {
+        val build = buildFile().readText()
+
+        val assignments = Regex(
+            """(storePassword|keyPassword|keyAlias|storeFile)\s*=\s*"[^"]*""""
+        ).findAll(build).map { it.value }.toList()
+
+        assertTrue(
+            "a signing value is written into app/build.gradle.kts, which is in " +
+                "a public repository: $assignments",
+            assignments.isEmpty(),
+        )
+    }
+
+    /**
+     * With no key configured the release build has to come out unsigned.
+     *
+     * The tempting alternative is to fall back to the debug key so that
+     * something installable always comes out. That something is refused by
+     * Android on top of the real app, and the refusal arrives on the phone
+     * rather than here.
+     */
+    @Test
+    fun theReleaseBuildSignsWithTheReleaseKeyOrWithNothing() {
+        val build = buildFile().readText()
+
+        assertTrue(
+            "the release build type does not choose a signing config",
+            build.contains("""signingConfig = signingConfigs.findByName("release")"""),
+        )
+        assertTrue(
+            "the release build falls back to the debug key",
+            !build.contains("""signingConfigs.getByName("debug")"""),
+        )
+    }
+
     private fun buildFile(): File =
         listOf("build.gradle.kts", "app/build.gradle.kts", "../app/build.gradle.kts")
             .map { File(it) }
