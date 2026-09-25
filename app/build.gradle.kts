@@ -14,8 +14,16 @@ android {
         applicationId = "com.alphaomegos.annasagenda"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18
-        versionName = "21.3"
+        // The two used to disagree: versionCode said this was the 18th build,
+        // versionName said 21.3. Nobody remembers how. From here they move
+        // together, one step each per release — 21.5 will be versionCode 23 —
+        // and VersionNumbersTest holds them to it.
+        //
+        // versionCode only ever goes up: Android refuses an update whose code
+        // is lower than the one installed, so matching it down to 21 was not
+        // an option.
+        versionCode = 22
+        versionName = "21.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
