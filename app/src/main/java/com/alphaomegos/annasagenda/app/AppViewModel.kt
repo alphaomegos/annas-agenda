@@ -871,32 +871,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
 
+    /**
+     * Read then write, rather than `_state.update`: the rule below may hand
+     * out a session id, and an update block is a compare-and-set loop that can
+     * run its lambda more than once.
+     */
     fun beginReading(bookId: Long, startedAtEpochMillis: Long = System.currentTimeMillis()): Boolean {
-        val st = _state.value
-        val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return false
+        val start = stateAfterBeginningReading(
+            state = _state.value,
+            bookId = bookId,
+            startedAtEpochMillis = startedAtEpochMillis,
+            currentYear = LocalDate.now().year,
+            newSessionId = ::newId,
+        ) ?: return false
 
-        // Opening the same book again is not a new session. Starting one from
-        // scratch here threw away however long had already been counted, which
-        // is what happened to anyone who left the session screen with the
-        // system back gesture and tapped Read again.
-        if (st.activeReading?.bookId == bookId) return true
-
-        if (book.shelf == ReadingShelf.PLANS) {
-            moveReadingBookToShelf(bookId, ReadingShelf.NOW)
-        }
-
-        val after = _state.value.readingBooks.firstOrNull { it.id == bookId } ?: return false
-
-        _state.update { cur ->
-            cur.copy(
-                activeReading = ActiveReading(
-                    bookId = bookId,
-                    startedAtEpochMillis = startedAtEpochMillis,
-                    startPage = after.currentPage.coerceAtLeast(0),
-                )
-            )
-        }
-        return true
+        _state.value = start.state
+        return start.started
     }
 
     /**

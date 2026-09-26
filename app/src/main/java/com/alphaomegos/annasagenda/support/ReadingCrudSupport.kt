@@ -111,7 +111,31 @@ fun readingAfterBookChanged(
         )
     }
 
-    val ended = interruptedReadingSession(active, changed, nowEpochMillis, newSessionId())
+    return readingStopped(active, changed, pending, autoRecord, nowEpochMillis, newSessionId)
+}
+
+/**
+ * A live reading that is ending, whatever ended it.
+ *
+ * The book leaving the Now shelf is one way. Starting to read a different book
+ * is the other, and it had no rule at all until 0107 — the session was simply
+ * replaced, and however long it had been running went with it.
+ *
+ * The time is kept either way: recorded outright if the user has said to stop
+ * asking, and otherwise put in front of them as a question they can answer
+ * later. A question that is still unanswered when a second one arrives is
+ * recorded rather than overwritten, because the user has not said to discard
+ * it and dropping it to make room would be the exact loss this is here to stop.
+ */
+fun readingStopped(
+    active: ActiveReading,
+    book: ReadingBook,
+    pending: ReadingSession?,
+    autoRecord: Boolean,
+    nowEpochMillis: Long,
+    newSessionId: () -> Long,
+): ReadingAfterBookChange {
+    val ended = interruptedReadingSession(active, book, nowEpochMillis, newSessionId())
 
     return if (autoRecord) {
         ReadingAfterBookChange(null, pending, listOf(ended))
