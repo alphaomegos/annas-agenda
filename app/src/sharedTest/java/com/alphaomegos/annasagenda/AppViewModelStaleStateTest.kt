@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -39,7 +38,7 @@ class AppViewModelStaleStateTest {
         // See AppViewModelRecurringRescheduleTest for why the main dispatcher
         // is replaced: a view model loads on viewModelScope, and these tests
         // block the thread that scope would otherwise need.
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(Dispatchers.Unconfined)
         app = ApplicationProvider.getApplicationContext()
         clearAppStateStoreFile()
     }

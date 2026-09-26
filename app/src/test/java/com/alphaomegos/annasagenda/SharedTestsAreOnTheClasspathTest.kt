@@ -30,6 +30,8 @@ class SharedTestsAreOnTheClasspathTest {
         "com.alphaomegos.annasagenda.AppViewModelRecurringRescheduleTest",
         "com.alphaomegos.annasagenda.AppViewModelStaleStateTest",
         "com.alphaomegos.annasagenda.AppViewModelUndoneHorizonTest",
+        "com.alphaomegos.annasagenda.ReadingSessionPersistenceTest",
+        "com.alphaomegos.annasagenda.RunningPlanTaskLinkTest",
         "com.alphaomegos.annasagenda.components.ConfirmDialogTest",
         "com.alphaomegos.annasagenda.components.CopyToDateDialogsTest",
         "com.alphaomegos.annasagenda.components.PickDateDialogTest",

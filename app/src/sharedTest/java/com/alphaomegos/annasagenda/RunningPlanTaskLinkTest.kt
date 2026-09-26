@@ -2,9 +2,13 @@ package com.alphaomegos.annasagenda
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -23,8 +27,9 @@ import java.time.LocalDate
  * largest in use" — so a number freed by a deletion comes back after a restart,
  * and the row ends up pointing at whatever the user created next.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class RunningPlanTaskLinkInstrumentedTest {
+class RunningPlanTaskLinkTest {
 
     private lateinit var app: Application
 
@@ -32,14 +37,18 @@ class RunningPlanTaskLinkInstrumentedTest {
 
     @Before
     fun setUp() {
-        app = InstrumentationRegistry.getInstrumentation()
-            .targetContext.applicationContext as Application
+        // See AppViewModelRecurringRescheduleTest for why the main dispatcher
+        // is replaced: a view model loads on viewModelScope, and these tests
+        // block the thread that scope would otherwise need.
+        Dispatchers.setMain(Dispatchers.Unconfined)
+        app = ApplicationProvider.getApplicationContext()
         clearAppStateStoreFile()
     }
 
     @After
     fun tearDown() {
         clearAppStateStoreFile()
+        Dispatchers.resetMain()
     }
 
     @Test

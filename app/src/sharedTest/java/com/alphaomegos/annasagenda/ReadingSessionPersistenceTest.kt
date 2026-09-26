@@ -2,9 +2,13 @@ package com.alphaomegos.annasagenda
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -21,8 +25,9 @@ import java.io.File
  * it — and since the finish dialog is only reachable while a session is
  * running, the time could not be entered afterwards either.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class ReadingSessionPersistenceInstrumentedTest {
+class ReadingSessionPersistenceTest {
 
     private lateinit var app: Application
 
@@ -30,14 +35,18 @@ class ReadingSessionPersistenceInstrumentedTest {
 
     @Before
     fun setUp() {
-        app = InstrumentationRegistry.getInstrumentation()
-            .targetContext.applicationContext as Application
+        // See AppViewModelRecurringRescheduleTest for why the main dispatcher
+        // is replaced: a view model loads on viewModelScope, and these tests
+        // block the thread that scope would otherwise need.
+        Dispatchers.setMain(Dispatchers.Unconfined)
+        app = ApplicationProvider.getApplicationContext()
         clearAppStateStoreFile()
     }
 
     @After
     fun tearDown() {
         clearAppStateStoreFile()
+        Dispatchers.resetMain()
     }
 
     @Test

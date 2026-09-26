@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -36,11 +35,19 @@ import java.time.LocalDate
  * "AppViewModel did not finish loading" — which is the polling loop at the
  * bottom of this file, giving up after two seconds.
  *
- * So the main dispatcher is replaced for the duration. An unconfined test
- * dispatcher runs what is launched on it straight away, on whatever thread
- * asked; nothing here is about threading, so nothing here is weakened by
- * that. It is set and reset around every test, and it does the same on a
- * device, which is what keeps this file shareable.
+ * So the main dispatcher is replaced for the duration. `Dispatchers.Unconfined`
+ * runs what is launched on it straight away, on whatever thread asked; nothing
+ * here is about threading, so nothing here is weakened by that. It is set and
+ * reset around every test, and it does the same on a device, which is what
+ * keeps this file shareable.
+ *
+ * Plain `Unconfined`, not `UnconfinedTestDispatcher`, and the difference is a
+ * clock. A test dispatcher brings virtual time with it: a `delay` inside it
+ * waits on a scheduler that nobody here advances. The view model's autosave
+ * debounces by 400 milliseconds, so under virtual time it debounces for ever
+ * — and the two tests in ReadingSessionPersistenceTest that wait for a write
+ * and then build a second view model found exactly that: what they had been
+ * promised was on disk had never been written.
  *
  * What isolates one test from the next is `resetAllData`, not the file
  * deletion in setUp. Deleting the file under a live DataStore changes
@@ -56,7 +63,7 @@ class AppViewModelRecurringRescheduleTest {
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(Dispatchers.Unconfined)
         app = ApplicationProvider.getApplicationContext()
         clearAppStateStoreFile()
     }
