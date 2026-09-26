@@ -419,4 +419,12 @@
     <string name="anthro_range_custom_title">Выберите диапазон</string>
     <string name="anthro_range_from">С</string>
     <string name="anthro_range_to">По</string>
+    <!-- Подсказки при наборе задачи -->
+    <string name="task_suggestions_title">Уже было</string>
+    <plurals name="task_suggestion_parts">
+        <item quantity="one">%d подзадача</item>
+        <item quantity="few">%d подзадачи</item>
+        <item quantity="many">%d подзадач</item>
+        <item quantity="other">%d подзадачи</item>
+    </plurals>
 </resources>

@@ -71,4 +71,10 @@
 
     <!-- Someday -->
     <string name="someday_empty">No someday lists yet</string>
+    <!-- Suggestions while typing a task -->
+    <string name="task_suggestions_title">Written before</string>
+    <plurals name="task_suggestion_parts">
+        <item quantity="one">%d part</item>
+        <item quantity="other">%d parts</item>
+    </plurals>
 </resources>

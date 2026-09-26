@@ -236,6 +236,32 @@ fun NewTaskScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // Keyed on the typed text and nothing else: the history cannot
+            // change while this screen is open, so there is nothing to
+            // subscribe to and no reason to look again until the text moves.
+            val suggestions = remember(description) { vm.taskSuggestions(description) }
+
+            if (suggestions.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TaskSuggestionList(
+                    suggestions = suggestions,
+                    onPick = { picked ->
+                        description = picked.description
+
+                        val merged = subtasksAfterApplyingSuggestion(
+                            current = subtasks.toList(),
+                            suggested = picked.subtaskDescriptions,
+                            maxSubtasks = maxSubtasks,
+                            defaultColor = taskColor,
+                        )
+
+                        subtasks.clear()
+                        subtasks.addAll(merged)
+                    },
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(stringResource(R.string.task_color), style = MaterialTheme.typography.titleMedium)

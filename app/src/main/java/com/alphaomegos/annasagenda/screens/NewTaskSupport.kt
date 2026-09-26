@@ -105,3 +105,38 @@ fun newTaskInitialDate(
     preselectedEpochDay == null -> today
     else -> LocalDate.ofEpochDay(preselectedEpochDay)
 }
+
+/**
+ * The subtask rows after the user picks a suggestion.
+ *
+ * **Nothing typed is thrown away.** The rule everywhere else in this screen is
+ * that the draft is sacred — 0043 is what it cost when a rotation dropped the
+ * subtasks and the autosave then wrote that emptier draft over the real one —
+ * and a suggestion is not a reason to break it. So the suggested parts are
+ * added after whatever is already there, not instead of it.
+ *
+ * Rows the user has not filled in are dropped first. Tapping "Add part" and
+ * then picking a suggestion is one gesture in the user's head; leaving the
+ * empty row above the suggested ones would make it two.
+ *
+ * A part that is already in the list is not added a second time, compared
+ * ignoring case and surrounding space, because that is how a person reads
+ * "the same". The list is capped at [maxSubtasks] as it is everywhere else.
+ */
+fun subtasksAfterApplyingSuggestion(
+    current: List<EditableNewTaskSubtask>,
+    suggested: List<String>,
+    maxSubtasks: Int,
+    defaultColor: Long?,
+): List<EditableNewTaskSubtask> {
+    val kept = current.filter { it.description.isNotBlank() }
+    val already = kept.map { it.description.trim().lowercase() }.toMutableSet()
+
+    val added = suggested.mapNotNull { description ->
+        val key = description.trim().lowercase()
+        if (key.isEmpty() || !already.add(key)) null
+        else newEditableSubtask(defaultColor).copy(description = description.trim())
+    }
+
+    return (kept + added).take(maxSubtasks)
+}

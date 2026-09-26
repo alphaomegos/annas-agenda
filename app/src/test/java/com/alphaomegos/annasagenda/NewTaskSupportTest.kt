@@ -132,4 +132,85 @@ class NewTaskSupportTest {
             ),
         )
     }
+
+    /* ---------------- picking a suggestion ---------------- */
+
+    private fun row(description: String, color: Long? = null) =
+        EditableNewTaskSubtask(description = description, colorArgb = color)
+
+    private fun apply(
+        current: List<EditableNewTaskSubtask>,
+        suggested: List<String>,
+        max: Int = 30,
+        color: Long? = null,
+    ) = subtasksAfterApplyingSuggestion(current, suggested, max, color)
+
+    @Test
+    fun aSuggestionFillsAnEmptyListWithItsParts() {
+        val after = apply(emptyList(), listOf("Снять колесо", "Заклеить камеру"))
+
+        assertEquals(listOf("Снять колесо", "Заклеить камеру"), after.map { it.description })
+    }
+
+    /**
+     * The rule the rest of this screen is built on: the draft is sacred. 0043
+     * is what it cost when rotation dropped the parts and the autosave wrote
+     * the emptier draft over the real one.
+     */
+    @Test
+    fun nothingAlreadyTypedIsThrownAway() {
+        val after = apply(listOf(row("Купить клей")), listOf("Снять колесо"))
+
+        assertEquals(listOf("Купить клей", "Снять колесо"), after.map { it.description })
+    }
+
+    @Test
+    fun whatWasTypedKeepsItsOwnColour() {
+        val after = apply(listOf(row("Купить клей", color = 0xFF00FF00)), listOf("Снять колесо"), color = 0xFF0000FF)
+
+        assertEquals(0xFF00FF00, after.first().colorArgb)
+        assertEquals(0xFF0000FF, after.last().colorArgb)
+    }
+
+    /**
+     * Tapping "add a part" and then picking a suggestion is one gesture in the
+     * user's head. Leaving the empty row above the suggested ones makes it two.
+     */
+    @Test
+    fun theEmptyRowWaitingToBeFilledInIsDropped() {
+        val after = apply(listOf(row("Купить клей"), row("")), listOf("Снять колесо"))
+
+        assertEquals(listOf("Купить клей", "Снять колесо"), after.map { it.description })
+    }
+
+    @Test
+    fun aPartAlreadyInTheListIsNotAddedTwice() {
+        val after = apply(listOf(row("  снять КОЛЕСО ")), listOf("Снять колесо", "Заклеить камеру"))
+
+        assertEquals(listOf("  снять КОЛЕСО ", "Заклеить камеру"), after.map { it.description })
+    }
+
+    @Test
+    fun aSuggestionThatRepeatsItselfStillAddsOne() {
+        val after = apply(emptyList(), listOf("Снять колесо", "снять колесо"))
+
+        assertEquals(listOf("Снять колесо"), after.map { it.description })
+    }
+
+    @Test
+    fun theListNeverGrowsPastTheLimit() {
+        val current = (1..28).map { row("Часть $it") }
+
+        val after = apply(current, listOf("Снять колесо", "Заклеить камеру", "Поставить обратно"), max = 30)
+
+        assertEquals(30, after.size)
+        assertEquals("Заклеить камеру", after.last().description)
+    }
+
+    @Test
+    fun aSuggestionWithNoPartsChangesNothingButTidiesTheBlanks() {
+        val after = apply(listOf(row("Купить клей"), row("  ")), emptyList())
+
+        assertEquals(listOf("Купить клей"), after.map { it.description })
+    }
 }

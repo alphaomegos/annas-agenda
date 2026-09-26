@@ -883,6 +883,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return true
     }
 
+    /**
+     * What the user has written before that looks like what they are writing
+     * now.
+     *
+     * Asked for rather than collected. The new-task screen deliberately
+     * subscribes only to the counters — collecting the whole state woke it for
+     * every task, every meal and every page turned in a book — and the history
+     * does not change while somebody is typing a new task, so a snapshot taken
+     * when they stop typing is as good as a subscription and costs nothing.
+     */
+    fun taskSuggestions(typed: String, limit: Int = 5): List<TaskSuggestion> {
+        val cur = _state.value
+        return taskSuggestionsFor(typed, cur.tasks, cur.subtasks, limit)
+    }
+
     fun estimateRemainingHours(bookId: Long): Int? {
         val st = _state.value
         val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return null
