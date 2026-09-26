@@ -28,4 +28,6 @@
     <string name="anthro_range_custom_title">Choose a range</string>
     <string name="anthro_range_from">From</string>
     <string name="anthro_range_to">To</string>
+    <!-- What the running contributed to the month's projection -->
+    <string name="anthropometry_running_included">Running included: %1$d kcal</string>
 </resources>

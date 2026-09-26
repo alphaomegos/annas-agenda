@@ -26,6 +26,10 @@ data class AnthropometrySlice(
     val anthropometryEnabledFieldIds: Set<String> = emptySet(),
     val calorieGoalChanges: List<CalorieGoalChange> = emptyList(),
     val foodLog: List<FoodEntry> = emptyList(),
+    // The runs are here because the month's projection counts them. Adding a
+    // run has to move that number, and a slice that did not carry them would
+    // not emit when one was written down.
+    val runningWorkouts: List<RunningWorkout> = emptyList(),
 )
 
 /**
@@ -81,6 +85,7 @@ fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySli
     anthropometryEnabledFieldIds = state.anthropometryEnabledFieldIds,
     calorieGoalChanges = state.calorieGoalChanges,
     foodLog = state.foodLog,
+    runningWorkouts = state.runningWorkouts,
 )
 
 fun countersSliceOf(state: AppState): CountersSlice = CountersSlice(

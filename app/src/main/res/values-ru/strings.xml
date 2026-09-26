@@ -455,4 +455,6 @@
         <item quantity="many">%d пробежек</item>
         <item quantity="other">%d пробежки</item>
     </plurals>
+    <!-- Вклад бега в месячный прогноз -->
+    <string name="anthropometry_running_included">С учётом бега: %1$d ккал</string>
 </resources>

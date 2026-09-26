@@ -53,6 +53,7 @@ import com.alphaomegos.annasagenda.CurvePoint
 import com.alphaomegos.annasagenda.DateWindow
 import com.alphaomegos.annasagenda.anthropometryEntriesIn
 import com.alphaomegos.annasagenda.anthropometryWindowFor
+import com.alphaomegos.annasagenda.caloriesBurnedRunning
 import com.alphaomegos.annasagenda.dialogs.AnthropometryInputDialog
 import com.alphaomegos.annasagenda.AppViewModel
 import androidx.compose.ui.graphics.toArgb
@@ -170,7 +171,21 @@ fun AnthropometryScreen(
         val start30 = today.minusDays(29)
         calorieDeficitInRange(state.calorieGoalChanges, state.foodLog, start30, today)
     }
-    val potentialKg = deficit30 / KCAL_PER_KG_FAT
+
+    // What the running added to it. Kept as its own number rather than folded
+    // into the one above, because the screen says it out loud: a projection
+    // that moved when a run was written down, with nothing to say why, would
+    // look like the arithmetic drifting.
+    val burned30 = remember(state) {
+        caloriesBurnedRunning(
+            workouts = state.runningWorkouts,
+            anthropometry = state.anthropometry,
+            from = today.minusDays(29),
+            to = today,
+        )
+    }
+
+    val potentialKg = (deficit30 + burned30) / KCAL_PER_KG_FAT
 
     val allEntries = remember(state.anthropometry) {
         state.anthropometry.sortedBy { it.date }
@@ -303,6 +318,21 @@ fun AnthropometryScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     textAlign = TextAlign.End,
                                     modifier = Modifier.widthIn(min = 140.dp)
+                                )
+                            }
+
+                            // Said only when there is something to say. A line
+                            // reading "running included: 0 kcal" on a screen
+                            // belonging to somebody who does not run is noise
+                            // that never goes away.
+                            if (burned30 > 0) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.anthropometry_running_included,
+                                        burned30,
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
