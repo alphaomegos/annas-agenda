@@ -11,6 +11,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -77,6 +78,7 @@ import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appIsDarkTheme
 import com.alphaomegos.annasagenda.isAnnaDay
 import com.alphaomegos.annasagenda.itemsInMenuOrder
+import com.alphaomegos.annasagenda.mainMenuColumns
 import com.alphaomegos.annasagenda.undoneLampFor
 import com.alphaomegos.annasagenda.undoneLampIconRes
 import com.alphaomegos.annasagenda.components.ConfirmDialog
@@ -428,61 +430,79 @@ internal fun MainMenuContent(
                 AnnaDayCard()
             }
 
-            MainMenuList(
-                items = items,
-                reorderMode = reorderMode,
-                canHideItems = items.size > 1,
-                listState = listState,
-                draggingIndex = draggingIndex.intValue,
-                draggingOffsetY = draggingOffsetY.floatValue,
-                onStartReorder = {
-                    reorderMode = true
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                },
-                onDragStart = { index ->
-                    draggingIndex.intValue = index
-                    draggingOffsetY.floatValue = 0f
-                },
-                onDragOffsetChange = { deltaY ->
-                    draggingOffsetY.floatValue += deltaY
-                },
-                onMoveItem = { from, to, dragCompensation ->
-                    items = items.toMutableList().also { list ->
-                        val moved = list.removeAt(from)
-                        list.add(to, moved)
-                    }
-                    draggingIndex.intValue = to
-                    draggingOffsetY.floatValue += dragCompensation
-                },
-                onStepMoveItem = { from, to ->
-                    if (from in items.indices && to in items.indices && from != to) {
-                        items = items.toMutableList().also { list ->
-                            val moved = list.removeAt(from)
-                            list.add(to, moved)
-                        }
-                        draggingIndex.intValue = -1
-                        draggingOffsetY.floatValue = 0f
-                    }
-                },
-                onHideItem = { id ->
-                    draggingIndex.intValue = -1
-                    draggingOffsetY.floatValue = 0f
-                    items = items.filterNot { it.id == id }
-                    onHideMenuItem(id)
-                },
-                onStopDragging = {
-                    draggingIndex.intValue = -1
-                    draggingOffsetY.floatValue = 0f
-                    persistCurrentOrder()
-                },
-                // weight, not fillMaxSize: inside a Column a child asking for the
-                // full height asks for the height of the whole column, card and
-                // all, and the list would run off the bottom by exactly the
-                // card's height on 29 July.
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-            )
+            ) {
+                val columns = mainMenuColumns(maxWidth.value.toInt())
+
+                // Reorder mode always falls back to the list. Dragging a row
+                // up and down a column is something the list already does
+                // properly, and a grid would need it reinvented in two
+                // dimensions. Switching layout to rearrange is a visible seam,
+                // but an honest one: the shape you drag in is the shape the
+                // order is stored in.
+                if (columns > 1 && !reorderMode) {
+                    MainMenuTiles(
+                        items = items,
+                        columns = columns,
+                        onStartReorder = { reorderMode = true },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+
+                    MainMenuList(
+                        items = items,
+                        reorderMode = reorderMode,
+                        canHideItems = items.size > 1,
+                        listState = listState,
+                        draggingIndex = draggingIndex.intValue,
+                        draggingOffsetY = draggingOffsetY.floatValue,
+                        onStartReorder = {
+                            reorderMode = true
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        },
+                        onDragStart = { index ->
+                            draggingIndex.intValue = index
+                            draggingOffsetY.floatValue = 0f
+                        },
+                        onDragOffsetChange = { deltaY ->
+                            draggingOffsetY.floatValue += deltaY
+                        },
+                        onMoveItem = { from, to, dragCompensation ->
+                            items = items.toMutableList().also { list ->
+                                val moved = list.removeAt(from)
+                                list.add(to, moved)
+                            }
+                            draggingIndex.intValue = to
+                            draggingOffsetY.floatValue += dragCompensation
+                        },
+                        onStepMoveItem = { from, to ->
+                            if (from in items.indices && to in items.indices && from != to) {
+                                items = items.toMutableList().also { list ->
+                                    val moved = list.removeAt(from)
+                                    list.add(to, moved)
+                                }
+                                draggingIndex.intValue = -1
+                                draggingOffsetY.floatValue = 0f
+                            }
+                        },
+                        onHideItem = { id ->
+                            draggingIndex.intValue = -1
+                            draggingOffsetY.floatValue = 0f
+                            items = items.filterNot { it.id == id }
+                            onHideMenuItem(id)
+                        },
+                        onStopDragging = {
+                            draggingIndex.intValue = -1
+                            draggingOffsetY.floatValue = 0f
+                            persistCurrentOrder()
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
         }
     }
 

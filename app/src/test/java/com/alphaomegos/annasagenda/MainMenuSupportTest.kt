@@ -71,4 +71,51 @@ class MainMenuSupportTest {
         assertNull(normalizeMainMenuItemId("   "))
         assertNull(normalizeMainMenuItemId(""))
     }
+
+    /* ---------------- how many tiles fit ---------------- */
+
+    /**
+     * A phone upright keeps the list. A grid there would be two postage
+     * stamps side by side, and the list is already the right shape.
+     */
+    @Test
+    fun aPhoneHeldUprightKeepsTheList() {
+        listOf(320, 360, 411, 480, 599).forEach { width ->
+            assertEquals("$width dp", 1, mainMenuColumns(width))
+        }
+    }
+
+    @Test
+    fun aWideScreenGetsTwoColumns() {
+        listOf(600, 674, 800, 899).forEach { width ->
+            assertEquals("$width dp", 2, mainMenuColumns(width))
+        }
+    }
+
+    @Test
+    fun aVeryWideScreenGetsThree() {
+        listOf(900, 1000, 1280).forEach { width ->
+            assertEquals("$width dp", 3, mainMenuColumns(width))
+        }
+    }
+
+    /**
+     * Capped. A fourth column on a tablet makes each tile smaller than the
+     * icon it holds, and large icons are the whole point of the grid.
+     */
+    @Test
+    fun theGridNeverGrowsPastThreeColumns() {
+        assertEquals(3, mainMenuColumns(4000))
+        assertEquals(3, mainMenuColumns(Int.MAX_VALUE))
+    }
+
+    /**
+     * A width of zero happens for one frame before anything is measured.
+     * Answering with zero columns there would divide by it.
+     */
+    @Test
+    fun anUnmeasuredScreenStillGetsOneColumn() {
+        assertEquals(1, mainMenuColumns(0))
+        assertEquals(1, mainMenuColumns(-100))
+    }
 }
