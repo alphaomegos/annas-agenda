@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda
 
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -263,6 +264,50 @@ class AppStateStoreMigrationTest {
             setOf(validId),
             normalizeAnthropometryFieldIdsForStore(listOf("  $validId  ", "bad", validId)),
         )
+    }
+
+    /**
+     * Version 5 adds the log of runs, and converts nothing.
+     *
+     * The whole point of raising the number is that an older build refuses a
+     * payload it would otherwise quietly strip, so the migration's only job is
+     * to stamp it — and its other job is to touch nothing else, which is what
+     * is checked here.
+     */
+    @Test
+    fun migrateVersion4_stampsTheVersionAndChangesNothingElse() {
+        val raw = """
+            {
+              "v": 4,
+              "runningPlanApproved": true,
+              "undoneHorizonDays": 90,
+              "tasks": [
+                { "id": 1, "order": 0, "description": "Пробежка" }
+              ]
+            }
+        """.trimIndent()
+
+        val before = appStateStoreJson.decodeFromString<JsonObject>(raw)
+        val root = migrateAppStateRawJson(raw) as JsonObject
+
+        assertEquals(CURRENT_SCHEMA_VERSION, root["v"]?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            "nothing but the version may move",
+            before.filterKeys { it != "v" },
+            root.filterKeys { it != "v" },
+        )
+    }
+
+    /**
+     * And the state that comes out of it is the state every user already had:
+     * on the plan, with nothing logged.
+     */
+    @Test
+    fun aVersionFourPayloadArrivesOnThePlanWithNoRunsLogged() {
+        val state = decoded("""{ "v": 4 }""")
+
+        assertEquals(RunningMode.PLAN, state.runningMode)
+        assertTrue(state.runningWorkouts.isEmpty())
     }
 
     /** Migrates and decodes, failing with the reason when the payload does not survive. */

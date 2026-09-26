@@ -32,6 +32,8 @@ data class AppState(
     // Running plan ("On the run")
     val runningPlanApproved: Boolean = false,
     val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
+    val runningMode: RunningMode = RunningMode.PLAN,
+    val runningWorkouts: List<RunningWorkout> = emptyList(),
 
     // Counters
     override val counters: List<Counter> = emptyList(),

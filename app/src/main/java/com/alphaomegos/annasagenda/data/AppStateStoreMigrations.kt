@@ -49,6 +49,7 @@ internal fun migrateAppStateRawJson(
             1 -> migrateAppState1To2(cur)
             2 -> migrateAppState2To3(cur)
             3 -> migrateAppState3To4(cur, weekStartForLegacyRules)
+            4 -> migrateAppState4To5(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -82,6 +83,31 @@ internal class MissingMigrationException(
 ) : IllegalStateException(
     "No migration takes app state from version $fromVersion towards $supportedVersion"
 )
+
+/**
+ * Nothing to convert, and that is the point.
+ *
+ * Version 5 adds the log of runs that actually happened. Every field added
+ * before this one was additive-with-a-default, so an older build reading a
+ * newer payload lost nothing it could not reconstruct, and the version stayed
+ * where it was. This one is different: those runs are data nothing else holds,
+ * and a build that did not know the key would drop the whole list on its next
+ * save without saying anything.
+ *
+ * Raising the version makes such a build refuse the payload outright — the
+ * unreadable-state screen, with the file left exactly as it is. That is worth
+ * saying out loud because it has a cost: a rollback to an older APK can no
+ * longer read data written after this, and the way back is to restore a backup
+ * made before it.
+ *
+ * Stamping the version is therefore the entire migration. The list defaults to
+ * empty and the mode defaults to the plan, which is what every user had.
+ */
+private fun migrateAppState4To5(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(5)
+    return JsonObject(m)
+}
 
 private fun migrateAppState0To1(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()

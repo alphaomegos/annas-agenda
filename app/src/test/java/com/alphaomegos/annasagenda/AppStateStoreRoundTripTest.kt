@@ -5,6 +5,7 @@ import kotlinx.serialization.encodeToString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class AppStateStoreRoundTripTest {
 
@@ -169,5 +170,79 @@ class AppStateStoreRoundTripTest {
             .toDomain()
 
         assertEquals(0L, restored.idHighWater)
+    }
+
+    /**
+     * The log of runs that actually happened, and the mode the screen is in.
+     *
+     * Worth its own round trip rather than a line in the one above: this is
+     * the first thing added to the state that is **not** additive-with-a-
+     * default, and it is why the schema went to 5. If it did not survive the
+     * store there would be no point to any of it.
+     */
+    @Test
+    fun appStateRoundTrip_keepsTheRunsThatHappened() {
+        val original = AppState(
+            runningMode = RunningMode.BETWEEN,
+            runningWorkouts = listOf(
+                RunningWorkout(
+                    id = 1L,
+                    date = LocalDate.of(2026, 9, 20),
+                    distanceKm = 10.5,
+                    durationMinutes = 58,
+                    note = "набережная",
+                ),
+                RunningWorkout(
+                    id = 2L,
+                    date = LocalDate.of(2026, 9, 23),
+                    distanceKm = 5.0,
+                    durationMinutes = 26,
+                ),
+            ),
+        )
+
+        val json = appStateStoreJson.encodeToString(original.toDto())
+        val restored = appStateStoreJson
+            .decodeFromString<AppStateDto>(json)
+            .toDomain()
+
+        assertTrue(json.contains("runningWorkouts"))
+        assertTrue("the mode is written by name, not by ordinal", json.contains("BETWEEN"))
+        assertEquals(original, restored)
+        assertEquals(10.5, restored.runningWorkouts.first().distanceKm, 0.0001)
+    }
+
+    /**
+     * A payload written before any of this existed has no runs and is on the
+     * plan, which is what every user had.
+     */
+    @Test
+    fun aPayloadWithoutRunsDecodesToThePlanAndNothingLogged() {
+        val json = appStateStoreJson.encodeToString(AppState().toDto())
+
+        val restored = appStateStoreJson
+            .decodeFromString<AppStateDto>(json)
+            .toDomain()
+
+        assertEquals(RunningMode.PLAN, restored.runningMode)
+        assertTrue(restored.runningWorkouts.isEmpty())
+    }
+
+    /**
+     * A mode this build does not know falls back to the plan rather than
+     * failing the whole decode. A mode is a view: guessing wrong costs one
+     * tap, and refusing the payload would cost everything else in it.
+     */
+    @Test
+    fun anUnknownRunningModeFallsBackToThePlan() {
+        val json = appStateStoreJson.encodeToString(
+            AppState().toDto().copy(runningMode = "SOMETHING_LATER")
+        )
+
+        val restored = appStateStoreJson
+            .decodeFromString<AppStateDto>(json)
+            .toDomain()
+
+        assertEquals(RunningMode.PLAN, restored.runningMode)
     }
 }

@@ -18,6 +18,8 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     foodLog = foodLog.map { it.toDto() },
     runningPlanApproved = runningPlanApproved,
     runningPlanEntries = runningPlanEntries.map { it.toDto() },
+    runningMode = runningMode.name,
+    runningWorkouts = runningWorkouts.map { it.toDto() },
     counters = counters.map { it.toDto() },
     mainMenuOrder = mainMenuOrder,
     mainMenuHiddenIds = mainMenuHiddenIds.toList(),
@@ -70,6 +72,11 @@ internal fun AppStateDto.toDomain(): AppState {
         foodLog = foodLog.map { it.toDomain() },
         runningPlanApproved = runningPlanApproved,
         runningPlanEntries = runningPlanEntries.map { it.toDomain() },
+        // An unknown word falls back to the plan, which is what every user
+        // had before this existed. A mode is a view, so guessing wrong costs
+        // one tap rather than any data.
+        runningMode = runningModeFromName(runningMode),
+        runningWorkouts = runningWorkouts.map { it.toDomain() },
         counters = counters.mapNotNull { it.toDomainOrNull() },
         // Normalised on the way in like the other preferences here: the
         // setter normalises, but a payload does not have to have come from it.
@@ -238,6 +245,25 @@ internal fun FoodEntryDto.toDomain(): FoodEntry = FoodEntry(
     date = LocalDate.ofEpochDay(dateEpochDay),
     title = title,
     kcal = kcal,
+)
+
+internal fun runningModeFromName(name: String): RunningMode =
+    RunningMode.entries.firstOrNull { it.name == name } ?: RunningMode.PLAN
+
+internal fun RunningWorkout.toDto(): RunningWorkoutDto = RunningWorkoutDto(
+    id = id,
+    dateEpochDay = date.toEpochDay(),
+    distanceKm = distanceKm,
+    durationMinutes = durationMinutes,
+    note = note,
+)
+
+internal fun RunningWorkoutDto.toDomain(): RunningWorkout = RunningWorkout(
+    id = id,
+    date = LocalDate.ofEpochDay(dateEpochDay),
+    distanceKm = distanceKm,
+    durationMinutes = durationMinutes,
+    note = note,
 )
 
 internal fun RunningPlanEntry.toDto(): RunningPlanEntryDto = RunningPlanEntryDto(

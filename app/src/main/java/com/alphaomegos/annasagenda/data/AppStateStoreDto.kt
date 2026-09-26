@@ -25,6 +25,14 @@ internal data class AppStateDto(
     val runningPlanApproved: Boolean = false,
     val runningPlanEntries: List<RunningPlanEntryDto> = emptyList(),
 
+    // Not additive-with-a-default like the fields further down, and that is
+    // why CURRENT_SCHEMA_VERSION went to 5. Runs written down here are data
+    // nothing else holds: a build that did not know about them would drop the
+    // whole list on the next save, in silence. Version 5 makes such a build
+    // refuse the payload instead, which is loud and leaves the file alone.
+    val runningMode: String = "PLAN",
+    val runningWorkouts: List<RunningWorkoutDto> = emptyList(),
+
     val counters: List<CounterDto> = emptyList(),
     val mainMenuOrder: List<String> = emptyList(),
     val mainMenuHiddenIds: List<String> = emptyList(),
@@ -73,6 +81,15 @@ internal data class CounterDto(
     val startEpochDay: Long? = null,
     val endEpochDay: Long? = null,
     val balance: Int? = null,
+)
+
+@Serializable
+internal data class RunningWorkoutDto(
+    val id: Long,
+    val dateEpochDay: Long,
+    val distanceKm: Double = 0.0,
+    val durationMinutes: Int = 0,
+    val note: String = "",
 )
 
 @Serializable
