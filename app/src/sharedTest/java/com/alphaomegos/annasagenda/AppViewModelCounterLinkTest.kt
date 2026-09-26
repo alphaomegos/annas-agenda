@@ -51,7 +51,7 @@ class AppViewModelCounterLinkTest {
     @Test
     fun deletingTheLastUnfinishedSubtaskCostsTheCounterItsOne() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val counterId = addCounter(vm, balance = 5)
@@ -85,7 +85,7 @@ class AppViewModelCounterLinkTest {
     @Test
     fun movingTheLastUnfinishedSubtaskAwayCostsTheCounterItsOne() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val today = LocalDate.now()
@@ -111,7 +111,7 @@ class AppViewModelCounterLinkTest {
     @Test
     fun anOrdinaryTickAndUntickLeaveTheBalanceWhereItStarted() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val counterId = addCounter(vm, balance = 5)

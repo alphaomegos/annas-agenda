@@ -53,7 +53,7 @@ class RunningPlanTaskLinkTest {
     @Test
     fun deletingTheTaskFromTheCalendarUnlinksThePlanRow() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val taskId = approvedRowTaskId(vm)
@@ -75,7 +75,7 @@ class RunningPlanTaskLinkTest {
     @Test
     fun noPlanRowNamesATaskThatIsGone() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val taskId = approvedRowTaskId(vm)
@@ -94,7 +94,7 @@ class RunningPlanTaskLinkTest {
     @Test
     fun editingARowWhoseTaskWasDeletedGivesItANewTask() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val taskId = approvedRowTaskId(vm)

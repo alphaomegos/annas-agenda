@@ -52,7 +52,7 @@ class ReadingSessionPersistenceTest {
     @Test
     fun aSessionInProgressSurvivesTheViewModelBeingRecreated() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val bookId = addBook(vm)
@@ -63,7 +63,7 @@ class ReadingSessionPersistenceTest {
         // A new view model over the same store is what the user comes back to
         // after the process has been reclaimed.
         val revived = AppViewModel(app)
-        awaitLoaded(revived)
+        awaitWorkingStore(revived)
 
         val active = revived.activeReading.value
         assertNotNull("the session must still be there", active)
@@ -83,7 +83,7 @@ class ReadingSessionPersistenceTest {
     @Test
     fun openingTheSameBookAgainDoesNotRestartTheClock() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val bookId = addBook(vm)
@@ -97,7 +97,7 @@ class ReadingSessionPersistenceTest {
     @Test
     fun finishingASessionWritesItDownAndClearsIt() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val bookId = addBook(vm)
@@ -113,7 +113,7 @@ class ReadingSessionPersistenceTest {
     @Test
     fun deletingTheBookEndsItsSession() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val bookId = addBook(vm)
@@ -133,7 +133,7 @@ class ReadingSessionPersistenceTest {
     @Test
     fun aQuestionAboutAnInterruptedSessionSurvivesTheViewModelBeingRecreated() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val bookId = addBook(vm)
@@ -147,7 +147,7 @@ class ReadingSessionPersistenceTest {
         awaitAutoSave()
 
         val revived = AppViewModel(app)
-        awaitLoaded(revived)
+        awaitWorkingStore(revived)
 
         val asked = revived.pendingReadingPrompt.value
         assertNotNull("the question must still be there", asked)
@@ -159,7 +159,7 @@ class ReadingSessionPersistenceTest {
     @Test
     fun keepingTheSessionWritesItIntoTheHistory() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val bookId = addBook(vm)
@@ -176,7 +176,7 @@ class ReadingSessionPersistenceTest {
     @Test
     fun discardingTheSessionLeavesTheHistoryAlone() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val bookId = addBook(vm)
@@ -193,7 +193,7 @@ class ReadingSessionPersistenceTest {
     @Test
     fun sayingAlwaysRecordsTheNextOneWithoutAsking() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val first = addBook(vm)

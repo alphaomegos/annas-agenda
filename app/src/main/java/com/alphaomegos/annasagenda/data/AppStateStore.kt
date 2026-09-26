@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -176,10 +177,29 @@ class AppStateStore internal constructor(
     suspend fun load(): AppStateLoadResult = withContext(Dispatchers.IO) {
         val prefs = try {
             dataStore.data.first()
-        } catch (e: IOException) {
-            // The corruption handler covers an unparseable file; anything else
-            // failing here (permissions, a truncated read) must still not be
-            // mistaken for "no data".
+        } catch (e: CancellationException) {
+            // Being cancelled is not a failure to read; it must not be
+            // reported as one, and the rest of this must not run on a dead
+            // coroutine.
+            throw e
+        } catch (e: Throwable) {
+            // Everything, not only IOException.
+            //
+            // The corruption handler covers an unparseable file, and an
+            // IOException covers permissions and a truncated read. What used
+            // to be left out was everything else — and "everything else" is
+            // real: DataStore throws IllegalStateException when two instances
+            // are opened over one file, which is a mistake in our code rather
+            // than in the user's data, and exactly the sort of mistake that
+            // must not vanish.
+            //
+            // It did vanish. The throw left load(), left the launch in the
+            // view model's init, and killed that coroutine with nobody
+            // listening: isLoaded stayed false for ever and storageFailure
+            // stayed null. On a phone that is a screen that never opens and
+            // says nothing. Reported as unreadable, it is the storage-failure
+            // screen, autosave stays off, and the payload is left untouched —
+            // which is the right answer whatever the cause turns out to be.
             return@withContext AppStateLoadResult.Corrupted(
                 cause = e,
                 quarantineFile = AppStateStoreCorruption.consume()?.quarantineFile,

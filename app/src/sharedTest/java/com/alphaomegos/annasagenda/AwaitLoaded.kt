@@ -56,3 +56,20 @@ internal suspend fun awaitLoaded(vm: AppViewModel) {
             "storageFailure=${vm.storageFailure.value}"
     )
 }
+
+/**
+ * The same wait, plus the thing every one of these tests assumes and none of
+ * them said: that the store actually worked.
+ *
+ * A view model that loads into a storage failure is loaded — isLoaded is true,
+ * the wait returns — and then every assertion after it is about an app holding
+ * its defaults with autosave switched off. Those assertions fail one at a
+ * time, in whatever way the test happens to be written, and none of them
+ * mentions the store. Naming it here turns all of that into one sentence.
+ */
+internal suspend fun awaitWorkingStore(vm: AppViewModel) {
+    awaitLoaded(vm)
+
+    val failure = vm.storageFailure.value
+    check(failure == null) { "AppViewModel loaded into a storage failure: $failure" }
+}

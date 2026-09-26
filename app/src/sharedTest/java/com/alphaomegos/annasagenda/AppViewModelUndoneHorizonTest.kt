@@ -50,7 +50,7 @@ class AppViewModelUndoneHorizonTest {
     @Test
     fun aRepeatingTaskIsOwedEvenIfItsMonthWasNeverOpened() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val today = LocalDate.now()
@@ -85,7 +85,7 @@ class AppViewModelUndoneHorizonTest {
     @Test
     fun theLampAgreesWithTheScreenWithoutAnyCalendarVisit() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val today = LocalDate.now()
@@ -108,7 +108,7 @@ class AppViewModelUndoneHorizonTest {
     @Test
     fun theHorizonBoundsWhatIsOwed() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val today = LocalDate.now()
@@ -139,7 +139,7 @@ class AppViewModelUndoneHorizonTest {
     @Test
     fun generatingTheHorizonTwiceChangesNothing() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val today = LocalDate.now()
@@ -162,7 +162,7 @@ class AppViewModelUndoneHorizonTest {
     @Test
     fun nothingIsGeneratedWhenNothingRepeats() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val today = LocalDate.now()

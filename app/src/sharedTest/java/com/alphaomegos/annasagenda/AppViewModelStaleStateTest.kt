@@ -57,7 +57,7 @@ class AppViewModelStaleStateTest {
     @Test
     fun deleteGeneratedRecurringSubtask_keepsTombstone_soItIsNotRegenerated() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val anchorMonday = LocalDate.of(2026, 3, 23)
@@ -116,7 +116,7 @@ class AppViewModelStaleStateTest {
     @Test
     fun pruningExpiredRunningPlanEntry_alsoRemovesItsTask() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         // Far enough in the past to count as expired, and incomplete (distance
@@ -150,7 +150,7 @@ class AppViewModelStaleStateTest {
     @Test
     fun pruningExpiredRunningPlanEntry_leavesUnrelatedTasksAlone() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val unrelatedTaskId = vm.createTaskForDate(

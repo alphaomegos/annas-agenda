@@ -158,35 +158,60 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
-            when (val result = store.load()) {
-                is AppStateLoadResult.Failed -> {
-                    // Deliberately leave _state at its default and do NOT start
-                    // autosave: the payload on disk stays untouched until the
-                    // user decides what to do with it.
-                    _storageFailure.value = result
-                    _isLoaded.value = true
-                }
-
-                AppStateLoadResult.Empty -> {
-                    nextId = nextIdFor(_state.value)
-                    _isLoaded.value = true
-                    beginAutoSaveOnce()
-                }
-
-                is AppStateLoadResult.Loaded -> {
-                    val loaded = result.state
-                    val migrated = migrateLegacyMediaCovers(loaded)
-
-                    _state.value = migrated
-                    nextId = nextIdFor(migrated)
-
-                    if (migrated != loaded) {
-                        persist(migrated)
+            // **There is exactly one outcome this block is not allowed to
+            // have: finishing without isLoaded becoming true.** That outcome
+            // is a screen that never opens and never says why, and it is what
+            // an unexpected throw in here used to produce — the coroutine died
+            // with nobody listening, isLoaded stayed false for ever and
+            // storageFailure stayed null.
+            //
+            // So the flag is set in a finally, and it is set nowhere else.
+            // load() answers rather than throws now, but everything after it —
+            // a cover migration, a write — can still fail, and the rule has to
+            // hold for those too.
+            try {
+                when (val result = store.load()) {
+                    is AppStateLoadResult.Failed -> {
+                        // Deliberately leave _state at its default and do NOT
+                        // start autosave: the payload on disk stays untouched
+                        // until the user decides what to do with it.
+                        _storageFailure.value = result
                     }
 
-                    _isLoaded.value = true
-                    beginAutoSaveOnce()
+                    AppStateLoadResult.Empty -> {
+                        nextId = nextIdFor(_state.value)
+                        beginAutoSaveOnce()
+                    }
+
+                    is AppStateLoadResult.Loaded -> {
+                        val loaded = result.state
+                        val migrated = migrateLegacyMediaCovers(loaded)
+
+                        _state.value = migrated
+                        nextId = nextIdFor(migrated)
+
+                        if (migrated != loaded) {
+                            persist(migrated)
+                        }
+
+                        beginAutoSaveOnce()
+                    }
                 }
+            } catch (e: CancellationException) {
+                // Being cancelled is the view model going away, not a failure
+                // to read anything.
+                throw e
+            } catch (e: Throwable) {
+                // Reported rather than swallowed: the storage-failure screen,
+                // autosave left off, the payload on disk untouched. That is
+                // the right answer whatever went wrong, and it is a great deal
+                // better than a blank screen.
+                _storageFailure.value = AppStateLoadResult.Corrupted(
+                    cause = e,
+                    quarantineFile = null,
+                )
+            } finally {
+                _isLoaded.value = true
             }
         }
     }

@@ -76,7 +76,7 @@ class AppViewModelRecurringRescheduleTest {
     @Test
     fun rescheduleGeneratedWeeklyOccurrence_movesOnlyThatOccurrence_andSuppressesOriginalDate() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val templateMonday = LocalDate.of(2026, 3, 23)
@@ -169,7 +169,7 @@ class AppViewModelRecurringRescheduleTest {
     @Test
     fun deletedOccurrenceOfATaskWithARepeatingSubtaskDoesNotComeBack() = runBlocking {
         val vm = AppViewModel(app)
-        awaitLoaded(vm)
+        awaitWorkingStore(vm)
         vm.resetAllData()
 
         val anchor = LocalDate.of(2026, 3, 23)

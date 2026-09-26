@@ -7,7 +7,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -181,5 +184,61 @@ class AppStateStoreFailuresTest {
             decoded.anthropometryEnabledFieldIds,
         )
         assertTrue(decoded.runningPlanEntries.isEmpty())
+    }
+
+    /**
+     * A read that fails in a way nobody listed still has to be answered.
+     *
+     * This one was found the hard way. load() caught IOException and nothing
+     * else, so anything further out — DataStore throws IllegalStateException
+     * when two instances are opened over one file, which is a mistake in our
+     * code rather than in the user's data — left load() as a throw. It then
+     * left the launch in the view model's init and killed that coroutine with
+     * nobody listening: isLoaded stayed false for ever, storageFailure stayed
+     * null, and on a phone that is a screen that never opens and never says
+     * why.
+     *
+     * The answer is the same as for any other unreadable payload: say so, do
+     * not start autosave, leave the file alone. What went wrong is a question
+     * for the person reading the report; what the app does about it is not in
+     * question at all.
+     */
+    @Test
+    fun aReadThatFailsInSomeOtherWayIsReportedRatherThanThrown() = runBlocking {
+        val boom = IllegalStateException("There are multiple DataStores active for the same file")
+
+        val throwing = object : DataStore<Preferences> {
+            override val data: Flow<Preferences> = flow { throw boom }
+
+            override suspend fun updateData(
+                transform: suspend (t: Preferences) -> Preferences,
+            ): Preferences = throw boom
+        }
+
+        val result = AppStateStore(context, throwing).load()
+
+        assertTrue("expected Corrupted, got $result", result is AppStateLoadResult.Corrupted)
+        assertEquals(boom, (result as AppStateLoadResult.Corrupted).cause)
+    }
+
+    /**
+     * And the other half of the same rule: being cancelled is the caller going
+     * away, not a failure to read. Reporting it as damage would put the
+     * storage-failure screen in front of somebody whose data is perfectly
+     * fine.
+     */
+    @Test
+    fun aCancelledReadIsNotReportedAsDamage() = runBlocking {
+        val cancelling = object : DataStore<Preferences> {
+            override val data: Flow<Preferences> = flow { throw CancellationException("gone") }
+
+            override suspend fun updateData(
+                transform: suspend (t: Preferences) -> Preferences,
+            ): Preferences = throw CancellationException("gone")
+        }
+
+        val thrown = runCatching { AppStateStore(context, cancelling).load() }.exceptionOrNull()
+
+        assertTrue("expected the cancellation to pass through, got $thrown", thrown is CancellationException)
     }
 }
