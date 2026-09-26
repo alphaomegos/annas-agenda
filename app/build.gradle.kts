@@ -103,7 +103,16 @@ android {
             // installed app was signed with.
             signingConfig = signingConfigs.findByName("release")
 
-            isMinifyEnabled = false
+            // On since 0101. The rules it needs went in separately, in 0081,
+            // so that this stayed a one-line change that can be undone in one
+            // line — and so the first minified build and the first signed
+            // build were not the same build.
+            //
+            // Nothing in `./gradlew test` exercises this: the tests build the
+            // debug variant, where R8 does not run. What this flag does is
+            // checked by installing the release APK and looking, which is why
+            // the version number deliberately does not move with it.
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
