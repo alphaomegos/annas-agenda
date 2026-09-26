@@ -409,4 +409,14 @@
     <!-- 29 июля -->
     <string name="anna_day_title">День Анны</string>
     <string name="anna_day_text">Всё это существует из-за неё \u2014 каждый список, каждая лампочка, каждая книга на полке. Спасибо, Анна.</string>
+    <!-- Диапазон графика антропометрии -->
+    <string name="anthro_range_week">Неделя</string>
+    <string name="anthro_range_month">Месяц</string>
+    <string name="anthro_range_quarter">Квартал</string>
+    <string name="anthro_range_year">Год</string>
+    <string name="anthro_range_all">Всё</string>
+    <string name="anthro_range_custom">Свой</string>
+    <string name="anthro_range_custom_title">Выберите диапазон</string>
+    <string name="anthro_range_from">С</string>
+    <string name="anthro_range_to">По</string>
 </resources>

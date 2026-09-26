@@ -3,7 +3,6 @@ package com.alphaomegos.annasagenda.screens
 import android.graphics.Paint
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,10 +32,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,14 +43,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AnthropometryEntry
+import com.alphaomegos.annasagenda.AnthropometryRange
 import com.alphaomegos.annasagenda.CurvePoint
+import com.alphaomegos.annasagenda.DateWindow
+import com.alphaomegos.annasagenda.anthropometryEntriesIn
+import com.alphaomegos.annasagenda.anthropometryWindowFor
 import com.alphaomegos.annasagenda.dialogs.AnthropometryInputDialog
 import com.alphaomegos.annasagenda.AppViewModel
 import androidx.compose.ui.graphics.toArgb
@@ -179,26 +177,33 @@ fun AnthropometryScreen(
     }
     val entriesByDate = remember(allEntries) { allEntries.associateBy { it.date } }
 
-    val windowSize = 10
-    var windowEnd by remember(allEntries.size) {
-        mutableIntStateOf(
-            (allEntries.size - 1).coerceAtLeast(
-                0
-            )
+    // The chosen range is kept as its name rather than as the enum: a String
+    // needs no judgement about what a Bundle will accept, and getting that
+    // judgement wrong shows up only as a crash on rotation.
+    var rangeName by rememberSaveable { mutableStateOf(AnthropometryRange.MONTH.name) }
+    var customFromDay by rememberSaveable { mutableStateOf<Long?>(null) }
+    var customToDay by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    val range = remember(rangeName) { AnthropometryRange.valueOf(rangeName) }
+
+    val custom = remember(customFromDay, customToDay) {
+        val from = customFromDay
+        val to = customToDay
+        if (from == null || to == null) null
+        else DateWindow(LocalDate.ofEpochDay(from), LocalDate.ofEpochDay(to))
+    }
+
+    val dateWindow = remember(range, custom, allEntries, today) {
+        anthropometryWindowFor(
+            range = range,
+            today = today,
+            custom = custom,
+            entries = allEntries,
         )
     }
 
-    LaunchedEffect(allEntries.size) {
-        windowEnd = (allEntries.size - 1).coerceAtLeast(0)
-    }
-
-    val window = remember(allEntries, windowEnd) {
-        if (allEntries.isEmpty()) emptyList()
-        else {
-            val end = windowEnd.coerceIn(0, allEntries.lastIndex)
-            val start = (end - windowSize + 1).coerceAtLeast(0)
-            allEntries.subList(start, end + 1)
-        }
+    val window = remember(allEntries, dateWindow) {
+        anthropometryEntriesIn(allEntries, dateWindow)
     }
 
     val showInput = rememberSaveable { mutableStateOf(false) }
@@ -241,13 +246,19 @@ fun AnthropometryScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            AnthropometryRangeBar(
+                selected = range,
+                custom = custom,
+                onSelect = { rangeName = it.name },
+                onCustomPicked = { picked ->
+                    customFromDay = picked.from.toEpochDay()
+                    customToDay = picked.to.toEpochDay()
+                },
+            )
+
             AnthropometryChart(
                 entries = window,
                 series = visibleFieldDefs,
-                canGoOlder = allEntries.size > window.size && window.firstOrNull()?.date != allEntries.firstOrNull()?.date,
-                canGoNewer = allEntries.isNotEmpty() && window.lastOrNull()?.date != allEntries.lastOrNull()?.date,
-                onGoOlder = { windowEnd = (windowEnd - 1).coerceAtLeast(0) },
-                onGoNewer = { windowEnd = (windowEnd + 1).coerceAtMost(allEntries.lastIndex) },
             )
 
             Surface(
@@ -382,15 +393,7 @@ fun AnthropometryScreen(
 private fun AnthropometryChart(
     entries: List<AnthropometryEntry>,
     series: List<AnthropometryFieldDef>,
-    canGoOlder: Boolean,
-    canGoNewer: Boolean,
-    onGoOlder: () -> Unit,
-    onGoNewer: () -> Unit,
 ) {
-    val density = LocalDensity.current
-    val dragAcc = remember { mutableFloatStateOf(0f) }
-    val thresholdPx = with(density) { 48.dp.toPx() }
-
     val cmUnit = stringResource(R.string.cm_short)
     val kgUnit = stringResource(R.string.kg_short)
 
@@ -400,21 +403,6 @@ private fun AnthropometryChart(
         modifier = Modifier
             .fillMaxWidth()
             .height(240.dp)
-            .pointerInput(entries, canGoOlder, canGoNewer) {
-                detectHorizontalDragGestures(
-                    onDragEnd = { dragAcc.floatValue = 0f },
-                    onHorizontalDrag = { _, dragAmount ->
-                        dragAcc.floatValue += dragAmount
-                        if (dragAcc.floatValue <= -thresholdPx) {
-                            if (canGoOlder) onGoOlder()
-                            dragAcc.floatValue = 0f
-                        } else if (dragAcc.floatValue >= thresholdPx) {
-                            if (canGoNewer) onGoNewer()
-                            dragAcc.floatValue = 0f
-                        }
-                    }
-                )
-            }
     ) {
         if (entries.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
