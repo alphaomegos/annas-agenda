@@ -54,12 +54,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AnthropometryEntry
+import com.alphaomegos.annasagenda.CurvePoint
 import com.alphaomegos.annasagenda.dialogs.AnthropometryInputDialog
 import com.alphaomegos.annasagenda.AppViewModel
 import androidx.compose.ui.graphics.toArgb
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.formatShortDate
+import com.alphaomegos.annasagenda.smoothCurveSegments
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.formatOneDecimal
 import com.alphaomegos.annasagenda.util.formatTwoDecimals
@@ -516,20 +518,31 @@ private fun AnthropometryChart(
             drawLabel(firstDateLabel, padLeft, size.height - 6f)
             drawLabel(lastDateLabel, plotRight - 72f, size.height - 6f)
 
-            // Series lines
+            // Series lines.
+            //
+            // Drawn as a monotone cubic rather than as the segments joining
+            // the dots. The curve's one promise is that between two
+            // measurements it stays between their values -- see
+            // smoothCurveSegments, and the reason it is not the usual spline.
             series.forEach { s ->
                 val points = entries.mapNotNull { e ->
                     val v = s.getValue(e) ?: return@mapNotNull null
                     val x = xFor(e.date)
                     val y = if (s.axis == AnthropometryAxis.CM) yForCm(v) else yForKg(v)
-                    Offset(x, y)
+                    CurvePoint(x, y)
                 }
-                if (points.size < 2) return@forEach
+
+                val hops = smoothCurveSegments(points)
+                if (hops.isEmpty()) return@forEach
 
                 val path = Path()
                 path.moveTo(points.first().x, points.first().y)
-                for (p in points.drop(1)) {
-                    path.lineTo(p.x, p.y)
+                hops.forEach { hop ->
+                    path.cubicTo(
+                        hop.control1.x, hop.control1.y,
+                        hop.control2.x, hop.control2.y,
+                        hop.end.x, hop.end.y,
+                    )
                 }
                 drawPath(path, color = s.color, style = Stroke(width = 3f))
             }
