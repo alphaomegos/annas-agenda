@@ -156,6 +156,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private var autoSaveStarted = false
 
+    /* ---------------------------
+       Everything the init block below touches, declared above it
+
+       Property initialisers run in declaration order, and the init block runs
+       in that same order with them. What is easy to miss is that the coroutine
+       it starts runs there too: viewModelScope is Dispatchers.Main.immediate,
+       a view model is built on the main thread, and an immediate dispatcher
+       does not post — it runs the body on the spot, inside the constructor.
+
+       So a field declared below the init block does not exist yet when that
+       body first touches it. That is how loading crashed with "_state is
+       null", rarely and at random: the body suspends on the file read before
+       it reaches _state, and by the time the read comes back the constructor
+       has normally finished. Normally.
+    ---------------------------- */
+
+    private val _state = MutableStateFlow(AppState())
+    val state: StateFlow<AppState> = _state.asStateFlow()
+
+    private var nextId: Long = 1L
+    private fun newId(): Long = nextId++
+
     init {
         viewModelScope.launch {
             // **There is exactly one outcome this block is not allowed to
@@ -1130,14 +1152,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private val _state = MutableStateFlow(AppState())
-    val state: StateFlow<AppState> = _state.asStateFlow()
-
     /* ---------------------------
        Feature-scoped state slices
 
-       Declared here, after _state, because property initialisers run in
-       declaration order and these read it eagerly.
+       After _state, because property initialisers run in declaration order and
+       these read it eagerly. _state is now further up still, above the init
+       block — see the note there for the half of this rule that was missing.
     ---------------------------- */
 
     /**
@@ -1195,9 +1215,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (_state.value.themeMode == mode) return
         _state.value = _state.value.copy(themeMode = mode)
     }
-
-    private var nextId: Long = 1L
-    private fun newId(): Long = nextId++
 
     /**
      * Writes the state down, with the id counter's position recorded in it.
