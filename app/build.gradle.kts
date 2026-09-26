@@ -161,6 +161,20 @@ android {
 // for. It affects only the unit-test JVM — not the app, not the build.
 tasks.withType<Test>().configureEach {
     jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED")
+
+    // The instrumented sources are compiled on every unit-test run, even
+    // though they are not run here.
+    //
+    // Nothing else compiles them: this task ignores them, and
+    // `connectedDebugAndroidTest` needs a device, so they are built once in a
+    // while rather than once a day, and they rot silently. Patch 0060 added a
+    // use of AppThemeMode to MainMenuContentTest without its import, and that
+    // file did not compile for the next thirty-seven patches.
+    //
+    // Compiling is not running, and this does not pretend otherwise. It only
+    // means a test that cannot build says so the same day rather than in a
+    // month.
+    dependsOn("compileDebugAndroidTestKotlin")
 }
 
 dependencies {

@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.alphaomegos.annasagenda.AppThemeMode
 import com.alphaomegos.annasagenda.R
 import org.junit.Assert.assertEquals
 import org.junit.Rule

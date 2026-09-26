@@ -27,6 +27,9 @@ class SharedTestsAreOnTheClasspathTest {
         "com.alphaomegos.annasagenda.AppStateStoreContractTest",
         "com.alphaomegos.annasagenda.AppStateStoreFailuresTest",
         "com.alphaomegos.annasagenda.components.ConfirmDialogTest",
+        "com.alphaomegos.annasagenda.components.CopyToDateDialogsTest",
+        "com.alphaomegos.annasagenda.components.PickDateDialogTest",
+        "com.alphaomegos.annasagenda.screens.MainMenuContentTest",
         "com.alphaomegos.annasagenda.screens.media.MediaDetailsFormTest",
     )
 
