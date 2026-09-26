@@ -21,4 +21,24 @@
     <string name="running_task_minutes">Workout %1$d minutes</string>
     <string name="running_add_bonus">Add bonus workout</string>
     <string name="running_bonus_exists">A workout row for this date already exists</string>
+
+    <!-- Between marathons -->
+    <string name="running_mode_plan">Marathon plan</string>
+    <string name="running_mode_between">Between marathons</string>
+    <string name="running_workouts_empty">No runs written down yet</string>
+    <string name="running_workout_add">Add a run</string>
+    <string name="running_workout_add_title">A run that happened</string>
+    <string name="running_workout_date">Date</string>
+    <string name="running_workout_distance">Distance, km</string>
+    <string name="running_workout_duration">Time, h:mm</string>
+    <string name="running_workout_note">Note</string>
+    <string name="running_workout_delete">Delete this run</string>
+    <string name="running_workout_needs_a_number">Enter a distance, a time, or both</string>
+    <string name="running_workout_totals">%1$s · %2$s km · %3$s</string>
+    <string name="running_workout_hours_minutes">%1$dh %2$02dm</string>
+    <string name="running_workout_minutes_only">%1$d min</string>
+    <plurals name="running_workout_count">
+        <item quantity="one">%d run</item>
+        <item quantity="other">%d runs</item>
+    </plurals>
 </resources>

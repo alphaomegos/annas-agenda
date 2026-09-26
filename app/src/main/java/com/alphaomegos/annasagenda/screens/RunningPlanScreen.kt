@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.RunningMode
 import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.ConfirmDialog
@@ -92,7 +93,12 @@ fun RunningPlanScreen(
                     }
                 },
                 actions = {
-                    if (approved) {
+                    // Approving and resetting are about the plan. In the other
+                    // mode there is no plan to approve, and the reset phrase
+                    // would delete one the user cannot see.
+                    val planActions = state.runningMode == RunningMode.PLAN
+
+                    if (planActions && approved) {
                         IconButton(
                             onClick = {
                                 val initial = state.runningPlanEntries.lastOrNull()?.date ?: LocalDate.now()
@@ -122,19 +128,21 @@ fun RunningPlanScreen(
                         }
                     }
 
-                    TextButton(
-                        onClick = {
-                            if (!approved) {
-                                showApprove.value = true
-                            } else {
-                                showReset.value = true
+                    if (planActions) {
+                        TextButton(
+                            onClick = {
+                                if (!approved) {
+                                    showApprove.value = true
+                                } else {
+                                    showReset.value = true
+                                }
                             }
+                        ) {
+                            Text(
+                                if (!approved) stringResource(R.string.running_approve)
+                                else stringResource(R.string.running_reset)
+                            )
                         }
-                    ) {
-                        Text(
-                            if (!approved) stringResource(R.string.running_approve)
-                            else stringResource(R.string.running_reset)
-                        )
                     }
                 }
             )
@@ -145,33 +153,52 @@ fun RunningPlanScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            HeaderRow()
+            RunningModeBar(
+                selected = state.runningMode,
+                onSelect = vm::setRunningMode,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
 
-            if (rows.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.running_empty))
-                }
-            } else {
-                LazyColumn(
+            if (state.runningMode == RunningMode.BETWEEN) {
+                RunningWorkoutsContent(
+                    workouts = state.runningWorkouts,
+                    today = today,
+                    onAdd = { date, distance, duration, note ->
+                        vm.addRunningWorkout(date, distance, duration, note)
+                    },
+                    onDelete = vm::deleteRunningWorkout,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 24.dp)
-                ) {
-                    items(rows) { date ->
-                        val entry = entriesByDate[date]
-                        RunningRow(
-                            date = date,
-                            dateFmt = dateFmt,
-                            entry = entry,
-                            approved = approved,
-                            onDistanceChange = { vm.updateRunningPlanEntry(date, distanceKmText = it) },
-                            onTimeChange = { vm.updateRunningPlanEntry(date, durationHhMmText = it) },
-                            onPaceChange = { vm.updateRunningPlanEntry(date, paceText = it) }
-                        )
-                        HorizontalDivider(
-                            Modifier,
-                            DividerDefaults.Thickness,
-                            DividerDefaults.color
-                        )
+                )
+            } else {
+
+                HeaderRow()
+
+                if (rows.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(stringResource(R.string.running_empty))
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp)
+                    ) {
+                        items(rows) { date ->
+                            val entry = entriesByDate[date]
+                            RunningRow(
+                                date = date,
+                                dateFmt = dateFmt,
+                                entry = entry,
+                                approved = approved,
+                                onDistanceChange = { vm.updateRunningPlanEntry(date, distanceKmText = it) },
+                                onTimeChange = { vm.updateRunningPlanEntry(date, durationHhMmText = it) },
+                                onPaceChange = { vm.updateRunningPlanEntry(date, paceText = it) }
+                            )
+                            HorizontalDivider(
+                                Modifier,
+                                DividerDefaults.Thickness,
+                                DividerDefaults.color
+                            )
+                        }
                     }
                 }
             }

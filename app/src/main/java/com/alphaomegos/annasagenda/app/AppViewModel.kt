@@ -1029,6 +1029,49 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    /* ---------------------------
+       Between marathons
+    ---------------------------- */
+
+    fun setRunningMode(mode: RunningMode) {
+        _state.update { cur -> if (cur.runningMode == mode) cur else cur.copy(runningMode = mode) }
+    }
+
+    /**
+     * Writes down a run that happened. False when there was nothing to write
+     * down, and the dialog says so rather than closing on nothing.
+     *
+     * The id is minted before the update lambda, not inside it: that lambda is
+     * a compare-and-set loop and can run more than once.
+     */
+    fun addRunningWorkout(
+        date: LocalDate,
+        distanceText: String,
+        durationText: String,
+        note: String = "",
+    ): Boolean {
+        val workout = runningWorkoutFromInput(
+            id = newId(),
+            date = date,
+            distanceText = distanceText,
+            durationText = durationText,
+            note = note,
+        ) ?: return false
+
+        _state.value = _state.value.copy(
+            runningWorkouts = workoutsAfterAdding(_state.value.runningWorkouts, workout)
+        )
+
+        return true
+    }
+
+    fun deleteRunningWorkout(id: Long) {
+        _state.update { cur ->
+            val after = workoutsAfterDeleting(cur.runningWorkouts, id) ?: return@update cur
+            cur.copy(runningWorkouts = after)
+        }
+    }
+
     fun resetRunningPlan() {
         val ids = _state.value.runningPlanEntries.mapNotNull { it.taskId }
         ids.forEach { deleteTask(it) }

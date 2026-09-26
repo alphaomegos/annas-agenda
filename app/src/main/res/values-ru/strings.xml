@@ -434,4 +434,25 @@
     <!-- Объяснение подсказок, за иконкой (i) в диалоге добавления еды -->
     <string name="calorimeter_suggestions_help">Как работают подсказки</string>
     <string name="calorimeter_suggestions_help_text">Пока вы набираете название блюда, приложение ищет в дневнике то, что вы уже ели, и показывает найденное под полем.\n\nМассу оно читает прямо из названия: \"Помидоры, 500 г\". Понимает г, гр, грамм, кг, мл, л и английские варианты; килограммы и литры считаются как тысяча. Число без единицы массой не считается — \"Кофе №3\" останется просто названием.\n\nВ подсказке показана масса, которую вы записали в последний раз, и калории, указанные тогда же — всегда обе из одной записи, а не масса из одной и число из другой.\n\nТап по подсказке заполняет оба поля. Поменяете массу прямо в названии — калории пересчитаются пропорционально. А как только вы сами впишете число в поле калорий, оно становится вашим, и приложение перестаёт его трогать до следующего тапа по подсказке.</string>
+    <!-- Между марафонами -->
+    <string name="running_mode_plan">План к марафону</string>
+    <string name="running_mode_between">Между марафонами</string>
+    <string name="running_workouts_empty">Пробежек пока не записано</string>
+    <string name="running_workout_add">Добавить пробежку</string>
+    <string name="running_workout_add_title">Пробежка, которая была</string>
+    <string name="running_workout_date">Дата</string>
+    <string name="running_workout_distance">Дистанция, км</string>
+    <string name="running_workout_duration">Время, ч:мм</string>
+    <string name="running_workout_note">Заметка</string>
+    <string name="running_workout_delete">Удалить эту пробежку</string>
+    <string name="running_workout_needs_a_number">Введите дистанцию, время или и то и другое</string>
+    <string name="running_workout_totals">%1$s · %2$s км · %3$s</string>
+    <string name="running_workout_hours_minutes">%1$d ч %2$02d мин</string>
+    <string name="running_workout_minutes_only">%1$d мин</string>
+    <plurals name="running_workout_count">
+        <item quantity="one">%d пробежка</item>
+        <item quantity="few">%d пробежки</item>
+        <item quantity="many">%d пробежек</item>
+        <item quantity="other">%d пробежки</item>
+    </plurals>
 </resources>
