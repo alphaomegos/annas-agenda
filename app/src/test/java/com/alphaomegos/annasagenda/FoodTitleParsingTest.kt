@@ -45,6 +45,16 @@ class FoodTitleParsingTest {
     }
 
     @Test
+    fun theLongerEnglishSpellingsAreUnderstoodToo() {
+        listOf("500 gr", "500 gram", "500 grams").forEach { written ->
+            val parsed = parseFoodTitle("Tomatoes, $written")
+            assertEquals(written, 500, parsed.amount)
+            assertEquals(written, "Tomatoes", parsed.name)
+            assertEquals(written, "g", parsed.unit)
+        }
+    }
+
+    @Test
     fun englishUnitsWork() {
         assertEquals(500, parseFoodTitle("Tomatoes, 500 g").amount)
         assertEquals("g", parseFoodTitle("Tomatoes, 500 g").unit)

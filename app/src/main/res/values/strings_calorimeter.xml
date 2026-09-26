@@ -18,4 +18,7 @@
     <string name="calorimeter_suggestions_title">Eaten before</string>
     <string name="calorimeter_suggestion_portion">%1$d %2$s · %3$d kcal</string>
     <string name="calorimeter_suggestion_no_portion">%1$d kcal</string>
+    <!-- How the suggestions work, behind the (i) in the add-a-meal dialog -->
+    <string name="calorimeter_suggestions_help">How suggestions work</string>
+    <string name="calorimeter_suggestions_help_text">As you type a meal\'s name, the app looks through what you have eaten before and offers it back below the field.\n\nThe weight is read straight out of the name: \"Tomatoes, 500 g\". It understands g, gr, gram, kg, ml and l, and their Russian spellings; kilograms and litres count as a thousand. A number with no unit after it is not a weight, so \"Coffee #3\" stays just a name.\n\nWhat a suggestion shows is the weight you wrote down last time and the calories you gave it that same time — always the two from one meal, never a weight from one and a number from another.\n\nTapping a suggestion fills in both fields. Change the weight inside the name afterwards and the calories follow, in proportion. The moment you type a number into the calorie field yourself it becomes yours, and the app stops touching it until you tap a suggestion again.</string>
 </resources>

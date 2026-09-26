@@ -34,6 +34,36 @@ internal fun mainSourceRoot(): File =
         ?: error("Cannot find src/main/java from ${File("").absolutePath}")
 
 /**
+ * The app's resource tree, for the tests that read what the app says rather
+ * than what it does.
+ *
+ * Found by looking, for the same reason [mainSourceRoot] is: the working
+ * directory differs between Gradle, an IDE and a bare JUnit run, and a
+ * hard-coded path makes a test that passes by finding nothing.
+ */
+internal fun mainResRoot(): File =
+    listOf("src/main/res", "app/src/main/res", "../app/src/main/res")
+        .map { File(it) }
+        .firstOrNull { it.isDirectory }
+        ?: error("Cannot find src/main/res from ${File("").absolutePath}")
+
+/**
+ * One string resource's text, exactly as the XML holds it.
+ *
+ * Deliberately shallow: no entity decoding, no unescaping. The tests that use
+ * this ask whether a word appears, and every word they look for survives the
+ * XML as it is written.
+ */
+internal fun stringResourceText(dir: String, name: String): String? {
+    val pattern = Regex("""<string name="""" + Regex.escape(name) + """">(.*?)</string>""", RegexOption.DOT_MATCHES_ALL)
+
+    return File(mainResRoot(), dir)
+        .listFiles { f -> f.isFile && f.name.endsWith(".xml") }
+        .orEmpty()
+        .firstNotNullOfOrNull { pattern.find(it.readText())?.groupValues?.get(1) }
+}
+
+/**
  * True for a line that is only a comment.
  *
  * A rule about what the code does should not be broken by a sentence

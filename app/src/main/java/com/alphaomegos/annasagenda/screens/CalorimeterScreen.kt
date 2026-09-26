@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -64,6 +65,7 @@ import com.alphaomegos.annasagenda.calorieGoalSumInRange
 import com.alphaomegos.annasagenda.calorieGoalOn
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appExtraColors
+import com.alphaomegos.annasagenda.components.ExplanationDialog
 import com.alphaomegos.annasagenda.foodDraftAfterKcalTyped
 import com.alphaomegos.annasagenda.foodDraftAfterPickingSuggestion
 import com.alphaomegos.annasagenda.foodDraftAfterTitleChange
@@ -188,6 +190,7 @@ private fun CalorimeterContent(
 
     val showAllEatenDialog = rememberSaveable { mutableStateOf(false) }
     val showAddDialog = rememberSaveable { mutableStateOf(false) }
+    val showSuggestionsHelp = rememberSaveable { mutableStateOf(false) }
     var foodName by rememberSaveable { mutableStateOf("") }
     var foodKcal by rememberSaveable { mutableStateOf("") }
 
@@ -498,7 +501,24 @@ private fun CalorimeterContent(
 
         AlertDialog(
             onDismissRequest = { showAddDialog.value = false },
-            title = { Text(stringResource(R.string.calorimeter_add_eaten_title)) },
+            title = {
+                // The (i) lives in the title rather than beside the
+                // suggestion list, because the list only appears once there is
+                // something to suggest -- and the person who needs the
+                // explanation is the one who has not seen one yet.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.calorimeter_add_eaten_title),
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { showSuggestionsHelp.value = true }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = stringResource(R.string.calorimeter_suggestions_help),
+                        )
+                    }
+                }
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
@@ -554,6 +574,14 @@ private fun CalorimeterContent(
                     Text(stringResource(R.string.cancel))
                 }
             }
+        )
+    }
+
+    if (showSuggestionsHelp.value) {
+        ExplanationDialog(
+            titleRes = R.string.calorimeter_suggestions_help,
+            textRes = R.string.calorimeter_suggestions_help_text,
+            onDismiss = { showSuggestionsHelp.value = false },
         )
     }
 }

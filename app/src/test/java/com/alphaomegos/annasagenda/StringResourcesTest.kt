@@ -246,9 +246,6 @@ class StringResourcesTest {
             ?.sortedBy { it.name }
             .orEmpty()
 
-    private fun resRoot(): File =
-        listOf("src/main/res", "app/src/main/res", "../app/src/main/res")
-            .map { File(it) }
-            .firstOrNull { it.isDirectory }
-            ?: error("Cannot find src/main/res from ${File("").absolutePath}")
+    /** Found by looking rather than by being told; see mainResRoot. */
+    private fun resRoot(): File = mainResRoot()
 }
