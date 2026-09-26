@@ -76,50 +76,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         ) ?: coverRef
     }
 
-    private suspend fun migrateLegacyMediaCovers(
-        state: AppState,
-    ): AppState {
-        val migratedBooks = state.readingBooks.map { book ->
-            val migrated = migrateLegacyCoverRef(book.coverUri, ReadingMediaType.BOOKS, book.id)
-            if (migrated == book.coverUri) book else book.copy(coverUri = migrated)
-        }
-
-        val migratedMovies = state.readingMovies.map { movie ->
-            val migrated = migrateLegacyCoverRef(movie.coverUri, ReadingMediaType.MOVIES, movie.id)
-            if (migrated == movie.coverUri) movie else movie.copy(coverUri = migrated)
-        }
-
-        val migratedSeries = state.readingSeries.map { series ->
-            val migrated = migrateLegacyCoverRef(series.coverUri, ReadingMediaType.SERIES, series.id)
-            if (migrated == series.coverUri) series else series.copy(coverUri = migrated)
-        }
-
-        val changed =
-            migratedBooks != state.readingBooks ||
-                    migratedMovies != state.readingMovies ||
-                    migratedSeries != state.readingSeries
-
-        return if (!changed) {
-            state
-        } else {
-            state.copy(
-                readingBooks = migratedBooks,
-                readingMovies = migratedMovies,
-                readingSeries = migratedSeries
-            )
-        }
-    }
-
-    /** Whether the item is still there — asked before an import and again after. */
-    private fun readingMediaExists(type: ReadingMediaType, itemId: Long): Boolean {
-        val st = _state.value
-
-        return when (type) {
-            ReadingMediaType.BOOKS -> st.readingBooks.any { it.id == itemId }
-            ReadingMediaType.MOVIES -> st.readingMovies.any { it.id == itemId }
-            ReadingMediaType.SERIES -> st.readingSeries.any { it.id == itemId }
-        }
-    }
+    private suspend fun migrateLegacyMediaCovers(state: AppState): AppState =
+        stateWithCoverRefsMigrated(state, ::migrateLegacyCoverRef)
 
     private fun setReadingMediaCoverRef(
         type: ReadingMediaType,
@@ -153,7 +111,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         sourceUri: Uri,
     ) {
         viewModelScope.launch {
-            if (!readingMediaExists(type, itemId)) return@launch
+            if (!readingMediaExists(_state.value, type, itemId)) return@launch
 
             val importedRef = importCoverIntoInternalStorage(
                 context = appContext,
@@ -162,7 +120,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 itemId = itemId
             ) ?: return@launch
 
-            if (!readingMediaExists(type, itemId)) {
+            if (!readingMediaExists(_state.value, type, itemId)) {
                 cleanupInternalCoverAsync(importedRef)
                 return@launch
             }
