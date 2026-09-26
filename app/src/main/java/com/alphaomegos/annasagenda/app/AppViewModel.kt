@@ -890,78 +890,38 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Applies a change to one book, and with it whatever that change does to a
-     * session in progress. Both callers go through here so the rule about
-     * sessions cannot drift apart from the rule about books again.
+     * The four ways a reading stops. What each one keeps, and — more easily got
+     * wrong — what it must leave alone, is in ReadingSessionEndSupport.
      */
     fun cancelReading() {
-        _state.update { cur -> cur.copy(activeReading = null) }
+        _state.update { cur -> stateAfterCancellingReading(cur) }
     }
 
-    /**
-     * Keeps the session the user was asked about, and optionally stops asking.
-     *
-     * The id was handed out when the question was raised, so the session goes
-     * into the history exactly as it was shown.
-     */
     fun keepPendingReadingSession(alwaysFromNowOn: Boolean) {
-        _state.update { cur ->
-            val pending = cur.pendingReadingSession ?: return@update cur
-
-            cur.copy(
-                readingSessions = cur.readingSessions + pending,
-                pendingReadingSession = null,
-                autoRecordInterruptedReading = cur.autoRecordInterruptedReading || alwaysFromNowOn,
-            )
-        }
+        _state.update { cur -> stateAfterKeepingPendingReadingSession(cur, alwaysFromNowOn) }
     }
 
-    /**
-     * Throws the session away, because the user said so.
-     *
-     * No "always" here on purpose: an answer that discards data is not one to
-     * start giving on the user's behalf.
-     */
     fun discardPendingReadingSession() {
-        _state.update { cur -> cur.copy(pendingReadingSession = null) }
+        _state.update { cur -> stateAfterDiscardingPendingReadingSession(cur) }
     }
 
-    // Backward-compatible wrapper.
-       fun finishReading(
+    /** False when there is nothing to finish; the screen says so. */
+    fun finishReading(
         startPage: Int,
         endPage: Int,
         durationMinutes: Int,
-        finishedAtEpochMillis: Long = System.currentTimeMillis()
+        finishedAtEpochMillis: Long = System.currentTimeMillis(),
     ): Boolean {
-        val st = _state.value
-        val active = st.activeReading ?: return false
-        val book = st.readingBooks.firstOrNull { it.id == active.bookId } ?: return false
+        val next = stateAfterFinishingReading(
+            state = _state.value,
+            startPage = startPage,
+            endPage = endPage,
+            durationMinutes = durationMinutes,
+            finishedAtEpochMillis = finishedAtEpochMillis,
+            newSessionId = ::newId,
+        ) ?: return false
 
-        val pages = book.totalPages.coerceAtLeast(1)
-        val start = startPage.coerceIn(0, pages)
-        val end = endPage.coerceIn(0, pages)
-        val dur = durationMinutes.coerceAtLeast(1)
-
-        val session = ReadingSession(
-            id = newId(),
-            bookId = book.id,
-            startedAtEpochMillis = active.startedAtEpochMillis,
-            durationMinutes = dur,
-            startPage = start,
-            endPage = end,
-            createdAtEpochMillis = finishedAtEpochMillis
-        )
-
-        val updatedBooks = st.readingBooks.map { b ->
-            if (b.id == book.id) b.copy(currentPage = end.coerceIn(0, b.totalPages)) else b
-        }
-
-        _state.value = st.copy(
-            readingBooks = updatedBooks,
-            readingSessions = st.readingSessions + session,
-            activeReading = null,
-        )
-
+        _state.value = next
         return true
     }
 
