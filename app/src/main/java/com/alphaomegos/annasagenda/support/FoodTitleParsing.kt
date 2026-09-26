@@ -42,6 +42,8 @@ private val foodUnits = listOf(
     FoodUnit("l", 1000, "ml"),
 )
 
+private val separators = charArrayOf(',', ';', '-', '–', '—', '·')
+
 private val amountPattern = Regex(
     """(\d+(?:[.,]\d+)?)\s*(""" +
         foodUnits.joinToString("|") { Regex.escape(it.written) } +
@@ -78,7 +80,16 @@ private val amountPattern = Regex(
  */
 fun parseFoodTitle(title: String): ParsedFoodTitle {
     val trimmed = title.trim()
-    val plain = ParsedFoodTitle(name = trimmed, amount = null, unit = null)
+
+    // The name is cleaned of dangling separators even when no portion is
+    // found, so that "Борщ," and "Борщ" are the same food to everything
+    // downstream -- and so that a half-deleted portion, "Помидоры, ", still
+    // reads as the food it is still about.
+    val plain = ParsedFoodTitle(
+        name = trimmed.trim(*separators).trim(),
+        amount = null,
+        unit = null,
+    )
 
     val match = amountPattern.findAll(trimmed).lastOrNull() ?: return plain
     val number = match.groupValues[1].replace(',', '.').toDoubleOrNull() ?: return plain
@@ -100,8 +111,6 @@ fun parseFoodTitle(title: String): ParsedFoodTitle {
         ParsedFoodTitle(name = name, amount = amount, unit = unit.short)
     }
 }
-
-private val separators = charArrayOf(',', ';', '-', '–', '—', '·')
 
 /**
  * Closes the hole the portion left behind.

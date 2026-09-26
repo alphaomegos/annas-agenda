@@ -57,12 +57,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.CalorimeterSlice
 import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.FoodDraftState
 import com.alphaomegos.annasagenda.KCAL_PER_KG_FAT
 import com.alphaomegos.annasagenda.calorieDeficitInRange
 import com.alphaomegos.annasagenda.calorieGoalSumInRange
 import com.alphaomegos.annasagenda.calorieGoalOn
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appExtraColors
+import com.alphaomegos.annasagenda.foodDraftAfterKcalTyped
+import com.alphaomegos.annasagenda.foodDraftAfterPickingSuggestion
+import com.alphaomegos.annasagenda.foodDraftAfterTitleChange
+import com.alphaomegos.annasagenda.foodSuggestionForName
+import com.alphaomegos.annasagenda.foodSuggestionsFor
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.formatTwoDecimals
 import java.time.LocalDate
@@ -184,6 +190,11 @@ private fun CalorimeterContent(
     val showAddDialog = rememberSaveable { mutableStateOf(false) }
     var foodName by rememberSaveable { mutableStateOf("") }
     var foodKcal by rememberSaveable { mutableStateOf("") }
+
+    // "The app is pricing this meal", remembered as a name rather than as the
+    // suggestion: a string survives the phone being turned, and the suggestion
+    // is looked up again from the same log it came from.
+    var pricedFromName by rememberSaveable { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -370,6 +381,7 @@ private fun CalorimeterContent(
                     onClick = {
                         foodName = ""
                         foodKcal = ""
+                        pricedFromName = null
                         showAddDialog.value = true
                     },
                     shape = CircleShape,
@@ -464,6 +476,26 @@ private fun CalorimeterContent(
         val kcalLooksWrong = foodKcal.isNotBlank() && (parsedKcal == null || parsedKcal <= 0)
         val canAdd = foodName.trim().isNotEmpty() && parsedKcal != null && parsedKcal > 0
 
+        val pricedFrom = remember(pricedFromName, state.foodLog) {
+            pricedFromName?.let { foodSuggestionForName(it, state.foodLog) }
+        }
+
+        val draft = FoodDraftState(
+            title = foodName,
+            kcalText = foodKcal,
+            pricedFrom = pricedFrom,
+        )
+
+        fun apply(next: FoodDraftState) {
+            foodName = next.title
+            foodKcal = next.kcalText
+            pricedFromName = next.pricedFrom?.name
+        }
+
+        val suggestions = remember(foodName, state.foodLog) {
+            foodSuggestionsFor(foodName, state.foodLog)
+        }
+
         AlertDialog(
             onDismissRequest = { showAddDialog.value = false },
             title = { Text(stringResource(R.string.calorimeter_add_eaten_title)) },
@@ -471,15 +503,21 @@ private fun CalorimeterContent(
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = foodName,
-                        onValueChange = { foodName = it },
+                        onValueChange = { apply(foodDraftAfterTitleChange(draft, it)) },
                         label = { Text(stringResource(R.string.calorimeter_food_name)) },
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    FoodSuggestionList(
+                        suggestions = suggestions,
+                        onPick = { apply(foodDraftAfterPickingSuggestion(it)) },
+                    )
+
                     OutlinedTextField(
                         value = foodKcal,
-                        onValueChange = { foodKcal = it },
+                        onValueChange = { apply(foodDraftAfterKcalTyped(draft, it)) },
                         label = {
                             Text(
                                 stringResource(R.string.calorimeter_food_kcal) +

@@ -124,6 +124,18 @@ class FoodTitleParsingTest {
         assertNull(parseFoodTitle("Salad 200 grapes").amount)
     }
 
+    /**
+     * Cleaned even when there is no portion, so that "Борщ," and "Борщ" are
+     * the same food to everything downstream -- and so that a half-deleted
+     * portion still reads as the food it is still about.
+     */
+    @Test
+    fun aNameIsTidiedEvenWhenNoPortionIsFound() {
+        assertEquals("Борщ", parseFoodTitle("Борщ,").name)
+        assertEquals("Помидоры", parseFoodTitle("Помидоры, ").name)
+        assertEquals("Борщ", parseFoodTitle(" — Борщ — ").name)
+    }
+
     @Test
     fun aMealWithNoNumbersAtAllHasNoPortion() {
         val parsed = parseFoodTitle("Борщ")
