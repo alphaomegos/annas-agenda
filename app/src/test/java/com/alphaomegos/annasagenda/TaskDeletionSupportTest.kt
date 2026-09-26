@@ -360,4 +360,74 @@ class TaskDeletionSupportTest {
         assertSame(tasks, after.tasks)
         assertSame(subtasks, after.subtasks)
     }
+
+    /* ---------- the counter that is deliberately not refunded ---------- */
+
+    /**
+     * A done task has already taken one off its manual counter, and deleting
+     * the task does not give it back. The counter says how much is left to do;
+     * the work was done, and tidying the row out of the calendar afterwards
+     * does not undo it.
+     *
+     * There is nothing here to assert that against, and that is the point:
+     * this function has no counters to move. The compiler is the guard —
+     * a refund cannot be added without widening TaskDeletionResult, and
+     * widening it means editing the file that explains why it is narrow.
+     * What is checked instead is the neighbour that could go wrong quietly:
+     * another task pointing at the same counter must come through untouched.
+     */
+    @Test
+    fun deletingADoneTaskTakesOnlyItsOwnLinkWithIt() {
+        val done = Task(
+            id = 1L,
+            date = monday,
+            description = "push-ups",
+            isDone = true,
+            linkedManualCounterId = 10L,
+        )
+        val sameCounter = Task(
+            id = 2L,
+            date = monday,
+            description = "squats",
+            isDone = true,
+            linkedManualCounterId = 10L,
+        )
+
+        val after = deleteTask(tasks = listOf(done, sameCounter), taskId = 1L)
+
+        assertEquals(listOf(2L), after.tasks.map { it.id })
+        assertEquals(sameCounter, after.tasks.single())
+    }
+
+    /**
+     * The other half of the pair: taking the last unfinished part away moves
+     * the parent's flag, so here the counter does move.
+     */
+    @Test
+    fun deletingTheLastUnfinishedPartMovesTheCounter() {
+        val parent = Task(
+            id = 1L,
+            date = monday,
+            description = "push-ups",
+            hasSubtasks = true,
+            linkedManualCounterId = 10L,
+        )
+        val subtasks = listOf(
+            Subtask(id = 10L, taskId = 1L, description = "left", isDone = true),
+            Subtask(id = 11L, taskId = 1L, description = "right", isDone = false),
+        )
+
+        val after = deleteSubtask(
+            tasks = listOf(parent),
+            subtasks = subtasks,
+            counters = listOf(ManualCounter(id = 10L, title = "Push-ups", balance = 5)),
+            subtaskId = 11L,
+        )
+
+        assertTrue("the parent falls into done", after.tasks.single().isDone)
+        assertEquals(
+            4,
+            after.counters.filterIsInstance<ManualCounter>().single().balance,
+        )
+    }
 }

@@ -33,6 +33,18 @@ data class SubtaskDeletionResult(
  * In every case where the task really goes, a running-plan row pointing at it
  * is unhooked: a row that outlives its task holds an id that will be handed
  * out again to something else.
+ *
+ * **Counters are deliberately absent from this function, and that is the rule
+ * rather than an omission.** A done task linked to a manual counter has
+ * already taken one off it, and deleting the task does not give it back. The
+ * counter says how much is left to do; the push-ups were done, and tidying the
+ * row out of the calendar afterwards does not undo them. This stays consistent
+ * with TaskDoneSupport by reading its rule exactly: the counter follows the
+ * **flag**, and nothing here moves a flag — the task stops existing.
+ *
+ * Deleting a subtask is the opposite case and does take counters, because
+ * taking the last unfinished part away moves the parent's flag. If a refund
+ * ever looks obviously right here, read that difference first.
  */
 fun stateAfterDeletingTask(
     tasks: List<Task>,
