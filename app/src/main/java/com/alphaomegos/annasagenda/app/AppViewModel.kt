@@ -1593,24 +1593,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         date: LocalDate,
         valuesByFieldId: Map<String, Double?>
     ) {
-        val cur = _state.value
-        val existing = cur.anthropometry.firstOrNull { it.date == date }
-
-        val entry = mergeAnthropometryEntryForDate(
-            date = date,
-            existing = existing,
-            valuesByFieldId = valuesByFieldId,
-        )
-
-        val filtered = cur.anthropometry.filterNot { it.date == date }
-
-        val newList = if (!entry.hasAnyValue()) {
-            filtered
-        } else {
-            (filtered + entry).sortedBy { it.date }
+        _state.update { cur ->
+            cur.copy(
+                anthropometry = anthropometryAfterSavingDate(
+                    entries = cur.anthropometry,
+                    date = date,
+                    valuesByFieldId = valuesByFieldId,
+                )
+            )
         }
-
-        _state.value = cur.copy(anthropometry = newList)
     }
 
     /* ---------------------------
