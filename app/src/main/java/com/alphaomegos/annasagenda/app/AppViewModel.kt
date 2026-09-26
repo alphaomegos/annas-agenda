@@ -652,19 +652,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteReadingBook(bookId: Long) {
-        val st = _state.value
-        val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return
+        val deletion = stateAfterDeletingReadingBook(_state.value, bookId) ?: return
 
-        _state.value = st.copy(
-            readingBooks = st.readingBooks.filterNot { it.id == bookId },
-            readingSessions = st.readingSessions.filterNot { it.bookId == bookId },
-            activeReading = st.activeReading?.takeIf { it.bookId != bookId },
-            // A question about a book that no longer exists has no answer
-            // worth having: its whole history has just gone with it.
-            pendingReadingSession = st.pendingReadingSession?.takeIf { it.bookId != bookId },
-        )
-
-        cleanupInternalCoverAsync(book.coverUri)
+        _state.value = deletion.state
+        cleanupInternalCoverAsync(deletion.coverToDelete)
     }
 
     fun moveReadingBookToShelf(bookId: Long, shelf: ReadingShelf) {
@@ -752,14 +743,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteReadingMovie(movieId: Long) {
-        val st = _state.value
-        val movie = st.readingMovies.firstOrNull { it.id == movieId } ?: return
+        val deletion = stateAfterDeletingReadingMovie(_state.value, movieId) ?: return
 
-        _state.value = st.copy(
-            readingMovies = st.readingMovies.filterNot { it.id == movieId }
-        )
-
-        cleanupInternalCoverAsync(movie.coverUri)
+        _state.value = deletion.state
+        cleanupInternalCoverAsync(deletion.coverToDelete)
     }
 
     fun moveReadingMovieToShelf(movieId: Long, shelf: ReadingShelf) {
@@ -848,14 +835,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteReadingSeries(seriesId: Long) {
-        val st = _state.value
-        val series = st.readingSeries.firstOrNull { it.id == seriesId } ?: return
+        val deletion = stateAfterDeletingReadingSeries(_state.value, seriesId) ?: return
 
-        _state.value = st.copy(
-            readingSeries = st.readingSeries.filterNot { it.id == seriesId }
-        )
-
-        cleanupInternalCoverAsync(series.coverUri)
+        _state.value = deletion.state
+        cleanupInternalCoverAsync(deletion.coverToDelete)
     }
 
     fun moveReadingSeriesToShelf(seriesId: Long, shelf: ReadingShelf) {
