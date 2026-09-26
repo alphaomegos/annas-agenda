@@ -5,7 +5,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -170,14 +169,6 @@ class AppViewModelStaleStateTest {
             1,
             vm.state.value.tasks.count { it.id == unrelatedTaskId }
         )
-    }
-
-    private suspend fun awaitLoaded(vm: AppViewModel) {
-        repeat(100) {
-            if (vm.isLoaded.value) return
-            delay(20)
-        }
-        error("AppViewModel did not finish loading")
     }
 
     private fun clearAppStateStoreFile() {

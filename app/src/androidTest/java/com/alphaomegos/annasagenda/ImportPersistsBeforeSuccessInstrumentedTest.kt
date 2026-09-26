@@ -3,7 +3,6 @@ package com.alphaomegos.annasagenda
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -89,14 +88,6 @@ class ImportPersistsBeforeSuccessInstrumentedTest {
         assertFalse(vm.importBackupJson("{ not json at all").adopted)
 
         assertTrue(vm.state.value.tasks.any { it.id == taskId })
-    }
-
-    private suspend fun awaitLoaded(vm: AppViewModel) {
-        repeat(100) {
-            if (vm.isLoaded.value) return
-            delay(20)
-        }
-        error("AppViewModel did not finish loading")
     }
 
     private fun clearAppStateStoreFile() {

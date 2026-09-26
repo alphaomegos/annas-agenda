@@ -5,7 +5,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -143,14 +142,6 @@ class AppViewModelCounterLinkTest {
 
     private fun isDone(vm: AppViewModel, taskId: Long): Boolean =
         vm.state.value.tasks.single { it.id == taskId }.isDone
-
-    private suspend fun awaitLoaded(vm: AppViewModel) {
-        repeat(100) {
-            if (vm.isLoaded.value) return
-            delay(20)
-        }
-        error("AppViewModel did not finish loading")
-    }
 
     private fun clearAppStateStoreFile() {
         val file = File(app.filesDir, "datastore/app_state_store.preferences_pb")

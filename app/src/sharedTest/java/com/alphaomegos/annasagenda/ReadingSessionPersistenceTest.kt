@@ -218,17 +218,25 @@ class ReadingSessionPersistenceTest {
         )
     )
 
-    /** Autosave is debounced by 400 ms; give it room and then some. */
+    /**
+     * Autosave is debounced by 400 ms, and then it writes a file.
+     *
+     * Both halves need waiting for, and they need different kinds of waiting.
+     * The debounce is a coroutine delay, so `delay` is what moves it: under
+     * Robolectric that advances the virtual clock past the four hundred
+     * milliseconds without anybody actually waiting. The write that follows is
+     * a real file on a real thread, and no amount of virtual time makes it
+     * land — hence the second, real wait. See AwaitLoaded for the longer
+     * version of why these are not the same thing.
+     *
+     * This is hardening rather than a fix: the test passed with only the first
+     * half, because the write usually beats it. Usually is the problem.
+     */
     private suspend fun awaitAutoSave() {
         delay(1500)
-    }
 
-    private suspend fun awaitLoaded(vm: AppViewModel) {
-        repeat(100) {
-            if (vm.isLoaded.value) return
-            delay(20)
-        }
-        error("AppViewModel did not finish loading")
+        @Suppress("BlockingMethodInNonBlockingContext")
+        Thread.sleep(500)
     }
 
     private fun clearAppStateStoreFile() {

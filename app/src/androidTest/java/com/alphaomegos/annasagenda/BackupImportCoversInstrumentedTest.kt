@@ -140,14 +140,6 @@ class BackupImportCoversInstrumentedTest {
         assertTrue("a cover nothing references any more should be swept", swept)
     }
 
-    private suspend fun awaitLoaded(vm: AppViewModel) {
-        repeat(100) {
-            if (vm.isLoaded.value) return
-            delay(20)
-        }
-        error("AppViewModel did not finish loading")
-    }
-
     private fun clearAppStateStoreFile() {
         val file = File(app.filesDir, "datastore/app_state_store.preferences_pb")
         if (file.exists()) {
