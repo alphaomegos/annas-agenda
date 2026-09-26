@@ -1512,30 +1512,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     ---------------------------- */
 
     fun setTaskLinkedManualCounter(taskId: Long, newCounterId: Long?) {
-        val cur = _state.value
-        val task = cur.tasks.firstOrNull { it.id == taskId } ?: return
-        val oldCounterId = task.linkedManualCounterId
-        if (oldCounterId == newCounterId) return
+        _state.update { cur ->
+            val after = tasksAndCountersAfterRelinkingManualCounter(
+                tasks = cur.tasks,
+                counters = cur.counters,
+                taskId = taskId,
+                newCounterId = newCounterId,
+            ) ?: return@update cur
 
-        var newCounters = cur.counters
-
-        if (task.isDone) {
-            if (oldCounterId != null) {
-                newCounters = countersWithManualCounterDelta(newCounters, oldCounterId, +1)
-            }
-            if (newCounterId != null) {
-                newCounters = countersWithManualCounterDelta(newCounters, newCounterId, -1)
-            }
+            cur.copy(tasks = after.tasks, counters = after.counters)
         }
-
-        val newTasks = cur.tasks.map { t ->
-            if (t.id == taskId) t.copy(linkedManualCounterId = newCounterId) else t
-        }
-
-        _state.value = cur.copy(
-            tasks = newTasks,
-            counters = newCounters
-        )
     }
 
     /**

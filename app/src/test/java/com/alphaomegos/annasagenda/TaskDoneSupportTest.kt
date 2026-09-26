@@ -2,6 +2,7 @@ package com.alphaomegos.annasagenda
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -637,5 +638,135 @@ class TaskDoneSupportTest {
 
         assertSame(subtasks, up.subtasks)
         assertSame(subtasks, down.subtasks)
+    }
+
+    /* ---------------- pointing a task at a different counter ---------------- */
+
+    private val twoCounters = listOf(manual(10L, 5), manual(20L, 5))
+
+    @Test
+    fun relinkingATaskThatIsNotThereAnswersNothing() {
+        assertNull(
+            tasksAndCountersAfterRelinkingManualCounter(
+                tasks = listOf(task(1)), counters = twoCounters, taskId = 404L, newCounterId = 10L,
+            )
+        )
+    }
+
+    @Test
+    fun relinkingToTheSameCounterAnswersNothing() {
+        assertNull(
+            tasksAndCountersAfterRelinkingManualCounter(
+                tasks = listOf(task(1, linkedManualCounterId = 10L)),
+                counters = twoCounters, taskId = 1L, newCounterId = 10L,
+            )
+        )
+    }
+
+    @Test
+    fun unlinkingSomethingThatWasNeverLinkedAnswersNothing() {
+        assertNull(
+            tasksAndCountersAfterRelinkingManualCounter(
+                tasks = listOf(task(1)), counters = twoCounters, taskId = 1L, newCounterId = null,
+            )
+        )
+    }
+
+    @Test
+    fun theTaskPointsAtTheNewCounter() {
+        val after = tasksAndCountersAfterRelinkingManualCounter(
+            tasks = listOf(task(1)), counters = twoCounters, taskId = 1L, newCounterId = 20L,
+        )!!
+
+        assertEquals(20L, after.tasks.single().linkedManualCounterId)
+    }
+
+    /**
+     * An undone task has taken nothing off anybody, so pointing it elsewhere
+     * takes nothing off anybody either.
+     */
+    @Test
+    fun relinkingAnUndoneTaskMovesNoBalance() {
+        val after = tasksAndCountersAfterRelinkingManualCounter(
+            tasks = listOf(task(1, linkedManualCounterId = 10L)),
+            counters = twoCounters, taskId = 1L, newCounterId = 20L,
+        )!!
+
+        assertEquals(5, balanceOf(after.counters, 10L))
+        assertEquals(5, balanceOf(after.counters, 20L))
+    }
+
+    /**
+     * A done task has already been charged to the old counter. Hand that back
+     * before charging the new one — the sign here is the counterfeit the whole
+     * file is about.
+     */
+    @Test
+    fun relinkingADoneTaskHandsTheOneBackAndChargesTheOther() {
+        val after = tasksAndCountersAfterRelinkingManualCounter(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L)),
+            counters = twoCounters, taskId = 1L, newCounterId = 20L,
+        )!!
+
+        assertEquals(6, balanceOf(after.counters, 10L))
+        assertEquals(4, balanceOf(after.counters, 20L))
+        assertTrue("the flag itself does not move", after.tasks.single().isDone)
+    }
+
+    @Test
+    fun unlinkingADoneTaskHandsTheOneBackAndChargesNobody() {
+        val after = tasksAndCountersAfterRelinkingManualCounter(
+            tasks = listOf(task(1, isDone = true, linkedManualCounterId = 10L)),
+            counters = twoCounters, taskId = 1L, newCounterId = null,
+        )!!
+
+        assertNull(after.tasks.single().linkedManualCounterId)
+        assertEquals(6, balanceOf(after.counters, 10L))
+        assertEquals(5, balanceOf(after.counters, 20L))
+    }
+
+    @Test
+    fun linkingADoneTaskForTheFirstTimeChargesTheNewCounter() {
+        val after = tasksAndCountersAfterRelinkingManualCounter(
+            tasks = listOf(task(1, isDone = true)),
+            counters = twoCounters, taskId = 1L, newCounterId = 20L,
+        )!!
+
+        assertEquals(4, balanceOf(after.counters, 20L))
+        assertEquals(5, balanceOf(after.counters, 10L))
+    }
+
+    /**
+     * Counters of other kinds have no balance to charge, so a link to one is
+     * recorded and nothing else happens.
+     */
+    @Test
+    fun linkingADoneTaskToACounterWithNoBalanceIsHarmless() {
+        val range = DateRangeCounter(
+            id = 30L,
+            title = "Trip",
+            startDate = LocalDate.of(2026, 9, 1),
+            endDate = LocalDate.of(2026, 9, 30),
+        )
+
+        val after = tasksAndCountersAfterRelinkingManualCounter(
+            tasks = listOf(task(1, isDone = true)),
+            counters = listOf(range), taskId = 1L, newCounterId = 30L,
+        )!!
+
+        assertEquals(listOf(range), after.counters)
+        assertEquals(30L, after.tasks.single().linkedManualCounterId)
+    }
+
+    @Test
+    fun theOtherTasksAreLeftExactlyAsTheyWere() {
+        val other = task(2, isDone = true, linkedManualCounterId = 10L)
+
+        val after = tasksAndCountersAfterRelinkingManualCounter(
+            tasks = listOf(task(1), other), counters = twoCounters,
+            taskId = 1L, newCounterId = 20L,
+        )!!
+
+        assertEquals(other, after.tasks.last())
     }
 }

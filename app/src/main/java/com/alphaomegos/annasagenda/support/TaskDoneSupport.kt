@@ -59,6 +59,47 @@ fun applyTaskDoneFlags(
     )
 }
 
+/**
+ * Points a task at a different manual counter, or at none.
+ *
+ * Null when there is nothing to write: no such task, or it is already linked
+ * to that counter.
+ *
+ * A task that is **not** done has contributed nothing to anybody's balance, so
+ * changing where it points changes no number. A task that **is** done has
+ * already taken one off its counter, and that one has to be handed back before
+ * the new counter is charged. This was the fifth hand-written copy of the
+ * arithmetic this file exists to hold — and the one furthest from the four it
+ * was written to reconcile, because here the flag does not move at all and
+ * only the link does. Getting the sign backwards here is the same counterfeit
+ * as ever: link a done task to a counter, unlink it, collect the +1 twice.
+ */
+fun tasksAndCountersAfterRelinkingManualCounter(
+    tasks: List<Task>,
+    counters: List<Counter>,
+    taskId: Long,
+    newCounterId: Long?,
+): TasksAndCounters? {
+    val task = tasks.firstOrNull { it.id == taskId } ?: return null
+
+    val oldCounterId = task.linkedManualCounterId
+    if (oldCounterId == newCounterId) return null
+
+    val deltas = mutableMapOf<Long, Int>()
+    if (task.isDone) {
+        // Hand back what the old counter was charged, then charge the new one.
+        if (oldCounterId != null) deltas[oldCounterId] = (deltas[oldCounterId] ?: 0) + 1
+        if (newCounterId != null) deltas[newCounterId] = (deltas[newCounterId] ?: 0) - 1
+    }
+
+    return TasksAndCounters(
+        tasks = tasks.map { t ->
+            if (t.id == taskId) t.copy(linkedManualCounterId = newCounterId) else t
+        },
+        counters = countersWithManualCounterDeltas(counters, deltas),
+    )
+}
+
 /** Moves one manual counter. Counters of other kinds have no balance to move. */
 fun countersWithManualCounterDelta(
     counters: List<Counter>,
