@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -472,6 +473,7 @@ private fun CalorimeterContent(
                         value = foodName,
                         onValueChange = { foodName = it },
                         label = { Text(stringResource(R.string.calorimeter_food_name)) },
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )

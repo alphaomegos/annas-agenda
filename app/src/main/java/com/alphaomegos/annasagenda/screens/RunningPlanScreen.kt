@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
@@ -207,6 +208,7 @@ fun RunningPlanScreen(
                         value = resetPhrase.value,
                         onValueChange = { resetPhrase.value = it },
                         label = { Text(stringResource(R.string.running_reset_phrase_label)) },
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )

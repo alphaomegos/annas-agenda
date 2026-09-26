@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
@@ -97,6 +98,7 @@ internal fun AddMediaDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text(stringResource(R.string.reading_field_title_required)) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -115,6 +117,7 @@ internal fun AddMediaDialog(
                         value = author,
                         onValueChange = { author = it },
                         label = { Text(stringResource(R.string.reading_field_author)) },
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -134,6 +137,7 @@ internal fun AddMediaDialog(
                         value = translation,
                         onValueChange = { translation = it },
                         label = { Text(stringResource(R.string.reading_movie_field_translation)) },
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )

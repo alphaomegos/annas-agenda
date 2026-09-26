@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
@@ -348,6 +349,7 @@ private fun ManualCounterDialog(
                     value = t,
                     onValueChange = { t = it },
                     label = { Text(stringResource(R.string.counter_title)) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -427,6 +429,7 @@ private fun DateRangeCounterDialog(
                     value = t,
                     onValueChange = { t = it },
                     label = { Text(stringResource(R.string.counter_title)) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
