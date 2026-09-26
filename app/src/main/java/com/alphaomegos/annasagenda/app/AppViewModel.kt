@@ -659,19 +659,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun moveReadingBookToShelf(bookId: Long, shelf: ReadingShelf) {
-        val st = _state.value
-        val book = st.readingBooks.firstOrNull { it.id == bookId } ?: return
-        if (book.shelf == shelf) return
+        val moved = stateAfterMovingReadingBookToShelf(
+            state = _state.value,
+            bookId = bookId,
+            shelf = shelf,
+            currentYear = LocalDate.now().year,
+            nowEpochMillis = System.currentTimeMillis(),
+            newSessionId = ::newId,
+        ) ?: return
 
-        val currentYear = LocalDate.now().year
-        val moved = moveReadingBookToShelf(book, shelf, currentYear)
-
-        _state.value = stateWithBookChanged(
-            state = st,
-            changed = moved,
-            books = st.readingBooks.map { b -> if (b.id == bookId) moved else b },
-        )
+        _state.value = moved
     }
+
     fun updateReadingBook(
         bookId: Long,
         author: String? = null,
@@ -705,10 +704,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             currentYear = currentYear,
         )
 
-        _state.value = stateWithBookChanged(
+        _state.value = stateWithReadingBookChanged(
             state = st,
             changed = updated,
             books = st.readingBooks.map { b -> if (b.id == bookId) updated else b },
+            nowEpochMillis = System.currentTimeMillis(),
+            newSessionId = ::newId,
         )
 
         if (oldCover != updated.coverUri) {
@@ -750,18 +751,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun moveReadingMovieToShelf(movieId: Long, shelf: ReadingShelf) {
-        val st = _state.value
-        val movie = st.readingMovies.firstOrNull { it.id == movieId } ?: return
-        if (movie.shelf == shelf) return
+        val moved = stateAfterMovingReadingMovieToShelf(
+            state = _state.value,
+            movieId = movieId,
+            shelf = shelf,
+            currentYear = LocalDate.now().year,
+        ) ?: return
 
-        val currentYear = LocalDate.now().year
-
-        val updatedMovies = st.readingMovies.map { m ->
-            if (m.id != movieId) m
-            else moveReadingMovieToShelf(m, shelf, currentYear)
-        }
-
-        _state.value = st.copy(readingMovies = updatedMovies)
+        _state.value = moved
     }
 
     fun updateReadingMovie(
@@ -842,18 +839,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun moveReadingSeriesToShelf(seriesId: Long, shelf: ReadingShelf) {
-        val st = _state.value
-        val series = st.readingSeries.firstOrNull { it.id == seriesId } ?: return
-        if (series.shelf == shelf) return
+        val moved = stateAfterMovingReadingSeriesToShelf(
+            state = _state.value,
+            seriesId = seriesId,
+            shelf = shelf,
+            currentYear = LocalDate.now().year,
+        ) ?: return
 
-        val currentYear = LocalDate.now().year
-
-        val updatedSeries = st.readingSeries.map { s ->
-            if (s.id != seriesId) s
-            else moveReadingSeriesToShelf(s, shelf, currentYear)
-        }
-
-        _state.value = st.copy(readingSeries = updatedSeries)
+        _state.value = moved
     }
 
     fun updateReadingSeries(
@@ -932,28 +925,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * session in progress. Both callers go through here so the rule about
      * sessions cannot drift apart from the rule about books again.
      */
-    private fun stateWithBookChanged(
-        state: AppState,
-        changed: ReadingBook,
-        books: List<ReadingBook>,
-    ): AppState {
-        val after = readingAfterBookChanged(
-            active = state.activeReading,
-            changed = changed,
-            pending = state.pendingReadingSession,
-            autoRecord = state.autoRecordInterruptedReading,
-            nowEpochMillis = System.currentTimeMillis(),
-            newSessionId = ::newId,
-        )
-
-        return state.copy(
-            readingBooks = books,
-            activeReading = after.activeReading,
-            pendingReadingSession = after.pendingReadingSession,
-            readingSessions = state.readingSessions + after.sessionsToRecord,
-        )
-    }
-
     fun cancelReading() {
         _state.update { cur -> cur.copy(activeReading = null) }
     }
