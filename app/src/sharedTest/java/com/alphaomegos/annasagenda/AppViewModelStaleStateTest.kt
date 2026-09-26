@@ -2,9 +2,14 @@ package com.alphaomegos.annasagenda
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,21 +28,26 @@ import java.time.LocalDate
  * These are not thread races — everything in AppViewModel runs on the main
  * dispatcher. They are lost updates within a single call.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class AppViewModelStaleStateInstrumentedTest {
+class AppViewModelStaleStateTest {
 
     private lateinit var app: Application
 
     @Before
     fun setUp() {
-        app = InstrumentationRegistry.getInstrumentation()
-            .targetContext.applicationContext as Application
+        // See AppViewModelRecurringRescheduleTest for why the main dispatcher
+        // is replaced: a view model loads on viewModelScope, and these tests
+        // block the thread that scope would otherwise need.
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        app = ApplicationProvider.getApplicationContext()
         clearAppStateStoreFile()
     }
 
     @After
     fun tearDown() {
         clearAppStateStoreFile()
+        Dispatchers.resetMain()
     }
 
     /**

@@ -26,7 +26,10 @@ class SharedTestsAreOnTheClasspathTest {
     private val sharedTestClasses = listOf(
         "com.alphaomegos.annasagenda.AppStateStoreContractTest",
         "com.alphaomegos.annasagenda.AppStateStoreFailuresTest",
+        "com.alphaomegos.annasagenda.AppViewModelCounterLinkTest",
         "com.alphaomegos.annasagenda.AppViewModelRecurringRescheduleTest",
+        "com.alphaomegos.annasagenda.AppViewModelStaleStateTest",
+        "com.alphaomegos.annasagenda.AppViewModelUndoneHorizonTest",
         "com.alphaomegos.annasagenda.components.ConfirmDialogTest",
         "com.alphaomegos.annasagenda.components.CopyToDateDialogsTest",
         "com.alphaomegos.annasagenda.components.PickDateDialogTest",
