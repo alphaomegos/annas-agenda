@@ -11,6 +11,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -74,6 +75,7 @@ import com.alphaomegos.annasagenda.importMessageFor
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appIsDarkTheme
+import com.alphaomegos.annasagenda.isAnnaDay
 import com.alphaomegos.annasagenda.itemsInMenuOrder
 import com.alphaomegos.annasagenda.undoneLampFor
 import com.alphaomegos.annasagenda.undoneLampIconRes
@@ -82,6 +84,7 @@ import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.util.BackupImportPayload
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.readBackupImportPayload
+import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.min
 import kotlinx.coroutines.launch
@@ -168,6 +171,11 @@ fun MainMenuScreen(
         }
     }
 
+    // Read once. If the app is left open across midnight on the 28th the card
+    // appears when the menu is next rebuilt rather than at the stroke of
+    // twelve, which for a card that lives one day a year is fine.
+    val today = remember { LocalDate.now() }
+
     val locale = appLocale()
     val langTag = remember(locale) {
         when (locale.language) {
@@ -218,6 +226,7 @@ fun MainMenuScreen(
     )
 
     MainMenuContent(
+        today = today,
         langIconRes = langIconRes,
         undoneLampIconRes = lampIconRes,
         menuEntries = menuEntries,
@@ -312,6 +321,7 @@ private fun rememberMainMenuEntries(
 )
 @Composable
 internal fun MainMenuContent(
+    today: LocalDate,
     langIconRes: Int,
     undoneLampIconRes: Int,
     menuEntries: List<MenuEntry>,
@@ -407,58 +417,73 @@ internal fun MainMenuContent(
             )
         }
     ) { innerPadding ->
-        MainMenuList(
-            items = items,
-            reorderMode = reorderMode,
-            canHideItems = items.size > 1,
-            listState = listState,
-            draggingIndex = draggingIndex.intValue,
-            draggingOffsetY = draggingOffsetY.floatValue,
-            onStartReorder = {
-                reorderMode = true
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            },
-            onDragStart = { index ->
-                draggingIndex.intValue = index
-                draggingOffsetY.floatValue = 0f
-            },
-            onDragOffsetChange = { deltaY ->
-                draggingOffsetY.floatValue += deltaY
-            },
-            onMoveItem = { from, to, dragCompensation ->
-                items = items.toMutableList().also { list ->
-                    val moved = list.removeAt(from)
-                    list.add(to, moved)
-                }
-                draggingIndex.intValue = to
-                draggingOffsetY.floatValue += dragCompensation
-            },
-            onStepMoveItem = { from, to ->
-                if (from in items.indices && to in items.indices && from != to) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (isAnnaDay(today)) {
+                AnnaDayCard()
+            }
+
+            MainMenuList(
+                items = items,
+                reorderMode = reorderMode,
+                canHideItems = items.size > 1,
+                listState = listState,
+                draggingIndex = draggingIndex.intValue,
+                draggingOffsetY = draggingOffsetY.floatValue,
+                onStartReorder = {
+                    reorderMode = true
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                },
+                onDragStart = { index ->
+                    draggingIndex.intValue = index
+                    draggingOffsetY.floatValue = 0f
+                },
+                onDragOffsetChange = { deltaY ->
+                    draggingOffsetY.floatValue += deltaY
+                },
+                onMoveItem = { from, to, dragCompensation ->
                     items = items.toMutableList().also { list ->
                         val moved = list.removeAt(from)
                         list.add(to, moved)
                     }
+                    draggingIndex.intValue = to
+                    draggingOffsetY.floatValue += dragCompensation
+                },
+                onStepMoveItem = { from, to ->
+                    if (from in items.indices && to in items.indices && from != to) {
+                        items = items.toMutableList().also { list ->
+                            val moved = list.removeAt(from)
+                            list.add(to, moved)
+                        }
+                        draggingIndex.intValue = -1
+                        draggingOffsetY.floatValue = 0f
+                    }
+                },
+                onHideItem = { id ->
                     draggingIndex.intValue = -1
                     draggingOffsetY.floatValue = 0f
-                }
-            },
-            onHideItem = { id ->
-                draggingIndex.intValue = -1
-                draggingOffsetY.floatValue = 0f
-                items = items.filterNot { it.id == id }
-                onHideMenuItem(id)
-            },
-            onStopDragging = {
-                draggingIndex.intValue = -1
-                draggingOffsetY.floatValue = 0f
-                persistCurrentOrder()
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-        )
+                    items = items.filterNot { it.id == id }
+                    onHideMenuItem(id)
+                },
+                onStopDragging = {
+                    draggingIndex.intValue = -1
+                    draggingOffsetY.floatValue = 0f
+                    persistCurrentOrder()
+                },
+                // weight, not fillMaxSize: inside a Column a child asking for the
+                // full height asks for the height of the whole column, card and
+                // all, and the list would run off the bottom by exactly the
+                // card's height on 29 July.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+        }
     }
 
     ResetDataDialog(

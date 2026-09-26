@@ -2,9 +2,11 @@ package com.alphaomegos.annasagenda.screens
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -12,6 +14,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.alphaomegos.annasagenda.AppThemeMode
 import com.alphaomegos.annasagenda.R
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -23,6 +26,11 @@ class MainMenuContentTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
+    /** Any day that is not the 29th of July. The menu must look normal on it. */
+    private val anOrdinaryDay: LocalDate = LocalDate.of(2026, 7, 28)
+
+    private val annaDay: LocalDate = LocalDate.of(2026, 7, 29)
+
     @Test
     fun mainMenuContent_showsVisibleItems_hidesHiddenItems_and_routesBasicClicks() {
         var languageClicks = 0
@@ -31,6 +39,7 @@ class MainMenuContentTest {
         composeRule.setContent {
             MaterialTheme {
                 MainMenuContent(
+                    today = anOrdinaryDay,
                     langIconRes = R.drawable.ic_langflag_en,
                     undoneLampIconRes = R.drawable.ic_undone_lamp_green,
                     menuEntries = listOf(
@@ -105,6 +114,7 @@ class MainMenuContentTest {
         composeRule.setContent {
             MaterialTheme {
                 MainMenuContent(
+                    today = anOrdinaryDay,
                     langIconRes = R.drawable.ic_langflag_en,
                     undoneLampIconRes = R.drawable.ic_undone_lamp_green,
                     menuEntries = listOf(
@@ -171,6 +181,64 @@ class MainMenuContentTest {
 
         composeRule.runOnIdle {
             assertEquals(1, resetConfirmed)
+        }
+    }
+
+    /**
+     * The one card that is only there for one day.
+     *
+     * Both halves are asked, because an easter egg that is always on is not an
+     * easter egg and one that is never on is an easter egg nobody will ever
+     * see — and neither failure shows up for a year.
+     */
+    @Test
+    fun mainMenuContent_showsTheAnnaDayCard_onTheTwentyNinthOfJuly() {
+        setMenu(today = annaDay)
+
+        val activity = composeRule.activity
+        composeRule.onNodeWithText(activity.getString(R.string.anna_day_title))
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun mainMenuContent_hasNoAnnaDayCard_onAnyOtherDay() {
+        setMenu(today = anOrdinaryDay)
+
+        val activity = composeRule.activity
+        composeRule.onAllNodesWithText(activity.getString(R.string.anna_day_title))
+            .assertCountEquals(0)
+    }
+
+    /** The menu at its plainest: one item, nothing hidden, no callbacks wanted. */
+    private fun setMenu(today: LocalDate) {
+        composeRule.setContent {
+            MaterialTheme {
+                MainMenuContent(
+                    today = today,
+                    langIconRes = R.drawable.ic_langflag_en,
+                    undoneLampIconRes = R.drawable.ic_undone_lamp_green,
+                    menuEntries = listOf(
+                        MenuEntry(
+                            id = "calendar",
+                            iconRes = R.drawable.ic_menu_calendar,
+                            titleRes = R.string.calendar,
+                            onClick = {},
+                        ),
+                    ),
+                    menuOrderIds = emptyList(),
+                    menuHiddenIds = emptySet(),
+                    onMenuOrderChange = {},
+                    onHideMenuItem = {},
+                    onShowAllMenuItems = {},
+                    themeMode = AppThemeMode.SYSTEM,
+                    onThemeModeChange = {},
+                    onLanguage = {},
+                    onUndone = {},
+                    onExport = {},
+                    onImport = {},
+                    onResetConfirmed = {},
+                )
+            }
         }
     }
 }

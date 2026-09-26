@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown on the main menu on 29 July only. See support/AnnaDay.kt. -->
+    <string name="anna_day_title">Anna\'s day</string>
+    <string name="anna_day_text">All of this exists because of her \u2014 every list, every lamp, every book on the shelf. Thank you, Anna.</string>
+</resources>
