@@ -73,7 +73,10 @@ import com.alphaomegos.annasagenda.ImportOutcome
 import com.alphaomegos.annasagenda.importMessageFor
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.appIsDarkTheme
 import com.alphaomegos.annasagenda.itemsInMenuOrder
+import com.alphaomegos.annasagenda.undoneLampFor
+import com.alphaomegos.annasagenda.undoneLampIconRes
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.util.BackupImportPayload
@@ -192,11 +195,15 @@ fun MainMenuScreen(
         vm.ensureUndoneHorizonGenerated()
     }
 
-    val undoneLampIconRes = when {
-        state.undoneLampMuted -> R.drawable.ic_undone_lamp_gray
-        vm.hasUndonePastTasks() -> R.drawable.ic_undone_lamp_red
-        else -> R.drawable.ic_undone_lamp_green
-    }
+    // Named apart from the function it calls: a local `val x = x(...)` is
+    // legal Kotlin and reads like a mistake.
+    val lampIconRes = undoneLampIconRes(
+        lamp = undoneLampFor(
+            muted = state.undoneLampMuted,
+            hasDebt = vm.hasUndonePastTasks(),
+        ),
+        dark = appIsDarkTheme,
+    )
 
     val menuEntries = rememberMainMenuEntries(
         onCalendar = onCalendar,
@@ -212,7 +219,7 @@ fun MainMenuScreen(
 
     MainMenuContent(
         langIconRes = langIconRes,
-        undoneLampIconRes = undoneLampIconRes,
+        undoneLampIconRes = lampIconRes,
         menuEntries = menuEntries,
         menuOrderIds = state.mainMenuOrder,
         menuHiddenIds = state.mainMenuHiddenIds,

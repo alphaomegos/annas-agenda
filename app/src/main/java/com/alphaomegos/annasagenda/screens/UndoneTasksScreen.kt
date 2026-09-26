@@ -42,6 +42,9 @@ import com.alphaomegos.annasagenda.components.DateTasksBlock
 import com.alphaomegos.annasagenda.UNDONE_HORIZON_CHOICES
 import com.alphaomegos.annasagenda.UNDONE_HORIZON_UNLIMITED
 import com.alphaomegos.annasagenda.UndoneDebt
+import com.alphaomegos.annasagenda.appIsDarkTheme
+import com.alphaomegos.annasagenda.undoneLampFor
+import com.alphaomegos.annasagenda.undoneLampIconRes
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -83,11 +86,10 @@ fun UndoneTasksScreen(
     val hasUndone = undoneDates.isNotEmpty()
     var horizonMenuOpen by remember { mutableStateOf(false) }
 
-    val lampIconRes = when {
-        state.undoneLampMuted -> R.drawable.ic_undone_lamp_gray
-        hasUndone -> R.drawable.ic_undone_lamp_red
-        else -> R.drawable.ic_undone_lamp_green
-    }
+    val lampIconRes = undoneLampIconRes(
+        lamp = undoneLampFor(muted = state.undoneLampMuted, hasDebt = hasUndone),
+        dark = appIsDarkTheme,
+    )
 
     Scaffold(
         topBar = {

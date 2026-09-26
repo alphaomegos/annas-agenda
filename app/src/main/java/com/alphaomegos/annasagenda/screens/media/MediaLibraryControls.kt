@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -116,6 +117,16 @@ internal fun MediaLibraryTopBarFilters(
     }
 }
 
+/**
+ * These six icons are flat black silhouettes, so they are recoloured rather
+ * than redrawn.
+ *
+ * A second set of pictures for the dark theme would have to be kept in step
+ * with the first, and would still be chosen by a resource folder that follows
+ * the phone's night setting rather than the theme the user picked in this app.
+ * Tinting takes the colour the text beside them is already using, which is
+ * right in both themes by construction.
+ */
 @Composable
 private fun MediaTypeToggleIcon(
     checked: Boolean,
@@ -142,6 +153,7 @@ private fun MediaTypeToggleIcon(
         Image(
             painter = painterResource(iconRes),
             contentDescription = null,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(if (checked) 1f else 0.42f)
@@ -183,6 +195,7 @@ private fun MediaActionIconButton(
         Image(
             painter = painterResource(iconRes),
             contentDescription = null,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
             modifier = Modifier.fillMaxSize()
         )
     }
