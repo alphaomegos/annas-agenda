@@ -135,9 +135,16 @@ android {
     //
     // The alternative — a copy in each source set — drifts, and the drift
     // shows up on the run nobody does often, which is the device one.
+    //
+    // `kotlin.srcDir`, not `java.srcDir`. The java one is accepted, warns that
+    // it is deprecated, and then does not put those Kotlin files in front of
+    // the Kotlin compiler. Nothing failed: the folder simply did not exist as
+    // far as the build was concerned, for four patches, while the test count
+    // quietly stayed where it was. SharedTestsAreOnTheClasspathTest exists so
+    // that cannot happen silently again.
     sourceSets {
-        getByName("test").java.srcDir("src/sharedTest/java")
-        getByName("androidTest").java.srcDir("src/sharedTest/java")
+        getByName("test").kotlin.srcDir("src/sharedTest/java")
+        getByName("androidTest").kotlin.srcDir("src/sharedTest/java")
     }
 }
 
