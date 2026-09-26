@@ -186,6 +186,22 @@ tasks.withType<Test>().configureEach {
     dependsOn("compileDebugAndroidTestKotlin")
 }
 
+
+// The APK says which build it is, in its name.
+//
+// Every release build was called app-release.apk, so two of them in one folder
+// were told apart by the date on the file, and a phone that already has one
+// installed cannot be asked what it has. The name now carries both numbers —
+// annas-agenda-21.4-22-release.apk — which is what anyone looking at the file
+// actually wants to know.
+//
+// Read back out of defaultConfig rather than repeated, so there is one place
+// to change and nothing to keep in step.
+base {
+    archivesName = "annas-agenda-" +
+        "${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}"
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
 

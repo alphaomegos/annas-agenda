@@ -22,6 +22,29 @@ class VersionNumbersTest {
     /** The gap between versionCode and the minor part of versionName. */
     private val agreedOffset = 18
 
+    /**
+     * And the built file says which of them it is.
+     *
+     * Two release APKs in one folder used to be told apart by the date on the
+     * file, and a phone cannot be asked which build it is carrying. Naming the
+     * archive after the version costs one line and answers both.
+     */
+    @Test
+    fun theApkCarriesTheVersionInItsName() {
+        val build = buildFile().readText()
+
+        assertTrue(
+            "app/build.gradle.kts no longer sets archivesName",
+            build.contains("archivesName"),
+        )
+        assertTrue(
+            "archivesName no longer takes the version from defaultConfig, " +
+                "so the two can drift apart again",
+            build.contains("android.defaultConfig.versionName") &&
+                build.contains("android.defaultConfig.versionCode"),
+        )
+    }
+
     @Test
     fun theCodeAndTheNameStillAgree() {
         val build = buildFile().readText()
