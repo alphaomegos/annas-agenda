@@ -2,9 +2,14 @@ package com.alphaomegos.annasagenda
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,21 +22,49 @@ import java.io.File
 import java.time.DayOfWeek
 import java.time.LocalDate
 
+/**
+ * The first view model asked its questions without a device.
+ *
+ * A probe, like 0084 and 0091 before it, and the first of these to need more
+ * than a change of folder.
+ *
+ * A view model loads itself on `viewModelScope`, which is the main dispatcher,
+ * and these tests block their own thread while they wait for that load. On a
+ * device that is fine: the test has one thread and the main looper has
+ * another. Under Robolectric the test *is* the main thread, so the load went
+ * into a queue nothing was left to drain, and both tests failed with
+ * "AppViewModel did not finish loading" — which is the polling loop at the
+ * bottom of this file, giving up after two seconds.
+ *
+ * So the main dispatcher is replaced for the duration. An unconfined test
+ * dispatcher runs what is launched on it straight away, on whatever thread
+ * asked; nothing here is about threading, so nothing here is weakened by
+ * that. It is set and reset around every test, and it does the same on a
+ * device, which is what keeps this file shareable.
+ *
+ * What isolates one test from the next is `resetAllData`, not the file
+ * deletion in setUp. Deleting the file under a live DataStore changes
+ * nothing — the instance keeps what it read in memory — and that was as true
+ * on the emulator as it is here. The deletion stays because it costs nothing,
+ * but it is not what makes this work.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class AppViewModelRecurringRescheduleInstrumentedTest {
+class AppViewModelRecurringRescheduleTest {
 
     private lateinit var app: Application
 
     @Before
     fun setUp() {
-        app = InstrumentationRegistry.getInstrumentation()
-            .targetContext.applicationContext as Application
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        app = ApplicationProvider.getApplicationContext()
         clearAppStateStoreFile()
     }
 
     @After
     fun tearDown() {
         clearAppStateStoreFile()
+        Dispatchers.resetMain()
     }
 
     @Test

@@ -211,12 +211,17 @@ dependencies {
     // uses; ui-test-manifest below supplies the activity both of them need.
     testImplementation(libs.androidx.compose.ui.test.junit4)
 
+    // Dispatchers.setMain, so a view model's own scope has somewhere to run
+    // while a test blocks the thread waiting for it.
+    testImplementation(libs.kotlinx.coroutines.test)
+
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
