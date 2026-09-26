@@ -3,10 +3,10 @@ package com.alphaomegos.annasagenda.screens.media
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.ReadingMediaType
@@ -24,6 +24,15 @@ import org.junit.runner.RunWith
  * what the three used to have to agree on by hand: which words belong to which
  * kind, when the year field is there at all, and what Save and Done do when the
  * screen says the item is not valid.
+ *
+ * The questions are asked as existence, not as visibility. Everything below
+ * the screen title lives in a scrolling column, so whether a field happens to
+ * be above the fold depends on how tall the screen is — and these used to say
+ * `assertIsDisplayed` only because the emulator's screen was tall enough to
+ * hide the difference. "Is this the word this kind of media uses" is a
+ * question about the form, not about the phone; the negative half of each pair
+ * was already asking it that way. Done is clicked the way a person would reach
+ * it, by scrolling to it first.
  */
 @RunWith(AndroidJUnit4::class)
 class MediaDetailsFormTest {
@@ -42,9 +51,9 @@ class MediaDetailsFormTest {
         val activity = composeRule.activity
 
         composeRule.onNodeWithText(activity.getString(R.string.reading_movie_title))
-            .assertIsDisplayed()
+            .assertExists()
         composeRule.onNodeWithText(activity.getString(R.string.reading_movie_done))
-            .assertIsDisplayed()
+            .assertExists()
     }
 
     @Test
@@ -70,7 +79,7 @@ class MediaDetailsFormTest {
 
         composeRule
             .onNodeWithText(composeRule.activity.getString(R.string.reading_book_field_year_read))
-            .assertIsDisplayed()
+            .assertExists()
     }
 
     @Test
@@ -85,7 +94,7 @@ class MediaDetailsFormTest {
 
         composeRule
             .onNodeWithText(activity.getString(R.string.reading_media_field_year_abandoned))
-            .assertIsDisplayed()
+            .assertExists()
         composeRule
             .onNodeWithText(activity.getString(R.string.reading_series_field_year_watched))
             .assertDoesNotExist()
@@ -109,6 +118,7 @@ class MediaDetailsFormTest {
 
         composeRule
             .onNodeWithText(composeRule.activity.getString(R.string.reading_book_done))
+            .performScrollTo()
             .performClick()
 
         composeRule.runOnIdle {
