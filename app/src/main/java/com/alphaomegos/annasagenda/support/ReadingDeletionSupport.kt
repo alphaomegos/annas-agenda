@@ -1,17 +1,20 @@
 package com.alphaomegos.annasagenda
 
 /**
- * What is left after an item leaves the media library, and what has to be
- * deleted from disk afterwards.
+ * A new state, and the cover file that nothing points at any more.
  *
- * [coverToDelete] is the file the caller should remove once the state is
- * written. It is handed back rather than deleted here because deleting a file
- * needs a Context and this has to stay answerable from a terminal — and
+ * Two things produce one: deleting an item, and editing one in a way that
+ * changes its cover. Both leave a file behind that has become rubbish, and
+ * both have to answer the same question about when it is safe to go.
+ *
+ * [coverToDelete] is handed back rather than deleted here because deleting a
+ * file needs a Context and this has to stay answerable from a terminal — and
  * because a cover must not be destroyed before the state that stopped
- * referring to it has been saved. 0014 is the version of that going wrong from
- * the other side: the file was replaced before anything noticed.
+ * referring to it has been written. 0014 is the version of that going wrong
+ * from the other side: the file was replaced before anything noticed, and the
+ * old picture stayed on screen until the app was restarted.
  */
-data class ReadingDeletion(
+data class ReadingChange(
     val state: AppState,
     val coverToDelete: String?,
 )
@@ -32,10 +35,10 @@ data class ReadingDeletion(
  * running plan entry pointing at a task that no longer existed turned up in
  * real data this week.
  */
-fun stateAfterDeletingReadingBook(state: AppState, bookId: Long): ReadingDeletion? {
+fun stateAfterDeletingReadingBook(state: AppState, bookId: Long): ReadingChange? {
     val book = state.readingBooks.firstOrNull { it.id == bookId } ?: return null
 
-    return ReadingDeletion(
+    return ReadingChange(
         state = state.copy(
             readingBooks = state.readingBooks.filterNot { it.id == bookId },
             readingSessions = state.readingSessions.filterNot { it.bookId == bookId },
@@ -55,19 +58,19 @@ fun stateAfterDeletingReadingBook(state: AppState, bookId: Long): ReadingDeletio
  * date watched, a rewatch — this is where that belongs, rather than in a
  * branch inside a shared one.
  */
-fun stateAfterDeletingReadingMovie(state: AppState, movieId: Long): ReadingDeletion? {
+fun stateAfterDeletingReadingMovie(state: AppState, movieId: Long): ReadingChange? {
     val movie = state.readingMovies.firstOrNull { it.id == movieId } ?: return null
 
-    return ReadingDeletion(
+    return ReadingChange(
         state = state.copy(readingMovies = state.readingMovies.filterNot { it.id == movieId }),
         coverToDelete = movie.coverUri,
     )
 }
 
-fun stateAfterDeletingReadingSeries(state: AppState, seriesId: Long): ReadingDeletion? {
+fun stateAfterDeletingReadingSeries(state: AppState, seriesId: Long): ReadingChange? {
     val series = state.readingSeries.firstOrNull { it.id == seriesId } ?: return null
 
-    return ReadingDeletion(
+    return ReadingChange(
         state = state.copy(readingSeries = state.readingSeries.filterNot { it.id == seriesId }),
         coverToDelete = series.coverUri,
     )

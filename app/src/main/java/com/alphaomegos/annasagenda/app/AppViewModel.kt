@@ -683,38 +683,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         yearAbandoned: Int? = null,
         shelf: ReadingShelf? = null,
     ) {
-        val st = _state.value
-        val old = st.readingBooks.firstOrNull { it.id == bookId } ?: return
-
-        val oldCover = old.coverUri
-
         val currentYear = LocalDate.now().year
 
-        val updated = updateReadingBookEntity(
-            old = old,
-            author = author,
-            title = title,
-            coverUri = coverUri,
-            clearCover = clearCover,
-            totalPages = totalPages,
-            currentPage = currentPage,
-            yearRead = yearRead,
-            yearAbandoned = yearAbandoned,
-            shelf = shelf,
-            currentYear = currentYear,
-        )
-
-        _state.value = stateWithReadingBookChanged(
-            state = st,
-            changed = updated,
-            books = st.readingBooks.map { b -> if (b.id == bookId) updated else b },
+        val change = stateAfterUpdatingReadingBook(
+            state = _state.value,
+            bookId = bookId,
             nowEpochMillis = System.currentTimeMillis(),
             newSessionId = ::newId,
-        )
+        ) { old ->
+            updateReadingBookEntity(
+                old = old,
+                author = author,
+                title = title,
+                coverUri = coverUri,
+                clearCover = clearCover,
+                totalPages = totalPages,
+                currentPage = currentPage,
+                yearRead = yearRead,
+                yearAbandoned = yearAbandoned,
+                shelf = shelf,
+                currentYear = currentYear,
+            )
+        } ?: return
 
-        if (oldCover != updated.coverUri) {
-            cleanupInternalCoverAsync(oldCover)
-        }
+        _state.value = change.state
+        cleanupInternalCoverAsync(change.coverToDelete)
     }
 
     fun addReadingMovie(
@@ -773,34 +766,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         yearAbandoned: Int? = null,
         shelf: ReadingShelf? = null,
     ) {
-        val st = _state.value
-        val old = st.readingMovies.firstOrNull { it.id == movieId } ?: return
-
-        val oldCover = old.coverUri
-
         val currentYear = LocalDate.now().year
 
-        val updated = updateReadingMovieEntity(
-            old = old,
-            title = title,
-            coverUri = coverUri,
-            clearCover = clearCover,
-            releaseYear = releaseYear,
-            clearReleaseYear = clearReleaseYear,
-            translation = translation,
-            yearWatched = yearWatched,
-            yearAbandoned = yearAbandoned,
-            shelf = shelf,
-            currentYear = currentYear,
-        )
+        val change = stateAfterUpdatingReadingMovie(_state.value, movieId) { old ->
+            updateReadingMovieEntity(
+                old = old,
+                title = title,
+                coverUri = coverUri,
+                clearCover = clearCover,
+                releaseYear = releaseYear,
+                clearReleaseYear = clearReleaseYear,
+                translation = translation,
+                yearWatched = yearWatched,
+                yearAbandoned = yearAbandoned,
+                shelf = shelf,
+                currentYear = currentYear,
+            )
+        } ?: return
 
-        _state.value = st.copy(
-            readingMovies = st.readingMovies.map { m -> if (m.id == movieId) updated else m }
-        )
+        _state.value = change.state
 
-        if (oldCover != updated.coverUri) {
-            cleanupInternalCoverAsync(oldCover)
-        }
+        cleanupInternalCoverAsync(change.coverToDelete)
     }
 
     fun addReadingSeries(
@@ -861,34 +847,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         yearAbandoned: Int? = null,
         shelf: ReadingShelf? = null,
     ) {
-        val st = _state.value
-        val old = st.readingSeries.firstOrNull { it.id == seriesId } ?: return
-
-        val oldCover = old.coverUri
-
         val currentYear = LocalDate.now().year
 
-        val updated = updateReadingSeriesEntity(
-            old = old,
-            title = title,
-            coverUri = coverUri,
-            clearCover = clearCover,
-            totalSeasons = totalSeasons,
-            currentSeason = currentSeason,
-            currentEpisode = currentEpisode,
-            yearWatched = yearWatched,
-            yearAbandoned = yearAbandoned,
-            shelf = shelf,
-            currentYear = currentYear,
-        )
+        val change = stateAfterUpdatingReadingSeries(_state.value, seriesId) { old ->
+            updateReadingSeriesEntity(
+                old = old,
+                title = title,
+                coverUri = coverUri,
+                clearCover = clearCover,
+                totalSeasons = totalSeasons,
+                currentSeason = currentSeason,
+                currentEpisode = currentEpisode,
+                yearWatched = yearWatched,
+                yearAbandoned = yearAbandoned,
+                shelf = shelf,
+                currentYear = currentYear,
+            )
+        } ?: return
 
-        _state.value = st.copy(
-            readingSeries = st.readingSeries.map { s -> if (s.id == seriesId) updated else s }
-        )
+        _state.value = change.state
 
-        if (oldCover != updated.coverUri) {
-            cleanupInternalCoverAsync(oldCover)
-        }
+        cleanupInternalCoverAsync(change.coverToDelete)
     }
 
 
