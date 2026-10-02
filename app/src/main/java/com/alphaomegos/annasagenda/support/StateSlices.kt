@@ -19,6 +19,13 @@ package com.alphaomegos.annasagenda
 data class CalorimeterSlice(
     val calorieGoalChanges: List<CalorieGoalChange> = emptyList(),
     val foodLog: List<FoodEntry> = emptyList(),
+    // What the screen shows (6.1) and what it offers (6.2, 6.4), schema 6.
+    val calorimeterShowDailyGoal: Boolean = true,
+    val calorimeterShowWeeklyGoal: Boolean = true,
+    val calorimeterShowPotentialLoss: Boolean = true,
+    val foodLibraryVisible: Boolean = false,
+    val dietEnabled: Boolean = false,
+    val dietPlan: Map<java.time.DayOfWeek, List<DietItem>> = emptyMap(),
 )
 
 data class AnthropometrySlice(
@@ -83,6 +90,12 @@ fun pendingReadingPromptOf(state: AppState): PendingReadingPrompt? {
 fun calorimeterSliceOf(state: AppState): CalorimeterSlice = CalorimeterSlice(
     calorieGoalChanges = state.calorieGoalChanges,
     foodLog = state.foodLog,
+    calorimeterShowDailyGoal = state.calorimeterShowDailyGoal,
+    calorimeterShowWeeklyGoal = state.calorimeterShowWeeklyGoal,
+    calorimeterShowPotentialLoss = state.calorimeterShowPotentialLoss,
+    foodLibraryVisible = state.foodLibraryVisible,
+    dietEnabled = state.dietEnabled,
+    dietPlan = state.dietPlan,
 )
 
 fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySlice(

@@ -18,14 +18,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -96,7 +99,10 @@ fun CalorimeterRoute(
         },
         onDeleteFood = { id ->
             vm.deleteFoodEntry(id)
-        }
+        },
+        onSetDisplay = { daily, weekly, potential ->
+            vm.setCalorimeterDisplay(daily, weekly, potential)
+        },
     )
 }
 
@@ -108,8 +114,10 @@ private fun CalorimeterContent(
     onSetGoalFromToday: (Int) -> Unit,
     onAddFood: (LocalDate, String, Int) -> Long,
     onDeleteFood: (Long) -> Unit,
+    onSetDisplay: (dailyGoal: Boolean, weeklyGoal: Boolean, potentialLoss: Boolean) -> Unit,
 ) {
     val ctx = LocalContext.current
+    val showDisplaySettings = rememberSaveable { mutableStateOf(false) }
     val locale = appLocale()
 
     val today = LocalDate.now()
@@ -205,7 +213,15 @@ private fun CalorimeterContent(
                 title = { Text(stringResource(R.string.calorimeter_title)) },
                 navigationIcon = {
                     TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-                }
+                },
+                actions = {
+                    IconButton(onClick = { showDisplaySettings.value = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.calorimeter_settings_open),
+                        )
+                    }
+                },
             )
         }
     ) { inner ->
@@ -251,7 +267,8 @@ private fun CalorimeterContent(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
 
-                    Row(
+                    // 6.1: the goal line can be hidden; the day's balance stays.
+                    if (state.calorimeterShowDailyGoal) Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -338,7 +355,7 @@ private fun CalorimeterContent(
 
             // Extra sections ONLY for today
             if (isToday) {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                if (state.calorimeterShowWeeklyGoal) Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -359,7 +376,7 @@ private fun CalorimeterContent(
                     }
                 }
 
-                Card(modifier = Modifier.fillMaxWidth()) {
+                if (state.calorimeterShowPotentialLoss) Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -438,6 +455,19 @@ private fun CalorimeterContent(
                     Text(stringResource(R.string.ok))
                 }
             }
+        )
+    }
+
+    if (showDisplaySettings.value) {
+        CalorimeterDisplayDialog(
+            dailyGoal = state.calorimeterShowDailyGoal,
+            weeklyGoal = state.calorimeterShowWeeklyGoal,
+            potentialLoss = state.calorimeterShowPotentialLoss,
+            onDismiss = { showDisplaySettings.value = false },
+            onSave = { daily, weekly, potential ->
+                onSetDisplay(daily, weekly, potential)
+                showDisplaySettings.value = false
+            },
         )
     }
 
@@ -586,3 +616,51 @@ private fun CalorimeterContent(
     }
 }
 
+
+/**
+ * 6.1: three switches for what the calorimeter shows besides the day itself.
+ * Written on OK; the boxes ticked survive turning the phone.
+ */
+@Composable
+private fun CalorimeterDisplayDialog(
+    dailyGoal: Boolean,
+    weeklyGoal: Boolean,
+    potentialLoss: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (Boolean, Boolean, Boolean) -> Unit,
+) {
+    var daily by rememberSaveable { mutableStateOf(dailyGoal) }
+    var weekly by rememberSaveable { mutableStateOf(weeklyGoal) }
+    var potential by rememberSaveable { mutableStateOf(potentialLoss) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.calorimeter_settings_title)) },
+        text = {
+            Column {
+                listOf(
+                    Triple(R.string.calorimeter_show_daily_goal, daily) { v: Boolean -> daily = v },
+                    Triple(R.string.calorimeter_show_weekly_goal, weekly) { v: Boolean -> weekly = v },
+                    Triple(R.string.calorimeter_show_potential_loss, potential) { v: Boolean -> potential = v },
+                ).forEach { (labelRes, checked, set) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { set(!checked) }
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = checked, onCheckedChange = { set(it) })
+                        Text(text = stringResource(labelRes), style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(daily, weekly, potential) }) { Text(stringResource(R.string.ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}

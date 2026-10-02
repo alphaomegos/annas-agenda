@@ -1803,6 +1803,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
        Calorimeter
     ---------------------------- */
 
+    /** 6.1: which of the three summaries the calorimeter shows. */
+    fun setCalorimeterDisplay(dailyGoal: Boolean, weeklyGoal: Boolean, potentialLoss: Boolean) {
+        val cur = _state.value
+        val next = cur.copy(
+            calorimeterShowDailyGoal = dailyGoal,
+            calorimeterShowWeeklyGoal = weeklyGoal,
+            calorimeterShowPotentialLoss = potentialLoss,
+        )
+        if (next != cur) _state.value = next
+    }
+
     fun setDailyCalorieGoalFrom(date: LocalDate, kcal: Int) {
         val clean = kcal.coerceAtLeast(1)
         val cur = _state.value

@@ -480,4 +480,10 @@
     <string name="anthro_show_entries">Показывать замеры</string>
     <string name="anthro_entries_header">Замеры</string>
     <string name="anthro_entry_value">%1$s: %2$s %3$s</string>
+    <!-- Calorimeter display switches (0139) -->
+    <string name="calorimeter_settings_open">Что показывает калориметр</string>
+    <string name="calorimeter_settings_title">Показывать</string>
+    <string name="calorimeter_show_daily_goal">Дневную цель</string>
+    <string name="calorimeter_show_weekly_goal">Недельную цель</string>
+    <string name="calorimeter_show_potential_loss">Потенциальное похудение</string>
 </resources>
