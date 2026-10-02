@@ -44,12 +44,16 @@ internal enum class MenuTileLabel { Regular, Small }
  * menu's list rows use rather than through the card's own click, because the
  * card's click knows nothing about long presses and two detectors on one tile
  * would race for the same touch.
+ *
+ * [onClick] null means the tile answers no touch at all, which is what the
+ * main menu wants while tiles are being dragged around: the drag is then the
+ * only thing listening, and a finger lifted on a tile does not open it.
  */
 @Composable
 internal fun MenuTile(
     iconRes: Int,
     title: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     label: MenuTileLabel = MenuTileLabel.Regular,
@@ -106,30 +110,31 @@ internal fun MenuTile(
         }
     }
 
+    val click = onClick
     val longClick = onLongClick
-    if (enabled && longClick != null) {
-        ElevatedCard(
-            modifier = modifier.pointerInput(onClick, longClick) {
+    when {
+        enabled && click != null && longClick != null -> ElevatedCard(
+            modifier = modifier.pointerInput(click, longClick) {
                 detectTapGestures(
-                    onTap = { onClick() },
+                    onTap = { click() },
                     onLongPress = { longClick() },
                 )
             },
             shape = shape,
             colors = colorsEnabled
         ) { content() }
-    } else if (enabled) {
-        ElevatedCard(
-            onClick = onClick,
+
+        enabled && click != null -> ElevatedCard(
+            onClick = click,
             modifier = modifier,
             shape = shape,
             colors = colorsEnabled
         ) { content() }
-    } else {
-        ElevatedCard(
+
+        else -> ElevatedCard(
             modifier = modifier,
             shape = shape,
-            colors = colorsDisabled
+            colors = if (enabled) colorsEnabled else colorsDisabled
         ) { content() }
     }
 }

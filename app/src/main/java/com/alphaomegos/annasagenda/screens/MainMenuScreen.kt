@@ -58,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -79,6 +80,7 @@ import com.alphaomegos.annasagenda.appIsDarkTheme
 import com.alphaomegos.annasagenda.isAnnaDay
 import com.alphaomegos.annasagenda.itemsInMenuOrder
 import com.alphaomegos.annasagenda.mainMenuColumns
+import com.alphaomegos.annasagenda.withItemMoved
 import com.alphaomegos.annasagenda.undoneLampFor
 import com.alphaomegos.annasagenda.undoneLampIconRes
 import com.alphaomegos.annasagenda.components.ConfirmDialog
@@ -365,6 +367,8 @@ internal fun MainMenuContent(
 
     val draggingIndex = remember { mutableIntStateOf(-1) }
     val draggingOffsetY = remember { mutableFloatStateOf(0f) }
+    // Only the tiles move sideways; the list leaves this at zero.
+    val draggingOffsetX = remember { mutableFloatStateOf(0f) }
 
     fun persistCurrentOrder() {
         val hiddenIdsInOrder = orderedFromState
@@ -378,6 +382,7 @@ internal fun MainMenuContent(
         reorderMode = false
         draggingIndex.intValue = -1
         draggingOffsetY.floatValue = 0f
+        draggingOffsetX.floatValue = 0f
         persistCurrentOrder()
     }
 
@@ -412,6 +417,7 @@ internal fun MainMenuContent(
                 onShowAll = {
                     draggingIndex.intValue = -1
                     draggingOffsetY.floatValue = 0f
+                    draggingOffsetX.floatValue = 0f
                     items = orderedFromState
                     onShowAllMenuItems()
                 },
@@ -437,17 +443,47 @@ internal fun MainMenuContent(
             ) {
                 val columns = mainMenuColumns(maxWidth.value.toInt())
 
-                // Reorder mode always falls back to the list. Dragging a row
-                // up and down a column is something the list already does
-                // properly, and a grid would need it reinvented in two
-                // dimensions. Switching layout to rearrange is a visible seam,
-                // but an honest one: the shape you drag in is the shape the
-                // order is stored in.
-                if (columns > 1 && !reorderMode) {
+                // Rearranging stays in whichever shape the menu is in. Until
+                // 0130 the tiles handed over to the list for it, which on the
+                // phone read as a jump to another screen at the very moment
+                // something was being held.
+                if (columns > 1) {
                     MainMenuTiles(
                         items = items,
                         columns = columns,
+                        reorderMode = reorderMode,
+                        canHideItems = items.size > 1,
+                        draggingIndex = draggingIndex.intValue,
+                        draggingOffset = Offset(draggingOffsetX.floatValue, draggingOffsetY.floatValue),
                         onStartReorder = { reorderMode = true },
+                        onDragStart = { index ->
+                            draggingIndex.intValue = index
+                            draggingOffsetX.floatValue = 0f
+                            draggingOffsetY.floatValue = 0f
+                        },
+                        onDrag = { delta ->
+                            draggingOffsetX.floatValue += delta.x
+                            draggingOffsetY.floatValue += delta.y
+                        },
+                        onMoveItem = { from, to, dragCompensation ->
+                            items = items.withItemMoved(from, to)
+                            draggingIndex.intValue = to
+                            draggingOffsetX.floatValue += dragCompensation.x
+                            draggingOffsetY.floatValue += dragCompensation.y
+                        },
+                        onHideItem = { id ->
+                            draggingIndex.intValue = -1
+                            draggingOffsetX.floatValue = 0f
+                            draggingOffsetY.floatValue = 0f
+                            items = items.filterNot { it.id == id }
+                            onHideMenuItem(id)
+                        },
+                        onStopDragging = {
+                            draggingIndex.intValue = -1
+                            draggingOffsetX.floatValue = 0f
+                            draggingOffsetY.floatValue = 0f
+                            persistCurrentOrder()
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {

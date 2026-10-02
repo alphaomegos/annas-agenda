@@ -182,4 +182,79 @@ class MainMenuSupportTest {
         assertEquals(MAIN_MENU_TILE_MIN_DP, mainMenuTileHeightDp(674, 690, columns = 0, itemCount = menu))
         assertEquals(MAIN_MENU_TILE_MIN_DP, mainMenuTileHeightDp(674, 690, columns = 3, itemCount = 0))
     }
+
+    /* ---------------- where a dragged tile lands ---------------- */
+
+    /** Three by three, 100px tiles with 10px gaps — the shape of the menu. */
+    private val grid = (0 until 9).map { i ->
+        MenuCell(index = i, left = (i % 3) * 110, top = (i / 3) * 110, width = 100, height = 100)
+    }
+
+    @Test
+    fun aTileHeldOverANeighbourLandsThere() {
+        // The middle of the centre tile.
+        assertEquals(4, menuDropTarget(draggedIndex = 0, x = 160f, y = 160f, cells = grid)?.index)
+    }
+
+    @Test
+    fun aTileHeldOverItsOwnPlaceGoesNowhere() {
+        assertNull(menuDropTarget(draggedIndex = 4, x = 160f, y = 160f, cells = grid))
+    }
+
+    /** Over a gap nothing moves, so the tile does not flicker between two places. */
+    @Test
+    fun aTileHeldOverAGapGoesNowhere() {
+        assertNull(menuDropTarget(draggedIndex = 0, x = 105f, y = 50f, cells = grid))
+        assertNull(menuDropTarget(draggedIndex = 0, x = 50f, y = 105f, cells = grid))
+    }
+
+    /** Left and top edges are the tile's own; right and bottom belong to the next. */
+    @Test
+    fun anEdgeHasOneAnswer() {
+        assertEquals(1, menuDropTarget(draggedIndex = 0, x = 110f, y = 0f, cells = grid)?.index)
+        assertNull(menuDropTarget(draggedIndex = 0, x = 210f, y = 0f, cells = grid))
+    }
+
+    @Test
+    fun aGridWithNothingLaidOutHasNowhereToLand() {
+        assertNull(menuDropTarget(draggedIndex = 0, x = 50f, y = 50f, cells = emptyList()))
+    }
+
+    @Test
+    fun movingForwardShiftsTheOnesInBetweenBack() {
+        assertEquals(listOf("b", "c", "a", "d"), listOf("a", "b", "c", "d").withItemMoved(0, 2))
+    }
+
+    @Test
+    fun movingBackShiftsTheOnesInBetweenForward() {
+        assertEquals(listOf("d", "a", "b", "c"), listOf("a", "b", "c", "d").withItemMoved(3, 0))
+    }
+
+    @Test
+    fun theSamePlaceOrAPlaceThatDoesNotExistChangesNothing() {
+        val list = listOf("a", "b", "c")
+
+        assertSame(list, list.withItemMoved(1, 1))
+        assertSame(list, list.withItemMoved(-1, 1))
+        assertSame(list, list.withItemMoved(0, 3))
+    }
+
+    /**
+     * The whole gesture on the real shape: the first tile dragged onto the
+     * centre one takes the centre, and the four it passed shift back by one
+     * in reading order.
+     */
+    @Test
+    fun theFirstTileDraggedToTheCentreTakesTheCentre() {
+        val menu = listOf("calendar", "new_task", "someday", "recurring", "anthropometry",
+            "calorimeter", "running", "counters", "reading")
+
+        val target = menuDropTarget(draggedIndex = 0, x = 160f, y = 160f, cells = grid)!!
+
+        assertEquals(
+            listOf("new_task", "someday", "recurring", "anthropometry", "calendar",
+                "calorimeter", "running", "counters", "reading"),
+            menu.withItemMoved(0, target.index),
+        )
+    }
 }

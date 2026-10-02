@@ -101,3 +101,47 @@ fun mainMenuTileHeightDp(widthDp: Int, heightDp: Int, columns: Int, itemCount: I
 
     return minOf(tileWidth, fittingHeight).coerceAtLeast(MAIN_MENU_TILE_MIN_DP)
 }
+
+/**
+ * A tile as the grid laid it out, in pixels. [index] is its place in the menu.
+ */
+data class MenuCell(
+    val index: Int,
+    val left: Int,
+    val top: Int,
+    val width: Int,
+    val height: Int,
+)
+
+/**
+ * The tile a dragged tile is over, judged by one point — the dragged tile's
+ * middle — or null when that point is over nothing new.
+ *
+ * Over the dragged tile's own place, or over a gap between tiles, the answer
+ * is null and nothing moves: the tile stays where it is until its middle is
+ * properly inside a neighbour. Judging by the middle rather than by any
+ * overlap is what keeps a tile from flicking back and forth between two
+ * places while it is held over the line between them.
+ *
+ * The right and bottom edges belong to the next tile, not this one, so a point
+ * exactly on a shared edge has one answer rather than two.
+ */
+fun menuDropTarget(draggedIndex: Int, x: Float, y: Float, cells: List<MenuCell>): MenuCell? =
+    cells.firstOrNull { cell ->
+        cell.index != draggedIndex &&
+            x >= cell.left && x < cell.left + cell.width &&
+            y >= cell.top && y < cell.top + cell.height
+    }
+
+/**
+ * The list with one item taken out of [from] and put back at [to].
+ *
+ * In a grid this reads as "the tile takes that place and the ones in between
+ * shift by one in reading order" — the same thing the list does, because the
+ * menu's order is a list in both shapes. Out of range, or the same place, the
+ * list comes back as it was.
+ */
+fun <T> List<T>.withItemMoved(from: Int, to: Int): List<T> {
+    if (from !in indices || to !in indices || from == to) return this
+    return toMutableList().also { list -> list.add(to, list.removeAt(from)) }
+}
