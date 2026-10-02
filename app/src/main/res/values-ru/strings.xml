@@ -486,4 +486,21 @@
     <string name="calorimeter_show_daily_goal">Дневную цель</string>
     <string name="calorimeter_show_weekly_goal">Недельную цель</string>
     <string name="calorimeter_show_potential_loss">Потенциальное похудение</string>
+    <!-- Diet (0141) -->
+    <string name="calorimeter_show_diet">Диета</string>
+    <string name="diet_show_past_unticked">Неотмеченные блюда в прошлых днях</string>
+    <string name="diet_edit">Редактировать диету</string>
+    <string name="diet_title">Диета</string>
+    <string name="diet_card_title">Диета: %1$d ккал</string>
+    <string name="diet_day_empty">На этот день блюд пока нет.</string>
+    <string name="diet_add_dish">Добавить блюдо</string>
+    <string name="diet_dish_dialog_title">Блюдо</string>
+    <string name="diet_dish_title">Блюдо и порция</string>
+    <string name="diet_dish_kcal">ккал</string>
+    <string name="diet_dish_edit">Изменить блюдо</string>
+    <string name="diet_dish_move_up">Выше</string>
+    <string name="diet_dish_move_down">Ниже</string>
+    <string name="diet_day_total">Итого: %1$d ккал</string>
+    <string name="diet_copy_day">Скопировать день на…</string>
+    <string name="diet_copy_day_hint">Блюда выбранных дней заменятся блюдами этого дня.</string>
 </resources>

@@ -26,6 +26,9 @@ data class CalorimeterSlice(
     val foodLibraryVisible: Boolean = false,
     val dietEnabled: Boolean = false,
     val dietPlan: Map<java.time.DayOfWeek, List<DietItem>> = emptyMap(),
+    // Schema 7.
+    val dietShowPastUnticked: Boolean = true,
+    val foodLibraryUserItems: List<FoodLibraryUserItem> = emptyList(),
 )
 
 data class AnthropometrySlice(
@@ -96,6 +99,8 @@ fun calorimeterSliceOf(state: AppState): CalorimeterSlice = CalorimeterSlice(
     foodLibraryVisible = state.foodLibraryVisible,
     dietEnabled = state.dietEnabled,
     dietPlan = state.dietPlan,
+    dietShowPastUnticked = state.dietShowPastUnticked,
+    foodLibraryUserItems = state.foodLibraryUserItems,
 )
 
 fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySlice(

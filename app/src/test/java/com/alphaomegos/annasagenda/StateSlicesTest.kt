@@ -123,10 +123,10 @@ class StateSlicesTest {
     }
 
     /**
-     * The settings the screen reads (0138) are in the slice, or changing them
-     * would not reach the screen until something else on it changed.
+     * 6.1 (0139) and what the calorimeter offers from schemas 6 and 7 — in
+     * the slice, or changing them would not reach the screen until something
+     * else on it changed.
      */
-    /** 6.1 (0139) and what the calorimeter will offer from schema 6. */
     @Test
     fun calorimeterSliceCarriesItsSettingsAndTheDiet() {
         listOf(
@@ -136,6 +136,8 @@ class StateSlicesTest {
             populated.copy(foodLibraryVisible = true),
             populated.copy(dietEnabled = true),
             populated.copy(dietPlan = mapOf(java.time.DayOfWeek.MONDAY to listOf(DietItem(1, "Творог", 120)))),
+            populated.copy(dietShowPastUnticked = false),
+            populated.copy(foodLibraryUserItems = listOf(FoodLibraryUserItem(2, FoodCategory.DAIRY, "Сырок", 40, "г", 160))),
         ).forEach { changed ->
             assertNotEquals(calorimeterSliceOf(populated), calorimeterSliceOf(changed))
         }

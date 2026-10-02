@@ -345,4 +345,21 @@
     <string name="calorimeter_show_daily_goal">Dnevni cilj</string>
     <string name="calorimeter_show_weekly_goal">Nedeljni cilj</string>
     <string name="calorimeter_show_potential_loss">Moguće mršavljenje</string>
+    <!-- Diet (0141) -->
+    <string name="calorimeter_show_diet">Dijeta</string>
+    <string name="diet_show_past_unticked">Neoznačena jela u prošlim danima</string>
+    <string name="diet_edit">Uredi dijetu</string>
+    <string name="diet_title">Dijeta</string>
+    <string name="diet_card_title">Dijeta: %1$d kcal</string>
+    <string name="diet_day_empty">Za ovaj dan još nema jela.</string>
+    <string name="diet_add_dish">Dodaj jelo</string>
+    <string name="diet_dish_dialog_title">Jelo</string>
+    <string name="diet_dish_title">Jelo i porcija</string>
+    <string name="diet_dish_kcal">kcal</string>
+    <string name="diet_dish_edit">Izmeni jelo</string>
+    <string name="diet_dish_move_up">Gore</string>
+    <string name="diet_dish_move_down">Dole</string>
+    <string name="diet_day_total">Ukupno: %1$d kcal</string>
+    <string name="diet_copy_day">Kopiraj dan na…</string>
+    <string name="diet_copy_day_hint">Jela izabranih dana zameniće se jelima ovog dana.</string>
 </resources>

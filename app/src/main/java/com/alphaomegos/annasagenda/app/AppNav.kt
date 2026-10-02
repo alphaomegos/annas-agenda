@@ -14,6 +14,7 @@ import com.alphaomegos.annasagenda.screens.media.BookDetailsScreen
 import com.alphaomegos.annasagenda.screens.CalendarDayRoute
 import com.alphaomegos.annasagenda.screens.CalendarMonthRoute
 import com.alphaomegos.annasagenda.screens.CalorimeterRoute
+import com.alphaomegos.annasagenda.screens.DietRoute
 import com.alphaomegos.annasagenda.screens.CountersScreen
 import com.alphaomegos.annasagenda.screens.LanguageScreen
 import com.alphaomegos.annasagenda.screens.MainMenuScreen
@@ -41,6 +42,7 @@ private object Route {
     const val ANTHROPOMETRY = "anthropometry"
     const val NEW_TASK_DATE = "new_task_date"
     const val CALORIMETER = "calorimeter"
+    const val DIET = "diet"
     const val RUNNING = "running"
     const val COUNTERS = "counters"
 
@@ -140,7 +142,15 @@ fun AppNav(vm: AppViewModel) {
         composable(Route.CALORIMETER) {
             CalorimeterRoute(
                 vm = vm,
-                onBack = { nav.popBackStack() }
+                onBack = { nav.popBackStack() },
+                onOpenDiet = { nav.navigate(Route.DIET) },
+            )
+        }
+
+        composable(Route.DIET) {
+            DietRoute(
+                vm = vm,
+                onBack = { nav.popBackStack() },
             )
         }
 

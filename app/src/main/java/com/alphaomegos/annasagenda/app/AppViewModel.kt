@@ -1814,6 +1814,57 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (next != cur) _state.value = next
     }
 
+    /** 6.2: the diet on or off, and whether past days keep showing unticked dishes. */
+    fun setDietSettings(enabled: Boolean, showPastUnticked: Boolean) {
+        val cur = _state.value
+        val next = cur.copy(dietEnabled = enabled, dietShowPastUnticked = showPastUnticked)
+        if (next != cur) _state.value = next
+    }
+
+    /** A dish of [date]'s plan eaten: an ordinary food entry carrying its id. */
+    fun tickDietDish(itemId: Long, date: LocalDate) {
+        val cur = _state.value
+        val item = cur.dietPlan[date.dayOfWeek]?.firstOrNull { it.id == itemId } ?: return
+        val log = foodLogAfterTickingDish(cur.foodLog, item, date, LocalDate.now(), ::newId)
+        if (log !== cur.foodLog) _state.value = cur.copy(foodLog = log)
+    }
+
+    fun untickDietDish(itemId: Long, date: LocalDate) {
+        val cur = _state.value
+        val log = foodLogAfterUntickingDish(cur.foodLog, itemId, date)
+        if (log !== cur.foodLog) _state.value = cur.copy(foodLog = log)
+    }
+
+    fun addDietDish(day: java.time.DayOfWeek, title: String, kcal: Int) {
+        val cur = _state.value
+        val plan = dietPlanAfterAdding(cur.dietPlan, day, title, kcal, ::newId)
+        if (plan !== cur.dietPlan) _state.value = cur.copy(dietPlan = plan)
+    }
+
+    fun editDietDish(itemId: Long, title: String, kcal: Int) {
+        val cur = _state.value
+        val plan = dietPlanAfterEditing(cur.dietPlan, itemId, title, kcal)
+        if (plan !== cur.dietPlan) _state.value = cur.copy(dietPlan = plan)
+    }
+
+    fun removeDietDish(itemId: Long) {
+        val cur = _state.value
+        val plan = dietPlanAfterRemoving(cur.dietPlan, itemId)
+        if (plan !== cur.dietPlan) _state.value = cur.copy(dietPlan = plan)
+    }
+
+    fun moveDietDish(itemId: Long, step: Int) {
+        val cur = _state.value
+        val plan = dietPlanAfterMoving(cur.dietPlan, itemId, step)
+        if (plan !== cur.dietPlan) _state.value = cur.copy(dietPlan = plan)
+    }
+
+    fun copyDietDay(from: java.time.DayOfWeek, to: Set<java.time.DayOfWeek>) {
+        val cur = _state.value
+        val plan = dietPlanAfterCopyingDay(cur.dietPlan, from, to, ::newId)
+        if (plan !== cur.dietPlan) _state.value = cur.copy(dietPlan = plan)
+    }
+
     fun setDailyCalorieGoalFrom(date: LocalDate, kcal: Int) {
         val clean = kcal.coerceAtLeast(1)
         val cur = _state.value

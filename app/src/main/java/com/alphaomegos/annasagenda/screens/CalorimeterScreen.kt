@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -74,6 +76,9 @@ import com.alphaomegos.annasagenda.foodDraftAfterPickingSuggestion
 import com.alphaomegos.annasagenda.foodDraftAfterTitleChange
 import com.alphaomegos.annasagenda.foodSuggestionForName
 import com.alphaomegos.annasagenda.foodSuggestionsFor
+import com.alphaomegos.annasagenda.DietDishOnDay
+import com.alphaomegos.annasagenda.dietDishesOn
+import com.alphaomegos.annasagenda.foodOutsideDiet
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.formatTwoDecimals
 import java.time.LocalDate
@@ -85,6 +90,7 @@ import java.time.format.FormatStyle
 fun CalorimeterRoute(
     vm: AppViewModel,
     onBack: () -> Unit,
+    onOpenDiet: () -> Unit,
 ) {
     val state by vm.calorimeter.collectAsState()
 
@@ -103,6 +109,9 @@ fun CalorimeterRoute(
         onSetDisplay = { daily, weekly, potential ->
             vm.setCalorimeterDisplay(daily, weekly, potential)
         },
+        onSetDiet = { enabled, showPast -> vm.setDietSettings(enabled, showPast) },
+        onTickDish = { id, date, eaten -> if (eaten) vm.tickDietDish(id, date) else vm.untickDietDish(id, date) },
+        onOpenDiet = onOpenDiet,
     )
 }
 
@@ -115,6 +124,9 @@ private fun CalorimeterContent(
     onAddFood: (LocalDate, String, Int) -> Long,
     onDeleteFood: (Long) -> Unit,
     onSetDisplay: (dailyGoal: Boolean, weeklyGoal: Boolean, potentialLoss: Boolean) -> Unit,
+    onSetDiet: (enabled: Boolean, showPastUnticked: Boolean) -> Unit,
+    onTickDish: (itemId: Long, date: LocalDate, eaten: Boolean) -> Unit,
+    onOpenDiet: () -> Unit,
 ) {
     val ctx = LocalContext.current
     val showDisplaySettings = rememberSaveable { mutableStateOf(false) }
@@ -132,13 +144,22 @@ private fun CalorimeterContent(
 
     val goalSelected = calorieGoalOn(selectedDate, state.calorieGoalChanges)
 
-    val eatenSelected = remember(state.foodLog, selectedDate) {
-        state.foodLog
-            .filter { it.date == selectedDate }
-            .sortedBy { it.id }
+    // 6.2: the day's diet, worked out from the plan and the log each time.
+    val dietDishes = remember(state.dietEnabled, state.dietPlan, state.foodLog, state.dietShowPastUnticked, selectedDate, today) {
+        if (!state.dietEnabled) emptyList<DietDishOnDay>()
+        else dietDishesOn(selectedDate, today, state.dietPlan, state.foodLog, state.dietShowPastUnticked)
     }
 
-    val eatenSelectedSum = eatenSelected.sumOf { it.kcal }
+    // Everything eaten, ticked dishes included: the balance counts them all.
+    val eatenSelectedSum = remember(state.foodLog, selectedDate) {
+        state.foodLog.filter { it.date == selectedDate }.sumOf { it.kcal }
+    }
+
+    // What the list shows: the ticked dishes are already in the diet card.
+    val eatenSelected = remember(state.foodLog, selectedDate, dietDishes) {
+        foodOutsideDiet(selectedDate, state.foodLog, dietDishes)
+    }
+
     val dayBalance = goalSelected - eatenSelectedSum
 
     // Only for today. Both figures are worked out day by day, against the goal
@@ -229,6 +250,8 @@ private fun CalorimeterContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(inner)
+                // The diet card can make the day taller than the screen.
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -262,6 +285,13 @@ private fun CalorimeterContent(
                         contentDescription = stringResource(R.string.next_day)
                     )
                 }
+            }
+
+            if (dietDishes.isNotEmpty()) {
+                DietDayCard(
+                    dishes = dietDishes,
+                    onTick = { id, eaten -> onTickDish(id, selectedDate, eaten) },
+                )
             }
 
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -317,7 +347,8 @@ private fun CalorimeterContent(
                     val previewLimit = 4
 
                     if (eatenSelected.isEmpty()) {
-                        Text(
+                        // Ticked dishes are eaten too; "nothing eaten" under them would be a lie.
+                        if (dietDishes.none { it.eaten != null }) Text(
                             text = stringResource(R.string.calorimeter_no_eaten_today),
                             style = MaterialTheme.typography.bodyMedium
                         )
@@ -463,10 +494,17 @@ private fun CalorimeterContent(
             dailyGoal = state.calorimeterShowDailyGoal,
             weeklyGoal = state.calorimeterShowWeeklyGoal,
             potentialLoss = state.calorimeterShowPotentialLoss,
+            diet = state.dietEnabled,
+            dietPastUnticked = state.dietShowPastUnticked,
             onDismiss = { showDisplaySettings.value = false },
-            onSave = { daily, weekly, potential ->
+            onSave = { daily, weekly, potential, diet, past ->
                 onSetDisplay(daily, weekly, potential)
+                onSetDiet(diet, past)
                 showDisplaySettings.value = false
+            },
+            onOpenDiet = {
+                showDisplaySettings.value = false
+                onOpenDiet()
             },
         )
     }
@@ -626,12 +664,17 @@ private fun CalorimeterDisplayDialog(
     dailyGoal: Boolean,
     weeklyGoal: Boolean,
     potentialLoss: Boolean,
+    diet: Boolean,
+    dietPastUnticked: Boolean,
     onDismiss: () -> Unit,
-    onSave: (Boolean, Boolean, Boolean) -> Unit,
+    onSave: (Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit,
+    onOpenDiet: () -> Unit,
 ) {
     var daily by rememberSaveable { mutableStateOf(dailyGoal) }
     var weekly by rememberSaveable { mutableStateOf(weeklyGoal) }
     var potential by rememberSaveable { mutableStateOf(potentialLoss) }
+    var dietOn by rememberSaveable { mutableStateOf(diet) }
+    var pastOn by rememberSaveable { mutableStateOf(dietPastUnticked) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -642,6 +685,7 @@ private fun CalorimeterDisplayDialog(
                     Triple(R.string.calorimeter_show_daily_goal, daily) { v: Boolean -> daily = v },
                     Triple(R.string.calorimeter_show_weekly_goal, weekly) { v: Boolean -> weekly = v },
                     Triple(R.string.calorimeter_show_potential_loss, potential) { v: Boolean -> potential = v },
+                    Triple(R.string.calorimeter_show_diet, dietOn) { v: Boolean -> dietOn = v },
                 ).forEach { (labelRes, checked, set) ->
                     Row(
                         modifier = Modifier
@@ -654,10 +698,32 @@ private fun CalorimeterDisplayDialog(
                         Text(text = stringResource(labelRes), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
+                // The diet's own settings only mean something with the diet on.
+                if (dietOn) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { pastOn = !pastOn }
+                            .padding(start = 24.dp, top = 2.dp, bottom = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = pastOn, onCheckedChange = { pastOn = it })
+                        Text(text = stringResource(R.string.diet_show_past_unticked), style = MaterialTheme.typography.bodyMedium)
+                    }
+                    // Saves what is ticked first, so the way to the diet does
+                    // not throw away the switch that was just turned on.
+                    TextButton(
+                        onClick = {
+                            onSave(daily, weekly, potential, dietOn, pastOn)
+                            onOpenDiet()
+                        },
+                        modifier = Modifier.padding(start = 24.dp),
+                    ) { Text(stringResource(R.string.diet_edit)) }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(daily, weekly, potential) }) { Text(stringResource(R.string.ok)) }
+            TextButton(onClick = { onSave(daily, weekly, potential, dietOn, pastOn) }) { Text(stringResource(R.string.ok)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }

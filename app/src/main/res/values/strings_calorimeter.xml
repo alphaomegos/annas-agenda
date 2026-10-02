@@ -27,4 +27,21 @@
     <string name="calorimeter_show_daily_goal">Daily goal</string>
     <string name="calorimeter_show_weekly_goal">Weekly goal</string>
     <string name="calorimeter_show_potential_loss">Potential weight loss</string>
+    <!-- Diet (0141) -->
+    <string name="calorimeter_show_diet">Diet</string>
+    <string name="diet_show_past_unticked">Unticked dishes in past days</string>
+    <string name="diet_edit">Edit diet</string>
+    <string name="diet_title">Diet</string>
+    <string name="diet_card_title">Diet: %1$d kcal</string>
+    <string name="diet_day_empty">No dishes for this day yet.</string>
+    <string name="diet_add_dish">Add a dish</string>
+    <string name="diet_dish_dialog_title">Dish</string>
+    <string name="diet_dish_title">Dish and portion</string>
+    <string name="diet_dish_kcal">kcal</string>
+    <string name="diet_dish_edit">Edit dish</string>
+    <string name="diet_dish_move_up">Move up</string>
+    <string name="diet_dish_move_down">Move down</string>
+    <string name="diet_day_total">Total: %1$d kcal</string>
+    <string name="diet_copy_day">Copy this day to…</string>
+    <string name="diet_copy_day_hint">The dishes of the chosen days are replaced with this day\'s.</string>
 </resources>
