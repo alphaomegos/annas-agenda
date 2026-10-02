@@ -64,3 +64,6 @@
 # The class names still get shortened; only the file and line survive.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# The widget's tick (0145): Glance creates the callback by its class name.
+-keep class com.alphaomegos.annasagenda.ToggleTaskFromWidget { <init>(); }

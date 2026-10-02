@@ -412,4 +412,9 @@
     <string name="notif_reminder_off">Isključeno</string>
     <string name="notif_reminder_at_time">U zakazano vreme</string>
     <string name="notif_reminder_before">%1$d min ranije</string>
+    <!-- Widget (0145) -->
+    <string name="widget_description">Današnji zadaci, štikliraju se sa početnog ekrana</string>
+    <string name="widget_today_title">Danas, %1$s</string>
+    <string name="widget_today_label">Današnji zadaci</string>
+    <string name="widget_nothing_today">Za danas ništa nije zakazano.</string>
 </resources>

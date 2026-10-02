@@ -145,7 +145,7 @@ internal fun rescheduleNotificationsFromDisk(context: Context, onDone: () -> Uni
  * application that language; before it, AppCompat keeps it and the
  * application context does not know.
  */
-private fun inAppLanguage(context: Context): Context {
+internal fun inAppLanguage(context: Context): Context {
     if (Build.VERSION.SDK_INT >= 33) return context
     val locales = AppCompatDelegate.getApplicationLocales()
     if (locales.isEmpty) return context

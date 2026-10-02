@@ -249,11 +249,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         startNewTaskDraftAutoSave()
         viewModelScope.launch { startAutoSave() }
         startNotificationScheduling()
+        LiveAppState.attach(this)
+    }
+
+    override fun onCleared() {
+        LiveAppState.detach(this)
+        super.onCleared()
     }
 
     /**
-     * Keeps the one notification alarm in step with what it depends on: the
-     * tasks, the tombstones, the settings and the horizon. Only from here —
+     * A tick from the home-screen widget, by the task's series-and-day key.
+     * Today's repeats are drawn with ids from this counter, so the one ticked
+     * may be an occurrence no screen has drawn yet.
+     */
+    fun toggleTaskFromWidget(key: String) {
+        val cur = _state.value
+        val result = stateAfterTogglingTaskFromWidget(cur, key, LocalDate.now(), currentLocaleWeekStart(), nextId)
+            ?: return
+        nextId = result.nextId
+        _state.value = result.state
+    }
+
+    /**
+     * Keeps the one notification alarm, and the home-screen widget, in step
+     * with what they depend on: the tasks, the tombstones, the settings and
+     * the horizon. Only from here —
      * after the state is loaded and autosave runs — so an alarm is never
      * set from the empty default a moment before the real state arrives.
      */
@@ -267,7 +287,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 .distinctUntilChanged()
                 .debounce(1000)
-                .collect { runCatching { scheduleNextNotification(context, _state.value) } }
+                .collect {
+                    runCatching { scheduleNextNotification(context, _state.value) }
+                    // The widget shows today's tasks; it reads them from here.
+                    refreshTodayWidgets(context)
+                }
         }
     }
 

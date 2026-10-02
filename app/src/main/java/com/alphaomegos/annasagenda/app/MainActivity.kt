@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -16,15 +17,29 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.ViewModelProvider
 import com.alphaomegos.annasagenda.screens.StorageFailureScreen
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var vm: AppViewModel
 
+    // A day the widget asked to open, until the navigation has opened it.
+    private val openDayRequest = MutableStateFlow<Long?>(null)
+
+    private fun takeOpenDayRequest(intent: Intent?) {
+        val day = intent?.getLongExtra(EXTRA_OPEN_EPOCH_DAY, Long.MIN_VALUE) ?: return
+        if (day != Long.MIN_VALUE) {
+            openDayRequest.value = day
+            // Once taken, not taken again by a rotation re-reading the intent.
+            intent.removeExtra(EXTRA_OPEN_EPOCH_DAY)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         vm = ViewModelProvider(this)[AppViewModel::class.java]
+        if (savedInstanceState == null) takeOpenDayRequest(intent)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView)
@@ -51,11 +66,23 @@ class MainActivity : AppCompatActivity() {
                             onContinueEmpty = { vm.discardCorruptedStateAndStartEmpty() }
                         )
 
-                        else -> AppNav(vm)
+                        else -> {
+                            val openDay by openDayRequest.collectAsState()
+                            AppNav(
+                                vm = vm,
+                                openDayRequest = openDay,
+                                onOpenDayHandled = { openDayRequest.value = null },
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        takeOpenDayRequest(intent)
     }
 
     override fun onStop() {

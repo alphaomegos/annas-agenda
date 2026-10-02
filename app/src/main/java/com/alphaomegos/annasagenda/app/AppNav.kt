@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
@@ -61,7 +62,11 @@ private object Route {
 }
 
 @Composable
-fun AppNav(vm: AppViewModel) {
+fun AppNav(
+    vm: AppViewModel,
+    openDayRequest: Long? = null,
+    onOpenDayHandled: () -> Unit = {},
+) {
     val nav = rememberNavController()
 
     // Above the graph on purpose: a session can be interrupted from the
@@ -274,5 +279,13 @@ fun AppNav(vm: AppViewModel) {
                 onCreateTask = { nav.navigate(Route.NEW_TASK_SOMEDAY) }
             )
         }
+    }
+
+    // The widget's header: today, opened over the menu, so Back returns to it.
+    // After the graph, so the graph exists by the time this runs.
+    LaunchedEffect(openDayRequest) {
+        val day = openDayRequest ?: return@LaunchedEffect
+        nav.navigate("${Route.CALENDAR_DAY}/$day") { launchSingleTop = true }
+        onOpenDayHandled()
     }
 }

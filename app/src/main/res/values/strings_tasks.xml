@@ -114,4 +114,9 @@
     <string name="notif_reminder_off">Off</string>
     <string name="notif_reminder_at_time">At the time</string>
     <string name="notif_reminder_before">%1$d min before</string>
+    <!-- Widget (0145) -->
+    <string name="widget_description">Today\'s tasks, ticked from the home screen</string>
+    <string name="widget_today_title">Today, %1$s</string>
+    <string name="widget_today_label">Today\'s tasks</string>
+    <string name="widget_nothing_today">Nothing planned for today.</string>
 </resources>

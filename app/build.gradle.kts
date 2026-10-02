@@ -219,6 +219,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.datastore.preferences)
+
+    // Today's tasks on the home screen.
+    implementation(libs.androidx.glance.appwidget)
     implementation(libs.kotlinx.serialization.json)
 
     coreLibraryDesugaring(libs.android.desugar.jdk.libs)

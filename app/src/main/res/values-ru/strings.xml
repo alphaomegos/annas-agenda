@@ -553,4 +553,9 @@
     <string name="notif_reminder_off">Не напоминать</string>
     <string name="notif_reminder_at_time">В момент начала</string>
     <string name="notif_reminder_before">За %1$d мин</string>
+    <!-- Widget (0145) -->
+    <string name="widget_description">Задачи на сегодня с галочками прямо на главном экране</string>
+    <string name="widget_today_title">Сегодня, %1$s</string>
+    <string name="widget_today_label">Задачи на сегодня</string>
+    <string name="widget_nothing_today">На сегодня ничего не запланировано.</string>
 </resources>
