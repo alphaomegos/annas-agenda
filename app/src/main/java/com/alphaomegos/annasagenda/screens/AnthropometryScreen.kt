@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -568,6 +569,12 @@ private fun AnthropometryChart(
     }
 }
 
+/** A set of field ids, as a list a Bundle can hold. */
+private val fieldIdSetSaver = listSaver<Set<String>, String>(
+    save = { it.toList() },
+    restore = { it.toSet() },
+)
+
 @Composable
 private fun AnthropometryFieldsDialog(
     fieldDefs: List<AnthropometryFieldDef>,
@@ -575,7 +582,10 @@ private fun AnthropometryFieldsDialog(
     onDismiss: () -> Unit,
     onSave: (Set<String>) -> Unit,
 ) {
-    val pendingIds = remember(enabledFieldIds) {
+    // Saveable: the dialog itself survives turning the phone, so the boxes
+    // ticked in it have to as well — otherwise it comes back showing the
+    // saved choice as if nothing had been clicked.
+    val pendingIds = rememberSaveable(enabledFieldIds, stateSaver = fieldIdSetSaver) {
         mutableStateOf(
             enabledFieldIds.ifEmpty { defaultAnthropometryFieldIds() }
         )

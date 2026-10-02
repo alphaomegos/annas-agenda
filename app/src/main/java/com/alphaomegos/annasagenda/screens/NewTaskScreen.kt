@@ -90,7 +90,7 @@ fun NewTaskScreen(
     val state by vm.counters.collectAsState()
 
     var linkedManualCounterId by rememberSaveable { mutableStateOf<Long?>(null) }
-    val showCounterPicker = remember { mutableStateOf(false) }
+    val showCounterPicker = rememberSaveable { mutableStateOf(false) }
 
     val manualCounters = state.counters.filterIsInstance<com.alphaomegos.annasagenda.ManualCounter>()
     val selectedCounterTitle = manualCounters.firstOrNull { it.id == linkedManualCounterId }?.title

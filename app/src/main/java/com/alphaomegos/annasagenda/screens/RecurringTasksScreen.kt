@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -78,8 +79,9 @@ fun RecurringTasksScreen(
             .sortedWith(compareBy({ it.second.id }, { it.first.id }))
     }
 
-    val confirmDeleteTaskId = remember { mutableStateOf<Long?>(null) }
-    val confirmDeleteSubtaskId = remember { mutableStateOf<Long?>(null) }
+    // Saveable, so turning the phone does not close a question that was asked.
+    val confirmDeleteTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val confirmDeleteSubtaskId = rememberSaveable { mutableStateOf<Long?>(null) }
 
     Column(
         modifier = Modifier

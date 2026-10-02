@@ -522,6 +522,11 @@ internal fun MainMenuContent(
                                 }
                                 draggingIndex.intValue = -1
                                 draggingOffsetY.floatValue = 0f
+                                // Written through at once, as a drag is when it
+                                // ends: `items` is only a working copy, and an
+                                // arrow tap kept until Done was lost to the
+                                // first turn of the phone.
+                                persistCurrentOrder()
                             }
                         },
                         onHideItem = { id ->
