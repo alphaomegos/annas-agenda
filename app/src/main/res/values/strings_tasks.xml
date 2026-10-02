@@ -91,4 +91,27 @@
     <string name="shift_series_text">“%1$s” repeats. Move every later occurrence by the same number of days, or only this one?</string>
     <string name="shift_series_all">Whole series</string>
     <string name="shift_series_only_this">Only this day</string>
+    <!-- Notifications (0144) -->
+    <string name="notif_channel_summary">Daily summary</string>
+    <string name="notif_channel_reminders">Task reminders</string>
+    <string name="notif_summary_title">Today\'s tasks: %1$d</string>
+    <string name="notif_summary_title_debts_only">Undone tasks</string>
+    <string name="notif_summary_more">…and %1$d more</string>
+    <string name="notif_summary_debts">Undone from past days: %1$d</string>
+    <string name="notif_reminder_at">At %1$s</string>
+    <string name="notif_settings_menu">Notifications</string>
+    <string name="notif_settings_title">Notifications</string>
+    <string name="notif_summary_section">Daily summary</string>
+    <string name="notif_summary_none">No times chosen: no summaries.</string>
+    <string name="notif_summary_remove_time">Remove this time</string>
+    <string name="notif_summary_add_time">Add a time</string>
+    <string name="notif_summary_lists">Today\'s tasks in the summary:</string>
+    <string name="notif_today_undone">Only those not done</string>
+    <string name="notif_today_all">All</string>
+    <string name="notif_today_none">None</string>
+    <string name="notif_summary_with_debts">Undone tasks from past days</string>
+    <string name="notif_reminders_section">Reminders for tasks with a time</string>
+    <string name="notif_reminder_off">Off</string>
+    <string name="notif_reminder_at_time">At the time</string>
+    <string name="notif_reminder_before">%1$d min before</string>
 </resources>

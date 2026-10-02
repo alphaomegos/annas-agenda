@@ -530,4 +530,27 @@
     <string name="food_category_alcohol">Алкоголь</string>
     <string name="food_category_dessert">Десерты</string>
     <string name="food_category_fastfood">Фастфуд</string>
+    <!-- Notifications (0144) -->
+    <string name="notif_channel_summary">Сводка дня</string>
+    <string name="notif_channel_reminders">Напоминания о задачах</string>
+    <string name="notif_summary_title">Задач на сегодня: %1$d</string>
+    <string name="notif_summary_title_debts_only">Невыполненные задачи</string>
+    <string name="notif_summary_more">…и ещё %1$d</string>
+    <string name="notif_summary_debts">Долгов с прошлых дней: %1$d</string>
+    <string name="notif_reminder_at">В %1$s</string>
+    <string name="notif_settings_menu">Уведомления</string>
+    <string name="notif_settings_title">Уведомления</string>
+    <string name="notif_summary_section">Сводка дня</string>
+    <string name="notif_summary_none">Время не выбрано — сводок нет.</string>
+    <string name="notif_summary_remove_time">Убрать это время</string>
+    <string name="notif_summary_add_time">Добавить время</string>
+    <string name="notif_summary_lists">Задачи на сегодня в сводке:</string>
+    <string name="notif_today_undone">Только невыполненные</string>
+    <string name="notif_today_all">Все</string>
+    <string name="notif_today_none">Не показывать</string>
+    <string name="notif_summary_with_debts">Долги прошлых дней</string>
+    <string name="notif_reminders_section">Напоминания о задачах со временем</string>
+    <string name="notif_reminder_off">Не напоминать</string>
+    <string name="notif_reminder_at_time">В момент начала</string>
+    <string name="notif_reminder_before">За %1$d мин</string>
 </resources>

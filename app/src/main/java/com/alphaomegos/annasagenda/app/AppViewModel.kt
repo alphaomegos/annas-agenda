@@ -248,6 +248,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
         startNewTaskDraftAutoSave()
         viewModelScope.launch { startAutoSave() }
+        startNotificationScheduling()
+    }
+
+    /**
+     * Keeps the one notification alarm in step with what it depends on: the
+     * tasks, the tombstones, the settings and the horizon. Only from here —
+     * after the state is loaded and autosave runs — so an alarm is never
+     * set from the empty default a moment before the real state arrives.
+     */
+    @OptIn(FlowPreview::class)
+    private fun startNotificationScheduling() {
+        val context = appContext
+        viewModelScope.launch {
+            _state
+                .map { s ->
+                    listOf(s.tasks, s.subtasks, s.suppressedRecurrences, s.notifications, s.undoneHorizonDays)
+                }
+                .distinctUntilChanged()
+                .debounce(1000)
+                .collect { runCatching { scheduleNextNotification(context, _state.value) } }
+        }
     }
 
     /**
@@ -1818,6 +1839,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             calorimeterShowPotentialLoss = potentialLoss,
         )
         if (next != cur) _state.value = next
+    }
+
+    /** Daily summaries and reminders (agreed 02.10). Written as given, cleaned. */
+    fun setNotificationSettings(settings: NotificationSettings) {
+        val clean = settings.copy(
+            summaryMinutes = settings.summaryMinutes.filter { it in 0 until 24 * 60 }.distinct().sorted(),
+            reminderLeadMinutes = settings.reminderLeadMinutes?.takeIf { it in REMINDER_LEAD_CHOICES },
+        )
+        val cur = _state.value
+        if (cur.notifications != clean) _state.value = cur.copy(notifications = clean)
     }
 
     /** 6.4: whether the add-a-meal dialog offers the food library. */

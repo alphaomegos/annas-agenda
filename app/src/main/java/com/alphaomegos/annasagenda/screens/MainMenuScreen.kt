@@ -85,6 +85,8 @@ import com.alphaomegos.annasagenda.undoneLampFor
 import com.alphaomegos.annasagenda.undoneLampIconRes
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
+import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
+import com.alphaomegos.annasagenda.NotificationSettings
 import com.alphaomegos.annasagenda.util.BackupImportPayload
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.readBackupImportPayload
@@ -242,6 +244,8 @@ fun MainMenuScreen(
         onLanguage = onLanguage,
         themeMode = state.themeMode,
         onThemeModeChange = vm::setThemeMode,
+        notifications = state.notifications,
+        onNotificationsChange = vm::setNotificationSettings,
         onUndone = onUndone,
         onExport = {
             scope.launch {
@@ -337,6 +341,9 @@ internal fun MainMenuContent(
     onLanguage: () -> Unit,
     themeMode: AppThemeMode,
     onThemeModeChange: (AppThemeMode) -> Unit,
+    // Defaulted so the tests that draw the menu need not know about them.
+    notifications: NotificationSettings = NotificationSettings(),
+    onNotificationsChange: (NotificationSettings) -> Unit = {},
     onUndone: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -346,6 +353,11 @@ internal fun MainMenuContent(
     var reorderMode by rememberSaveable { mutableStateOf(false) }
     val confirmReset = rememberSaveable { mutableStateOf(false) }
     val showThemeDialog = rememberSaveable { mutableStateOf(false) }
+    val showNotificationsDialog = rememberSaveable { mutableStateOf(false) }
+    // Here rather than in the dialog: the dialog closes on OK, before the answer.
+    val askNotificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
 
     val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState()
@@ -401,6 +413,10 @@ internal fun MainMenuContent(
                 onTheme = {
                     dataMenuExpanded = false
                     showThemeDialog.value = true
+                },
+                onNotifications = {
+                    dataMenuExpanded = false
+                    showNotificationsDialog.value = true
                 },
                 onExport = {
                     dataMenuExpanded = false
@@ -563,6 +579,22 @@ internal fun MainMenuContent(
             onDismiss = { showThemeDialog.value = false }
         )
     }
+
+    if (showNotificationsDialog.value) {
+        NotificationSettingsDialog(
+            initial = notifications,
+            onDismiss = { showNotificationsDialog.value = false },
+            onSave = {
+                onNotificationsChange(it)
+                showNotificationsDialog.value = false
+            },
+            onNeedPermission = {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    askNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+        )
+    }
 }
 
 @OptIn(
@@ -580,6 +612,7 @@ private fun MainMenuTopBar(
     onOpenDataMenu: () -> Unit,
     onDismissDataMenu: () -> Unit,
     onTheme: () -> Unit,
+    onNotifications: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onReset: () -> Unit,
@@ -640,6 +673,10 @@ private fun MainMenuTopBar(
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.theme_mode_menu)) },
                         onClick = onTheme
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.notif_settings_menu)) },
+                        onClick = onNotifications
                     )
 
                     HorizontalDivider()

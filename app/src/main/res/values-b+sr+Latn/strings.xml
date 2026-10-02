@@ -389,4 +389,27 @@
     <string name="food_category_alcohol">Alkohol</string>
     <string name="food_category_dessert">Deserti</string>
     <string name="food_category_fastfood">Brza hrana</string>
+    <!-- Notifications (0144) -->
+    <string name="notif_channel_summary">Dnevni pregled</string>
+    <string name="notif_channel_reminders">Podsetnici za zadatke</string>
+    <string name="notif_summary_title">Zadaci za danas: %1$d</string>
+    <string name="notif_summary_title_debts_only">Neurađeni zadaci</string>
+    <string name="notif_summary_more">…i još %1$d</string>
+    <string name="notif_summary_debts">Neurađeno iz prošlih dana: %1$d</string>
+    <string name="notif_reminder_at">U %1$s</string>
+    <string name="notif_settings_menu">Obaveštenja</string>
+    <string name="notif_settings_title">Obaveštenja</string>
+    <string name="notif_summary_section">Dnevni pregled</string>
+    <string name="notif_summary_none">Vreme nije izabrano — nema pregleda.</string>
+    <string name="notif_summary_remove_time">Ukloni ovo vreme</string>
+    <string name="notif_summary_add_time">Dodaj vreme</string>
+    <string name="notif_summary_lists">Današnji zadaci u pregledu:</string>
+    <string name="notif_today_undone">Samo neurađeni</string>
+    <string name="notif_today_all">Svi</string>
+    <string name="notif_today_none">Nijedan</string>
+    <string name="notif_summary_with_debts">Neurađeni zadaci iz prošlih dana</string>
+    <string name="notif_reminders_section">Podsetnici za zadatke sa vremenom</string>
+    <string name="notif_reminder_off">Isključeno</string>
+    <string name="notif_reminder_at_time">U zakazano vreme</string>
+    <string name="notif_reminder_before">%1$d min ranije</string>
 </resources>
