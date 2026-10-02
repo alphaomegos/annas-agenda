@@ -394,6 +394,72 @@ class AppStateStoreMigrationTest {
         assertEquals(listOf(90L, 92L), state.dietPlan.getValue(java.time.DayOfWeek.MONDAY).map { it.id })
     }
 
+    /** Version 7: the library shelves, one diet switch and the notifications — a stamp. */
+    @Test
+    fun migrateVersion6_stampsTheVersionAndChangesNothingElse() {
+        val raw = """
+            {
+              "v": 6,
+              "dietEnabled": true,
+              "dietPlan": [ { "dayOfWeekIso": 1, "items": [ { "id": 90, "title": "Творог", "kcal": 120 } ] } ]
+            }
+        """.trimIndent()
+
+        val before = appStateStoreJson.decodeFromString<JsonObject>(raw)
+        val root = migrateAppStateRawJson(raw) as JsonObject
+
+        assertEquals(CURRENT_SCHEMA_VERSION, root["v"]?.jsonPrimitive?.intOrNull)
+        assertEquals("nothing but the version may move", before.filterKeys { it != "v" }, root.filterKeys { it != "v" })
+    }
+
+    /**
+     * A version-6 payload arrives as before: no foods of the user's own,
+     * unticked dishes still shown in past days, and not one notification.
+     */
+    @Test
+    fun aVersionSixPayloadArrivesSilentAndAsBefore() {
+        val state = decoded("""{ "v": 6, "dietEnabled": true }""")
+
+        assertTrue(state.dietShowPastUnticked)
+        assertTrue(state.foodLibraryUserItems.isEmpty())
+        assertEquals(NotificationSettings(), state.notifications)
+        assertTrue(state.notifications.summaryMinutes.isEmpty())
+        assertEquals(null, state.notifications.reminderLeadMinutes)
+
+        val fresh = AppState()
+        assertEquals(fresh.dietShowPastUnticked, state.dietShowPastUnticked)
+        assertEquals(fresh.notifications, state.notifications)
+    }
+
+    /** What this build cannot read in the new fields falls back to quiet, never to a guess. */
+    @Test
+    fun unknownShelvesOddTimesAndOddLeadsAreDroppedNotFatal() {
+        val state = decoded(
+            """
+            {
+              "v": 7,
+              "foodLibraryUserItems": [
+                { "id": 95, "category": "DAIRY", "name": "Сырок", "amount": 40, "unit": "г", "kcal": 160 },
+                { "id": 96, "category": "SPACE_FOOD", "name": "?", "kcal": 1 }
+              ],
+              "notifications": {
+                "summaryMinutes": [1200, 480, -5, 480, 1440, 780],
+                "summaryToday": "SOMETIMES",
+                "reminderLeadMinutes": 7
+              }
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(listOf(95L), state.foodLibraryUserItems.map { it.id })
+        assertEquals(FoodCategory.DAIRY, state.foodLibraryUserItems.single().category)
+        // Out of the day dropped, the rest sorted, the repeat gone.
+        assertEquals(listOf(480, 780, 1200), state.notifications.summaryMinutes)
+        assertEquals(SummaryToday.UNDONE, state.notifications.summaryToday)
+        // Seven minutes is not a choice anybody was offered.
+        assertEquals(null, state.notifications.reminderLeadMinutes)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

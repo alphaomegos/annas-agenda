@@ -51,6 +51,7 @@ internal fun migrateAppStateRawJson(
             3 -> migrateAppState3To4(cur, weekStartForLegacyRules)
             4 -> migrateAppState4To5(cur)
             5 -> migrateAppState5To6(cur)
+            6 -> migrateAppState6To7(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -126,6 +127,21 @@ private fun migrateAppState4To5(obj: JsonObject): JsonObject {
 private fun migrateAppState5To6(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(6)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp again.
+ *
+ * Version 7 adds the foods the user puts on the library shelves (data
+ * nothing else holds — the reason for the number), the "past days show
+ * unticked dishes" switch of the diet, and the notification settings.
+ * Every default is what the app did before: no foods, unticked dishes
+ * shown, and no notifications at all.
+ */
+private fun migrateAppState6To7(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(7)
     return JsonObject(m)
 }
 

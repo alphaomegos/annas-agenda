@@ -88,6 +88,34 @@ internal data class AppStateDto(
     val foodLibraryVisible: Boolean = false,
     val dietEnabled: Boolean = false,
     val dietPlan: List<DietDayDto> = emptyList(),
+
+    // Schema 7. The user's library shelves are data nothing else holds, like
+    // the diet was; the rest are settings that ride along.
+    val dietShowPastUnticked: Boolean = true,
+    val foodLibraryUserItems: List<FoodLibraryUserItemDto> = emptyList(),
+    val notifications: NotificationSettingsDto = NotificationSettingsDto(),
+)
+
+@Serializable
+internal data class FoodLibraryUserItemDto(
+    val id: Long,
+    // FoodCategory by name.
+    val category: String,
+    val name: String,
+    val amount: Int? = null,
+    val unit: String? = null,
+    val kcal: Int,
+)
+
+@Serializable
+internal data class NotificationSettingsDto(
+    // Minutes since midnight.
+    val summaryMinutes: List<Int> = emptyList(),
+    // SummaryToday by name.
+    val summaryToday: String = "UNDONE",
+    val summaryDebts: Boolean = true,
+    // Null: no reminders.
+    val reminderLeadMinutes: Int? = null,
 )
 
 @Serializable

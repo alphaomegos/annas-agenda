@@ -54,6 +54,9 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     dietPlan = dietPlan.entries
         .sortedBy { it.key.value }
         .map { (day, items) -> DietDayDto(dayOfWeekIso = day.value, items = items.map { it.toDto() }) },
+    dietShowPastUnticked = dietShowPastUnticked,
+    foodLibraryUserItems = foodLibraryUserItems.map { it.toDto() },
+    notifications = notifications.toDto(),
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -130,6 +133,11 @@ internal fun AppStateDto.toDomain(): AppState {
         foodLibraryVisible = foodLibraryVisible,
         dietEnabled = dietEnabled,
         dietPlan = dietPlanFromDto(dietPlan),
+        dietShowPastUnticked = dietShowPastUnticked,
+        // A shelf this build does not know drops the food rather than
+        // putting it on a wrong shelf.
+        foodLibraryUserItems = foodLibraryUserItems.mapNotNull { it.toDomainOrNull() },
+        notifications = notifications.toDomain(),
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)
@@ -302,6 +310,39 @@ internal fun dietPlanFromDto(days: List<DietDayDto>): Map<DayOfWeek, List<DietIt
         .groupBy { DayOfWeek.of(it.dayOfWeekIso) }
         .mapValues { (_, sameDay) -> sameDay.flatMap { d -> d.items.map { it.toDomain() } } }
         .filterValues { it.isNotEmpty() }
+
+internal fun FoodLibraryUserItem.toDto(): FoodLibraryUserItemDto = FoodLibraryUserItemDto(
+    id = id,
+    category = category.name,
+    name = name,
+    amount = amount,
+    unit = unit,
+    kcal = kcal,
+)
+
+internal fun FoodLibraryUserItemDto.toDomainOrNull(): FoodLibraryUserItem? {
+    val shelf = FoodCategory.entries.firstOrNull { it.name == category } ?: return null
+    return FoodLibraryUserItem(id = id, category = shelf, name = name, amount = amount, unit = unit, kcal = kcal)
+}
+
+internal fun NotificationSettings.toDto(): NotificationSettingsDto = NotificationSettingsDto(
+    summaryMinutes = summaryMinutes,
+    summaryToday = summaryToday.name,
+    summaryDebts = summaryDebts,
+    reminderLeadMinutes = reminderLeadMinutes,
+)
+
+/**
+ * Times outside the day are dropped, the rest sorted and without repeats;
+ * a reminder lead that is not one of the choices is read as "off" — a
+ * reminder at a moment nobody chose is worse than none.
+ */
+internal fun NotificationSettingsDto.toDomain(): NotificationSettings = NotificationSettings(
+    summaryMinutes = summaryMinutes.filter { it in 0 until 24 * 60 }.distinct().sorted(),
+    summaryToday = SummaryToday.entries.firstOrNull { it.name == summaryToday } ?: SummaryToday.UNDONE,
+    summaryDebts = summaryDebts,
+    reminderLeadMinutes = reminderLeadMinutes?.takeIf { it in REMINDER_LEAD_CHOICES },
+)
 
 internal fun runningModeFromName(name: String): RunningMode =
     RunningMode.entries.firstOrNull { it.name == name } ?: RunningMode.PLAN

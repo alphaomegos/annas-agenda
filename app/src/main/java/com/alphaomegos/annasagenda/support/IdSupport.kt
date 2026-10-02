@@ -22,6 +22,7 @@ fun highestIdIn(state: AppState): Long =
         // handed out twice.
         state.runningWorkouts.maxOfOrNull { it.id },
         state.dietPlan.values.flatten().maxOfOrNull { it.id },
+        state.foodLibraryUserItems.maxOfOrNull { it.id },
     ).filterNotNull().maxOrNull() ?: 0L
 
 /**

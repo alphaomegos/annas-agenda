@@ -239,6 +239,18 @@ class AppStateWholeRoundTripTest {
             ),
             DayOfWeek.FRIDAY to listOf(DietItem(id = 92L, title = "Суп", kcal = 300)),
         ),
+        // Schema 7 — the opposite of the defaults again.
+        dietShowPastUnticked = false,
+        foodLibraryUserItems = listOf(
+            FoodLibraryUserItem(id = 95L, category = FoodCategory.DAIRY, name = "Сырок", amount = 40, unit = "г", kcal = 160),
+            FoodLibraryUserItem(id = 96L, category = FoodCategory.DRINKS, name = "Квас", amount = null, unit = null, kcal = 27),
+        ),
+        notifications = NotificationSettings(
+            summaryMinutes = listOf(480, 780, 1200),
+            summaryToday = SummaryToday.ALL,
+            summaryDebts = false,
+            reminderLeadMinutes = 15,
+        ),
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -287,6 +299,8 @@ class AppStateWholeRoundTripTest {
         assertTrue(whole.runningWorkouts.isNotEmpty())
         assertTrue(whole.dietPlan.isNotEmpty())
         assertTrue(whole.foodLog.any { it.dietItemId != null })
+        assertTrue(whole.foodLibraryUserItems.isNotEmpty())
+        assertTrue(whole.notifications.summaryMinutes.isNotEmpty())
     }
 
     /**
@@ -307,6 +321,8 @@ class AppStateWholeRoundTripTest {
             "anthropometryShowForecast", "anthropometryShowEntries", "anthropometryRange",
             "calorimeterShowDailyGoal", "calendarBadges", "foodLibraryVisible",
             "dietEnabled", "dietPlan", "dietItemId",
+            "dietShowPastUnticked", "foodLibraryUserItems", "notifications",
+            "summaryMinutes", "reminderLeadMinutes",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))
         }

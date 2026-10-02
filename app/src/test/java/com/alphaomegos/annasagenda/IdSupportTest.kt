@@ -60,6 +60,11 @@ class IdSupportTest {
             "dietPlan" to AppState(
                 dietPlan = mapOf(java.time.DayOfWeek.MONDAY to listOf(DietItem(id = 40L, title = "Творог", kcal = 120)))
             ),
+            "foodLibraryUserItems" to AppState(
+                foodLibraryUserItems = listOf(
+                    FoodLibraryUserItem(id = 40L, category = FoodCategory.DAIRY, name = "Сырок", amount = 40, unit = "г", kcal = 160)
+                )
+            ),
         )
 
         cases.forEach { (name, state) ->

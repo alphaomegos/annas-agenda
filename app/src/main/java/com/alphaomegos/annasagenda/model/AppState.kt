@@ -112,4 +112,18 @@ data class AppState(
     // why the plan is never written into the food log.
     val dietEnabled: Boolean = false,
     val dietPlan: Map<DayOfWeek, List<DietItem>> = emptyMap(),
+
+    // --- Schema 7 (0140): what the diet, the library and the notifications
+    // still needed. Defaults again change nothing anybody can see.
+
+    // Diet: whether a past day still shows the dishes nobody ticked, greyed
+    // and tickable. Off, a past day shows only what was eaten.
+    val dietShowPastUnticked: Boolean = true,
+
+    // Food library: what the user put on the shelves. Kept for a later
+    // backup-to-standard-library export; see FoodLibraryUserItem.
+    val foodLibraryUserItems: List<FoodLibraryUserItem> = emptyList(),
+
+    // Daily summaries and task reminders. Default: silence.
+    val notifications: NotificationSettings = NotificationSettings(),
 ) : DateTasksData
