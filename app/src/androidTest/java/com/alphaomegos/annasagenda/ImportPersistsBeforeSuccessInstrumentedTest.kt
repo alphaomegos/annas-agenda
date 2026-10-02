@@ -11,7 +11,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 import java.time.LocalDate
 
 /**
@@ -31,12 +30,12 @@ class ImportPersistsBeforeSuccessInstrumentedTest {
     fun setUp() {
         app = InstrumentationRegistry.getInstrumentation()
             .targetContext.applicationContext as Application
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @After
     fun tearDown() {
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @Test
@@ -88,12 +87,5 @@ class ImportPersistsBeforeSuccessInstrumentedTest {
         assertFalse(vm.importBackupJson("{ not json at all").adopted)
 
         assertTrue(vm.state.value.tasks.any { it.id == taskId })
-    }
-
-    private fun clearAppStateStoreFile() {
-        val file = File(app.filesDir, "datastore/app_state_store.preferences_pb")
-        if (file.exists()) {
-            file.delete()
-        }
     }
 }

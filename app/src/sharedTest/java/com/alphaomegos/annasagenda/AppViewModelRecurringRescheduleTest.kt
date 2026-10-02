@@ -16,7 +16,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 import java.time.DayOfWeek
 import java.time.LocalDate
 
@@ -64,12 +63,12 @@ class AppViewModelRecurringRescheduleTest {
     fun setUp() {
         Dispatchers.setMain(Dispatchers.Unconfined)
         app = ApplicationProvider.getApplicationContext()
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @After
     fun tearDown() {
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
 
@@ -214,12 +213,5 @@ class AppViewModelRecurringRescheduleTest {
             vm.state.value.tasks.any { it.date == anchor.plusDays(1) } &&
                 vm.state.value.tasks.any { it.date == anchor.plusDays(3) }
         )
-    }
-
-    private fun clearAppStateStoreFile() {
-        val file = File(app.filesDir, "datastore/app_state_store.preferences_pb")
-        if (file.exists()) {
-            file.delete()
-        }
     }
 }

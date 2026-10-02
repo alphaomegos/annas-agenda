@@ -15,7 +15,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 import java.time.LocalDate
 
 /**
@@ -39,12 +38,12 @@ class AppViewModelCounterLinkTest {
         // block the thread that scope would otherwise need.
         Dispatchers.setMain(Dispatchers.Unconfined)
         app = ApplicationProvider.getApplicationContext()
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @After
     fun tearDown() {
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
 
@@ -142,11 +141,4 @@ class AppViewModelCounterLinkTest {
 
     private fun isDone(vm: AppViewModel, taskId: Long): Boolean =
         vm.state.value.tasks.single { it.id == taskId }.isDone
-
-    private fun clearAppStateStoreFile() {
-        val file = File(app.filesDir, "datastore/app_state_store.preferences_pb")
-        if (file.exists()) {
-            file.delete()
-        }
-    }
 }

@@ -3,6 +3,7 @@ package com.alphaomegos.annasagenda
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -85,16 +86,14 @@ class MainMenuSupportTest {
         }
     }
 
+    /**
+     * Straight to three, with no two-column step in between: nine items are
+     * three by three, and an unfolded foldable upright (674dp) is exactly the
+     * screen that used to get two columns and five rows.
+     */
     @Test
-    fun aWideScreenGetsTwoColumns() {
-        listOf(600, 674, 800, 899).forEach { width ->
-            assertEquals("$width dp", 2, mainMenuColumns(width))
-        }
-    }
-
-    @Test
-    fun aVeryWideScreenGetsThree() {
-        listOf(900, 1000, 1280).forEach { width ->
+    fun aWideScreenGetsThreeColumns() {
+        listOf(600, 674, 800, 899, 900, 1280).forEach { width ->
             assertEquals("$width dp", 3, mainMenuColumns(width))
         }
     }
@@ -117,5 +116,70 @@ class MainMenuSupportTest {
     fun anUnmeasuredScreenStillGetsOneColumn() {
         assertEquals(1, mainMenuColumns(0))
         assertEquals(1, mainMenuColumns(-100))
+    }
+
+    /* ---------------- how tall a tile is ---------------- */
+
+    /** Nine items, which is what the menu has today. */
+    private val menu = 9
+
+    /**
+     * The case this exists for. Upright the unfolded foldable is narrower
+     * than it is tall, so the tile is square — width is the limit — and all
+     * three rows still fit.
+     */
+    @Test
+    fun anUnfoldedFoldableUprightGetsSquareTilesThatAllFit() {
+        val width = 674
+        val height = 690
+        val tile = mainMenuTileHeightDp(width, height, columns = 3, itemCount = menu)
+
+        assertEquals((width - 2 * MAIN_MENU_TILE_GAP_DP) / 3, tile)
+        assertTrue("3 rows of $tile dp fit in $height", 3 * tile + 2 * MAIN_MENU_TILE_GAP_DP <= height)
+    }
+
+    /**
+     * On its side the same screen is wide and short. Square tiles would show
+     * one and a half rows; instead they get shorter and every row fits.
+     */
+    @Test
+    fun onItsSideTheTilesGetShorterSoEveryRowFits() {
+        val width = 829
+        val height = 520
+        val tile = mainMenuTileHeightDp(width, height, columns = 3, itemCount = menu)
+
+        assertTrue("$tile dp is shorter than it is wide", tile < (width - 2 * MAIN_MENU_TILE_GAP_DP) / 3)
+        assertTrue("3 rows of $tile dp fit in $height", 3 * tile + 2 * MAIN_MENU_TILE_GAP_DP <= height)
+    }
+
+    /** The pictures are square: height past the width is only empty space. */
+    @Test
+    fun aTileIsNeverTallerThanItIsWide() {
+        val tile = mainMenuTileHeightDp(widthDp = 900, heightDp = 5000, columns = 3, itemCount = menu)
+
+        assertEquals((900 - 2 * MAIN_MENU_TILE_GAP_DP) / 3, tile)
+    }
+
+    /** When even the minimum does not fit, the grid scrolls rather than shrinks. */
+    @Test
+    fun aShortScreenScrollsRatherThanShrinkingPastTheMinimum() {
+        assertEquals(MAIN_MENU_TILE_MIN_DP, mainMenuTileHeightDp(900, 200, columns = 3, itemCount = menu))
+    }
+
+    /** A partial last row is still a row: ten items are four rows, not three. */
+    @Test
+    fun aPartialLastRowCountsAsARow() {
+        val height = 700
+        val tile = mainMenuTileHeightDp(widthDp = 2000, heightDp = height, columns = 3, itemCount = 10)
+
+        assertEquals((height - 3 * MAIN_MENU_TILE_GAP_DP) / 4, tile)
+    }
+
+    /** One frame before measuring, and the impossible inputs: no crash, the minimum. */
+    @Test
+    fun nothingMeasuredOrNothingToShowGetsTheMinimum() {
+        assertEquals(MAIN_MENU_TILE_MIN_DP, mainMenuTileHeightDp(0, 0, columns = 3, itemCount = menu))
+        assertEquals(MAIN_MENU_TILE_MIN_DP, mainMenuTileHeightDp(674, 690, columns = 0, itemCount = menu))
+        assertEquals(MAIN_MENU_TILE_MIN_DP, mainMenuTileHeightDp(674, 690, columns = 3, itemCount = 0))
     }
 }

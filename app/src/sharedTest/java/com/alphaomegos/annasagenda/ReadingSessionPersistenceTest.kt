@@ -17,7 +17,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 /**
  * An hour of reading with the screen off is long enough for Android to reclaim
@@ -40,12 +39,12 @@ class ReadingSessionPersistenceTest {
         // block the thread that scope would otherwise need.
         Dispatchers.setMain(Dispatchers.Unconfined)
         app = ApplicationProvider.getApplicationContext()
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @After
     fun tearDown() {
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
 
@@ -237,12 +236,5 @@ class ReadingSessionPersistenceTest {
 
         @Suppress("BlockingMethodInNonBlockingContext")
         Thread.sleep(500)
-    }
-
-    private fun clearAppStateStoreFile() {
-        val file = File(app.filesDir, "datastore/app_state_store.preferences_pb")
-        if (file.exists()) {
-            file.delete()
-        }
     }
 }

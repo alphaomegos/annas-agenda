@@ -1,44 +1,37 @@
 package com.alphaomegos.annasagenda.screens
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-
-private const val TILE_MIN_HEIGHT_DP = 150
-private const val TILE_ICON_SIZE_DP = 88
+import com.alphaomegos.annasagenda.MAIN_MENU_TILE_GAP_DP
+import com.alphaomegos.annasagenda.components.MenuTile
+import com.alphaomegos.annasagenda.components.MenuTileLabel
+import com.alphaomegos.annasagenda.mainMenuTileHeightDp
 
 /**
  * The main menu as tiles, for a screen wide enough that a row of one item is
  * mostly empty.
  *
- * The icons are the reason this exists. In the list they sit at the end of a
- * row at 64dp and read as decoration; here they are the item, at 88dp, with
- * the word underneath. On an unfolded foldable that is the difference between
- * a long thin list and a menu.
+ * **The picture is the item.** Each tile is as large as the screen allows —
+ * square, or a little shorter when the screen is short, see
+ * [mainMenuTileHeightDp] — and the picture fills it; the word underneath is
+ * one small line. The first version (0121) did the opposite: big tiles with an
+ * 88dp icon in the middle and a title in a heading font, which on an unfolded
+ * foldable read as a lot of empty card.
+ *
+ * The card is the shared [MenuTile], the one the language screen uses, rather
+ * than a copy of it written again here.
  *
  * **Reordering and hiding are not here.** A long press does what it does in
  * the list — turns reorder mode on — and the caller then shows the list,
@@ -56,49 +49,34 @@ internal fun MainMenuTiles(
 ) {
     val haptics = LocalHapticFeedback.current
 
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        items(items = items, key = { it.id }) { item ->
-            ElevatedCard(
-                shape = RoundedCornerShape(22.dp),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = TILE_MIN_HEIGHT_DP.dp)
-                    .pointerInput(item.id) {
-                        detectTapGestures(
-                            onTap = { item.onClick() },
-                            onLongPress = {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onStartReorder()
-                            },
-                        )
-                    },
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(
-                        painter = painterResource(item.iconRes),
-                        contentDescription = null,
-                        modifier = Modifier.size(TILE_ICON_SIZE_DP.dp),
-                    )
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val tileHeight = mainMenuTileHeightDp(
+            widthDp = maxWidth.value.toInt(),
+            heightDp = maxHeight.value.toInt(),
+            columns = columns,
+            itemCount = items.size,
+        )
 
-                    Text(
-                        text = stringResource(item.titleRes),
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 10.dp),
-                    )
-                }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(MAIN_MENU_TILE_GAP_DP.dp),
+            horizontalArrangement = Arrangement.spacedBy(MAIN_MENU_TILE_GAP_DP.dp),
+        ) {
+            items(items = items, key = { it.id }) { item ->
+                MenuTile(
+                    iconRes = item.iconRes,
+                    title = stringResource(item.titleRes),
+                    onClick = item.onClick,
+                    label = MenuTileLabel.Small,
+                    onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onStartReorder()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(tileHeight.dp),
+                )
             }
         }
     }

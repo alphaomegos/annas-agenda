@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -109,9 +110,16 @@ private fun CustomRangeDialog(
     val today = remember { LocalDate.now() }
     val locale = appLocale()
 
-    var from by remember { mutableStateOf(current?.from ?: today.minusMonths(1).plusDays(1)) }
-    var to by remember { mutableStateOf(current?.to ?: today) }
-    var picking by remember { mutableStateOf<Boolean?>(null) }
+    // Kept as epoch days: LocalDate does not go into a Bundle, and a plain
+    // remember here meant turning the phone reset both dates to the default
+    // month while the dialog stayed open — the user saw their choice undone.
+    var fromEpochDay by rememberSaveable {
+        mutableLongStateOf((current?.from ?: today.minusMonths(1).plusDays(1)).toEpochDay())
+    }
+    var toEpochDay by rememberSaveable { mutableLongStateOf((current?.to ?: today).toEpochDay()) }
+    val from = LocalDate.ofEpochDay(fromEpochDay)
+    val to = LocalDate.ofEpochDay(toEpochDay)
+    var picking by rememberSaveable { mutableStateOf<Boolean?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -148,7 +156,11 @@ private fun CustomRangeDialog(
             initialDate = if (pickingStart) from else to,
             onDismiss = { picking = null },
             onPicked = { picked ->
-                if (pickingStart) from = picked else to = picked
+                if (pickingStart) {
+                    fromEpochDay = picked.toEpochDay()
+                } else {
+                    toEpochDay = picked.toEpochDay()
+                }
             },
         )
     }

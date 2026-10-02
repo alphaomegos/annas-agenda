@@ -18,9 +18,6 @@ data class FoodSuggestion(
     val lastEatenOn: LocalDate?,
 )
 
-/** Below this, a search matches most of the log and the list is noise. */
-const val FOOD_SUGGESTION_MIN_LENGTH = 2
-
 /**
  * What the user has eaten before that looks like what they are typing.
  *
@@ -35,19 +32,17 @@ const val FOOD_SUGGESTION_MIN_LENGTH = 2
  * Taking the portion from one entry and the calories from another would
  * produce a number that was never true.
  *
- * Ordering is the same shape as the task suggestions, and for the same
- * reasons: a name that **starts** with what has been typed beats one that
- * merely contains it, then eaten more often, then eaten more recently, then
- * alphabetically — the last one for determinism, so the list does not
- * reshuffle itself between launches.
+ * Ordering is [suggestionOrder], the same rule as the task suggestions: a
+ * name that **starts** with what has been typed beats one that merely
+ * contains it, then eaten more often, then eaten more recently, then
+ * alphabetically.
  */
 fun foodSuggestionsFor(
     typed: String,
     log: List<FoodEntry>,
     limit: Int = 5,
 ): List<FoodSuggestion> {
-    val needle = typed.trim().lowercase()
-    if (needle.length < FOOD_SUGGESTION_MIN_LENGTH) return emptyList()
+    val needle = suggestionNeedle(typed) ?: return emptyList()
 
     val parsed = log
         .filter { it.title.isNotBlank() }
@@ -76,10 +71,12 @@ fun foodSuggestionsFor(
             )
         }
         .sortedWith(
-            compareByDescending<FoodSuggestion> { it.name.lowercase().startsWith(needle) }
-                .thenByDescending { it.timesEaten }
-                .thenByDescending { it.lastEatenOn }
-                .thenBy { it.name.lowercase() }
+            suggestionOrder(
+                needle,
+                text = { it.name },
+                timesUsed = { it.timesEaten },
+                lastUsedOn = { it.lastEatenOn },
+            )
         )
         .take(limit)
 }

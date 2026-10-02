@@ -18,9 +18,6 @@ data class TaskSuggestion(
     val lastUsedOn: LocalDate?,
 )
 
-/** Below this, a search matches most of the history and the list is noise. */
-const val TASK_SUGGESTION_MIN_LENGTH = 2
-
 /**
  * What the user has written before that looks like what they are writing now.
  *
@@ -37,9 +34,8 @@ const val TASK_SUGGESTION_MIN_LENGTH = 2
  * typing from the beginning, so the beginning is what they mean.
  *
  * Within each of those two groups: used more often first, then used more
- * recently, then alphabetically. The last one is not a preference, it is
- * determinism — without it two equally-used wordings swap places between
- * launches and the list flickers.
+ * recently, then alphabetically. The rule is [suggestionOrder], shared with
+ * the food suggestions.
  *
  * A task with no date has no [TaskSuggestion.lastUsedOn]; it sorts as older
  * than anything dated, which is what "Someday" means.
@@ -50,8 +46,7 @@ fun taskSuggestionsFor(
     subtasks: List<Subtask>,
     limit: Int = 5,
 ): List<TaskSuggestion> {
-    val needle = typed.trim().lowercase()
-    if (needle.length < TASK_SUGGESTION_MIN_LENGTH) return emptyList()
+    val needle = suggestionNeedle(typed) ?: return emptyList()
 
     val pool = tasks.filter { it.originTaskId == null && it.description.isNotBlank() }
 
@@ -82,10 +77,12 @@ fun taskSuggestionsFor(
             )
         }
         .sortedWith(
-            compareByDescending<TaskSuggestion> { it.description.lowercase().startsWith(needle) }
-                .thenByDescending { it.timesUsed }
-                .thenByDescending { it.lastUsedOn ?: LocalDate.MIN }
-                .thenBy { it.description.lowercase() }
+            suggestionOrder(
+                needle,
+                text = { it.description },
+                timesUsed = { it.timesUsed },
+                lastUsedOn = { it.lastUsedOn },
+            )
         )
         .take(limit)
 }

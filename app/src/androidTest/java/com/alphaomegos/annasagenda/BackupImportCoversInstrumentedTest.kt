@@ -14,7 +14,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 import java.nio.charset.StandardCharsets
 
 /**
@@ -34,12 +33,12 @@ class BackupImportCoversInstrumentedTest {
     fun setUp() {
         app = InstrumentationRegistry.getInstrumentation()
             .targetContext.applicationContext as Application
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @After
     fun tearDown() {
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @Test
@@ -138,12 +137,5 @@ class BackupImportCoversInstrumentedTest {
         }
 
         assertTrue("a cover nothing references any more should be swept", swept)
-    }
-
-    private fun clearAppStateStoreFile() {
-        val file = File(app.filesDir, "datastore/app_state_store.preferences_pb")
-        if (file.exists()) {
-            file.delete()
-        }
     }
 }

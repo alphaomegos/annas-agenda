@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,12 +18,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
+/**
+ * How the words sit under a tile's picture.
+ *
+ * [Regular] is the language screen: four tiles, each a quarter of the screen,
+ * where the name of the language matters as much as its flag. [Small] is the
+ * main menu on a wide screen, where the picture is the item and the word is
+ * only there to confirm it — one line, small, and as little of the tile as a
+ * word can take.
+ */
+internal enum class MenuTileLabel { Regular, Small }
+
+/**
+ * A card with a picture filling it and a caption underneath.
+ *
+ * [onLongClick], when given, is a long press on the whole tile — the main menu
+ * uses it to start rearranging. It goes through the same tap detector the
+ * menu's list rows use rather than through the card's own click, because the
+ * card's click knows nothing about long presses and two detectors on one tile
+ * would race for the same touch.
+ */
 @Composable
 internal fun MenuTile(
     iconRes: Int,
@@ -30,7 +52,11 @@ internal fun MenuTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    label: MenuTileLabel = MenuTileLabel.Regular,
+    onLongClick: (() -> Unit)? = null,
 ) {
+    val small = label == MenuTileLabel.Small
+
     val shape = RoundedCornerShape(22.dp)
     val colorsEnabled = CardDefaults.elevatedCardColors(
         containerColor = MaterialTheme.colorScheme.surface
@@ -43,7 +69,7 @@ internal fun MenuTile(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp)
+                .padding(if (small) 8.dp else 12.dp)
                 .alpha(if (enabled) 1f else 0.55f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -58,25 +84,41 @@ internal fun MenuTile(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(6.dp),
+                        .padding(if (small) 2.dp else 6.dp),
                     contentScale = ContentScale.Fit
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(if (small) 4.dp else 8.dp))
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = if (small) {
+                    MaterialTheme.typography.labelMedium
+                } else {
+                    MaterialTheme.typography.titleMedium
+                },
                 textAlign = TextAlign.Center,
-                maxLines = 2,
+                maxLines = if (small) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
             )
         }
     }
 
-    if (enabled) {
+    val longClick = onLongClick
+    if (enabled && longClick != null) {
+        ElevatedCard(
+            modifier = modifier.pointerInput(onClick, longClick) {
+                detectTapGestures(
+                    onTap = { onClick() },
+                    onLongPress = { longClick() },
+                )
+            },
+            shape = shape,
+            colors = colorsEnabled
+        ) { content() }
+    } else if (enabled) {
         ElevatedCard(
             onClick = onClick,
             modifier = modifier,

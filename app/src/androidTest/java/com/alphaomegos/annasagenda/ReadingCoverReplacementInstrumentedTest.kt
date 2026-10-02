@@ -37,14 +37,14 @@ class ReadingCoverReplacementInstrumentedTest {
     fun setUp() {
         app = InstrumentationRegistry.getInstrumentation()
             .targetContext.applicationContext as Application
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @After
     fun tearDown() {
         tempFiles.forEach { it.delete() }
         tempFiles.clear()
-        clearAppStateStoreFile()
+        clearAppStateStoreFile(app)
     }
 
     @Test
@@ -141,12 +141,5 @@ class ReadingCoverReplacementInstrumentedTest {
             delay(25)
         }
         error("the replaced cover file is still on disk: ${file.name}")
-    }
-
-    private fun clearAppStateStoreFile() {
-        val file = File(app.filesDir, "datastore/app_state_store.preferences_pb")
-        if (file.exists()) {
-            file.delete()
-        }
     }
 }
