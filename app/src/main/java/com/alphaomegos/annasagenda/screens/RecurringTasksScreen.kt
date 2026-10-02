@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.ConfirmDialog
+import com.alphaomegos.annasagenda.dialogs.EditTaskSeriesDialog
 import com.alphaomegos.annasagenda.RepeatFreq
 import com.alphaomegos.annasagenda.RepeatRule
 import com.alphaomegos.annasagenda.util.appLocale
@@ -82,6 +83,7 @@ fun RecurringTasksScreen(
     // Saveable, so turning the phone does not close a question that was asked.
     val confirmDeleteTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
     val confirmDeleteSubtaskId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val editSeriesTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
 
     Column(
         modifier = Modifier
@@ -161,6 +163,9 @@ fun RecurringTasksScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
                                 ) {
+                                    TextButton(onClick = { editSeriesTaskId.value = t.id }) {
+                                        Text(stringResource(R.string.edit_series))
+                                    }
                                     TextButton(onClick = { confirmDeleteTaskId.value = t.id }) {
                                         Text(stringResource(R.string.recurring_tasks_delete_from_today))
                                     }
@@ -249,6 +254,22 @@ fun RecurringTasksScreen(
                 confirmDeleteTaskId.value = null
             },
             onDismiss = { confirmDeleteTaskId.value = null },
+        )
+    }
+
+    // Looked up by id each time: after a save the series may have a new
+    // template, and the dialog closes on the old id rather than reopening.
+    val editingSeries = state.tasks.firstOrNull { it.id == editSeriesTaskId.value }
+    if (editingSeries != null) {
+        EditTaskSeriesDialog(
+            initialDescription = editingSeries.description,
+            initialTime = editingSeries.time,
+            canHaveTime = editingSeries.date != null,
+            onDismiss = { editSeriesTaskId.value = null },
+            onSave = { description, time ->
+                vm.editTaskSeriesFrom(editingSeries.id, description, time, today)
+                editSeriesTaskId.value = null
+            },
         )
     }
 

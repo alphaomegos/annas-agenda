@@ -137,6 +137,40 @@ private fun suppressionOwner(key: String): SuppressionOwner? {
 }
 
 /**
+ * Tombstones moved from one template to another, for the days from
+ * [fromDate] on.
+ *
+ * Used when a series is split (stateAfterEditingTaskSeriesFrom): a day the
+ * user deleted from the old series has to stay deleted in the new one, and
+ * the tombstone names its template by id. [taskIds] and [subtaskIds] map old
+ * template ids to new ones; keys for other ids, for days before [fromDate],
+ * or in a shape this version does not recognise are left exactly as they are.
+ *
+ * Here rather than with its caller for the reason [isSuppressedTemplateTaskOnItsDate]
+ * is: the key format is known in this file and nowhere else.
+ */
+fun suppressionsMovedToNewTemplate(
+    suppressedRecurrences: Set<String>,
+    taskIds: Map<Long, Long>,
+    subtaskIds: Map<Long, Long>,
+    fromDate: LocalDate,
+): Set<String> {
+    if (suppressedRecurrences.isEmpty()) return suppressedRecurrences
+
+    return suppressedRecurrences.mapTo(mutableSetOf()) { key ->
+        val owner = suppressionOwner(key) ?: return@mapTo key
+        val epochDay = key.substringAfterLast(':').toLongOrNull() ?: return@mapTo key
+        val date = LocalDate.ofEpochDay(epochDay)
+        if (date.isBefore(fromDate)) return@mapTo key
+
+        when (owner.kind) {
+            SuppressionKind.TASK -> taskIds[owner.id]?.let { taskSuppressionKey(it, date) } ?: key
+            SuppressionKind.SUBTASK -> subtaskIds[owner.id]?.let { subtaskSuppressionKey(it, date) } ?: key
+        }
+    }
+}
+
+/**
  * Drops tombstones whose task or subtask no longer exists.
  *
  * A tombstone names its template by id and nothing ever removed one. Ids are

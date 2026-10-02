@@ -81,4 +81,8 @@
     <string name="set_task_time">Set a time</string>
     <string name="task_time_fmt">Time: %1$s</string>
     <string name="clear_task_time">Remove time</string>
+    <!-- Editing a repeating task from today on (0133) -->
+    <string name="edit_series">Edit</string>
+    <string name="edit_series_title">Edit repeating task</string>
+    <string name="edit_series_from_today_hint">Changes from today. Days already past stay as they were.</string>
 </resources>

@@ -1387,6 +1387,40 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Renames a repeating task and sets or clears its time from [fromDate] on,
+     * leaving earlier days as they were — the rule is in SeriesEditSupport.
+     */
+    fun editTaskSeriesFrom(
+        templateTaskId: Long,
+        description: String,
+        time: LocalTime?,
+        fromDate: LocalDate = LocalDate.now(),
+    ) {
+        // Read and write rather than update {}: update's lambda is a
+        // compare-and-set loop and may run more than once, and newId() is not
+        // something to run twice for one edit. Nothing suspends in between.
+        val cur = _state.value
+        val after = stateAfterEditingTaskSeriesFrom(
+            tasks = cur.tasks,
+            subtasks = cur.subtasks,
+            suppressedRecurrences = cur.suppressedRecurrences,
+            templateTaskId = templateTaskId,
+            fromDate = fromDate,
+            description = description,
+            time = time,
+            newId = ::newId,
+            weekStart = currentLocaleWeekStart(),
+        )
+        if (after.tasks === cur.tasks) return
+
+        _state.value = cur.copy(
+            tasks = after.tasks,
+            subtasks = after.subtasks,
+            suppressedRecurrences = after.suppressedRecurrences,
+        )
+    }
+
     fun deleteSubtaskSeriesFrom(templateSubtaskId: Long, fromDate: LocalDate = LocalDate.now()) {
         _state.update { cur ->
             val after = tasksAfterDeletingSubtaskSeriesFrom(

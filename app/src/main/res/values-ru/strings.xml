@@ -461,4 +461,8 @@
     <string name="set_task_time">Указать время</string>
     <string name="task_time_fmt">Время: %1$s</string>
     <string name="clear_task_time">Убрать время</string>
+    <!-- Editing a repeating task from today on (0133) -->
+    <string name="edit_series">Изменить</string>
+    <string name="edit_series_title">Изменить регулярку</string>
+    <string name="edit_series_from_today_hint">Изменится с сегодняшнего дня. Прошедшие дни останутся как были.</string>
 </resources>

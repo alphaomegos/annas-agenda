@@ -320,4 +320,8 @@
     <string name="set_task_time">Podesi vreme</string>
     <string name="task_time_fmt">Vreme: %1$s</string>
     <string name="clear_task_time">Ukloni vreme</string>
+    <!-- Editing a repeating task from today on (0133) -->
+    <string name="edit_series">Izmeni</string>
+    <string name="edit_series_title">Izmeni ponavljajući zadatak</string>
+    <string name="edit_series_from_today_hint">Menja se od danas. Dani koji su prošli ostaju kakvi su bili.</string>
 </resources>
