@@ -457,4 +457,8 @@
     </plurals>
     <!-- Вклад бега в месячный прогноз -->
     <string name="anthropometry_running_included">С учётом бега: %1$d ккал</string>
+    <!-- A time on a task (0133) -->
+    <string name="set_task_time">Указать время</string>
+    <string name="task_time_fmt">Время: %1$s</string>
+    <string name="clear_task_time">Убрать время</string>
 </resources>

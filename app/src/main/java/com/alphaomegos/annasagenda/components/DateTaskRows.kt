@@ -28,6 +28,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.Subtask
 import com.alphaomegos.annasagenda.Task
+import com.alphaomegos.annasagenda.formatTaskTime
 
 @Composable
 internal fun DateTaskRow(
@@ -50,6 +52,10 @@ internal fun DateTaskRow(
     onMoveDown: () -> Unit,
     onMove: () -> Unit,
     onCopy: () -> Unit,
+    // A task with a time is placed by its time, and the first untimed task
+    // sits under the timed ones; their arrows are grey (canMoveTask).
+    canMoveUp: Boolean = true,
+    canMoveDown: Boolean = true,
 ) {
     val markerShape = RoundedCornerShape(10.dp)
     val markerAlpha = 0.18f
@@ -105,25 +111,43 @@ internal fun DateTaskRow(
                 .padding(end = 6.dp)
         ) {
             val deco = if (task.isDone) TextDecoration.LineThrough else null
-            Text(
-                text = task.description,
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onEdit() },
-                style = MaterialTheme.typography.bodyLarge.copy(textDecoration = deco)
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val time = task.time
+                if (time != null) {
+                    Text(
+                        text = formatTaskTime(time),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 6.dp),
+                    )
+                }
+                Text(
+                    text = task.description,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge.copy(textDecoration = deco)
+                )
+            }
         }
 
-        TinyIconButton(
-            onClick = onMoveUp,
-            icon = Icons.Default.KeyboardArrowUp,
-            cd = stringResource(R.string.move_task_up)
-        )
-        TinyIconButton(
-            onClick = onMoveDown,
-            icon = Icons.Default.KeyboardArrowDown,
-            cd = stringResource(R.string.move_task_down)
-        )
+        Box(modifier = Modifier.alpha(if (canMoveUp) 1f else 0.35f)) {
+            TinyIconButton(
+                onClick = { if (canMoveUp) onMoveUp() },
+                icon = Icons.Default.KeyboardArrowUp,
+                cd = stringResource(R.string.move_task_up)
+            )
+        }
+        Box(modifier = Modifier.alpha(if (canMoveDown) 1f else 0.35f)) {
+            TinyIconButton(
+                onClick = { if (canMoveDown) onMoveDown() },
+                icon = Icons.Default.KeyboardArrowDown,
+                cd = stringResource(R.string.move_task_down)
+            )
+        }
         TinyIconButton(
             onClick = onMove,
             icon = Icons.AutoMirrored.Filled.ArrowForward,

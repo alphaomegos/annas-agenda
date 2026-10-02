@@ -2,26 +2,41 @@ package com.alphaomegos.annasagenda
 
 import java.time.LocalDate
 
+/**
+ * One arrow tap on a task: swaps it with its neighbour among the day's
+ * **untimed** tasks, and renumbers the day so that every `order` on it is
+ * unique again.
+ *
+ * Refuses — returns [tasks] itself — whenever [canMoveTask] says no: a task
+ * with a time (its place is its time), a move past either end, a task that
+ * does not exist. The screen greys the arrows by the same rule; this refusal
+ * is for the tap that arrives anyway.
+ *
+ * The renumbering walks the day in [taskDayOrder], timed tasks included, so a
+ * day keeps the property the recurrence pruning relies on: no two tasks share
+ * an `order`.
+ */
 fun moveTaskWithinDate(
     tasks: List<Task>,
     taskId: Long,
     step: Int,
 ): List<Task> {
-    val victim = tasks.firstOrNull { it.id == taskId } ?: return tasks
-    val siblings = tasks
-        .filter { it.date == victim.date }
-        .sortedWith(compareBy({ it.order }, { it.id }))
+    if (!canMoveTask(tasks, taskId, step)) return tasks
+    val victim = tasks.first { it.id == taskId }
 
-    val idx = siblings.indexOfFirst { it.id == taskId }
+    val untimed = untimedSiblings(tasks, victim).toMutableList()
+    val idx = untimed.indexOfFirst { it.id == taskId }
     val targetIdx = idx + step
-    if (idx < 0 || targetIdx !in siblings.indices) return tasks
 
-    val reordered = siblings.toMutableList()
-    val tmp = reordered[targetIdx]
-    reordered[targetIdx] = reordered[idx]
-    reordered[idx] = tmp
+    val tmp = untimed[targetIdx]
+    untimed[targetIdx] = untimed[idx]
+    untimed[idx] = tmp
 
-    val idToOrder = reordered.mapIndexed { i, task -> task.id to i }.toMap()
+    val timed = tasks
+        .filter { it.date == victim.date && it.time != null }
+        .sortedWith(taskDayOrder)
+
+    val idToOrder = (timed + untimed).mapIndexed { i, task -> task.id to i }.toMap()
     return tasks.map { task ->
         idToOrder[task.id]?.let { task.copy(order = it) } ?: task
     }

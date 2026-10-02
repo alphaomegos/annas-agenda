@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.ManualCounter
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.Task
+import com.alphaomegos.annasagenda.formatTaskTime
 
 @Composable
 internal fun EditTaskDialog(
@@ -43,6 +44,8 @@ internal fun EditTaskDialog(
     onDelete: (Long) -> Unit,
     onConfirm: (Long, String) -> Unit,
     onDetachCounter: (Long) -> Unit,
+    onShowTimePicker: () -> Unit,
+    onClearTime: (Long) -> Unit,
 ) {
     if (taskId == null) return
 
@@ -88,6 +91,38 @@ internal fun EditTaskDialog(
                             onClick = { onDetachCounter(taskId) }
                         ) {
                             Text(stringResource(R.string.detach_counter))
+                        }
+                    }
+                }
+
+                // A time needs a day: Someday has no clock, so the row is not
+                // offered there at all rather than offered and refused.
+                val datedTask = editingTask?.takeIf { it.date != null }
+                if (datedTask != null) {
+                    val time = datedTask.time
+                    if (time == null) {
+                        OutlinedButton(
+                            onClick = onShowTimePicker,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.set_task_time))
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(
+                                onClick = onShowTimePicker,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(stringResource(R.string.task_time_fmt, formatTaskTime(time)))
+                            }
+                            TextButton(
+                                onClick = { onClearTime(taskId) }
+                            ) {
+                                Text(stringResource(R.string.clear_task_time))
+                            }
                         }
                     }
                 }

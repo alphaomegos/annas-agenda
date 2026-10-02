@@ -316,4 +316,8 @@
     <string name="finish_reordering">Završi preuređivanje</string>
     <string name="anthropometry_settings_open">Podešavanja merenja</string>
     <string name="reading_item_actions">Radnje za ovu stavku</string>
+    <!-- A time on a task (0133) -->
+    <string name="set_task_time">Podesi vreme</string>
+    <string name="task_time_fmt">Vreme: %1$s</string>
+    <string name="clear_task_time">Ukloni vreme</string>
 </resources>

@@ -36,6 +36,10 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.components.ColorPickerRow
 import com.alphaomegos.annasagenda.components.PickDateDialog
+import com.alphaomegos.annasagenda.components.PickTimeDialog
+import com.alphaomegos.annasagenda.formatTaskTime
+import com.alphaomegos.annasagenda.minuteOfDay
+import com.alphaomegos.annasagenda.timeFromMinuteOfDay
 import com.alphaomegos.annasagenda.components.ColorDot
 import com.alphaomegos.annasagenda.components.nextPaletteColor
 import com.alphaomegos.annasagenda.R
@@ -81,6 +85,10 @@ fun NewTaskScreen(
 
     var selectedDate by rememberSaveable { mutableStateOf(initialDate) }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    // Minutes since midnight: a LocalTime does not go into a Bundle.
+    var selectedTimeMinute by rememberSaveable { mutableStateOf<Int?>(null) }
+    var showTimePicker by rememberSaveable { mutableStateOf(false) }
+    val selectedTime = timeFromMinuteOfDay(selectedTimeMinute)
     var taskColor by rememberSaveable { mutableStateOf<Long?>(null) }
 
     var draftLoaded by remember { mutableStateOf(false) }
@@ -212,6 +220,34 @@ fun NewTaskScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.pick_date))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Only a task with a day can have a time; the button waits for one.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { showTimePicker = true },
+                    enabled = selectedDate != null,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        if (selectedTime == null) {
+                            stringResource(R.string.set_task_time)
+                        } else {
+                            stringResource(R.string.task_time_fmt, formatTaskTime(selectedTime))
+                        }
+                    )
+                }
+
+                if (selectedTime != null) {
+                    TextButton(onClick = { selectedTimeMinute = null }) {
+                        Text(stringResource(R.string.clear_task_time))
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -381,7 +417,9 @@ fun NewTaskScreen(
                         val cleanSubtasks = subtasks.map { it.description.trim() }
                         val taskId = vm.createTaskForDate(
                             date = selectedDate,
-                            time = null,
+                            // A time chosen and then the day taken away
+                            // (Someday) is no time: there is no day to hold it.
+                            time = if (selectedDate != null) selectedTime else null,
                             description = description.trim(),
                             colorArgb = taskColor,
                             linkedManualCounterId = linkedManualCounterId,
@@ -414,6 +452,14 @@ fun NewTaskScreen(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
         ) {
             Text(stringResource(R.string.back))
+        }
+
+        if (showTimePicker) {
+            PickTimeDialog(
+                initialTime = selectedTime,
+                onDismiss = { showTimePicker = false },
+                onPicked = { picked -> selectedTimeMinute = minuteOfDay(picked) },
+            )
         }
 
         if (showDatePicker) {

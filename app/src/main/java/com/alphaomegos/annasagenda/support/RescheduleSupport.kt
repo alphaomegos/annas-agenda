@@ -33,6 +33,9 @@ fun nextTaskOrderOn(tasks: List<Task>, date: LocalDate?): Int =
  * That detachment is one-way and deliberate: the moved task is now the user's
  * own, and editing the template afterwards leaves it alone.
  *
+ * Moving a task to Someday takes its time away: a time names a moment on a
+ * day, and Someday has no day. Moving it to another day keeps the time.
+ *
  * Returns everything unchanged if [taskId] names nothing.
  */
 fun stateAfterReschedulingTask(
@@ -49,13 +52,15 @@ fun stateAfterReschedulingTask(
     val newOrder =
         if (oldDate == newDate) victim.order else nextTaskOrderOn(tasks, newDate)
 
+    val newTime = if (newDate == null) null else victim.time
+
     val originTaskId = victim.originTaskId
     val leavesItsOwnDay = originTaskId != null && oldDate != null && oldDate != newDate
 
     if (!leavesItsOwnDay) {
         return RescheduleResult(
             tasks = tasks.map { t ->
-                if (t.id == taskId) t.copy(date = newDate, order = newOrder) else t
+                if (t.id == taskId) t.copy(date = newDate, time = newTime, order = newOrder) else t
             },
             subtasks = subtasks,
             suppressedRecurrences = suppressedRecurrences,
@@ -70,7 +75,13 @@ fun stateAfterReschedulingTask(
 
     val movedTasks = tasks.map { t ->
         if (t.id == taskId) {
-            t.copy(date = newDate, order = newOrder, repeatRule = null, originTaskId = null)
+            t.copy(
+                date = newDate,
+                time = newTime,
+                order = newOrder,
+                repeatRule = null,
+                originTaskId = null,
+            )
         } else {
             t
         }

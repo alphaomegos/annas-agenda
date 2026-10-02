@@ -25,8 +25,11 @@ import com.alphaomegos.annasagenda.RepeatRule
 import com.alphaomegos.annasagenda.Subtask
 import com.alphaomegos.annasagenda.Task
 import com.alphaomegos.annasagenda.dialogs.RepeatPickerDialog
+import com.alphaomegos.annasagenda.canMoveTask
 import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
+import com.alphaomegos.annasagenda.taskDayOrder
 import java.time.LocalDate
+import java.time.LocalTime
 import com.alphaomegos.annasagenda.ManualCounter
 
 internal data class DateTasksActions(
@@ -57,6 +60,7 @@ internal data class DateTasksActions(
     val setTaskLinkedManualCounter: (Long, Long?) -> Unit,
     val setTaskRepeatRule: (Long, RepeatRule?) -> Unit,
     val setSubtaskRepeatRule: (Long, RepeatRule?) -> Unit,
+    val setTaskTime: (Long, LocalTime?) -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,7 +84,7 @@ internal fun DateTasksBlock(
             .filter { includeDoneTasks || !it.isDone }
             .filter { visibleTaskIds == null || it.id in visibleTaskIds }
             .filterNot { isSuppressedTemplateTaskOnItsDate(it, state.suppressedRecurrences) }
-            .sortedWith(compareBy({ it.order }, { it.id }))
+            .sortedWith(taskDayOrder)
     }
     if (tasks.isEmpty()) return
 
@@ -123,6 +127,7 @@ internal fun DateTasksBlock(
             setTaskRepeatRule = { taskId, rule -> vm.setTaskRepeatRule(taskId, rule) },
             setSubtaskRepeatRule = { subId, rule -> vm.setSubtaskRepeatRule(subId, rule) },
             setTaskLinkedManualCounter = { taskId, counterId -> vm.setTaskLinkedManualCounter(taskId, counterId) },
+            setTaskTime = { taskId, time -> vm.setTaskTime(taskId, time) },
         )
     }
 
@@ -173,6 +178,7 @@ private fun DateTasksBlockContent(
     var editTaskId by rememberSaveable { mutableStateOf<Long?>(null) }
     val editTaskText = rememberSaveable { mutableStateOf("") }
     val showTaskRepeatPicker = rememberSaveable { mutableStateOf(false) }
+    val showTaskTimePicker = rememberSaveable { mutableStateOf(false) }
     val showCounterPicker = rememberSaveable { mutableStateOf(false) }
     var editSubtaskId by rememberSaveable { mutableStateOf<Long?>(null) }
     val editSubtaskText = rememberSaveable { mutableStateOf("") }
@@ -203,6 +209,10 @@ private fun DateTasksBlockContent(
             onMoveDown = { actions.moveTaskDown(task.id) },
             onMove = { moveTaskId.value = task.id },
             onCopy = { copyTaskId.value = task.id },
+            // Asked of the whole day, done ones included: that is what the
+            // move itself looks at.
+            canMoveUp = canMoveTask(state.tasks, task.id, step = -1),
+            canMoveDown = canMoveTask(state.tasks, task.id, step = 1),
         )
 
         Row(
@@ -341,6 +351,7 @@ private fun DateTasksBlockContent(
         onDismiss = {
             editTaskId = null
             showTaskRepeatPicker.value = false
+            showTaskTimePicker.value = false
             showCounterPicker.value = false
         },
         onShowRepeatPicker = { showTaskRepeatPicker.value = true },
@@ -349,18 +360,33 @@ private fun DateTasksBlockContent(
             actions.deleteTask(taskId)
             editTaskId = null
             showTaskRepeatPicker.value = false
+            showTaskTimePicker.value = false
             showCounterPicker.value = false
         },
         onConfirm = { taskId, text ->
             actions.updateTaskDescription(taskId, text)
             editTaskId = null
             showTaskRepeatPicker.value = false
+            showTaskTimePicker.value = false
             showCounterPicker.value = false
         },
         onDetachCounter = { taskId ->
             actions.setTaskLinkedManualCounter(taskId, null)
         },
+        onShowTimePicker = { showTaskTimePicker.value = true },
+        onClearTime = { taskId -> actions.setTaskTime(taskId, null) },
     )
+
+    // The time is written as soon as it is picked, as the counter is when it
+    // is attached: it is a separate choice from the wording in the text field.
+    val timeTaskId = editTaskId
+    if (showTaskTimePicker.value && timeTaskId != null) {
+        PickTimeDialog(
+            initialTime = tasks.firstOrNull { it.id == timeTaskId }?.time,
+            onDismiss = { showTaskTimePicker.value = false },
+            onPicked = { picked -> actions.setTaskTime(timeTaskId, picked) },
+        )
+    }
 
     if (showCounterPicker.value && editTaskId != null) {
         TaskCounterPickerDialog(

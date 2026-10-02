@@ -77,4 +77,8 @@
         <item quantity="one">%d part</item>
         <item quantity="other">%d parts</item>
     </plurals>
+    <!-- A time on a task (0133) -->
+    <string name="set_task_time">Set a time</string>
+    <string name="task_time_fmt">Time: %1$s</string>
+    <string name="clear_task_time">Remove time</string>
 </resources>

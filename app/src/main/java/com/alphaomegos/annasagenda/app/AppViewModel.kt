@@ -1330,6 +1330,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return id
     }
 
+    /** Gives a task a time, changes it, or (null) takes it away — see tasksAfterSettingTime. */
+    fun setTaskTime(taskId: Long, time: LocalTime?) {
+        val cur = _state.value
+        val newTasks = tasksAfterSettingTime(cur.tasks, taskId, time)
+        if (newTasks === cur.tasks) return
+        _state.value = cur.copy(tasks = newTasks)
+    }
+
     fun updateTaskDescription(taskId: Long, description: String) {
         val clean = description.trim()
         if (clean.isBlank()) return
