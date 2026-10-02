@@ -1754,6 +1754,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = cur.copy(anthropometryEnabledFieldIds = normalized)
     }
 
+    /** 5.1 and 5.3: whether the forecast block and the list of measurements are shown. */
+    fun setAnthropometryDisplay(showForecast: Boolean, showEntries: Boolean) {
+        val cur = _state.value
+        if (cur.anthropometryShowForecast == showForecast && cur.anthropometryShowEntries == showEntries) return
+        _state.value = cur.copy(anthropometryShowForecast = showForecast, anthropometryShowEntries = showEntries)
+    }
+
+    /**
+     * The chart's range, kept so that leaving the screen and coming back
+     * shows the same one — asked for by Eduard on 02.10.
+     */
+    fun setAnthropometryRange(range: AnthropometryRange) {
+        val cur = _state.value
+        if (cur.anthropometryRange == range) return
+        _state.value = cur.copy(anthropometryRange = range)
+    }
+
+    /** Picking custom dates also chooses the custom range. */
+    fun setAnthropometryCustomRange(window: DateWindow) {
+        val cur = _state.value
+        _state.value = cur.copy(
+            anthropometryRange = AnthropometryRange.CUSTOM,
+            anthropometryCustomRange = window,
+        )
+    }
+
     /* ---------------------------
      Anthropometry
   ---------------------------- */

@@ -38,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -63,6 +64,7 @@ import com.alphaomegos.annasagenda.anthropometryEntriesIn
 import com.alphaomegos.annasagenda.anthropometryWindowFor
 import com.alphaomegos.annasagenda.caloriesBurnedRunning
 import com.alphaomegos.annasagenda.dialogs.AnthropometryInputDialog
+import com.alphaomegos.annasagenda.dialogs.AnthropometryDayInputDialog
 import com.alphaomegos.annasagenda.AppViewModel
 import androidx.compose.ui.graphics.toArgb
 import com.alphaomegos.annasagenda.R
@@ -200,24 +202,14 @@ fun AnthropometryScreen(
     }
     val entriesByDate = remember(allEntries) { allEntries.associateBy { it.date } }
 
-    // The chosen range is kept as its name rather than as the enum: a String
-    // needs no judgement about what a Bundle will accept, and getting that
-    // judgement wrong shows up only as a crash on rotation.
-    var rangeName by rememberSaveable { mutableStateOf(AnthropometryRange.MONTH.name) }
-    var customFromDay by rememberSaveable { mutableStateOf<Long?>(null) }
-    var customToDay by rememberSaveable { mutableStateOf<Long?>(null) }
+    // The range lives in the saved state since 0138, so leaving the screen
+    // and coming back shows the one last chosen rather than a month again.
     // 0 is the window ending today, -1 the one before it. Not kept past the
     // screen: coming back starts on the present again.
     var page by rememberSaveable { mutableIntStateOf(0) }
 
-    val range = remember(rangeName) { AnthropometryRange.valueOf(rangeName) }
-
-    val custom = remember(customFromDay, customToDay) {
-        val from = customFromDay
-        val to = customToDay
-        if (from == null || to == null) null
-        else DateWindow(LocalDate.ofEpochDay(from), LocalDate.ofEpochDay(to))
-    }
+    val range = state.anthropometryRange
+    val custom = state.anthropometryCustomRange
 
     val dateWindow = remember(range, custom, allEntries, today, page) {
         anthropometryWindowFor(
@@ -238,6 +230,9 @@ fun AnthropometryScreen(
     val showInput = rememberSaveable { mutableStateOf(false) }
 
     val showSettings = rememberSaveable { mutableStateOf(false) }
+
+    // The measurement being edited from the list, as its epoch day.
+    var editingEntryDay by rememberSaveable { mutableStateOf<Long?>(null) }
 
     val visibleFieldDefs = remember(state.anthropometryEnabledFieldIds) {
         anthropometryFieldDefs
@@ -279,12 +274,11 @@ fun AnthropometryScreen(
                 selected = range,
                 custom = custom,
                 onSelect = {
-                    rangeName = it.name
+                    vm.setAnthropometryRange(it)
                     page = 0
                 },
                 onCustomPicked = { picked ->
-                    customFromDay = picked.from.toEpochDay()
-                    customToDay = picked.to.toEpochDay()
+                    vm.setAnthropometryCustomRange(picked)
                     page = 0
                 },
             )
@@ -329,7 +323,8 @@ fun AnthropometryScreen(
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        item {
+                        // 5.1: the whole forecast block, or none of it.
+                        if (state.anthropometryShowForecast) item {
                             val okGreen = appExtraColors.positive
                             val badRed = MaterialTheme.colorScheme.error
                             val color = if (potentialKg >= 0.0) okGreen else badRed
@@ -409,6 +404,25 @@ fun AnthropometryScreen(
                                 )
                             }
                         }
+
+                        // 5.3: every measurement, newest first; a tap opens
+                        // the same dialog the day is entered with.
+                        if (state.anthropometryShowEntries) {
+                            item {
+                                Text(
+                                    text = stringResource(R.string.anthro_entries_header),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(top = 8.dp),
+                                )
+                            }
+                            items(allEntries.asReversed(), key = { it.date.toEpochDay() }) { e ->
+                                AnthropometryEntryRow(
+                                    entry = e,
+                                    fields = visibleFieldDefs,
+                                    onClick = { editingEntryDay = e.date.toEpochDay() },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -438,13 +452,31 @@ fun AnthropometryScreen(
             }
         )
     }
+    val editingDay = editingEntryDay
+    if (editingDay != null) {
+        val date = LocalDate.ofEpochDay(editingDay)
+        AnthropometryDayInputDialog(
+            date = date,
+            initialEntry = entriesByDate[date],
+            enabledFieldIds = state.anthropometryEnabledFieldIds,
+            onDismiss = { editingEntryDay = null },
+            onSave = { valuesByFieldId ->
+                vm.saveAnthropometryForDate(date = date, valuesByFieldId = valuesByFieldId)
+                editingEntryDay = null
+            },
+        )
+    }
+
     if (showSettings.value) {
         AnthropometryFieldsDialog(
             fieldDefs = anthropometryFieldDefs,
             enabledFieldIds = state.anthropometryEnabledFieldIds,
+            showForecast = state.anthropometryShowForecast,
+            showEntries = state.anthropometryShowEntries,
             onDismiss = { showSettings.value = false },
-            onSave = { enabledIds ->
+            onSave = { enabledIds, forecast, entries ->
                 vm.setAnthropometryEnabledFieldIds(enabledIds)
+                vm.setAnthropometryDisplay(showForecast = forecast, showEntries = entries)
                 showSettings.value = false
             }
         )
@@ -684,9 +716,14 @@ private val fieldIdSetSaver = listSaver<Set<String>, String>(
 private fun AnthropometryFieldsDialog(
     fieldDefs: List<AnthropometryFieldDef>,
     enabledFieldIds: Set<String>,
+    showForecast: Boolean,
+    showEntries: Boolean,
     onDismiss: () -> Unit,
-    onSave: (Set<String>) -> Unit,
+    onSave: (Set<String>, showForecast: Boolean, showEntries: Boolean) -> Unit,
 ) {
+    var pendingForecast by rememberSaveable(showForecast) { mutableStateOf(showForecast) }
+    var pendingEntries by rememberSaveable(showEntries) { mutableStateOf(showEntries) }
+
     // Saveable: the dialog itself survives turning the phone, so the boxes
     // ticked in it have to as well — otherwise it comes back showing the
     // saved choice as if nothing had been clicked.
@@ -737,10 +774,32 @@ private fun AnthropometryFieldsDialog(
                         )
                     }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                // What the screen shows besides the chart (5.1, 5.3).
+                listOf(
+                    Triple(R.string.anthro_show_forecast, pendingForecast) { v: Boolean -> pendingForecast = v },
+                    Triple(R.string.anthro_show_entries, pendingEntries) { v: Boolean -> pendingEntries = v },
+                ).forEach { (labelRes, checked, set) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { set(!checked) }
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(checked = checked, onCheckedChange = { set(it) })
+                        Text(
+                            text = stringResource(labelRes),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(pendingIds.value) }) {
+            Button(onClick = { onSave(pendingIds.value, pendingForecast, pendingEntries) }) {
                 Text(stringResource(R.string.ok))
             }
         },
@@ -752,3 +811,47 @@ private fun AnthropometryFieldsDialog(
     )
 }
 
+
+/**
+ * One measured day in the list under the chart (5.3): the date, then each
+ * chosen field that has a value that day. Tapping it opens the day.
+ */
+@Composable
+private fun AnthropometryEntryRow(
+    entry: AnthropometryEntry,
+    fields: List<AnthropometryFieldDef>,
+    onClick: () -> Unit,
+) {
+    val locale = appLocale()
+    val cm = stringResource(R.string.cm_short)
+    val kg = stringResource(R.string.kg_short)
+
+    val values = fields.mapNotNull { f ->
+        val v = f.getValue(entry) ?: return@mapNotNull null
+        Triple(f, v, if (f.axis == AnthropometryAxis.KG) kg else cm)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+    ) {
+        Text(
+            text = formatShortDate(entry.date, locale),
+            style = MaterialTheme.typography.labelLarge,
+        )
+        values.forEach { (f, v, unit) ->
+            Text(
+                text = stringResource(
+                    R.string.anthro_entry_value,
+                    stringResource(f.labelRes).substringBefore(','),
+                    formatOneDecimal(v),
+                    unit,
+                ),
+                color = f.color,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}

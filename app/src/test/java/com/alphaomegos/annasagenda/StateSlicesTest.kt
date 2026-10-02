@@ -122,6 +122,24 @@ class StateSlicesTest {
         assertNotEquals(anthropometrySliceOf(populated), anthropometrySliceOf(changed))
     }
 
+    /**
+     * The settings the screen reads (0138) are in the slice, or changing them
+     * would not reach the screen until something else on it changed.
+     */
+    @Test
+    fun anthropometrySliceCarriesItsDisplaySettings() {
+        listOf(
+            populated.copy(anthropometryShowForecast = false),
+            populated.copy(anthropometryShowEntries = true),
+            populated.copy(anthropometryRange = AnthropometryRange.YEAR),
+            populated.copy(
+                anthropometryCustomRange = DateWindow(java.time.LocalDate.of(2026, 1, 1), java.time.LocalDate.of(2026, 2, 1))
+            ),
+        ).forEach { changed ->
+            assertNotEquals(anthropometrySliceOf(populated), anthropometrySliceOf(changed))
+        }
+    }
+
     @Test
     fun countersSliceReflectsItsOwnFields() {
         val changed = populated.copy(

@@ -34,4 +34,9 @@
     <string name="anthro_page_back">Previous period</string>
     <string name="anthro_page_forward">Next period</string>
     <string name="anthro_page_window">%1$s – %2$s</string>
+    <!-- Forecast and measurements list switches (0138) -->
+    <string name="anthro_show_forecast">Show the forecast</string>
+    <string name="anthro_show_entries">Show the measurements</string>
+    <string name="anthro_entries_header">Measurements</string>
+    <string name="anthro_entry_value">%1$s: %2$s %3$s</string>
 </resources>

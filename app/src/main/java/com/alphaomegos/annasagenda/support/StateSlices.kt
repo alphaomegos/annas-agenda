@@ -30,6 +30,11 @@ data class AnthropometrySlice(
     // run has to move that number, and a slice that did not carry them would
     // not emit when one was written down.
     val runningWorkouts: List<RunningWorkout> = emptyList(),
+    // What the screen shows and the range it last showed (schema 6).
+    val anthropometryShowForecast: Boolean = true,
+    val anthropometryShowEntries: Boolean = false,
+    val anthropometryRange: AnthropometryRange = AnthropometryRange.MONTH,
+    val anthropometryCustomRange: DateWindow? = null,
 )
 
 /**
@@ -86,6 +91,10 @@ fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySli
     calorieGoalChanges = state.calorieGoalChanges,
     foodLog = state.foodLog,
     runningWorkouts = state.runningWorkouts,
+    anthropometryShowForecast = state.anthropometryShowForecast,
+    anthropometryShowEntries = state.anthropometryShowEntries,
+    anthropometryRange = state.anthropometryRange,
+    anthropometryCustomRange = state.anthropometryCustomRange,
 )
 
 fun countersSliceOf(state: AppState): CountersSlice = CountersSlice(
