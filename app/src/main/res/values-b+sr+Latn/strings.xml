@@ -330,4 +330,8 @@
     <string name="shift_series_text">„%1$s“ se ponavlja. Pomeriti i sva sledeća ponavljanja za isti broj dana, ili samo ovaj dan?</string>
     <string name="shift_series_all">Celu seriju</string>
     <string name="shift_series_only_this">Samo ovaj dan</string>
+    <!-- Paging the chart back and forward (0136) -->
+    <string name="anthro_page_back">Prethodni period</string>
+    <string name="anthro_page_forward">Sledeći period</string>
+    <string name="anthro_page_window">%1$s – %2$s</string>
 </resources>

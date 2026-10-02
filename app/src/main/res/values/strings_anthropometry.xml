@@ -30,4 +30,8 @@
     <string name="anthro_range_to">To</string>
     <!-- What the running contributed to the month's projection -->
     <string name="anthropometry_running_included">Running included: %1$d kcal</string>
+    <!-- Paging the chart back and forward (0136) -->
+    <string name="anthro_page_back">Previous period</string>
+    <string name="anthro_page_forward">Next period</string>
+    <string name="anthro_page_window">%1$s – %2$s</string>
 </resources>

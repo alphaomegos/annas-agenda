@@ -240,4 +240,88 @@ class AnthropometryRangeTest {
 
         assertEquals(listOf(LocalDate.of(2026, 9, 23)), anthropometryEntriesIn(history, w).map { it.date })
     }
+
+    /* ---------------- paging back (0136) ---------------- */
+
+    private val pagedRanges = listOf(
+        AnthropometryRange.WEEK,
+        AnthropometryRange.MONTH,
+        AnthropometryRange.QUARTER,
+        AnthropometryRange.YEAR,
+        AnthropometryRange.CUSTOM,
+    )
+
+    private val pickedFortnight = DateWindow(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 14))
+
+    private fun paged(range: AnthropometryRange, page: Int, on: LocalDate = today) =
+        anthropometryWindowFor(range, on, custom = pickedFortnight, page = page)
+
+    @Test
+    fun pageZeroIsTheWindowItAlwaysWas() {
+        pagedRanges.forEach { range ->
+            assertEquals("$range", anthropometryWindowFor(range, today, custom = pickedFortnight), paged(range, 0))
+        }
+    }
+
+    /**
+     * Pages meet: each ends the day before the next one starts, with nothing
+     * missing and nothing twice — checked two years back, from days that end
+     * months badly (the 31st, a leap day).
+     */
+    @Test
+    fun pagesMeetWithNoDayMissingAndNoDayTwice() {
+        val awkwardDays = listOf(today, LocalDate.of(2026, 3, 31), LocalDate.of(2028, 2, 29), LocalDate.of(2026, 1, 1))
+
+        awkwardDays.forEach { on ->
+            pagedRanges.forEach { range ->
+                (0 downTo -24).zipWithNext().forEach { (later, earlier) ->
+                    val after = paged(range, later, on)
+                    val before = paged(range, earlier, on)
+                    assertEquals("$range from $on, page $earlier", after.from.minusDays(1), before.to)
+                    assertTrue("$range from $on, page $earlier", !before.from.isAfter(before.to))
+                }
+            }
+        }
+    }
+
+    /** From 26.09.2026: the current week is 20–26, the month 27.08–26.09. */
+    @Test
+    fun aPageBackIsAsLongAsTheRangeSays() {
+        assertEquals(DateWindow(LocalDate.of(2026, 9, 13), LocalDate.of(2026, 9, 19)), paged(AnthropometryRange.WEEK, -1))
+        assertEquals(DateWindow(LocalDate.of(2026, 7, 27), LocalDate.of(2026, 8, 26)), paged(AnthropometryRange.MONTH, -1))
+        assertEquals(DateWindow(LocalDate.of(2026, 3, 27), LocalDate.of(2026, 6, 26)), paged(AnthropometryRange.QUARTER, -1))
+        assertEquals(DateWindow(LocalDate.of(2024, 9, 27), LocalDate.of(2025, 9, 26)), paged(AnthropometryRange.YEAR, -1))
+        // A picked fortnight (1–14 September) pages back by a fortnight.
+        assertEquals(DateWindow(LocalDate.of(2026, 8, 18), LocalDate.of(2026, 8, 31)), paged(AnthropometryRange.CUSTOM, -1))
+    }
+
+    @Test
+    fun allHasNoPages() {
+        val entries = listOf(entry(LocalDate.of(2025, 1, 1)), entry(today))
+        val all = anthropometryWindowFor(AnthropometryRange.ALL, today, entries = entries)
+
+        assertEquals(all, anthropometryWindowFor(AnthropometryRange.ALL, today, entries = entries, page = -3))
+        assertTrue(!canPageAnthropometryBack(AnthropometryRange.ALL, all, entries))
+        assertTrue(!canPageAnthropometryForward(AnthropometryRange.ALL, -1))
+    }
+
+    /** Back only while there is something earlier to see; forward only up to today. */
+    @Test
+    fun pagingGoesBackWhileThereIsDataAndForwardUpToToday() {
+        val entries = listOf(entry(LocalDate.of(2026, 7, 10)), entry(today))
+        val thisMonth = paged(AnthropometryRange.MONTH, 0)
+        val lastMonth = paged(AnthropometryRange.MONTH, -1)
+        val twoBack = paged(AnthropometryRange.MONTH, -2)
+        val threeBack = paged(AnthropometryRange.MONTH, -3)
+
+        // Months back: 27.08–26.09, 27.07–26.08, 27.06–26.07 (holds 10.07).
+        assertTrue(canPageAnthropometryBack(AnthropometryRange.MONTH, thisMonth, entries))
+        assertTrue(canPageAnthropometryBack(AnthropometryRange.MONTH, lastMonth, entries))
+        assertEquals(1, anthropometryEntriesIn(entries, twoBack).size)
+        assertTrue(!canPageAnthropometryBack(AnthropometryRange.MONTH, twoBack, entries))
+        assertTrue(!canPageAnthropometryBack(AnthropometryRange.MONTH, threeBack, entries))
+
+        assertTrue(!canPageAnthropometryForward(AnthropometryRange.MONTH, 0))
+        assertTrue(canPageAnthropometryForward(AnthropometryRange.MONTH, -1))
+    }
 }

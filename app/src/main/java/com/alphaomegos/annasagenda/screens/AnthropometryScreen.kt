@@ -19,6 +19,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextAlign
+import com.alphaomegos.annasagenda.canPageAnthropometryBack
+import com.alphaomegos.annasagenda.canPageAnthropometryForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,7 +54,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AnthropometryEntry
 import com.alphaomegos.annasagenda.AnthropometryRange
@@ -199,6 +206,9 @@ fun AnthropometryScreen(
     var rangeName by rememberSaveable { mutableStateOf(AnthropometryRange.MONTH.name) }
     var customFromDay by rememberSaveable { mutableStateOf<Long?>(null) }
     var customToDay by rememberSaveable { mutableStateOf<Long?>(null) }
+    // 0 is the window ending today, -1 the one before it. Not kept past the
+    // screen: coming back starts on the present again.
+    var page by rememberSaveable { mutableIntStateOf(0) }
 
     val range = remember(rangeName) { AnthropometryRange.valueOf(rangeName) }
 
@@ -209,14 +219,17 @@ fun AnthropometryScreen(
         else DateWindow(LocalDate.ofEpochDay(from), LocalDate.ofEpochDay(to))
     }
 
-    val dateWindow = remember(range, custom, allEntries, today) {
+    val dateWindow = remember(range, custom, allEntries, today, page) {
         anthropometryWindowFor(
             range = range,
             today = today,
             custom = custom,
             entries = allEntries,
+            page = page,
         )
     }
+    val canBack = canPageAnthropometryBack(range, dateWindow, allEntries)
+    val canForward = canPageAnthropometryForward(range, page)
 
     val window = remember(allEntries, dateWindow) {
         anthropometryEntriesIn(allEntries, dateWindow)
@@ -265,16 +278,34 @@ fun AnthropometryScreen(
             AnthropometryRangeBar(
                 selected = range,
                 custom = custom,
-                onSelect = { rangeName = it.name },
+                onSelect = {
+                    rangeName = it.name
+                    page = 0
+                },
                 onCustomPicked = { picked ->
                     customFromDay = picked.from.toEpochDay()
                     customToDay = picked.to.toEpochDay()
+                    page = 0
                 },
             )
+
+            if (range != AnthropometryRange.ALL) {
+                AnthropometryPager(
+                    window = dateWindow,
+                    canBack = canBack,
+                    canForward = canForward,
+                    onBack = { page -= 1 },
+                    onForward = { page += 1 },
+                )
+            }
 
             AnthropometryChart(
                 entries = window,
                 series = visibleFieldDefs,
+                // A swipe to the right goes back in time, the way a calendar
+                // pages: what was before is to the left.
+                onSwipeBack = { if (canBack) page -= 1 },
+                onSwipeForward = { if (canForward) page += 1 },
             )
 
             Surface(
@@ -420,13 +451,66 @@ fun AnthropometryScreen(
     }
 }
 
+/**
+ * "‹ 27 июн. – 26 июл. ›" above the chart: which stretch is shown, and the way
+ * to the one before or after it. The arrows go grey at the ends — back when
+ * nothing older was measured, forward at the window ending today.
+ */
+@Composable
+private fun AnthropometryPager(
+    window: DateWindow,
+    canBack: Boolean,
+    canForward: Boolean,
+    onBack: () -> Unit,
+    onForward: () -> Unit,
+) {
+    val locale = appLocale()
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack, enabled = canBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = stringResource(R.string.anthro_page_back),
+            )
+        }
+        Text(
+            text = stringResource(
+                R.string.anthro_page_window,
+                formatShortDate(window.from, locale),
+                formatShortDate(window.to, locale),
+            ),
+            style = MaterialTheme.typography.labelLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onForward, enabled = canForward) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.anthro_page_forward),
+            )
+        }
+    }
+}
+
+/** How far a finger has to travel sideways on the chart to turn a page. */
+private const val CHART_SWIPE_DP = 48
+
 @Composable
 private fun AnthropometryChart(
     entries: List<AnthropometryEntry>,
     series: List<AnthropometryFieldDef>,
+    onSwipeBack: () -> Unit,
+    onSwipeForward: () -> Unit,
 ) {
     val cmUnit = stringResource(R.string.cm_short)
     val kgUnit = stringResource(R.string.kg_short)
+
+    val swipeThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { CHART_SWIPE_DP.dp.toPx() }
+    val latestSwipeBack by androidx.compose.runtime.rememberUpdatedState(onSwipeBack)
+    val latestSwipeForward by androidx.compose.runtime.rememberUpdatedState(onSwipeForward)
 
     Surface(
         tonalElevation = 1.dp,
@@ -434,6 +518,22 @@ private fun AnthropometryChart(
         modifier = Modifier
             .fillMaxWidth()
             .height(240.dp)
+            .pointerInput(Unit) {
+                var travelled = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { travelled = 0f },
+                    onDragEnd = {
+                        when {
+                            travelled > swipeThresholdPx -> latestSwipeBack()
+                            travelled < -swipeThresholdPx -> latestSwipeForward()
+                        }
+                    },
+                    onHorizontalDrag = { change, amount ->
+                        change.consume()
+                        travelled += amount
+                    },
+                )
+            }
     ) {
         if (entries.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -478,8 +578,13 @@ private fun AnthropometryChart(
             val maxDayRaw = entries.maxOf { it.date.toEpochDay() }
             val maxDay = if (maxDayRaw == minDay) minDay + 1 else maxDayRaw
 
-            val padLeft = 52f
-            val padRight = 52f
+            // A scale is drawn only for an axis something on the chart uses:
+            // with weight alone, a column of centimetres described nothing.
+            val cmInUse = series.any { it.axis == AnthropometryAxis.CM }
+            val kgInUse = series.any { it.axis == AnthropometryAxis.KG }
+
+            val padLeft = if (cmInUse) 52f else 12f
+            val padRight = if (kgInUse) 52f else 12f
             val padTop = 10f
             val padBottom = 24f
 
@@ -519,16 +624,16 @@ private fun AnthropometryChart(
                 drawContext.canvas.nativeCanvas.drawText(text, x, y, paint)
             }
 
-            drawLabel(cmUnit, 4f, 12.dp.toPx())
-            drawLabel(kgUnit, size.width - padRight + 6f, 12.dp.toPx())
+            if (cmInUse) drawLabel(cmUnit, 4f, 12.dp.toPx())
+            if (kgInUse) drawLabel(kgUnit, size.width - padRight + 6f, 12.dp.toPx())
 
             val ticks = listOf(0f, 0.5f, 1f)
             for (t in ticks) {
                 val y = plotBottom - t * (plotBottom - padTop)
                 val cm = cmMin + (cmMax - cmMin) * t
                 val kg = kgMin + (kgMax - kgMin) * t
-                drawLabel(formatOneDecimal(cm), 4f, y + 4f)
-                drawLabel(formatOneDecimal(kg), size.width - padRight + 6f, y + 4f)
+                if (cmInUse) drawLabel(formatOneDecimal(cm), 4f, y + 4f)
+                if (kgInUse) drawLabel(formatOneDecimal(kg), size.width - padRight + 6f, y + 4f)
             }
 
             // Date labels (start/end). Formatted before the draw scope, for
