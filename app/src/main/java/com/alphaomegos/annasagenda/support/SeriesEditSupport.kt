@@ -58,6 +58,16 @@ private const val SERIES_LOOKAHEAD_DAYS = 366L * 5
  * Returns the input unchanged for anything that is not a repeating template,
  * for a blank description, and for a rule with no day left from [fromDate].
  *
+ * **A new [rule]** (null or the same rule: keep it) changes which days the
+ * series lands on, and then the days already on the calendar from [fromDate]
+ * on split in two: those the new rule also names are moved over as above,
+ * ticks and all; those it does not name go, as "delete from today" would take
+ * them — moving a weekly call from Thursday to Friday means the Thursdays
+ * ahead are gone. The new series starts on the first day from [fromDate] the
+ * new rule's shape allows (a Friday for "Fridays", the given day of the month
+ * for a monthly one, [fromDate] itself for a daily one), and counts its
+ * interval from there.
+ *
  * Known limit: a subtask with a rule of its own *and an interval above one*
  * counts its days from the template's first day, and the new first day is
  * chosen by the task's rule, not the subtask's — such a subtask may shift
@@ -73,13 +83,19 @@ fun stateAfterEditingTaskSeriesFrom(
     time: LocalTime?,
     newId: () -> Long,
     weekStart: DayOfWeek,
+    rule: RepeatRule? = null,
 ): SeriesEditResult {
     val unchanged = SeriesEditResult(tasks, subtasks, suppressedRecurrences)
 
     val template = tasks.firstOrNull {
         it.id == templateTaskId && it.originTaskId == null && it.repeatRule != null
     } ?: return unchanged
-    val rule = template.repeatRule ?: return unchanged
+    val oldRule = template.repeatRule ?: return unchanged
+    // Compared by the days it names, not field by field: the repeat picker
+    // hands back a rule without a week start, so a rule the user opened and
+    // confirmed untouched would otherwise look new and split the series.
+    val ruleChanged = rule != null && !rule.namesTheSameDaysAs(oldRule)
+    val effectiveRule = if (rule != null && ruleChanged) rule else oldRule
 
     val clean = description.trim()
     if (clean.isBlank()) return unchanged
@@ -95,8 +111,17 @@ fun stateAfterEditingTaskSeriesFrom(
         time = if (occurrence.time == template.time) newTime else occurrence.time,
     )
 
-    // Nothing before fromDate: edit where it stands.
-    if (anchor == null || !anchor.isBefore(fromDate)) {
+    // No day at all: nothing is generated from it, so there is nothing to
+    // split — the wording and the rule are simply replaced.
+    if (anchor == null) {
+        val edited = tasks.map { t ->
+            if (t.id == template.id) t.copy(description = clean, repeatRule = effectiveRule) else t
+        }
+        return unchanged.copy(tasks = edited)
+    }
+
+    // Nothing before fromDate and the same rule: edit where it stands.
+    if (!anchor.isBefore(fromDate) && !ruleChanged) {
         val edited = tasks.map { t ->
             when {
                 t.id == template.id -> t.copy(description = clean, time = newTime)
@@ -107,26 +132,79 @@ fun stateAfterEditingTaskSeriesFrom(
         return unchanged.copy(tasks = edited)
     }
 
-    val firstDay = generateSequence(fromDate) { it.plusDays(1) }
-        .take(SERIES_LOOKAHEAD_DAYS.toInt())
-        .firstOrNull { matchesRepeat(anchor, it, rule, weekStart) }
-        ?: return unchanged
+    // Nothing before fromDate but a new rule: still no history to keep, so
+    // the template itself moves to where the new rule starts.
+    if (!anchor.isBefore(fromDate)) {
+        val start = firstDayOfShape(effectiveRule, anchor) ?: return unchanged
+        val newRule = pinnedRule(effectiveRule, start, weekStart)
 
-    fun pinned(r: RepeatRule): RepeatRule = r.copy(
-        dayOfMonth = r.dayOfMonth ?: if (r.freq == RepeatFreq.MONTHLY) anchor.dayOfMonth else null,
-        weekStart = r.weekStart ?: weekStart,
-    )
+        val ownOccurrences = tasks.filter { it.originTaskId == template.id }
+        val onStart = ownOccurrences.firstOrNull { it.date == start }
+        val dropped = ownOccurrences
+            .filter { t -> t.date == start || !matchesRepeat(start, t.date ?: start, newRule, weekStart) }
+            .mapTo(mutableSetOf()) { it.id }
+
+        val newTasks = tasks
+            .filterNot { it.id in dropped }
+            .map { t ->
+                when {
+                    t.id == template.id -> t.copy(
+                        date = start,
+                        description = clean,
+                        time = newTime,
+                        repeatRule = newRule,
+                        isDone = if (start == anchor) t.isDone else onStart?.isDone ?: false,
+                    )
+                    t.originTaskId == template.id -> edited(t)
+                    else -> t
+                }
+            }
+        val newSubtasks = subtasks.filterNot { it.taskId in dropped }
+
+        return SeriesEditResult(
+            tasks = withHasSubtasksRefreshed(newTasks, newSubtasks),
+            subtasks = newSubtasks,
+            suppressedRecurrences = suppressedRecurrences,
+        )
+    }
+
+    // Started before fromDate: split. With the same rule the new first day is
+    // the old series' next day, which keeps its phase; with a new rule it is
+    // where the new rule's shape first allows.
+    val firstDay = (
+        if (ruleChanged) {
+            firstDayOfShape(effectiveRule, fromDate)
+        } else {
+            generateSequence(fromDate) { it.plusDays(1) }
+                .take(SERIES_LOOKAHEAD_DAYS.toInt())
+                .firstOrNull { matchesRepeat(anchor, it, oldRule, weekStart) }
+        }
+    ) ?: return unchanged
+
+    fun pinned(r: RepeatRule): RepeatRule = pinnedRule(r, firstDay, weekStart)
+    val newSeriesRule = pinned(effectiveRule)
 
     val templateSubs = subtasks.filter { it.taskId == template.id && it.originSubtaskId == null }
 
     val newTemplateId = newId()
     val subIdMap = templateSubs.associate { it.id to newId() }
 
-    val occurrencesFromHere = tasks.filter { t ->
+    val occurrencesAll = tasks.filter { t ->
         val date = t.date
         t.originTaskId == template.id && date != null && !date.isBefore(fromDate)
     }
+    // With the same rule every one of them is a day of the new series. With a
+    // new rule only those it names are; the rest go.
+    val (occurrencesFromHere, droppedOccurrences) = if (ruleChanged) {
+        occurrencesAll.partition { t ->
+            val date = t.date!!
+            date == firstDay || matchesRepeat(firstDay, date, newSeriesRule, weekStart)
+        }
+    } else {
+        occurrencesAll to emptyList()
+    }
     val movedIds = occurrencesFromHere.mapTo(mutableSetOf()) { it.id }
+    val droppedIds = droppedOccurrences.mapTo(mutableSetOf()) { it.id }
     val occupied = occurrencesFromHere.any { it.date == firstDay }
 
     val newTemplate = template.copy(
@@ -137,7 +215,7 @@ fun stateAfterEditingTaskSeriesFrom(
         time = newTime,
         description = clean,
         isDone = false,
-        repeatRule = pinned(rule),
+        repeatRule = newSeriesRule,
         originTaskId = null,
     )
 
@@ -150,7 +228,7 @@ fun stateAfterEditingTaskSeriesFrom(
         )
     }
 
-    val newTasks = tasks.map { t ->
+    val newTasks = tasks.filterNot { it.id in droppedIds }.map { t ->
         when {
             t.id == template.id -> t.copy(repeatRule = null)
             t.id in movedIds -> edited(t).copy(originTaskId = newTemplateId)
@@ -158,7 +236,7 @@ fun stateAfterEditingTaskSeriesFrom(
         }
     } + newTemplate
 
-    val newSubtasks = subtasks.map { s ->
+    val newSubtasks = subtasks.filterNot { it.taskId in droppedIds }.map { s ->
         when {
             s.taskId == template.id && s.originSubtaskId == null -> s.copy(repeatRule = null)
             s.taskId in movedIds -> {
@@ -184,3 +262,44 @@ fun stateAfterEditingTaskSeriesFrom(
         suppressedRecurrences = tombstones,
     )
 }
+
+/**
+ * The first day from [from] on that a rule's shape allows, ignoring its
+ * interval: a day of the week for a weekly rule, a day of the month for a
+ * monthly one, [from] itself for a daily one. A new series starts there and
+ * counts its interval from it. Null when no such day comes within the
+ * look-ahead (the 31st, asked of a calendar that has none for five years,
+ * cannot happen — but the answer is honest if it does).
+ */
+fun firstDayOfShape(rule: RepeatRule, from: LocalDate): LocalDate? =
+    generateSequence(from) { it.plusDays(1) }
+        .take(SERIES_LOOKAHEAD_DAYS.toInt())
+        .firstOrNull { day ->
+            when (rule.freq) {
+                RepeatFreq.DAILY -> true
+                RepeatFreq.WEEKLY -> rule.weekDays.isEmpty() || day.dayOfWeek in rule.weekDays
+                RepeatFreq.MONTHLY -> day.dayOfMonth == (rule.dayOfMonth ?: from.dayOfMonth)
+            }
+        }
+
+/**
+ * [rule] with what it would otherwise take from its first day written down:
+ * the day of the month (from [firstDay]) and the start of the week.
+ */
+private fun pinnedRule(rule: RepeatRule, firstDay: LocalDate, weekStart: DayOfWeek): RepeatRule =
+    rule.copy(
+        dayOfMonth = rule.dayOfMonth ?: if (rule.freq == RepeatFreq.MONTHLY) firstDay.dayOfMonth else null,
+        weekStart = rule.weekStart ?: weekStart,
+    )
+
+/**
+ * Whether two rules name the same days: same frequency and interval, and the
+ * same week days for a weekly rule or the same day of the month for a
+ * monthly one. The week start is left out — it only places the boundary of
+ * "every N weeks", and the series keeps its old rule whenever this says yes.
+ */
+fun RepeatRule.namesTheSameDaysAs(other: RepeatRule): Boolean =
+    freq == other.freq &&
+        interval.coerceAtLeast(1) == other.interval.coerceAtLeast(1) &&
+        (freq != RepeatFreq.WEEKLY || weekDays == other.weekDays) &&
+        (freq != RepeatFreq.MONTHLY || dayOfMonth == other.dayOfMonth)

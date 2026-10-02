@@ -1395,6 +1395,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         templateTaskId: Long,
         description: String,
         time: LocalTime?,
+        rule: RepeatRule?,
         fromDate: LocalDate = LocalDate.now(),
     ) {
         // Read and write rather than update {}: update's lambda is a
@@ -1411,6 +1412,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             time = time,
             newId = ::newId,
             weekStart = currentLocaleWeekStart(),
+            rule = withRecordedWeekStart(rule),
         )
         if (after.tasks === cur.tasks) return
 

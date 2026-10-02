@@ -67,4 +67,26 @@ class RepeatDraftSavingTest {
     fun whatIsWrittenDownIsTheName() {
         assertEquals(listOf("WEDNESDAY"), weekDaysToSavedNames(setOf(DayOfWeek.WEDNESDAY)))
     }
+
+    /* ---------------- a whole rule (0134) ---------------- */
+
+    @Test
+    fun aWholeRuleComesBackAsItWent() {
+        listOf(
+            RepeatRule(freq = RepeatFreq.WEEKLY, weekDays = setOf(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY), weekStart = DayOfWeek.MONDAY),
+            RepeatRule(freq = RepeatFreq.WEEKLY, interval = 2, weekDays = setOf(DayOfWeek.FRIDAY)),
+            RepeatRule(freq = RepeatFreq.MONTHLY, dayOfMonth = 31, weekStart = DayOfWeek.SUNDAY),
+            RepeatRule(freq = RepeatFreq.DAILY, interval = 3),
+        ).forEach { rule ->
+            assertEquals(rule, repeatRuleFromSavedStrings(repeatRuleToSavedStrings(rule)))
+        }
+    }
+
+    /** Refuses rather than guesses, like the day names above. */
+    @Test
+    fun aRuleThatCannotBeReadIsNoRule() {
+        assertNull(repeatRuleFromSavedStrings(emptyList()))
+        assertNull(repeatRuleFromSavedStrings(listOf("HOURLY", "1", "", "", "")))
+        assertNull(repeatRuleFromSavedStrings(listOf("DAILY", "x", "", "", "")))
+    }
 }

@@ -31,6 +31,7 @@ import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.dialogs.EditTaskSeriesDialog
+import com.alphaomegos.annasagenda.formatTaskTime
 import com.alphaomegos.annasagenda.RepeatFreq
 import com.alphaomegos.annasagenda.RepeatRule
 import com.alphaomegos.annasagenda.util.appLocale
@@ -121,7 +122,14 @@ fun RecurringTasksScreen(
                     items(taskTemplates) { t ->
                         val anchor = t.date
                         val rule = t.repeatRule!!
-                        val ruleText = repeatRuleText(rule, anchor)
+                        // The time is part of what the series promises, so it
+                        // is said where the rule is said.
+                        val taskTime = t.time
+                        val ruleText = if (taskTime != null) {
+                            stringResource(R.string.recurring_rule_at_time, repeatRuleText(rule, anchor), formatTaskTime(taskTime))
+                        } else {
+                            repeatRuleText(rule, anchor)
+                        }
 
                         val anchorText = anchor?.let {
                             DateTimeFormatter
@@ -260,14 +268,17 @@ fun RecurringTasksScreen(
     // Looked up by id each time: after a save the series may have a new
     // template, and the dialog closes on the old id rather than reopening.
     val editingSeries = state.tasks.firstOrNull { it.id == editSeriesTaskId.value }
-    if (editingSeries != null) {
+    val editingRule = editingSeries?.repeatRule
+    if (editingSeries != null && editingRule != null) {
         EditTaskSeriesDialog(
             initialDescription = editingSeries.description,
             initialTime = editingSeries.time,
+            initialRule = editingRule,
             canHaveTime = editingSeries.date != null,
+            ruleLabel = { r -> repeatRuleText(r, editingSeries.date) },
             onDismiss = { editSeriesTaskId.value = null },
-            onSave = { description, time ->
-                vm.editTaskSeriesFrom(editingSeries.id, description, time, today)
+            onSave = { description, time, rule ->
+                vm.editTaskSeriesFrom(editingSeries.id, description, time, rule, today)
                 editSeriesTaskId.value = null
             },
         )

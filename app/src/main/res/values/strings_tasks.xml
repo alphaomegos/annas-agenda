@@ -85,4 +85,5 @@
     <string name="edit_series">Edit</string>
     <string name="edit_series_title">Edit repeating task</string>
     <string name="edit_series_from_today_hint">Changes from today. Days already past stay as they were.</string>
+    <string name="recurring_rule_at_time">%1$s at %2$s</string>
 </resources>

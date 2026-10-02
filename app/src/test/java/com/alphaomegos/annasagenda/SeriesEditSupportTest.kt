@@ -69,7 +69,14 @@ class SeriesEditSupportTest {
         return state.copy(tasks = g.tasks, subtasks = g.subtasks)
     }
 
-    private fun edit(state: State, description: String = newName, time: LocalTime? = five, from: LocalDate = today, id: Long = 1): State {
+    private fun edit(
+        state: State,
+        description: String = newName,
+        time: LocalTime? = five,
+        from: LocalDate = today,
+        id: Long = 1,
+        rule: RepeatRule? = null,
+    ): State {
         val r = stateAfterEditingTaskSeriesFrom(
             tasks = state.tasks,
             subtasks = state.subtasks,
@@ -80,6 +87,7 @@ class SeriesEditSupportTest {
             time = time,
             newId = ::newId,
             weekStart = weekStart,
+            rule = rule,
         )
         return State(r.tasks, r.subtasks, r.suppressedRecurrences)
     }
@@ -307,5 +315,151 @@ class SeriesEditSupportTest {
             edit(state, id = 9),
             edit(state, id = 42),
         ).forEach { assertSame(state.tasks, it.tasks) }
+    }
+
+    /* ---------------- a new rule ---------------- */
+
+    private val fridays = thursdays.copy(weekDays = setOf(DayOfWeek.FRIDAY))
+    private val tuesdaysAndThursdays = thursdays.copy(weekDays = setOf(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY))
+
+    /**
+     * The days a brand-new series with [rule] would have from today: asked
+     * of the generator with a fresh template on the rule's first day, not
+     * worked out by hand.
+     */
+    private fun daysOfAFreshSeries(rule: RepeatRule): Set<LocalDate> {
+        val start = firstDayOfShape(rule, today)!!
+        val fresh = State(listOf(Task(id = 77, date = start, description = "x", repeatRule = rule)), emptyList())
+        return daysWithTasks(drawn(fresh, from = start))
+    }
+
+    private fun afterRuleChange(rule: RepeatRule, prepare: (State) -> State = { it }): State =
+        drawn(edit(prepare(drawn(State(listOf(template()), emptyList()))), rule = rule))
+
+    @Test
+    fun movedToFridaysTheSeriesIsOnFridaysFromTodayAndTheThursdaysAheadAreGone() {
+        val after = afterRuleChange(fridays)
+
+        assertEquals(daysOfAFreshSeries(fridays), daysWithTasks(after))
+        assertTrue(daysWithTasks(after).none { it.dayOfWeek == DayOfWeek.THURSDAY })
+        // Today is a Friday, and "from today" includes it.
+        assertEquals(newName, shownOn(after, today).single().description)
+    }
+
+    @Test
+    fun movedToFridaysThePastThursdaysStay() {
+        val before = drawn(State(listOf(template()), emptyList()))
+        val after = drawn(edit(before, rule = fridays))
+
+        val past = { st: State -> st.tasks.filter { it.date!!.isBefore(today) }.map { it.id to it.description }.toSet() }
+        assertEquals(past(before), past(after))
+    }
+
+    /** Twice a week: the Thursdays are kept — with their ticks — and Tuesdays join. */
+    @Test
+    fun twiceAWeekKeepsTheThursdaysAheadWithTheirTicks() {
+        var tickedId = 0L
+        val after = afterRuleChange(tuesdaysAndThursdays) { st ->
+            val ticked = st.tasks.first { it.date == LocalDate.of(2026, 10, 15) }
+            tickedId = ticked.id
+            st.copy(tasks = st.tasks.map { if (it.id == ticked.id) it.copy(isDone = true) else it })
+        }
+
+        assertEquals(daysOfAFreshSeries(tuesdaysAndThursdays), daysWithTasks(after))
+        val thursday = shownOn(after, LocalDate.of(2026, 10, 15)).single()
+        assertEquals(tickedId, thursday.id)
+        assertTrue(thursday.isDone)
+        assertEquals(1, shownOn(after, LocalDate.of(2026, 10, 6)).size)
+    }
+
+    @Test
+    fun everyOtherWeekDropsTheThursdaysInBetween() {
+        val everyOther = thursdays.copy(interval = 2)
+        val after = afterRuleChange(everyOther)
+
+        assertEquals(daysOfAFreshSeries(everyOther), daysWithTasks(after))
+        assertTrue(shownOn(after, LocalDate.of(2026, 10, 15)).isEmpty())
+        assertEquals(1, shownOn(after, LocalDate.of(2026, 10, 22)).size)
+    }
+
+    @Test
+    fun fromWeeklyToMonthly() {
+        val monthly = RepeatRule(freq = RepeatFreq.MONTHLY, dayOfMonth = 15, weekStart = weekStart)
+        val after = afterRuleChange(monthly)
+
+        assertEquals(daysOfAFreshSeries(monthly), daysWithTasks(after))
+        assertTrue(daysWithTasks(after).all { it.dayOfMonth == 15 })
+    }
+
+    /** The same rule handed back unchanged is no change at all. */
+    @Test
+    fun theSameRuleHandedBackKeepsEveryDayAndEveryId() {
+        val before = drawn(State(listOf(template()), emptyList()))
+        val viaNull = drawn(edit(before))
+        val viaSame = drawn(edit(before, rule = thursdays))
+
+        val look = { st: State -> daysWithTasks(st).associateWith { d -> shownOn(st, d).map { it.description } } }
+        assertEquals(look(viaNull), look(viaSame))
+        assertEquals(daysWithTasks(before), daysWithTasks(viaSame))
+    }
+
+    /** A series that has not started has no history: the template itself moves. */
+    @Test
+    fun aSeriesThatHasNotStartedMovesToTheNewRule() {
+        val before = drawn(State(listOf(template(date = nextThursday)), emptyList()), from = nextThursday)
+        val after = drawn(edit(before, rule = fridays), from = nextThursday)
+
+        val t = after.tasks.first { it.id == 1L }
+        assertEquals(LocalDate.of(2026, 10, 9), t.date)
+        assertEquals(fridays.weekDays, t.repeatRule!!.weekDays)
+        assertTrue(daysWithTasks(after).none { it.dayOfWeek == DayOfWeek.THURSDAY })
+        daysWithTasks(after).forEach { assertEquals("$it", 1, shownOn(after, it).size) }
+    }
+
+    @Test
+    fun pruningAndRedrawingAfterANewRuleChangesNothingVisible() {
+        val edited = afterRuleChange(tuesdaysAndThursdays)
+
+        val pruned = pruneRedundantGeneratedOccurrences(
+            tasks = edited.tasks,
+            subtasks = edited.subtasks,
+            suppressedRecurrences = edited.suppressed,
+            runningPlanEntries = emptyList(),
+            isPrunableDate = { !it.isBefore(today) },
+            weekStart = weekStart,
+        )
+        val redrawn = drawn(State(pruned.tasks, pruned.subtasks, edited.suppressed))
+
+        val look = { st: State -> daysWithTasks(st).associateWith { d -> shownOn(st, d).map { it.description to it.time } } }
+        assertEquals(look(edited), look(redrawn))
+    }
+
+    @Test
+    fun theFirstDayOfAShape() {
+        assertEquals(today, firstDayOfShape(RepeatRule(freq = RepeatFreq.DAILY, interval = 3), today))
+        assertEquals(LocalDate.of(2026, 10, 6), firstDayOfShape(thursdays.copy(weekDays = setOf(DayOfWeek.TUESDAY)), today))
+        assertEquals(LocalDate.of(2026, 10, 31), firstDayOfShape(RepeatRule(freq = RepeatFreq.MONTHLY, dayOfMonth = 31), today))
+        assertEquals(LocalDate.of(2026, 12, 31), firstDayOfShape(RepeatRule(freq = RepeatFreq.MONTHLY, dayOfMonth = 31), LocalDate.of(2026, 11, 1)))
+    }
+
+    /**
+     * The repeat picker hands back what it shows, without a week start.
+     * Opening it and pressing OK must not count as a new rule.
+     */
+    @Test
+    fun aRuleConfirmedUntouchedInThePickerIsTheSameRule() {
+        // Every other week, because only an interval can tell the two paths
+        // apart: taken as a new rule, the series would restart on the next
+        // Thursday and keep the wrong half of the weeks.
+        val everyOther = thursdays.copy(interval = 2)
+        val asThePickerReturnsIt = RepeatRule(freq = RepeatFreq.WEEKLY, interval = 2, weekDays = setOf(DayOfWeek.THURSDAY))
+        val before = drawn(State(listOf(template(rule = everyOther)), emptyList()))
+
+        val viaNull = drawn(edit(before))
+        val viaPicker = drawn(edit(before, rule = asThePickerReturnsIt))
+
+        val look = { st: State -> daysWithTasks(st).associateWith { d -> shownOn(st, d).map { it.id } } }
+        assertEquals(daysWithTasks(before), look(viaPicker).keys)
+        assertEquals(look(viaNull), look(viaPicker))
     }
 }

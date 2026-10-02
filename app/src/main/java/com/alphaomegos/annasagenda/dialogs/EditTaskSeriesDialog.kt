@@ -14,6 +14,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -22,14 +23,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.RepeatRule
 import com.alphaomegos.annasagenda.components.PickTimeDialog
 import com.alphaomegos.annasagenda.formatTaskTime
 import com.alphaomegos.annasagenda.minuteOfDay
+import com.alphaomegos.annasagenda.repeatRuleFromSavedStrings
+import com.alphaomegos.annasagenda.repeatRuleToSavedStrings
 import com.alphaomegos.annasagenda.timeFromMinuteOfDay
 import java.time.LocalTime
 
+/** A rule as five strings in a Bundle; see repeatRuleToSavedStrings. */
+private val repeatRuleSaver = listSaver<RepeatRule, String>(
+    save = { repeatRuleToSavedStrings(it) },
+    restore = { repeatRuleFromSavedStrings(it) },
+)
+
 /**
- * The wording and the time of a repeating task, changed from today on.
+ * The wording, the time and the rule of a repeating task, changed from today on.
  *
  * Says so in the dialog itself: "from today" is the whole point, and the
  * user deciding whether to rename a series wants to know that the Thursdays
@@ -45,15 +55,19 @@ import java.time.LocalTime
 internal fun EditTaskSeriesDialog(
     initialDescription: String,
     initialTime: LocalTime?,
+    initialRule: RepeatRule,
     canHaveTime: Boolean,
+    ruleLabel: @Composable (RepeatRule) -> String,
     onDismiss: () -> Unit,
-    onSave: (description: String, time: LocalTime?) -> Unit,
+    onSave: (description: String, time: LocalTime?, rule: RepeatRule) -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf(initialDescription) }
     // Minutes since midnight: a LocalTime does not go into a Bundle.
     var timeMinute by rememberSaveable { mutableStateOf(initialTime?.let { minuteOfDay(it) }) }
     var picking by rememberSaveable { mutableStateOf(false) }
     val time = timeFromMinuteOfDay(timeMinute)
+    var rule by rememberSaveable(stateSaver = repeatRuleSaver) { mutableStateOf(initialRule) }
+    var pickingRule by rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -99,11 +113,21 @@ internal fun EditTaskSeriesDialog(
                         }
                     }
                 }
+
+                // The same picker the day screen uses. Switching repeating off
+                // is not offered here: stopping a series is "Delete from
+                // today", one button over on the card.
+                OutlinedButton(
+                    onClick = { pickingRule = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(ruleLabel(rule))
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onSave(text, time) },
+                onClick = { onSave(text, time, rule) },
                 enabled = text.isNotBlank(),
             ) { Text(stringResource(R.string.ok)) }
         },
@@ -111,6 +135,17 @@ internal fun EditTaskSeriesDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
+
+    if (pickingRule) {
+        RepeatPickerDialog(
+            initial = rule,
+            onDismiss = { pickingRule = false },
+            onConfirm = { picked ->
+                if (picked != null) rule = picked
+                pickingRule = false
+            },
+        )
+    }
 
     if (picking) {
         PickTimeDialog(

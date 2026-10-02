@@ -23,3 +23,31 @@ fun weekDaysFromSavedNames(names: List<String>): Set<DayOfWeek> =
 
 fun repeatFreqFromSavedName(name: String): RepeatFreq? =
     RepeatFreq.entries.firstOrNull { it.name == name }
+
+/**
+ * A whole repeat rule as five strings, for a dialog that keeps one across a
+ * rotation: frequency, interval, week days, day of the month, week start —
+ * every one of them by name or number, for the reason above.
+ */
+fun repeatRuleToSavedStrings(rule: RepeatRule): List<String> = listOf(
+    rule.freq.name,
+    rule.interval.toString(),
+    weekDaysToSavedNames(rule.weekDays).joinToString(","),
+    rule.dayOfMonth?.toString().orEmpty(),
+    rule.weekStart?.name.orEmpty(),
+)
+
+/** The way back; null when the strings are not five or name nothing this build knows. */
+fun repeatRuleFromSavedStrings(saved: List<String>): RepeatRule? {
+    if (saved.size != 5) return null
+    val freq = repeatFreqFromSavedName(saved[0]) ?: return null
+    val interval = saved[1].toIntOrNull() ?: return null
+
+    return RepeatRule(
+        freq = freq,
+        interval = interval,
+        weekDays = weekDaysFromSavedNames(saved[2].split(",").filter { it.isNotEmpty() }),
+        dayOfMonth = saved[3].toIntOrNull(),
+        weekStart = DayOfWeek.entries.firstOrNull { it.name == saved[4] },
+    )
+}
