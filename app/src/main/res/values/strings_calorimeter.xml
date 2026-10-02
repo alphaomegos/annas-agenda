@@ -44,4 +44,25 @@
     <string name="diet_day_total">Total: %1$d kcal</string>
     <string name="diet_copy_day">Copy this day to…</string>
     <string name="diet_copy_day_hint">The dishes of the chosen days are replaced with this day\'s.</string>
+    <!-- Food library (0143) -->
+    <string name="calorimeter_show_library">Food library</string>
+    <string name="food_library_open">From the library</string>
+    <string name="food_library_title">Food library</string>
+    <string name="food_library_search">Search the library</string>
+    <string name="food_library_all_shelves">All shelves</string>
+    <string name="food_library_empty">Nothing on this shelf yet.</string>
+    <string name="food_library_nothing_found">Nothing found.</string>
+    <string name="food_library_add">Add to this shelf</string>
+    <string name="food_library_add_name">Food and portion, e.g. Curd snack, 40 g</string>
+    <string name="food_library_add_save">Add</string>
+    <string name="food_category_meat">Meat</string>
+    <string name="food_category_fish">Fish</string>
+    <string name="food_category_dairy">Dairy</string>
+    <string name="food_category_vegetables">Vegetables and fruit</string>
+    <string name="food_category_grain">Grains and pasta</string>
+    <string name="food_category_bread">Bread</string>
+    <string name="food_category_drinks">Drinks</string>
+    <string name="food_category_alcohol">Alcohol</string>
+    <string name="food_category_dessert">Desserts</string>
+    <string name="food_category_fastfood">Fast food</string>
 </resources>

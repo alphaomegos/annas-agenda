@@ -509,4 +509,25 @@
     <string name="calendar_badge_anthropometry">Замеры</string>
     <string name="calendar_badge_food">Еда</string>
     <string name="calendar_badge_debts">Невыполненные задачи</string>
+    <!-- Food library (0143) -->
+    <string name="calorimeter_show_library">Библиотека еды</string>
+    <string name="food_library_open">Из библиотеки</string>
+    <string name="food_library_title">Библиотека еды</string>
+    <string name="food_library_search">Поиск по библиотеке</string>
+    <string name="food_library_all_shelves">Все полки</string>
+    <string name="food_library_empty">На этой полке пока пусто.</string>
+    <string name="food_library_nothing_found">Ничего не нашлось.</string>
+    <string name="food_library_add">Добавить на эту полку</string>
+    <string name="food_library_add_name">Еда и порция, например: Сырок, 40 г</string>
+    <string name="food_library_add_save">Добавить</string>
+    <string name="food_category_meat">Мясо</string>
+    <string name="food_category_fish">Рыба</string>
+    <string name="food_category_dairy">Молочное</string>
+    <string name="food_category_vegetables">Овощи и фрукты</string>
+    <string name="food_category_grain">Крупы и макароны</string>
+    <string name="food_category_bread">Хлеб</string>
+    <string name="food_category_drinks">Напитки</string>
+    <string name="food_category_alcohol">Алкоголь</string>
+    <string name="food_category_dessert">Десерты</string>
+    <string name="food_category_fastfood">Фастфуд</string>
 </resources>

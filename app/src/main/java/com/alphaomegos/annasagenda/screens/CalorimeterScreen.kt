@@ -77,6 +77,9 @@ import com.alphaomegos.annasagenda.foodDraftAfterTitleChange
 import com.alphaomegos.annasagenda.foodSuggestionForName
 import com.alphaomegos.annasagenda.foodSuggestionsFor
 import com.alphaomegos.annasagenda.DietDishOnDay
+import com.alphaomegos.annasagenda.FoodCategory
+import com.alphaomegos.annasagenda.asSuggestion
+import com.alphaomegos.annasagenda.foodLibraryItemByKey
 import com.alphaomegos.annasagenda.dietDishesOn
 import com.alphaomegos.annasagenda.foodOutsideDiet
 import com.alphaomegos.annasagenda.util.appLocale
@@ -110,6 +113,9 @@ fun CalorimeterRoute(
             vm.setCalorimeterDisplay(daily, weekly, potential)
         },
         onSetDiet = { enabled, showPast -> vm.setDietSettings(enabled, showPast) },
+        onSetLibraryVisible = vm::setFoodLibraryVisible,
+        onAddLibraryFood = vm::addFoodLibraryUserItem,
+        onRemoveLibraryFood = vm::removeFoodLibraryUserItem,
         onTickDish = { id, date, eaten -> if (eaten) vm.tickDietDish(id, date) else vm.untickDietDish(id, date) },
         onOpenDiet = onOpenDiet,
     )
@@ -125,6 +131,9 @@ private fun CalorimeterContent(
     onDeleteFood: (Long) -> Unit,
     onSetDisplay: (dailyGoal: Boolean, weeklyGoal: Boolean, potentialLoss: Boolean) -> Unit,
     onSetDiet: (enabled: Boolean, showPastUnticked: Boolean) -> Unit,
+    onSetLibraryVisible: (Boolean) -> Unit,
+    onAddLibraryFood: (FoodCategory, String, Int) -> Unit,
+    onRemoveLibraryFood: (Long) -> Unit,
     onTickDish: (itemId: Long, date: LocalDate, eaten: Boolean) -> Unit,
     onOpenDiet: () -> Unit,
 ) {
@@ -227,6 +236,11 @@ private fun CalorimeterContent(
     // suggestion: a string survives the phone being turned, and the suggestion
     // is looked up again from the same log it came from.
     var pricedFromName by rememberSaveable { mutableStateOf<String?>(null) }
+    // Or a food picked from the library, by its key ("std:…", "user:…").
+    var pricedFromLibraryKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val showLibrary = rememberSaveable { mutableStateOf(false) }
+    val standardFoods = rememberStandardFoods()
+    val languageTag = remember(locale) { locale.toLanguageTag() }
 
     Scaffold(
         topBar = {
@@ -433,6 +447,7 @@ private fun CalorimeterContent(
                         foodName = ""
                         foodKcal = ""
                         pricedFromName = null
+                        pricedFromLibraryKey = null
                         showAddDialog.value = true
                     },
                     shape = CircleShape,
@@ -496,10 +511,12 @@ private fun CalorimeterContent(
             potentialLoss = state.calorimeterShowPotentialLoss,
             diet = state.dietEnabled,
             dietPastUnticked = state.dietShowPastUnticked,
+            library = state.foodLibraryVisible,
             onDismiss = { showDisplaySettings.value = false },
-            onSave = { daily, weekly, potential, diet, past ->
+            onSave = { daily, weekly, potential, diet, past, library ->
                 onSetDisplay(daily, weekly, potential)
                 onSetDiet(diet, past)
+                onSetLibraryVisible(library)
                 showDisplaySettings.value = false
             },
             onOpenDiet = {
@@ -547,8 +564,10 @@ private fun CalorimeterContent(
         val kcalLooksWrong = foodKcal.isNotBlank() && (parsedKcal == null || parsedKcal <= 0)
         val canAdd = foodName.trim().isNotEmpty() && parsedKcal != null && parsedKcal > 0
 
-        val pricedFrom = remember(pricedFromName, state.foodLog) {
-            pricedFromName?.let { foodSuggestionForName(it, state.foodLog) }
+        val pricedFrom = remember(pricedFromName, pricedFromLibraryKey, state.foodLog, state.foodLibraryUserItems, standardFoods) {
+            pricedFromLibraryKey
+                ?.let { foodLibraryItemByKey(it, standardFoods, state.foodLibraryUserItems, languageTag)?.asSuggestion() }
+                ?: pricedFromName?.let { foodSuggestionForName(it, state.foodLog) }
         }
 
         val draft = FoodDraftState(
@@ -561,6 +580,7 @@ private fun CalorimeterContent(
             foodName = next.title
             foodKcal = next.kcalText
             pricedFromName = next.pricedFrom?.name
+            if (next.pricedFrom == null) pricedFromLibraryKey = null
         }
 
         val suggestions = remember(foodName, state.foodLog) {
@@ -600,8 +620,17 @@ private fun CalorimeterContent(
 
                     FoodSuggestionList(
                         suggestions = suggestions,
-                        onPick = { apply(foodDraftAfterPickingSuggestion(it)) },
+                        onPick = {
+                            pricedFromLibraryKey = null
+                            apply(foodDraftAfterPickingSuggestion(it))
+                        },
                     )
+
+                    if (state.foodLibraryVisible) {
+                        TextButton(onClick = { showLibrary.value = true }) {
+                            Text(stringResource(R.string.food_library_open))
+                        }
+                    }
 
                     OutlinedTextField(
                         value = foodKcal,
@@ -645,6 +674,25 @@ private fun CalorimeterContent(
         )
     }
 
+    if (showAddDialog.value && showLibrary.value) {
+        FoodLibraryDialog(
+            standard = standardFoods,
+            user = state.foodLibraryUserItems,
+            languageTag = languageTag,
+            onPick = { item ->
+                pricedFromLibraryKey = item.key
+                val next = foodDraftAfterPickingSuggestion(item.asSuggestion())
+                foodName = next.title
+                foodKcal = next.kcalText
+                pricedFromName = null
+                showLibrary.value = false
+            },
+            onAddUserFood = onAddLibraryFood,
+            onRemoveUserFood = onRemoveLibraryFood,
+            onDismiss = { showLibrary.value = false },
+        )
+    }
+
     if (showSuggestionsHelp.value) {
         ExplanationDialog(
             titleRes = R.string.calorimeter_suggestions_help,
@@ -666,8 +714,9 @@ private fun CalorimeterDisplayDialog(
     potentialLoss: Boolean,
     diet: Boolean,
     dietPastUnticked: Boolean,
+    library: Boolean,
     onDismiss: () -> Unit,
-    onSave: (Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit,
+    onSave: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit,
     onOpenDiet: () -> Unit,
 ) {
     var daily by rememberSaveable { mutableStateOf(dailyGoal) }
@@ -675,6 +724,7 @@ private fun CalorimeterDisplayDialog(
     var potential by rememberSaveable { mutableStateOf(potentialLoss) }
     var dietOn by rememberSaveable { mutableStateOf(diet) }
     var pastOn by rememberSaveable { mutableStateOf(dietPastUnticked) }
+    var libraryOn by rememberSaveable { mutableStateOf(library) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -685,6 +735,7 @@ private fun CalorimeterDisplayDialog(
                     Triple(R.string.calorimeter_show_daily_goal, daily) { v: Boolean -> daily = v },
                     Triple(R.string.calorimeter_show_weekly_goal, weekly) { v: Boolean -> weekly = v },
                     Triple(R.string.calorimeter_show_potential_loss, potential) { v: Boolean -> potential = v },
+                    Triple(R.string.calorimeter_show_library, libraryOn) { v: Boolean -> libraryOn = v },
                     Triple(R.string.calorimeter_show_diet, dietOn) { v: Boolean -> dietOn = v },
                 ).forEach { (labelRes, checked, set) ->
                     Row(
@@ -714,7 +765,7 @@ private fun CalorimeterDisplayDialog(
                     // not throw away the switch that was just turned on.
                     TextButton(
                         onClick = {
-                            onSave(daily, weekly, potential, dietOn, pastOn)
+                            onSave(daily, weekly, potential, dietOn, pastOn, libraryOn)
                             onOpenDiet()
                         },
                         modifier = Modifier.padding(start = 24.dp),
@@ -723,7 +774,7 @@ private fun CalorimeterDisplayDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(daily, weekly, potential, dietOn, pastOn) }) { Text(stringResource(R.string.ok)) }
+            TextButton(onClick = { onSave(daily, weekly, potential, dietOn, pastOn, libraryOn) }) { Text(stringResource(R.string.ok)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }

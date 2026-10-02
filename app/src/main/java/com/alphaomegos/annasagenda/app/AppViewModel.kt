@@ -1820,6 +1820,26 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (next != cur) _state.value = next
     }
 
+    /** 6.4: whether the add-a-meal dialog offers the food library. */
+    fun setFoodLibraryVisible(visible: Boolean) {
+        val cur = _state.value
+        if (cur.foodLibraryVisible != visible) _state.value = cur.copy(foodLibraryVisible = visible)
+    }
+
+    /** A food of the user's own on a library shelf; the portion is read out of the name. */
+    fun addFoodLibraryUserItem(category: FoodCategory, typed: String, kcal: Int) {
+        val cur = _state.value
+        if (typed.isBlank()) return
+        val item = foodLibraryUserItemFrom(newId(), category, typed, kcal) ?: return
+        _state.value = cur.copy(foodLibraryUserItems = cur.foodLibraryUserItems + item)
+    }
+
+    fun removeFoodLibraryUserItem(id: Long) {
+        val cur = _state.value
+        val next = cur.foodLibraryUserItems.filterNot { it.id == id }
+        if (next.size != cur.foodLibraryUserItems.size) _state.value = cur.copy(foodLibraryUserItems = next)
+    }
+
     /** 6.2: the diet on or off, and whether past days keep showing unticked dishes. */
     fun setDietSettings(enabled: Boolean, showPastUnticked: Boolean) {
         val cur = _state.value

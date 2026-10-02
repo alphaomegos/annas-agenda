@@ -368,4 +368,25 @@
     <string name="calendar_badge_anthropometry">Merenja</string>
     <string name="calendar_badge_food">Hrana</string>
     <string name="calendar_badge_debts">Neurađeni zadaci</string>
+    <!-- Food library (0143) -->
+    <string name="calorimeter_show_library">Biblioteka hrane</string>
+    <string name="food_library_open">Iz biblioteke</string>
+    <string name="food_library_title">Biblioteka hrane</string>
+    <string name="food_library_search">Pretraga biblioteke</string>
+    <string name="food_library_all_shelves">Sve police</string>
+    <string name="food_library_empty">Na ovoj polici još nema ničega.</string>
+    <string name="food_library_nothing_found">Ništa nije pronađeno.</string>
+    <string name="food_library_add">Dodaj na ovu policu</string>
+    <string name="food_library_add_name">Hrana i porcija, npr. Sirni desert, 40 g</string>
+    <string name="food_library_add_save">Dodaj</string>
+    <string name="food_category_meat">Meso</string>
+    <string name="food_category_fish">Riba</string>
+    <string name="food_category_dairy">Mlečni proizvodi</string>
+    <string name="food_category_vegetables">Povrće i voće</string>
+    <string name="food_category_grain">Žitarice i testenina</string>
+    <string name="food_category_bread">Hleb</string>
+    <string name="food_category_drinks">Pića</string>
+    <string name="food_category_alcohol">Alkohol</string>
+    <string name="food_category_dessert">Deserti</string>
+    <string name="food_category_fastfood">Brza hrana</string>
 </resources>

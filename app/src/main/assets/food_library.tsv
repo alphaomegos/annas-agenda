@@ -1,0 +1,16 @@
+# Anna's Agenda food library. Format 1.
+#
+# One food per line, columns separated by TABs:
+#   id        stable, never reused or renamed: [a-z0-9.-]+
+#   category  MEAT FISH DAIRY VEGETABLES GRAIN BREAD DRINKS ALCOHOL DESSERT FASTFOOD
+#   amount    the portion kcal is for, a whole number, or empty
+#   unit      g or ml (written back as г/мл in Russian), or empty with no amount
+#   kcal      for that portion, a whole number
+#   then one name per language, as language=name: en= is required,
+#   ru= and sr-Latn= are used when the app is in that language.
+# Lines starting with # and empty lines are skipped.
+#
+# id	category	amount	unit	kcal	names...
+dairy.cottage-cheese-5	DAIRY	100	g	121	en=Cottage cheese 5%	ru=Творог 5 %	sr-Latn=Sitni sir 5 %
+veg.apple	VEGETABLES	100	g	52	en=Apple	ru=Яблоко	sr-Latn=Jabuka
+drinks.milk-2-5	DRINKS	200	ml	106	en=Milk 2.5%	ru=Молоко 2,5 %	sr-Latn=Mleko 2,5 %
