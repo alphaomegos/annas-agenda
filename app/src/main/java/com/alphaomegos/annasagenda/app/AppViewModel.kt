@@ -1799,6 +1799,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** 6.3: which marks the calendar puts on its days. */
+    fun setCalendarBadges(badges: Set<CalendarBadge>) {
+        val cur = _state.value
+        if (cur.calendarBadges != badges) _state.value = cur.copy(calendarBadges = badges)
+    }
+
     /* ---------------------------
        Calorimeter
     ---------------------------- */

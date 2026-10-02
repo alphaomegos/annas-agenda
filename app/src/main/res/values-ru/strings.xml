@@ -503,4 +503,10 @@
     <string name="diet_day_total">Итого: %1$d ккал</string>
     <string name="diet_copy_day">Скопировать день на…</string>
     <string name="diet_copy_day_hint">Блюда выбранных дней заменятся блюдами этого дня.</string>
+    <!-- Calendar marks (0142) -->
+    <string name="calendar_badges_open">Отметки в календаре</string>
+    <string name="calendar_badges_title">Отмечать дни</string>
+    <string name="calendar_badge_anthropometry">Замеры</string>
+    <string name="calendar_badge_food">Еда</string>
+    <string name="calendar_badge_debts">Невыполненные задачи</string>
 </resources>

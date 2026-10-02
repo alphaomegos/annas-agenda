@@ -362,4 +362,10 @@
     <string name="diet_day_total">Ukupno: %1$d kcal</string>
     <string name="diet_copy_day">Kopiraj dan na…</string>
     <string name="diet_copy_day_hint">Jela izabranih dana zameniće se jelima ovog dana.</string>
+    <!-- Calendar marks (0142) -->
+    <string name="calendar_badges_open">Oznake u kalendaru</string>
+    <string name="calendar_badges_title">Označi dane sa</string>
+    <string name="calendar_badge_anthropometry">Merenja</string>
+    <string name="calendar_badge_food">Hrana</string>
+    <string name="calendar_badge_debts">Neurađeni zadaci</string>
 </resources>

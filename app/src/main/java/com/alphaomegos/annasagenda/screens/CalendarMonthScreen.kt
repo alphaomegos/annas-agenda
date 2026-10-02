@@ -18,7 +18,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import com.alphaomegos.annasagenda.AppIcons
 import com.alphaomegos.annasagenda.AppState
+import com.alphaomegos.annasagenda.CalendarBadge
+import com.alphaomegos.annasagenda.calendarBadgesByDate
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appExtraColors
@@ -47,6 +52,7 @@ fun CalendarMonthRoute(
         state = state,
         locale = locale,
         ensureGeneratedInRange = vm::ensureGeneratedInRange,
+        onSetBadges = vm::setCalendarBadges,
         onBack = onBack,
         onOpenDay = onOpenDay,
         onOpenSomeday = onOpenSomeday,
@@ -59,6 +65,7 @@ private fun CalendarMonthContent(
     state: AppState,
     locale: Locale,
     ensureGeneratedInRange: (LocalDate, LocalDate) -> Unit,
+    onSetBadges: (Set<CalendarBadge>) -> Unit,
     onBack: () -> Unit,
     onOpenDay: (Long) -> Unit,
     onOpenSomeday: () -> Unit,
@@ -105,9 +112,20 @@ private fun CalendarMonthContent(
         ((a - b) + 7) % 7
     }
 
-    val anthroDates = remember(state.anthropometry) {
-        state.anthropometry.filter { it.hasAnyValue() }.map { it.date }.toSet()
+    // 6.3: the marks switched on, day by day.
+    val badgesByDate = remember(
+        state.calendarBadges, state.anthropometry, state.foodLog, state.tasks, state.suppressedRecurrences, today,
+    ) {
+        calendarBadgesByDate(
+            enabled = state.calendarBadges,
+            anthropometry = state.anthropometry,
+            foodLog = state.foodLog,
+            tasks = state.tasks,
+            suppressedRecurrences = state.suppressedRecurrences,
+            today = today,
+        )
     }
+    var showBadgeSettings by rememberSaveable { mutableStateOf(false) }
 
     val visibleTasks = remember(state.tasks, state.suppressedRecurrences) {
         state.tasks.filterNot { isSuppressedTemplateTaskOnItsDate(it, state.suppressedRecurrences) }
@@ -159,10 +177,19 @@ private fun CalendarMonthContent(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = stringResource(R.string.calendar_title),
-            style = MaterialTheme.typography.headlineSmall
-        )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.calendar_title),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.align(Alignment.Center),
+            )
+            IconButton(
+                onClick = { showBadgeSettings = true },
+                modifier = Modifier.align(Alignment.CenterEnd),
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.calendar_badges_open))
+            }
+        }
         Spacer(modifier = Modifier.height(12.dp))
 
         Row(
@@ -235,7 +262,8 @@ private fun CalendarMonthContent(
                     } else {
                         val count = itemCountByDate[date] ?: 0
                         val isToday = date == today
-                        val hasAnthro = anthroDates.contains(date)
+                        val marks = badgesByDate[date].orEmpty()
+                        val hasAnthro = CalendarBadge.ANTHROPOMETRY in marks
 
                         Surface(
                             tonalElevation = if (isToday) 4.dp else 0.dp,
@@ -270,11 +298,30 @@ private fun CalendarMonthContent(
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                 }
-                                if (count > 0) {
-                                    Text(
-                                        text = count.toString(),
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (count > 0) {
+                                        Text(
+                                            text = count.toString(),
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    // The measurement keeps its circle round the
+                                    // number; the other marks are small pictures.
+                                    listOf(CalendarBadge.FOOD, CalendarBadge.DEBTS)
+                                        .filter { it in marks }
+                                        .forEach { badge ->
+                                            Icon(
+                                                imageVector = AppIcons.calendarBadge(badge),
+                                                contentDescription = null,
+                                                tint = if (badge == CalendarBadge.DEBTS) MaterialTheme.colorScheme.error
+                                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(12.dp),
+                                            )
+                                        }
                                 }
                             }
                         }
@@ -296,4 +343,71 @@ private fun CalendarMonthContent(
             modifier = Modifier.fillMaxWidth()
         ) { Text(stringResource(R.string.back)) }
     }
+
+    if (showBadgeSettings) {
+        CalendarBadgesDialog(
+            initial = state.calendarBadges,
+            onDismiss = { showBadgeSettings = false },
+            onSave = {
+                onSetBadges(it)
+                showBadgeSettings = false
+            },
+        )
+    }
+}
+
+/** 6.3: which marks the calendar shows. Written on OK; survives turning the phone. */
+@Composable
+private fun CalendarBadgesDialog(
+    initial: Set<CalendarBadge>,
+    onDismiss: () -> Unit,
+    onSave: (Set<CalendarBadge>) -> Unit,
+) {
+    // Names joined into one string: a Bundle takes it as is.
+    var pickedText by rememberSaveable { mutableStateOf(initial.joinToString(",") { it.name }) }
+    val picked = pickedText.split(',').mapNotNull { n -> CalendarBadge.entries.firstOrNull { it.name == n } }.toSet()
+    fun toggle(b: CalendarBadge) {
+        val next = if (b in picked) picked - b else picked + b
+        pickedText = CalendarBadge.entries.filter { it in next }.joinToString(",") { it.name }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.calendar_badges_title)) },
+        text = {
+            Column {
+                CalendarBadge.entries.forEach { badge ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { toggle(badge) },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = badge in picked, onCheckedChange = { toggle(badge) })
+                        Icon(
+                            imageVector = AppIcons.calendarBadge(badge),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            stringResource(
+                                when (badge) {
+                                    CalendarBadge.ANTHROPOMETRY -> R.string.calendar_badge_anthropometry
+                                    CalendarBadge.FOOD -> R.string.calendar_badge_food
+                                    CalendarBadge.DEBTS -> R.string.calendar_badge_debts
+                                }
+                            )
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(picked) }) { Text(stringResource(R.string.ok)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
 }

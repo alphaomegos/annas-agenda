@@ -15,4 +15,10 @@
     <string name="someday_count">Someday: %1$d</string>
     <string name="repeating_tasks_header">Repeating tasks</string>
     <string name="repeating_subtasks_header">Repeating subtasks</string>
+    <!-- Calendar marks (0142) -->
+    <string name="calendar_badges_open">Calendar marks</string>
+    <string name="calendar_badges_title">Mark days with</string>
+    <string name="calendar_badge_anthropometry">Measurements</string>
+    <string name="calendar_badge_food">Food</string>
+    <string name="calendar_badge_debts">Undone tasks</string>
 </resources>
