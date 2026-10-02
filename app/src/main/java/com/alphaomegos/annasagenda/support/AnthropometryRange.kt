@@ -5,9 +5,9 @@ import java.time.LocalDate
 /**
  * How much of the history the chart is showing.
  *
- * Stored nowhere and sent nowhere, so the names are free to change — unlike
- * every other enum in this project, which is written into the saved state by
- * name and read back with `valueOf`.
+ * **Stored since schema 6** (the last range chosen is kept), by name like
+ * every other enum here — so the names are no longer free to change. An
+ * unknown name reads back as [MONTH].
  */
 enum class AnthropometryRange {
     WEEK,

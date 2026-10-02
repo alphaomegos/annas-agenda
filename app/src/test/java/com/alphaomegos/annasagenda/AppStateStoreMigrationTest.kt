@@ -310,6 +310,90 @@ class AppStateStoreMigrationTest {
         assertTrue(state.runningWorkouts.isEmpty())
     }
 
+    /** Version 6 is a stamp as well: the settings and the diet, nothing converted. */
+    @Test
+    fun migrateVersion5_stampsTheVersionAndChangesNothingElse() {
+        val raw = """
+            {
+              "v": 5,
+              "runningMode": "BETWEEN",
+              "foodLog": [
+                { "id": 7, "dateEpochDay": 20000, "title": "Суп", "kcal": 300 }
+              ]
+            }
+        """.trimIndent()
+
+        val before = appStateStoreJson.decodeFromString<JsonObject>(raw)
+        val root = migrateAppStateRawJson(raw) as JsonObject
+
+        assertEquals(CURRENT_SCHEMA_VERSION, root["v"]?.jsonPrimitive?.intOrNull)
+        assertEquals(
+            "nothing but the version may move",
+            before.filterKeys { it != "v" },
+            root.filterKeys { it != "v" },
+        )
+    }
+
+    /**
+     * The promise that made it safe to add six settings and the diet in one
+     * step: a version-5 payload comes out looking exactly as before — every
+     * "show" on, the circle in the calendar, the month on the chart, no
+     * library, no diet, and nothing eaten counted as from a diet.
+     */
+    @Test
+    fun aVersionFivePayloadArrivesLookingExactlyAsBefore() {
+        val state = decoded(
+            """{ "v": 5, "foodLog": [ { "id": 7, "dateEpochDay": 20000, "title": "Суп", "kcal": 300 } ] }"""
+        )
+
+        assertTrue(state.anthropometryShowForecast)
+        assertFalse(state.anthropometryShowEntries)
+        assertEquals(AnthropometryRange.MONTH, state.anthropometryRange)
+        assertEquals(null, state.anthropometryCustomRange)
+        assertTrue(state.calorimeterShowDailyGoal)
+        assertTrue(state.calorimeterShowWeeklyGoal)
+        assertTrue(state.calorimeterShowPotentialLoss)
+        assertEquals(setOf(CalendarBadge.ANTHROPOMETRY), state.calendarBadges)
+        assertFalse(state.foodLibraryVisible)
+        assertFalse(state.dietEnabled)
+        assertTrue(state.dietPlan.isEmpty())
+        assertEquals(null, state.foodLog.single().dietItemId)
+
+        // And those are exactly the defaults of a fresh state.
+        val fresh = AppState()
+        assertEquals(fresh.anthropometryRange, state.anthropometryRange)
+        assertEquals(fresh.calendarBadges, state.calendarBadges)
+        assertEquals(fresh.dietPlan, state.dietPlan)
+    }
+
+    /** Unreadable bits of the new fields fall back rather than fail the payload. */
+    @Test
+    fun unknownNamesAndImpossibleDaysInTheNewFieldsAreDroppedNotFatal() {
+        val state = decoded(
+            """
+            {
+              "v": 6,
+              "anthropometryRange": "FORTNIGHT",
+              "anthropometryCustomFromEpochDay": 20000,
+              "calendarBadges": ["FOOD", "MOON_PHASE"],
+              "dietPlan": [
+                { "dayOfWeekIso": 1, "items": [ { "id": 90, "title": "Творог", "kcal": 120 } ] },
+                { "dayOfWeekIso": 9, "items": [ { "id": 91, "title": "?", "kcal": 1 } ] },
+                { "dayOfWeekIso": 1, "items": [ { "id": 92, "title": "Чай", "kcal": 0 } ] }
+              ]
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(AnthropometryRange.MONTH, state.anthropometryRange)
+        // Half a custom range is no range.
+        assertEquals(null, state.anthropometryCustomRange)
+        assertEquals(setOf(CalendarBadge.FOOD), state.calendarBadges)
+        // Day 9 is dropped; two Mondays are joined, in the order written.
+        assertEquals(setOf(java.time.DayOfWeek.MONDAY), state.dietPlan.keys)
+        assertEquals(listOf(90L, 92L), state.dietPlan.getValue(java.time.DayOfWeek.MONDAY).map { it.id })
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

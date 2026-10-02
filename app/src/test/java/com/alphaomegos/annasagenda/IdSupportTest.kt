@@ -52,6 +52,14 @@ class IdSupportTest {
                     )
                 )
             ),
+            // Missing from the count until 0137, though runs have taken their
+            // ids from this counter since 0123.
+            "runningWorkouts" to AppState(
+                runningWorkouts = listOf(RunningWorkout(id = 40L, date = day, distanceKm = 5.0, durationMinutes = 30))
+            ),
+            "dietPlan" to AppState(
+                dietPlan = mapOf(java.time.DayOfWeek.MONDAY to listOf(DietItem(id = 40L, title = "Творог", kcal = 120)))
+            ),
         )
 
         cases.forEach { (name, state) ->

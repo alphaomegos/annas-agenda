@@ -39,6 +39,21 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     readingNowPrefs = readingNowPrefs.toDto(),
     readingDonePrefs = readingDonePrefs.toDto(),
     readingAbandonedPrefs = readingAbandonedPrefs.toDto(),
+    anthropometryShowForecast = anthropometryShowForecast,
+    anthropometryShowEntries = anthropometryShowEntries,
+    anthropometryRange = anthropometryRange.name,
+    anthropometryCustomFromEpochDay = anthropometryCustomRange?.from?.toEpochDay(),
+    anthropometryCustomToEpochDay = anthropometryCustomRange?.to?.toEpochDay(),
+    calorimeterShowDailyGoal = calorimeterShowDailyGoal,
+    calorimeterShowWeeklyGoal = calorimeterShowWeeklyGoal,
+    calorimeterShowPotentialLoss = calorimeterShowPotentialLoss,
+    // In declaration order, so the same set always writes the same list.
+    calendarBadges = CalendarBadge.entries.filter { it in calendarBadges }.map { it.name },
+    foodLibraryVisible = foodLibraryVisible,
+    dietEnabled = dietEnabled,
+    dietPlan = dietPlan.entries
+        .sortedBy { it.key.value }
+        .map { (day, items) -> DietDayDto(dayOfWeekIso = day.value, items = items.map { it.toDto() }) },
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -100,6 +115,21 @@ internal fun AppStateDto.toDomain(): AppState {
         readingNowPrefs = readingNowPrefs.toDomain(),
         readingDonePrefs = readingDonePrefs.toDomain(),
         readingAbandonedPrefs = readingAbandonedPrefs.toDomain(),
+        anthropometryShowForecast = anthropometryShowForecast,
+        anthropometryShowEntries = anthropometryShowEntries,
+        anthropometryRange = anthropometryRangeFromName(anthropometryRange),
+        anthropometryCustomRange = dateWindowFromEpochDays(anthropometryCustomFromEpochDay, anthropometryCustomToEpochDay),
+        calorimeterShowDailyGoal = calorimeterShowDailyGoal,
+        calorimeterShowWeeklyGoal = calorimeterShowWeeklyGoal,
+        calorimeterShowPotentialLoss = calorimeterShowPotentialLoss,
+        // A name this build does not know is dropped rather than guessed at;
+        // the worst it costs is one mark the user switches back on.
+        calendarBadges = calendarBadges
+            .mapNotNull { name -> CalendarBadge.entries.firstOrNull { it.name == name } }
+            .toSet(),
+        foodLibraryVisible = foodLibraryVisible,
+        dietEnabled = dietEnabled,
+        dietPlan = dietPlanFromDto(dietPlan),
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)
@@ -238,6 +268,7 @@ internal fun FoodEntry.toDto(): FoodEntryDto = FoodEntryDto(
     dateEpochDay = date.toEpochDay(),
     title = title,
     kcal = kcal,
+    dietItemId = dietItemId,
 )
 
 internal fun FoodEntryDto.toDomain(): FoodEntry = FoodEntry(
@@ -245,7 +276,32 @@ internal fun FoodEntryDto.toDomain(): FoodEntry = FoodEntry(
     date = LocalDate.ofEpochDay(dateEpochDay),
     title = title,
     kcal = kcal,
+    dietItemId = dietItemId,
 )
+
+internal fun DietItem.toDto(): DietItemDto = DietItemDto(id = id, title = title, kcal = kcal)
+
+internal fun DietItemDto.toDomain(): DietItem = DietItem(id = id, title = title, kcal = kcal)
+
+/** Unknown names read back as a month, the range the chart always opened on. */
+internal fun anthropometryRangeFromName(name: String): AnthropometryRange =
+    AnthropometryRange.entries.firstOrNull { it.name == name } ?: AnthropometryRange.MONTH
+
+/** Both ends or nothing: half a custom range is no range. */
+internal fun dateWindowFromEpochDays(from: Long?, to: Long?): DateWindow? =
+    if (from == null || to == null) null else DateWindow(LocalDate.ofEpochDay(from), LocalDate.ofEpochDay(to))
+
+/**
+ * The diet by day of the week. A day number outside 1..7 is dropped rather
+ * than guessed at; two entries for the same day are joined, in the order
+ * written, so nothing typed in is lost to a duplicate.
+ */
+internal fun dietPlanFromDto(days: List<DietDayDto>): Map<DayOfWeek, List<DietItem>> =
+    days
+        .filter { it.dayOfWeekIso in 1..7 }
+        .groupBy { DayOfWeek.of(it.dayOfWeekIso) }
+        .mapValues { (_, sameDay) -> sameDay.flatMap { d -> d.items.map { it.toDomain() } } }
+        .filterValues { it.isNotEmpty() }
 
 internal fun runningModeFromName(name: String): RunningMode =
     RunningMode.entries.firstOrNull { it.name == name } ?: RunningMode.PLAN

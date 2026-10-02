@@ -13,4 +13,8 @@ data class FoodEntry(
     val date: LocalDate,
     val title: String,
     val kcal: Int,
+    // The diet dish this was ticked off from, or null for anything typed in.
+    // Kept after the dish is removed from the diet: the entry is what was
+    // eaten, and a past day does not change because the plan did.
+    val dietItemId: Long? = null,
 )

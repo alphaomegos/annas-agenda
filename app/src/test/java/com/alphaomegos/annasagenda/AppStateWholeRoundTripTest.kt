@@ -107,6 +107,7 @@ class AppStateWholeRoundTripTest {
         foodLog = listOf(
             FoodEntry(id = 20L, date = day, title = "soup", kcal = 320),
             FoodEntry(id = 21L, date = day, title = "apple", kcal = 80),
+            FoodEntry(id = 22L, date = day, title = "Творог 5 %, 200 г", kcal = 242, dietItemId = 90L),
         ),
         runningPlanApproved = true,
         runningPlanEntries = listOf(
@@ -119,6 +120,13 @@ class AppStateWholeRoundTripTest {
                 isBonus = false,
             ),
             RunningPlanEntry(date = day.plusDays(2), distanceKmText = "3", isBonus = true),
+        ),
+        // Missing from this fixture until 0137, though they have been saved
+        // since 0122 — a field forgotten here fails nothing, as the comment
+        // at the top says.
+        runningMode = RunningMode.BETWEEN,
+        runningWorkouts = listOf(
+            RunningWorkout(id = 80L, date = day, distanceKm = 8.25, durationMinutes = 47, note = "в парке"),
         ),
         counters = listOf(
             ManualCounter(id = 60L, title = "push-ups", balance = 40),
@@ -213,6 +221,24 @@ class AppStateWholeRoundTripTest {
             viewMode = ReadingViewMode.WALL,
             sort = ReadingSort(field = ReadingSortField.YEAR, ascending = true),
         ),
+        // Schema 6 — every one the opposite of its default.
+        anthropometryShowForecast = false,
+        anthropometryShowEntries = true,
+        anthropometryRange = AnthropometryRange.CUSTOM,
+        anthropometryCustomRange = DateWindow(day.minusDays(40), day),
+        calorimeterShowDailyGoal = false,
+        calorimeterShowWeeklyGoal = false,
+        calorimeterShowPotentialLoss = false,
+        calendarBadges = setOf(CalendarBadge.FOOD, CalendarBadge.DEBTS),
+        foodLibraryVisible = true,
+        dietEnabled = true,
+        dietPlan = mapOf(
+            DayOfWeek.MONDAY to listOf(
+                DietItem(id = 90L, title = "Творог 5 %, 200 г", kcal = 242),
+                DietItem(id = 91L, title = "Гречка, 150 г", kcal = 165),
+            ),
+            DayOfWeek.FRIDAY to listOf(DietItem(id = 92L, title = "Суп", kcal = 300)),
+        ),
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -258,6 +284,9 @@ class AppStateWholeRoundTripTest {
         assertTrue(whole.readingSessions.isNotEmpty())
         assertTrue(whole.activeReading != null)
         assertTrue(whole.pendingReadingSession != null)
+        assertTrue(whole.runningWorkouts.isNotEmpty())
+        assertTrue(whole.dietPlan.isNotEmpty())
+        assertTrue(whole.foodLog.any { it.dietItemId != null })
     }
 
     /**
@@ -274,6 +303,10 @@ class AppStateWholeRoundTripTest {
             "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "idHighWater",
             "readingBooks", "readingMovies", "readingSeries", "readingSessions",
             "activeReading", "pendingReadingSession", "autoRecordInterruptedReading",
+            "runningMode", "runningWorkouts",
+            "anthropometryShowForecast", "anthropometryShowEntries", "anthropometryRange",
+            "calorimeterShowDailyGoal", "calendarBadges", "foodLibraryVisible",
+            "dietEnabled", "dietPlan", "dietItemId",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))
         }

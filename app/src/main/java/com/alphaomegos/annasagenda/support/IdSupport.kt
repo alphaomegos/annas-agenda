@@ -17,6 +17,11 @@ fun highestIdIn(state: AppState): Long =
         state.readingMovies.maxOfOrNull { it.id },
         state.readingSeries.maxOfOrNull { it.id },
         state.readingSessions.maxOfOrNull { it.id },
+        // Missing until 0137: runs have taken their ids from the same counter
+        // since 0123, and only the high-water mark kept them from being
+        // handed out twice.
+        state.runningWorkouts.maxOfOrNull { it.id },
+        state.dietPlan.values.flatten().maxOfOrNull { it.id },
     ).filterNotNull().maxOrNull() ?: 0L
 
 /**

@@ -71,6 +71,37 @@ internal data class AppStateDto(
     val readingNowPrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),
     val readingDonePrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),
     val readingAbandonedPrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),
+
+    // Schema 6. The settings alone would have been additive-with-a-default;
+    // the diet is not — it is data nothing else holds, and a build that did
+    // not know the key would drop it on its next save. So the version moved,
+    // once, for all of these together. Enums by name, dates as epoch days.
+    val anthropometryShowForecast: Boolean = true,
+    val anthropometryShowEntries: Boolean = false,
+    val anthropometryRange: String = "MONTH",
+    val anthropometryCustomFromEpochDay: Long? = null,
+    val anthropometryCustomToEpochDay: Long? = null,
+    val calorimeterShowDailyGoal: Boolean = true,
+    val calorimeterShowWeeklyGoal: Boolean = true,
+    val calorimeterShowPotentialLoss: Boolean = true,
+    val calendarBadges: List<String> = listOf("ANTHROPOMETRY"),
+    val foodLibraryVisible: Boolean = false,
+    val dietEnabled: Boolean = false,
+    val dietPlan: List<DietDayDto> = emptyList(),
+)
+
+@Serializable
+internal data class DietDayDto(
+    // ISO, 1 = Monday, like RepeatRuleDto.weekDaysIso.
+    val dayOfWeekIso: Int,
+    val items: List<DietItemDto> = emptyList(),
+)
+
+@Serializable
+internal data class DietItemDto(
+    val id: Long,
+    val title: String,
+    val kcal: Int,
 )
 
 @Serializable
@@ -162,6 +193,8 @@ internal data class FoodEntryDto(
     val dateEpochDay: Long,
     val title: String,
     val kcal: Int,
+    // Schema 6: the diet dish this was ticked off from, if any.
+    val dietItemId: Long? = null,
 )
 
 /* ---------------------------

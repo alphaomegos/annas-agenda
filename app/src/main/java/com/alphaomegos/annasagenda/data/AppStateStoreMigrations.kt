@@ -50,6 +50,7 @@ internal fun migrateAppStateRawJson(
             2 -> migrateAppState2To3(cur)
             3 -> migrateAppState3To4(cur, weekStartForLegacyRules)
             4 -> migrateAppState4To5(cur)
+            5 -> migrateAppState5To6(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -106,6 +107,25 @@ internal class MissingMigrationException(
 private fun migrateAppState4To5(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(5)
+    return JsonObject(m)
+}
+
+/**
+ * Nothing to convert, for the same reason as version 5.
+ *
+ * Version 6 adds the display settings that piled up at once (forecast and
+ * measurements list in anthropometry, the last chart range, three switches
+ * in the calorimeter, the calendar marks, the food library) and the diet.
+ * The settings alone would have been additive-with-a-default; the diet is
+ * data nothing else holds, which is what moves the number. They were added
+ * together on purpose, so that the way back to an older APK is cut once
+ * rather than six times.
+ *
+ * Every new field defaults to what the app did before it existed.
+ */
+private fun migrateAppState5To6(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(6)
     return JsonObject(m)
 }
 

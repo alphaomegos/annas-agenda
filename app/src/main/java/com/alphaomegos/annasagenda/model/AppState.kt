@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda
 
+import java.time.DayOfWeek
+
 /**
  * What the shared task-list components need in order to render a day.
  *
@@ -83,4 +85,31 @@ data class AppState(
     val readingNowPrefs: ReadingTabPrefs = ReadingTabPrefs(),
     val readingDonePrefs: ReadingTabPrefs = ReadingTabPrefs(),
     val readingAbandonedPrefs: ReadingTabPrefs = ReadingTabPrefs(),
+
+    // --- Schema 6 (0137): settings, all at once, and the diet. ---------------
+    // Every default is what the app did before these existed, so the step to
+    // schema 6 changes nothing anybody can see. Screens pick them up one by one.
+
+    // Anthropometry: the forecast block (5.1), the list of measurements under
+    // the chart (5.3), and the last range chosen, kept across leaving the screen.
+    val anthropometryShowForecast: Boolean = true,
+    val anthropometryShowEntries: Boolean = false,
+    val anthropometryRange: AnthropometryRange = AnthropometryRange.MONTH,
+    val anthropometryCustomRange: DateWindow? = null,
+
+    // Calorimeter (6.1).
+    val calorimeterShowDailyGoal: Boolean = true,
+    val calorimeterShowWeeklyGoal: Boolean = true,
+    val calorimeterShowPotentialLoss: Boolean = true,
+
+    // Calendar day marks (6.3). The circle for a measurement is what it drew.
+    val calendarBadges: Set<CalendarBadge> = setOf(CalendarBadge.ANTHROPOMETRY),
+
+    // Food library (6.4): picking from categories instead of typing.
+    val foodLibraryVisible: Boolean = false,
+
+    // Diet (6.2): a fixed set of dishes per day of the week. See DietItem for
+    // why the plan is never written into the food log.
+    val dietEnabled: Boolean = false,
+    val dietPlan: Map<DayOfWeek, List<DietItem>> = emptyMap(),
 ) : DateTasksData
