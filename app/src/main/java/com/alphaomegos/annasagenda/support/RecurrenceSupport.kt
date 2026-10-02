@@ -145,6 +145,8 @@ private fun suppressionOwner(key: String): SuppressionOwner? {
  * the tombstone names its template by id. [taskIds] and [subtaskIds] map old
  * template ids to new ones; keys for other ids, for days before [fromDate],
  * or in a shape this version does not recognise are left exactly as they are.
+ * [shiftDays] moves each moved key's day as well — a series shifted by two
+ * days keeps its deleted days deleted, two days later.
  *
  * Here rather than with its caller for the reason [isSuppressedTemplateTaskOnItsDate]
  * is: the key format is known in this file and nowhere else.
@@ -154,6 +156,7 @@ fun suppressionsMovedToNewTemplate(
     taskIds: Map<Long, Long>,
     subtaskIds: Map<Long, Long>,
     fromDate: LocalDate,
+    shiftDays: Long = 0,
 ): Set<String> {
     if (suppressedRecurrences.isEmpty()) return suppressedRecurrences
 
@@ -163,9 +166,10 @@ fun suppressionsMovedToNewTemplate(
         val date = LocalDate.ofEpochDay(epochDay)
         if (date.isBefore(fromDate)) return@mapTo key
 
+        val movedTo = date.plusDays(shiftDays)
         when (owner.kind) {
-            SuppressionKind.TASK -> taskIds[owner.id]?.let { taskSuppressionKey(it, date) } ?: key
-            SuppressionKind.SUBTASK -> subtaskIds[owner.id]?.let { subtaskSuppressionKey(it, date) } ?: key
+            SuppressionKind.TASK -> taskIds[owner.id]?.let { taskSuppressionKey(it, movedTo) } ?: key
+            SuppressionKind.SUBTASK -> subtaskIds[owner.id]?.let { subtaskSuppressionKey(it, movedTo) } ?: key
         }
     }
 }

@@ -466,4 +466,9 @@
     <string name="edit_series_title">Изменить регулярку</string>
     <string name="edit_series_from_today_hint">Изменится с сегодняшнего дня. Прошедшие дни останутся как были.</string>
     <string name="recurring_rule_at_time">%1$s в %2$s</string>
+    <!-- Moving a day of a series: only it, or all after it (0135) -->
+    <string name="shift_series_title">Сдвинуть всю серию?</string>
+    <string name="shift_series_text">«%1$s» повторяется. Сдвинуть и все следующие повторы на столько же дней — или перенести только этот день?</string>
+    <string name="shift_series_all">Всю серию</string>
+    <string name="shift_series_only_this">Только этот день</string>
 </resources>

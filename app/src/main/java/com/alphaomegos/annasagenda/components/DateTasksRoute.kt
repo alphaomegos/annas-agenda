@@ -26,6 +26,7 @@ import com.alphaomegos.annasagenda.Subtask
 import com.alphaomegos.annasagenda.Task
 import com.alphaomegos.annasagenda.dialogs.RepeatPickerDialog
 import com.alphaomegos.annasagenda.canMoveTask
+import com.alphaomegos.annasagenda.canShiftSeries
 import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
 import com.alphaomegos.annasagenda.taskDayOrder
 import java.time.LocalDate
@@ -61,6 +62,7 @@ internal data class DateTasksActions(
     val setTaskRepeatRule: (Long, RepeatRule?) -> Unit,
     val setSubtaskRepeatRule: (Long, RepeatRule?) -> Unit,
     val setTaskTime: (Long, LocalTime?) -> Unit,
+    val shiftTaskSeriesFrom: (Long, LocalDate) -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,6 +130,7 @@ internal fun DateTasksBlock(
             setSubtaskRepeatRule = { subId, rule -> vm.setSubtaskRepeatRule(subId, rule) },
             setTaskLinkedManualCounter = { taskId, counterId -> vm.setTaskLinkedManualCounter(taskId, counterId) },
             setTaskTime = { taskId, time -> vm.setTaskTime(taskId, time) },
+            shiftTaskSeriesFrom = { taskId, newDate -> vm.shiftTaskSeriesFrom(taskId, newDate) },
         )
     }
 
@@ -179,6 +182,9 @@ private fun DateTasksBlockContent(
     val editTaskText = rememberSaveable { mutableStateOf("") }
     val showTaskRepeatPicker = rememberSaveable { mutableStateOf(false) }
     val showTaskTimePicker = rememberSaveable { mutableStateOf(false) }
+    // A day of a series being moved, waiting for "only this one or all?".
+    val pendingShiftTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val pendingShiftEpochDay = rememberSaveable { mutableStateOf<Long?>(null) }
     val showCounterPicker = rememberSaveable { mutableStateOf(false) }
     var editSubtaskId by rememberSaveable { mutableStateOf<Long?>(null) }
     val editSubtaskText = rememberSaveable { mutableStateOf("") }
@@ -258,6 +264,17 @@ private fun DateTasksBlockContent(
 
     // Move task: choose date (Today / Tomorrow / Someday / Pick date)
 
+    // A day of a repeating series moved to another day asks first whether
+    // the rest of the series should move with it; anything else just moves.
+    fun requestMove(taskId: Long, newDate: LocalDate) {
+        if (canShiftSeries(state.tasks, taskId, newDate)) {
+            pendingShiftTaskId.value = taskId
+            pendingShiftEpochDay.value = newDate.toEpochDay()
+        } else {
+            actions.rescheduleTaskToDate(taskId, newDate)
+        }
+    }
+
     MoveTaskDialogs(
         taskId = moveTaskId.value,
         showDatePicker = showMoveTaskDatePicker.value,
@@ -270,16 +287,32 @@ private fun DateTasksBlockContent(
         onMoveToSomeday = { taskId ->
             actions.rescheduleTaskToDate(taskId, null)
         },
-        onMoveToToday = { taskId ->
-            actions.rescheduleTaskToDate(taskId, LocalDate.now())
-        },
-        onMoveToTomorrow = { taskId ->
-            actions.rescheduleTaskToDate(taskId, LocalDate.now().plusDays(1))
-        },
-        onMoveToDate = { taskId, newDate ->
-            actions.rescheduleTaskToDate(taskId, newDate)
-        },
+        onMoveToToday = { taskId -> requestMove(taskId, LocalDate.now()) },
+        onMoveToTomorrow = { taskId -> requestMove(taskId, LocalDate.now().plusDays(1)) },
+        onMoveToDate = { taskId, newDate -> requestMove(taskId, newDate) },
     )
+
+    val shiftTaskId = pendingShiftTaskId.value
+    val shiftEpochDay = pendingShiftEpochDay.value
+    if (shiftTaskId != null && shiftEpochDay != null) {
+        val shiftDate = LocalDate.ofEpochDay(shiftEpochDay)
+        val clearPending = {
+            pendingShiftTaskId.value = null
+            pendingShiftEpochDay.value = null
+        }
+        SeriesShiftChoiceDialog(
+            taskDescription = state.tasks.firstOrNull { it.id == shiftTaskId }?.description.orEmpty(),
+            onWholeSeries = {
+                actions.shiftTaskSeriesFrom(shiftTaskId, shiftDate)
+                clearPending()
+            },
+            onOnlyThisDay = {
+                actions.rescheduleTaskToDate(shiftTaskId, shiftDate)
+                clearPending()
+            },
+            onCancel = clearPending,
+        )
+    }
 
     CopyToDateDialogs(
         itemId = copyTaskId.value,

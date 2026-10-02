@@ -303,3 +303,143 @@ fun RepeatRule.namesTheSameDaysAs(other: RepeatRule): Boolean =
         interval.coerceAtLeast(1) == other.interval.coerceAtLeast(1) &&
         (freq != RepeatFreq.WEEKLY || weekDays == other.weekDays) &&
         (freq != RepeatFreq.MONTHLY || dayOfMonth == other.dayOfMonth)
+
+/**
+ * Whether moving [taskId] to [newDate] is a question worth asking: "only this
+ * day, or the whole series from here?"
+ *
+ * Only for an occurrence of a repeating template, moved to another real day.
+ * Someday has no day to count a series from; the template's own first day is
+ * the series itself; and a plain task has no series.
+ */
+fun canShiftSeries(tasks: List<Task>, taskId: Long, newDate: LocalDate?): Boolean {
+    val occurrence = tasks.firstOrNull { it.id == taskId } ?: return false
+    val oldDate = occurrence.date ?: return false
+    if (newDate == null || newDate == oldDate) return false
+
+    val template = tasks.firstOrNull { it.id == occurrence.originTaskId } ?: return false
+    return template.repeatRule != null && template.date != null
+}
+
+/**
+ * [rule] moved by [days]: weekdays move with it (Thursdays + 1 = Fridays,
+ * Tuesday and Thursday + 1 = Wednesday and Friday), a day of the month
+ * becomes [newFirstDay]'s, and an interval of days needs nothing — it counts
+ * from the new first day by itself.
+ */
+fun shiftedRule(rule: RepeatRule, days: Long, newFirstDay: LocalDate): RepeatRule =
+    when (rule.freq) {
+        RepeatFreq.DAILY -> rule
+        RepeatFreq.WEEKLY -> rule.copy(weekDays = rule.weekDays.mapTo(mutableSetOf()) { it.plus(days) })
+        RepeatFreq.MONTHLY -> rule.copy(dayOfMonth = newFirstDay.dayOfMonth)
+    }
+
+/**
+ * One occurrence moved to [newDate] **and the series after it with it**.
+ *
+ * The case, from Eduard on 02.10.2026: "water the plants every two days",
+ * Monday missed and moved to Tuesday. Moving only Monday leaves Wednesday
+ * where it was — watering wet soil. Shifting the series moves everything from
+ * that Monday on by the same day.
+ *
+ * Built on the same split as [stateAfterEditingTaskSeriesFrom]:
+ * - The old template keeps everything before the moved day and loses its rule.
+ * - A new template starts on [newDate] with the rule shifted the same way
+ *   ([shiftedRule]), and hides behind the moved occurrence there.
+ * - The moved occurrence and every occurrence after it already on the
+ *   calendar move by the same number of days — ids, ticks, subtasks — and
+ *   belong to the new template. Days deleted ahead stay deleted, moved the
+ *   same way.
+ *
+ * Returns the input unchanged when [canShiftSeries] says there is nothing to
+ * ask about.
+ */
+fun stateAfterShiftingSeriesFrom(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    suppressedRecurrences: Set<String>,
+    occurrenceId: Long,
+    newDate: LocalDate,
+    newId: () -> Long,
+    weekStart: DayOfWeek,
+): SeriesEditResult {
+    val unchanged = SeriesEditResult(tasks, subtasks, suppressedRecurrences)
+    if (!canShiftSeries(tasks, occurrenceId, newDate)) return unchanged
+
+    val occurrence = tasks.first { it.id == occurrenceId }
+    val oldDate = occurrence.date!!
+    val template = tasks.first { it.id == occurrence.originTaskId }
+    val oldRule = template.repeatRule!!
+    val days = java.time.temporal.ChronoUnit.DAYS.between(oldDate, newDate)
+
+    fun moved(r: RepeatRule): RepeatRule = pinnedRule(shiftedRule(r, days, newDate), newDate, weekStart)
+
+    val templateSubs = subtasks.filter { it.taskId == template.id && it.originSubtaskId == null }
+    val newTemplateId = newId()
+    val subIdMap = templateSubs.associate { it.id to newId() }
+
+    val shifting = tasks.filter { t ->
+        val date = t.date
+        t.originTaskId == template.id && date != null && !date.isBefore(oldDate)
+    }
+    val shiftingIds = shifting.mapTo(mutableSetOf()) { it.id }
+
+    // Each lands at the end of its new day, as a moved task does. Asked of
+    // the tasks that are not moving, so two arrivals never share an order.
+    val staying = tasks.filterNot { it.id in shiftingIds }
+    val newOrder = shifting.associate { t -> t.id to nextTaskOrderOn(staying, t.date!!.plusDays(days)) }
+
+    val newTemplate = template.copy(
+        id = newTemplateId,
+        order = newOrder.getValue(occurrence.id),
+        date = newDate,
+        isDone = false,
+        repeatRule = moved(oldRule),
+        originTaskId = null,
+    )
+    val newTemplateSubs = templateSubs.map { s ->
+        s.copy(
+            id = subIdMap.getValue(s.id),
+            taskId = newTemplateId,
+            isDone = false,
+            repeatRule = s.repeatRule?.let(::moved),
+        )
+    }
+
+    val newTasks = tasks.map { t ->
+        when {
+            t.id == template.id -> t.copy(repeatRule = null)
+            t.id in shiftingIds -> t.copy(
+                date = t.date!!.plusDays(days),
+                order = newOrder.getValue(t.id),
+                originTaskId = newTemplateId,
+            )
+            else -> t
+        }
+    } + newTemplate
+
+    val newSubtasks = subtasks.map { s ->
+        when {
+            s.taskId == template.id && s.originSubtaskId == null -> s.copy(repeatRule = null)
+            s.taskId in shiftingIds -> {
+                val mapped = s.originSubtaskId?.let { subIdMap[it] }
+                if (mapped != null) s.copy(originSubtaskId = mapped) else s
+            }
+            else -> s
+        }
+    } + newTemplateSubs
+
+    val tombstones = suppressionsMovedToNewTemplate(
+        suppressedRecurrences = suppressedRecurrences,
+        taskIds = mapOf(template.id to newTemplateId),
+        subtaskIds = subIdMap,
+        fromDate = oldDate,
+        shiftDays = days,
+    ) + taskSuppressionKey(newTemplateId, newDate)
+
+    return SeriesEditResult(
+        tasks = withHasSubtasksRefreshed(newTasks, newSubtasks),
+        subtasks = newSubtasks,
+        suppressedRecurrences = tombstones,
+    )
+}

@@ -96,6 +96,38 @@ internal fun MoveTaskDialogs(
 }
 
 /**
+ * "Only this day, or the whole series?" — asked when a day of a repeating
+ * task is moved to another day.
+ *
+ * Moving only the day is what the app always did, and is still one tap. The
+ * whole series moves everything after it by the same number of days, which
+ * is what "water every two days" needs when one watering slipped by a day.
+ * Tapping outside cancels the move altogether: neither answer was given.
+ */
+@Composable
+internal fun SeriesShiftChoiceDialog(
+    taskDescription: String,
+    onWholeSeries: () -> Unit,
+    onOnlyThisDay: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.shift_series_title)) },
+        text = { Text(stringResource(R.string.shift_series_text, taskDescription)) },
+        confirmButton = {
+            TextButton(onClick = onWholeSeries) { Text(stringResource(R.string.shift_series_all)) }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
+                TextButton(onClick = onOnlyThisDay) { Text(stringResource(R.string.shift_series_only_this)) }
+            }
+        },
+    )
+}
+
+/**
  * "Copy to…" for a task or a subtask.
  *
  * There were two of these, one per kind, and after renaming the parameter the

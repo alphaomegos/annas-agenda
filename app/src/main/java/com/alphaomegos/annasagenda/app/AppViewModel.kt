@@ -1440,6 +1440,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * what happens when the task being moved is an occurrence of a repeat —
      * live in RescheduleSupport, where a JVM test can state them.
      */
+    /**
+     * Moves one occurrence of a series and everything after it by the same
+     * number of days — the rule is in SeriesEditSupport.
+     */
+    fun shiftTaskSeriesFrom(occurrenceId: Long, newDate: LocalDate) {
+        // Read and write rather than update {}: newId() must not run twice.
+        val cur = _state.value
+        val after = stateAfterShiftingSeriesFrom(
+            tasks = cur.tasks,
+            subtasks = cur.subtasks,
+            suppressedRecurrences = cur.suppressedRecurrences,
+            occurrenceId = occurrenceId,
+            newDate = newDate,
+            newId = ::newId,
+            weekStart = currentLocaleWeekStart(),
+        )
+        if (after.tasks === cur.tasks) return
+
+        _state.value = cur.copy(
+            tasks = after.tasks,
+            subtasks = after.subtasks,
+            suppressedRecurrences = after.suppressedRecurrences,
+        )
+    }
+
     fun rescheduleTaskToDate(taskId: Long, newDate: LocalDate?) {
         _state.update { cur ->
             val after = stateAfterReschedulingTask(

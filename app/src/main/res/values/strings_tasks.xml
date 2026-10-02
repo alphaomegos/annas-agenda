@@ -86,4 +86,9 @@
     <string name="edit_series_title">Edit repeating task</string>
     <string name="edit_series_from_today_hint">Changes from today. Days already past stay as they were.</string>
     <string name="recurring_rule_at_time">%1$s at %2$s</string>
+    <!-- Moving a day of a series: only it, or all after it (0135) -->
+    <string name="shift_series_title">Move the whole series?</string>
+    <string name="shift_series_text">“%1$s” repeats. Move every later occurrence by the same number of days, or only this one?</string>
+    <string name="shift_series_all">Whole series</string>
+    <string name="shift_series_only_this">Only this day</string>
 </resources>
