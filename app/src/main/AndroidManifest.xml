@@ -37,6 +37,19 @@
             </intent-filter>
         </activity>
 
+        <!-- AppCompat keeps the app's own language across processes only with this
+             (Android 12 and older; from 13 the system keeps it). Without it, a
+             notification or the widget drawn by a cold process spoke the phone's
+             language (review, 04.10). -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
         <receiver
             android:name=".NotificationAlarmReceiver"
             android:exported="false" />

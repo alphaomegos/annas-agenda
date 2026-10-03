@@ -120,7 +120,7 @@ class TodayTasksWidget : GlanceAppWidget() {
 
             val openToday = Intent(context, MainActivity::class.java)
                 .putExtra(EXTRA_OPEN_EPOCH_DAY, data.today.toEpochDay())
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
             GlanceTheme {
                 WidgetContent(data = data, openToday = openToday)
@@ -200,7 +200,7 @@ class ToggleTaskFromWidget : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val key = parameters[WidgetTaskKey] ?: return
         val app = context.applicationContext
-        val vm = LiveAppState.viewModel()
+        val vm = LiveAppState.viewModelOnceLoaded()
 
         if (vm != null) {
             withContext(Dispatchers.Main) { vm.toggleTaskFromWidget(key) }

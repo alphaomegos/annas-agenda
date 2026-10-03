@@ -179,6 +179,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun newId(): Long = nextId++
 
     init {
+        LiveAppState.loadingStarted()
         viewModelScope.launch {
             // **There is exactly one outcome this block is not allowed to
             // have: finishing without isLoaded becoming true.** That outcome
@@ -234,6 +235,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 )
             } finally {
                 _isLoaded.value = true
+                // Attached by beginAutoSaveOnce on success; on a failure
+                // nobody will be, and the widget must not wait for it.
+                LiveAppState.loadingEnded()
             }
         }
     }
@@ -1891,8 +1895,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** A food of the user's own on a library shelf; the portion is read out of the name. */
     fun addFoodLibraryUserItem(category: FoodCategory, typed: String, kcal: Int) {
         val cur = _state.value
-        if (typed.isBlank()) return
-        val item = foodLibraryUserItemFrom(newId(), category, typed, kcal) ?: return
+        // Parsed first, so a name that reads as nothing does not use up an id.
+        val parsed = foodLibraryUserItemFrom(0L, category, typed, kcal) ?: return
+        val item = parsed.copy(id = newId())
         _state.value = cur.copy(foodLibraryUserItems = cur.foodLibraryUserItems + item)
     }
 

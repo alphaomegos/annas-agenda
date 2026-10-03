@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.WidgetStyle
 import com.alphaomegos.annasagenda.WidgetTextColor
+import kotlin.math.roundToInt
 
 /**
  * How the home-screen widget looks (03.10): how see-through its backing is,
@@ -53,7 +54,8 @@ internal fun WidgetStyleDialog(
                 )
                 Slider(
                     value = percent.toFloat(),
-                    onValueChange = { percent = it.toInt() },
+                    // Rounded: the slider's snapping can hand back 69.9999 for 70.
+                    onValueChange = { percent = it.roundToInt() },
                     valueRange = 0f..100f,
                     steps = 9,
                 )

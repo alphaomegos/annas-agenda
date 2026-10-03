@@ -225,3 +225,39 @@ class NotificationRulesTest {
         assertNull(nextNotificationAt(state, morning, weekStart))
     }
 }
+
+/** Setting the alarm again must not drop one that was due and not yet delivered (review, 04.10). */
+class NotificationCatchUpTest {
+
+    private val now = LocalDateTime.of(2026, 10, 7, 8, 3)
+
+    @Test
+    fun anAlarmDueAMomentAgoIsLookedForAgainFromJustBeforeIt() {
+        assertEquals(now.withMinute(0).minusMinutes(1), notificationScheduleAfter(now, now.withMinute(0)))
+    }
+
+    @Test
+    fun anAlarmStillAheadOrNoneMeansLookingFromNow() {
+        assertEquals(now, notificationScheduleAfter(now, now.plusMinutes(10)))
+        assertEquals(now, notificationScheduleAfter(now, null))
+    }
+
+    /** Hours late is not news; a summary from the night before is dropped. */
+    @Test
+    fun anAlarmTooLongOverdueIsLetGo() {
+        assertEquals(now, notificationScheduleAfter(now, now.minusMinutes(NOTIFICATION_CATCH_UP_MINUTES + 1)))
+        assertEquals(
+            now.minusMinutes(NOTIFICATION_CATCH_UP_MINUTES + 1),
+            notificationScheduleAfter(now, now.minusMinutes(NOTIFICATION_CATCH_UP_MINUTES)),
+        )
+    }
+
+    /** The whole path: the 08:00 summary, opened at 08:03, is still the next alarm. */
+    @Test
+    fun theMissedSummaryIsStillTheNextAlarm() {
+        val state = AppState(notifications = NotificationSettings(summaryMinutes = listOf(8 * 60)))
+        val armed = now.withMinute(0)
+
+        assertEquals(armed, nextNotificationAt(state, notificationScheduleAfter(now, armed), DayOfWeek.MONDAY))
+    }
+}

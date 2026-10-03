@@ -197,3 +197,25 @@ fun reminderStillDue(state: AppState, event: ReminderEvent, weekStart: DayOfWeek
         notificationTaskKey(it) == event.taskKey && !it.isDone && it.time == event.time
     }
 }
+
+/** How late an alarm the phone had not yet delivered is still worth delivering. */
+const val NOTIFICATION_CATCH_UP_MINUTES = 120L
+
+/**
+ * Where to look for the next alarm from, when the alarm is set again from
+ * outside the receiver — the app opened, a task edited.
+ *
+ * The alarm is one PendingIntent, so setting it again replaces the one
+ * armed. If that one was due a few minutes ago and the phone, dozing, had
+ * not delivered it yet, looking only after "now" would drop it: the 08:00
+ * summary never comes because the app was opened at 08:03 (review, 04.10).
+ * So a due alarm, up to [NOTIFICATION_CATCH_UP_MINUTES] late, is looked for
+ * again from just before its own minute; it is set in the past and fires at
+ * once, and the receiver posts what fell between then and now.
+ */
+fun notificationScheduleAfter(now: LocalDateTime, armed: LocalDateTime?): LocalDateTime =
+    if (armed != null && !armed.isAfter(now) && !armed.isBefore(now.minusMinutes(NOTIFICATION_CATCH_UP_MINUTES))) {
+        armed.minusMinutes(1)
+    } else {
+        now
+    }

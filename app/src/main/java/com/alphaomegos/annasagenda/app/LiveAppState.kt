@@ -20,8 +20,37 @@ internal object LiveAppState {
     @Volatile
     private var ref: WeakReference<AppViewModel>? = null
 
+    // A view model is reading the state from disk and will hold it shortly.
+    // A widget tick in that window must wait for it: written to disk now, it
+    // would be overwritten by the state the view model already read (review,
+    // 04.10).
+    @Volatile
+    private var loading: Boolean = false
+
+    fun loadingStarted() {
+        loading = true
+    }
+
+    fun loadingEnded() {
+        loading = false
+    }
+
+    /**
+     * The view model, waiting up to [timeoutMs] if one is still loading.
+     * Null when there is none to wait for, or it did not arrive in time.
+     */
+    suspend fun viewModelOnceLoaded(timeoutMs: Long = 3_000L): AppViewModel? {
+        var waited = 0L
+        while (loading && ref?.get() == null && waited < timeoutMs) {
+            kotlinx.coroutines.delay(50L)
+            waited += 50L
+        }
+        return ref?.get()
+    }
+
     fun attach(vm: AppViewModel) {
         ref = WeakReference(vm)
+        loading = false
     }
 
     fun detach(vm: AppViewModel) {

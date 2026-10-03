@@ -97,19 +97,24 @@ internal fun scheduleNextNotification(
     context: Context,
     state: AppState,
     after: LocalDateTime = LocalDateTime.now(),
+    catchUp: Boolean = true,
 ) {
     val am = context.getSystemService(AlarmManager::class.java) ?: return
     val settings = state.notifications
     val anythingOn = settings.summaryMinutes.isNotEmpty() || settings.reminderLeadMinutes != null
     if (!anythingOn) {
         am.cancel(alarmIntent(context, null))
+        writeArmedMinute(context, null)
         return
     }
 
-    val next = nextNotificationAt(state, after, currentLocaleWeekStart())
+    // Not from the receiver: an alarm due and not yet delivered is kept.
+    val from = if (catchUp) notificationScheduleAfter(after, readArmedMinute(context)) else after
+    val next = nextNotificationAt(state, from, currentLocaleWeekStart())
     val fireAt = next ?: after.plusDays(1)
     val millis = fireAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
     val pending = alarmIntent(context, next)
+    writeArmedMinute(context, next)
 
     val exact = if (Build.VERSION.SDK_INT >= 31) am.canScheduleExactAlarms() else true
     try {
@@ -122,6 +127,21 @@ internal fun scheduleNextNotification(
         // The exact-alarm permission was taken away between the check and the call.
         am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pending)
     }
+}
+
+/** The minute the one alarm is set for, kept beside it; see notificationScheduleAfter. */
+private const val ALARM_PREFS = "notification_alarm"
+private const val ARMED_MINUTE = "armed_minute"
+
+private fun readArmedMinute(context: Context): LocalDateTime? {
+    val m = context.getSharedPreferences(ALARM_PREFS, Context.MODE_PRIVATE).getLong(ARMED_MINUTE, -1L)
+    return if (m < 0) null else localDateTimeOfEpochMinute(m)
+}
+
+private fun writeArmedMinute(context: Context, at: LocalDateTime?) {
+    context.getSharedPreferences(ALARM_PREFS, Context.MODE_PRIVATE).edit()
+        .putLong(ARMED_MINUTE, at?.toLocalEpochMinute() ?: -1L)
+        .apply()
 }
 
 /** Reads the saved state and sets the alarm from it: after a reboot, an update, a clock change. */
@@ -142,8 +162,9 @@ internal fun rescheduleNotificationsFromDisk(context: Context, onDone: () -> Uni
 /**
  * The context to read the notification's words from: in the app's own
  * language, not the phone's. From Android 13 the system already gives the
- * application that language; before it, AppCompat keeps it and the
- * application context does not know.
+ * application that language; before it, AppCompat keeps it — across
+ * processes only because the manifest declares its
+ * AppLocalesMetadataHolderService with autoStoreLocales (0155).
  */
 internal fun inAppLanguage(context: Context): Context {
     if (Build.VERSION.SDK_INT >= 33) return context
@@ -156,7 +177,9 @@ internal fun inAppLanguage(context: Context): Context {
 
 private fun openAppIntent(context: Context): PendingIntent? {
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
-    launch.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    // SINGLE_TOP: an open app gets onNewIntent rather than being finished and
+    // rebuilt, which would drop its back stack and an autosave in flight.
+    launch.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
     return PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 }
 
@@ -242,7 +265,8 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                         .forEach { postReminder(words, it) }
                     after = maxOf(now, at)
                 }
-                scheduleNextNotification(app, state, after)
+                // Everything up to here was just posted: no catching up.
+                scheduleNextNotification(app, state, after, catchUp = false)
             } catch (e: Throwable) {
                 // A receiver that throws is killed with the process; nothing to tell anybody.
             } finally {

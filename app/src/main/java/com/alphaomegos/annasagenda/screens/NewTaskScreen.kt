@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -232,6 +233,9 @@ fun NewTaskScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(inner)
+                // The bar insets inner already paid for are not paid again
+                // by the keyboard's, which includes them.
+                .consumeWindowInsets(inner)
                 // The keyboard takes its height off the form, which scrolls
                 // and keeps the field being typed in on screen.
                 .imePadding()
@@ -408,7 +412,7 @@ fun NewTaskScreen(
                     ColorDot(
                         colorArgb = subtask.colorArgb,
                         onClick = {
-                            subtasks[i] = subtask.copy(
+                            if (i < subtasks.size) subtasks[i] = subtask.copy(
                                 colorArgb = nextPaletteColor(subtask.colorArgb),
                                 colorOverridden = true,
                             )
@@ -418,14 +422,15 @@ fun NewTaskScreen(
                     OutlinedTextField(
                         value = subtask.description,
                         onValueChange = { newText ->
-                            subtasks[i] = subtask.copy(description = newText)
+                            if (i < subtasks.size) subtasks[i] = subtask.copy(description = newText)
                         },
                         label = { Text(stringResource(R.string.subtask_label, i + 1)) },
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         singleLine = true,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(onClick = { subtasks.removeAt(i) }) {
+                    // Guarded: two quick taps on the last row's cross arrive with one index.
+                    IconButton(onClick = { if (i < subtasks.size) subtasks.removeAt(i) }) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove))
                     }
                 }
