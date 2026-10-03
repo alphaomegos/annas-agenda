@@ -27,14 +27,11 @@
     <string name="next_month">Ae e na roko</string>
     <string name="new_task_title">Karaoa te beku</string>
     <string name="task_description_label">Taeka ni beku</string>
-    <string name="someday_tag">Someday</string>
     <string name="subtasks_title">Beku kekere</string>
-    <string name="no_subtasks_yet">Akea ni beku kekere aei</string>
     <string name="subtask_label">Beku kekere %1$d</string>
     <string name="add_subtask">Ikotaki te beku kekere</string>
     <string name="save_task">Tatabuia</string>
     <string name="move_subtask">Kamakuria te beku kekere i…</string>
-    <string name="task_color">Kala ni beku</string>
     <string name="subtask_color">Kala ni beku kekere</string>
     <string name="remove">Bubuta</string>
     <string name="repeat_daily_every_day">Bongi nako</string>
@@ -67,9 +64,7 @@
     <string name="reset_data_menu">Reset data</string>
     <string name="delete_repeating_task_title">Bubuta te beku ae e okiokira?</string>
     <string name="delete_repeating_task_text">A na bubuta te beku mai te bong aei ao n te bong ae e na roko. Te bong ae e nako a na noro n history.</string>
-    <string name="when_label">N tai ra</string>
     <string name="pick_date">Akaka te date</string>
-    <string name="selected_label">E akaka:</string>
     <string name="create_task_for_this_day">Karaoa te beku ibukin te bong aei</string>
     <string name="no_tasks_for_this_day">Akea ni beku ibukin te bong aei</string>
     <string name="tasks_header">Beku</string>
@@ -147,7 +142,6 @@
     <string name="running_task_minutes">Aroro %1$d minit</string>
     <string name="counters_title">Kaotioti</string>
     <string name="attach_counter">Tia te kaotioti</string>
-    <string name="counter_not_attached">E aki bitaki te kaotioti</string>
     <string name="no_counter">Tii te kaotioti</string>
     <string name="no_counters_yet">Ti aki kona te kaotioti</string>
     <string name="add_counter">Kabin te kaotioti</string>

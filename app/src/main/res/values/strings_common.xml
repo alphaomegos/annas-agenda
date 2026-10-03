@@ -12,7 +12,6 @@
     <string name="remove">Remove</string>
     <string name="back">Back</string>
     <string name="pick_date">Pick date</string>
-    <string name="selected_label">Selected:</string>
     <string name="invalid_number">Invalid number</string>
 
     <!-- Spoken names for buttons that are only an icon. A tappable icon with

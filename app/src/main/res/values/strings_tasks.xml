@@ -3,13 +3,10 @@
     <!-- Task creation / editing -->
     <string name="new_task_title">Create task</string>
     <string name="task_description_label">Task description</string>
-    <string name="when_label">When</string>
     <string name="create_no_date">No date</string>
     <string name="create_today">Today</string>
     <string name="create_tomorrow">Tomorrow</string>
-    <string name="someday_tag">Someday</string>
     <string name="save_task">Save</string>
-    <string name="task_color">Task color</string>
     <string name="subtask_color">Subtask color</string>
     <string name="move_task">Move task</string>
     <string name="move_task_up">Move task up</string>
@@ -23,7 +20,6 @@
 
     <!-- Subtasks -->
     <string name="subtasks_title">Subtasks</string>
-    <string name="no_subtasks_yet">No subtasks yet</string>
     <string name="subtask_label">Subtask %1$d</string>
     <string name="add_subtask">Add subtask</string>
     <string name="move_subtask">Move subtask to…</string>
@@ -128,4 +124,10 @@
     <string name="widget_text_white">White</string>
     <string name="widget_text_black">Black</string>
     <string name="widget_style_checks">Ticked box</string>
+    <!-- Compact new task form (0152) -->
+    <string name="new_task_date_chip">Date</string>
+    <string name="new_task_time_chip">Time</string>
+    <string name="new_task_color_short">Colour</string>
+    <string name="new_task_counter_attached">Counter: %1$s</string>
+    <string name="new_task_add_subtask_short">+ Add</string>
 </resources>

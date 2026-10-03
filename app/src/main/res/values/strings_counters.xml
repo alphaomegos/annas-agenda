@@ -2,7 +2,6 @@
 <resources>
     <!-- Counters -->
     <string name="attach_counter">Attach counter</string>
-    <string name="counter_not_attached">No counter</string>
     <string name="no_counter">No counter</string>
     <string name="no_counters_yet">No counters yet</string>
     <string name="add_counter">Add counter</string>

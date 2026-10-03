@@ -12,7 +12,6 @@
     <string name="remove">Убрать</string>
     <string name="back">Назад</string>
     <string name="pick_date">Выбрать дату</string>
-    <string name="selected_label">Выбрано:</string>
     <string name="invalid_number">Неверное число</string>
 
     <!-- Main menu -->
@@ -81,13 +80,10 @@
     <!-- Task creation / editing -->
     <string name="new_task_title">Создать задачу</string>
     <string name="task_description_label">Описание задачи</string>
-    <string name="when_label">Когда</string>
     <string name="create_no_date">Без даты</string>
     <string name="create_today">Сегодня</string>
     <string name="create_tomorrow">Завтра</string>
-    <string name="someday_tag">Однажды</string>
     <string name="save_task">Сохранить</string>
-    <string name="task_color">Цвет задачи</string>
     <string name="subtask_color">Цвет подзадачи</string>
     <string name="move_task">Переместить</string>
     <string name="move_task_up">Переместить задачу выше</string>
@@ -104,7 +100,6 @@
 
     <!-- Subtasks -->
     <string name="subtasks_title">Подзадачи</string>
-    <string name="no_subtasks_yet">Подзадач пока нет</string>
     <string name="subtask_label">Подзадача %1$d</string>
     <string name="add_subtask">Добавить подзадачу</string>
     <string name="move_subtask">Переместить подзадачу в…</string>
@@ -217,7 +212,6 @@
 
     <!-- Counters -->
     <string name="attach_counter">Прикрепить счётчик</string>
-    <string name="counter_not_attached">Счётчик не прикреплён</string>
     <string name="no_counter">Нет счётчика</string>
     <string name="no_counters_yet">Счётчиков пока нет</string>
     <string name="add_counter">Добавить счётчик</string>
@@ -571,4 +565,10 @@
     <string name="widget_text_white">Белый</string>
     <string name="widget_text_black">Чёрный</string>
     <string name="widget_style_checks">Галочка</string>
+    <!-- Compact new task form (0152) -->
+    <string name="new_task_date_chip">Дата</string>
+    <string name="new_task_time_chip">Время</string>
+    <string name="new_task_color_short">Цвет</string>
+    <string name="new_task_counter_attached">Счётчик: %1$s</string>
+    <string name="new_task_add_subtask_short">+ Добавить</string>
 </resources>

@@ -13,14 +13,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
+import com.alphaomegos.annasagenda.util.appLocale
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,8 +57,6 @@ import com.alphaomegos.annasagenda.R
 import java.time.LocalDate
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import com.alphaomegos.annasagenda.NewTaskDraft
@@ -176,294 +182,254 @@ fun NewTaskScreen(
         )
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding()
-            // The keyboard takes its height off the screen, and the form
-            // rises above it instead of hiding under it (03.10).
-            .imePadding()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
-    ) {
+    val today = remember { LocalDate.now() }
+    val tomorrow = today.plusDays(1)
+    val locale = appLocale()
+    val canSave = description.trim().isNotBlank()
+
+    fun save() {
+        val cleanSubtasks = subtasks.map { it.description.trim() }
+        val taskId = vm.createTaskForDate(
+            date = selectedDate,
+            // A time chosen and then the day taken away (Someday) is no
+            // time: there is no day to hold it.
+            time = if (selectedDate != null) selectedTime else null,
+            description = description.trim(),
+            colorArgb = taskColor,
+            linkedManualCounterId = linkedManualCounterId,
+            hasSubtasks = cleanSubtasks.any { it.isNotBlank() }
+        )
+        cleanSubtasks.forEachIndexed { idx, txt ->
+            if (txt.isNotBlank()) {
+                val subColor = subtasks.getOrNull(idx)?.colorArgb ?: taskColor
+                vm.createSubtask(taskId, txt, colorArgb = subColor)
+            }
+        }
+        vm.clearNewTaskDraft()
+        onBack()
+    }
+
+    // 03.10, "as in serious apps": the two actions in the top bar, where the
+    // keyboard never covers them; the day as a row of chips that shows which
+    // one is chosen (so no "Selected: 2026-10-03" line); no headings over
+    // things whose buttons already say what they are.
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.new_task_title)) },
+                navigationIcon = {
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                },
+                actions = {
+                    TextButton(onClick = { save() }, enabled = canSave) {
+                        Text(stringResource(R.string.save_task))
+                    }
+                },
+            )
+        },
+    ) { inner ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                // Taller than what the keyboard leaves: it scrolls, and the
-                // field being typed in is brought into view. The bottom gap
-                // keeps the last row clear of the Back button.
+                .fillMaxSize()
+                .padding(inner)
+                // The keyboard takes its height off the form, which scrolls
+                // and keeps the field being typed in on screen.
+                .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 56.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                stringResource(R.string.new_task_title),
-                style = MaterialTheme.typography.headlineSmall
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(stringResource(R.string.when_label), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-
+            // The day: three fixed choices, then any other day and the time.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Button(
+                NewTaskChip(
+                    label = stringResource(R.string.create_no_date),
+                    selected = selectedDate == null,
                     onClick = { selectedDate = null },
-                    modifier = Modifier.weight(1f)
-                ) { Text(stringResource(R.string.create_no_date)) }
-
-                Button(
-                    onClick = { selectedDate = LocalDate.now() },
-                    modifier = Modifier.weight(1f)
-                ) { Text(stringResource(R.string.create_today)) }
-
-                Button(
-                    onClick = { selectedDate = LocalDate.now().plusDays(1) },
-                    modifier = Modifier.weight(1f)
-                ) { Text(stringResource(R.string.create_tomorrow)) }
+                    modifier = Modifier.weight(1f),
+                )
+                NewTaskChip(
+                    label = stringResource(R.string.create_today),
+                    selected = selectedDate == today,
+                    onClick = { selectedDate = today },
+                    modifier = Modifier.weight(1f),
+                )
+                NewTaskChip(
+                    label = stringResource(R.string.create_tomorrow),
+                    selected = selectedDate == tomorrow,
+                    onClick = { selectedDate = tomorrow },
+                    modifier = Modifier.weight(1f),
+                )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.pick_date))
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Only a task with a day can have a time; the button waits for one.
+            val otherDay = selectedDate?.takeIf { it != today && it != tomorrow }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                OutlinedButton(
-                    onClick = { showTimePicker = true },
+                NewTaskChip(
+                    // A day other than the three above names itself here.
+                    label = otherDay?.let { formatNewTaskDay(it, locale) }
+                        ?: stringResource(R.string.new_task_date_chip),
+                    selected = otherDay != null,
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.weight(1f),
+                )
+                // Only a task with a day can have a time.
+                NewTaskChip(
+                    label = selectedTime?.let { formatTaskTime(it) }
+                        ?: stringResource(R.string.new_task_time_chip),
+                    selected = selectedTime != null && selectedDate != null,
                     enabled = selectedDate != null,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        if (selectedTime == null) {
-                            stringResource(R.string.set_task_time)
-                        } else {
-                            stringResource(R.string.task_time_fmt, formatTaskTime(selectedTime))
-                        }
-                    )
-                }
-
-                if (selectedTime != null) {
-                    TextButton(onClick = { selectedTimeMinute = null }) {
-                        Text(stringResource(R.string.clear_task_time))
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.weight(1f),
+                )
+                if (selectedTime != null && selectedDate != null) {
+                    IconButton(onClick = { selectedTimeMinute = null }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear_task_time))
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Column {
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text(stringResource(R.string.task_description_label)) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-            Text(
-                text = "${stringResource(R.string.selected_label)} ${
-                    selectedDate?.toString() ?: stringResource(
-                        R.string.someday_tag
+                // Keyed on the typed text and nothing else: the history cannot
+                // change while this screen is open, so there is nothing to
+                // subscribe to and no reason to look again until the text moves.
+                val suggestions = remember(description) { vm.taskSuggestions(description) }
+
+                if (suggestions.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TaskSuggestionList(
+                        suggestions = suggestions,
+                        onPick = { picked ->
+                            description = picked.description
+
+                            val merged = subtasksAfterApplyingSuggestion(
+                                current = subtasks.toList(),
+                                suggested = picked.subtaskDescriptions,
+                                maxSubtasks = maxSubtasks,
+                                defaultColor = taskColor,
+                            )
+
+                            subtasks.clear()
+                            subtasks.addAll(merged)
+                        },
                     )
-                }",
-                style = MaterialTheme.typography.labelMedium
-            )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // The colour: the word and the dots on one line; the dots scroll
+            // sideways on a narrow screen rather than wrapping.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.new_task_color_short),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    ColorPickerRow(
+                        selected = taskColor,
+                        onSelect = { newColor ->
+                            taskColor = newColor
 
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text(stringResource(R.string.task_description_label)) },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+                            val updated = applyTaskColorToNonOverriddenSubtasks(
+                                subtasks = subtasks.toList(),
+                                taskColor = newColor,
+                            )
+                            subtasks.clear()
+                            subtasks.addAll(updated)
+                        }
+                    )
+                }
+            }
 
-            // Keyed on the typed text and nothing else: the history cannot
-            // change while this screen is open, so there is nothing to
-            // subscribe to and no reason to look again until the text moves.
-            val suggestions = remember(description) { vm.taskSuggestions(description) }
-
-            if (suggestions.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                TaskSuggestionList(
-                    suggestions = suggestions,
-                    onPick = { picked ->
-                        description = picked.description
-
-                        val merged = subtasksAfterApplyingSuggestion(
-                            current = subtasks.toList(),
-                            suggested = picked.subtaskDescriptions,
-                            maxSubtasks = maxSubtasks,
-                            defaultColor = taskColor,
-                        )
-
-                        subtasks.clear()
-                        subtasks.addAll(merged)
-                    },
+            // A counter only where there is one to attach; the button says
+            // what is attached, so it needs no heading and no "not attached".
+            if (manualCounters.isNotEmpty()) {
+                NewTaskChip(
+                    label = selectedCounterTitle
+                        ?.let { stringResource(R.string.new_task_counter_attached, it) }
+                        ?: stringResource(R.string.attach_counter),
+                    selected = selectedCounterTitle != null,
+                    onClick = { showCounterPicker.value = true },
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(stringResource(R.string.task_color), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            ColorPickerRow(
-                selected = taskColor,
-                onSelect = { newColor ->
-                    taskColor = newColor
-
-                    val updated = applyTaskColorToNonOverriddenSubtasks(
-                        subtasks = subtasks.toList(),
-                        taskColor = newColor,
-                    )
-                    subtasks.clear()
-                    subtasks.addAll(updated)
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(stringResource(R.string.attach_counter), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = { showCounterPicker.value = true },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = manualCounters.isNotEmpty()
-            ) {
-                Text(selectedCounterTitle ?: stringResource(R.string.counter_not_attached))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
+            // Subtasks: the heading carries the count and the add button.
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     stringResource(R.string.subtasks_title),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleSmall,
                 )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "${subtasks.size}/$maxSubtasks",
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (subtasks.isEmpty()) {
-                Text(stringResource(R.string.no_subtasks_yet))
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 260.dp)
-                ) {
-                    items(subtasks.size) { i ->
-                        val subtask = subtasks[i]
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ColorDot(
-                                colorArgb = subtask.colorArgb,
-                                onClick = {
-                                    subtasks[i] = subtask.copy(
-                                        colorArgb = nextPaletteColor(subtask.colorArgb),
-                                        colorOverridden = true,
-                                    )
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            OutlinedTextField(
-                                value = subtask.description,
-                                onValueChange = { newText ->
-                                    subtasks[i] = subtask.copy(description = newText)
-                                },
-                                label = { Text(stringResource(R.string.subtask_label, i + 1)) },
-                                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                                singleLine = true,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            TextButton(onClick = {
-                                subtasks.removeAt(i)
-                            }) {
-                                Text(stringResource(R.string.remove))
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(
                     onClick = {
                         if (subtasks.size < maxSubtasks) {
                             subtasks.add(newEditableSubtask(taskColor))
                         }
                     },
                     enabled = subtasks.size < maxSubtasks,
-                    modifier = Modifier.weight(1f)
                 ) {
-                    Text(stringResource(R.string.add_subtask))
-                }
-
-                Button(
-                    onClick = {
-                        val cleanSubtasks = subtasks.map { it.description.trim() }
-                        val taskId = vm.createTaskForDate(
-                            date = selectedDate,
-                            // A time chosen and then the day taken away
-                            // (Someday) is no time: there is no day to hold it.
-                            time = if (selectedDate != null) selectedTime else null,
-                            description = description.trim(),
-                            colorArgb = taskColor,
-                            linkedManualCounterId = linkedManualCounterId,
-                            hasSubtasks = cleanSubtasks.any { it.isNotBlank() }
-                        )
-                        cleanSubtasks.forEachIndexed { idx, txt ->
-                            if (txt.isNotBlank()) {
-                                val subColor = subtasks.getOrNull(idx)?.colorArgb ?: taskColor
-                                vm.createSubtask(taskId, txt, colorArgb = subColor)
-                            }
-                        }
-                        vm.clearNewTaskDraft()
-                        onBack()
-                    },
-                    enabled = description.trim().isNotBlank(),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.save_task))
+                    Text(stringResource(R.string.new_task_add_subtask_short))
                 }
             }
-        }
-        OutlinedButton(
-            onClick = onBack,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-        ) {
-            Text(stringResource(R.string.back))
+
+            // A plain column: the whole form scrolls, and thirty rows is the most there can be.
+            subtasks.forEachIndexed { i, subtask ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ColorDot(
+                        colorArgb = subtask.colorArgb,
+                        onClick = {
+                            subtasks[i] = subtask.copy(
+                                colorArgb = nextPaletteColor(subtask.colorArgb),
+                                colorOverridden = true,
+                            )
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    OutlinedTextField(
+                        value = subtask.description,
+                        onValueChange = { newText ->
+                            subtasks[i] = subtask.copy(description = newText)
+                        },
+                        label = { Text(stringResource(R.string.subtask_label, i + 1)) },
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { subtasks.removeAt(i) }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove))
+                    }
+                }
+            }
         }
 
         if (showTimePicker) {
@@ -491,6 +457,42 @@ fun NewTaskScreen(
         }
     }
 }
+
+/**
+ * One choice on the new-task form, all of them the same shape (03.10): a
+ * chip as tall as a button needs to be and no taller, filled when chosen.
+ * The words keep the button's size; only the padding around them went.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NewTaskChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        enabled = enabled,
+        label = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        modifier = modifier.height(40.dp),
+    )
+}
+
+/** A day on its chip: "12 окт.", "12 Oct" — short, in the app's language. */
+private fun formatNewTaskDay(date: LocalDate, locale: java.util.Locale): String =
+    date.format(java.time.format.DateTimeFormatter.ofPattern("d MMM", locale))
 
 /**
  * Keeps the half-typed subtask list across a rotation.

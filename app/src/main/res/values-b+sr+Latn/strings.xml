@@ -29,14 +29,11 @@
     <string name="new_task_title">Kreiraj zadatak</string>                        setAppLanguage(ctx, "sr-Latn")
 
     <string name="task_description_label">Opis zadatka</string>
-    <string name="someday_tag">Jednog dana</string>
     <string name="subtasks_title">Podzadaci</string>
-    <string name="no_subtasks_yet">Još nema podzadataka</string>
     <string name="subtask_label">Podzadatak %1$d</string>
     <string name="add_subtask">Dodaj podzadatak</string>
     <string name="save_task">Sačuvaj</string>
     <string name="move_subtask">Premesti podzadatak u zadatak</string>
-    <string name="task_color">Boja zadatka</string>
     <string name="subtask_color">Boja podzadatka</string>
     <string name="remove">Ukloni</string>
     <string name="repeat_daily_every_day">Svaki dan</string>
@@ -84,9 +81,7 @@
     <string name="reset_data_menu">Resetuj podatke</string>
     <string name="delete_repeating_task_title">Obrisati ponavljajući zadatak?</string>
     <string name="delete_repeating_task_text">Ovo će ukloniti zadatak od danas i za sve buduće dane. Prošli dani ostaju kao istorija.</string>
-    <string name="when_label">Kada</string>
     <string name="pick_date">Izaberi datum</string>
-    <string name="selected_label">Izabrano:</string>
     <string name="create_task_for_this_day">Kreiraj zadatak za ovaj dan</string>
     <string name="no_tasks_for_this_day">Nema zadataka za ovaj dan</string>
     <string name="tasks_header">Zadaci</string>
@@ -151,7 +146,6 @@
     <string name="running_task_minutes">Trening %1$d minuta</string>
     <string name="counters_title">Brojači</string>
     <string name="attach_counter">Priključi brojač</string>
-    <string name="counter_not_attached">Brojač nije priključen</string>
     <string name="no_counter">Nema brojača</string>
     <string name="no_counters_yet">Još nema brojača</string>
     <string name="add_counter">Dodaj brojač</string>
@@ -430,4 +424,10 @@
     <string name="widget_text_white">Beli</string>
     <string name="widget_text_black">Crni</string>
     <string name="widget_style_checks">Štiklirano polje</string>
+    <!-- Compact new task form (0152) -->
+    <string name="new_task_date_chip">Datum</string>
+    <string name="new_task_time_chip">Vreme</string>
+    <string name="new_task_color_short">Boja</string>
+    <string name="new_task_counter_attached">Brojač: %1$s</string>
+    <string name="new_task_add_subtask_short">+ Dodaj</string>
 </resources>
