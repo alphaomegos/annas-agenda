@@ -18,9 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import com.alphaomegos.annasagenda.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +40,12 @@ import androidx.compose.ui.unit.dp
  * word can take.
  */
 internal enum class MenuTileLabel { Regular, Small }
+
+/** A section not there yet: its picture in grey, a little faded. */
+internal val comingSoonIconFilter: ColorFilter =
+    ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+
+internal const val COMING_SOON_ICON_ALPHA = 0.6f
 
 /**
  * A card with a picture filling it and a caption underneath.
@@ -58,12 +69,16 @@ internal fun MenuTile(
     enabled: Boolean = true,
     label: MenuTileLabel = MenuTileLabel.Regular,
     onLongClick: (() -> Unit)? = null,
+    comingSoon: Boolean = false,
 ) {
     val small = label == MenuTileLabel.Small
 
     val shape = RoundedCornerShape(22.dp)
     val colorsEnabled = CardDefaults.elevatedCardColors(
         containerColor = MaterialTheme.colorScheme.surface
+    )
+    val colorsComingSoon = CardDefaults.elevatedCardColors(
+        containerColor = MaterialTheme.colorScheme.surfaceVariant
     )
     val colorsDisabled = CardDefaults.elevatedCardColors(
         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
@@ -86,9 +101,11 @@ internal fun MenuTile(
                 Image(
                     painter = painterResource(iconRes),
                     contentDescription = null,
+                    colorFilter = if (comingSoon) comingSoonIconFilter else null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(if (small) 2.dp else 6.dp),
+                        .padding(if (small) 2.dp else 6.dp)
+                        .alpha(if (comingSoon) COMING_SOON_ICON_ALPHA else 1f),
                     contentScale = ContentScale.Fit
                 )
             }
@@ -105,8 +122,19 @@ internal fun MenuTile(
                 textAlign = TextAlign.Center,
                 maxLines = if (small) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
+                color = if (comingSoon) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
                 modifier = Modifier.fillMaxWidth()
             )
+            if (comingSoon) {
+                Text(
+                    text = stringResource(R.string.menu_coming_soon),
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 
@@ -121,20 +149,20 @@ internal fun MenuTile(
                 )
             },
             shape = shape,
-            colors = colorsEnabled
+            colors = if (comingSoon) colorsComingSoon else colorsEnabled
         ) { content() }
 
         enabled && click != null -> ElevatedCard(
             onClick = click,
             modifier = modifier,
             shape = shape,
-            colors = colorsEnabled
+            colors = if (comingSoon) colorsComingSoon else colorsEnabled
         ) { content() }
 
         else -> ElevatedCard(
             modifier = modifier,
             shape = shape,
-            colors = if (enabled) colorsEnabled else colorsDisabled
+            colors = if (!enabled) colorsDisabled else if (comingSoon) colorsComingSoon else colorsEnabled
         ) { content() }
     }
 }

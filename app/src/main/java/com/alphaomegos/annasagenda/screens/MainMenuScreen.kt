@@ -85,6 +85,8 @@ import com.alphaomegos.annasagenda.undoneLampFor
 import com.alphaomegos.annasagenda.undoneLampIconRes
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
+import com.alphaomegos.annasagenda.components.COMING_SOON_ICON_ALPHA
+import com.alphaomegos.annasagenda.components.comingSoonIconFilter
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
 import com.alphaomegos.annasagenda.NotificationSettings
 import com.alphaomegos.annasagenda.util.BackupImportPayload
@@ -111,6 +113,9 @@ internal data class MenuEntry(
     val iconRes: Int,
     val titleRes: Int,
     val onClick: () -> Unit,
+    // A section that exists only as a promise: grey, "Coming soon", a tap
+    // does nothing. It can still be moved and hidden like any other.
+    val comingSoon: Boolean = false,
 )
 
 @Composable
@@ -319,6 +324,10 @@ private fun rememberMainMenuEntries(
             MenuEntry("running", R.drawable.ic_menu_running, R.string.running_title, onRunning),
             MenuEntry("counters", R.drawable.ic_menu_counters, R.string.counters_title, onCounters),
             MenuEntry("reading", R.drawable.ic_menu_reading, R.string.menu_reading, onMediaLibrary),
+            // Coming soon (0147). The pictures are the real ones, drawn grey
+            // until the sections exist.
+            MenuEntry("metro", R.drawable.ic_menu_metro, R.string.menu_metro, onClick = {}, comingSoon = true),
+            MenuEntry("travel", R.drawable.ic_menu_travel, R.string.menu_travel, onClick = {}, comingSoon = true),
         )
     }
 }
@@ -923,6 +932,7 @@ private fun MainMenuList(
                 MenuRowCard(
                     iconRes = item.iconRes,
                     title = stringResource(item.titleRes),
+                    comingSoon = item.comingSoon,
                     reorderMode = reorderMode,
                     isDragging = isDragging,
                     canMoveUp = index > 0,
@@ -975,6 +985,7 @@ private fun ResetDataDialog(
 private fun MenuRowCard(
     iconRes: Int,
     title: String,
+    comingSoon: Boolean,
     reorderMode: Boolean,
     isDragging: Boolean,
     canMoveUp: Boolean,
@@ -1014,11 +1025,20 @@ private fun MenuRowCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = if (comingSoon) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+                )
+                if (comingSoon) {
+                    Text(
+                        text = stringResource(R.string.menu_coming_soon),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
 
             if (reorderMode) {
                 Row(
@@ -1063,7 +1083,10 @@ private fun MenuRowCard(
             Image(
                 painter = painterResource(iconRes),
                 contentDescription = null,
-                modifier = Modifier.size(MENU_ICON_SIZE_DP.dp)
+                colorFilter = if (comingSoon) comingSoonIconFilter else null,
+                modifier = Modifier
+                    .size(MENU_ICON_SIZE_DP.dp)
+                    .alpha(if (comingSoon) COMING_SOON_ICON_ALPHA else 1f)
             )
         }
     }

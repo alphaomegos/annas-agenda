@@ -15,4 +15,8 @@
     <string name="move_menu_item_up">Move menu item up</string>
     <string name="move_menu_item_down">Move menu item down</string>
     <string name="hide_menu_item">Hide menu item</string>
+    <!-- Coming soon (0147) -->
+    <string name="menu_metro">Metro</string>
+    <string name="menu_travel">Travel</string>
+    <string name="menu_coming_soon">Coming soon</string>
 </resources>

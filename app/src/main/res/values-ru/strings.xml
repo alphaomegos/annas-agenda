@@ -558,4 +558,7 @@
     <string name="widget_today_title">Сегодня, %1$s</string>
     <string name="widget_today_label">Задачи на сегодня</string>
     <string name="widget_nothing_today">На сегодня ничего не запланировано.</string>
+    <!-- Coming soon (0147) -->
+    <string name="menu_metro">Метро</string>
+    <string name="menu_travel">Путешествия</string>
 </resources>

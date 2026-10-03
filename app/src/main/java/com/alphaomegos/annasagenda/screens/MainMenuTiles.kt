@@ -205,6 +205,7 @@ internal fun MainMenuTiles(
                         iconRes = item.iconRes,
                         title = stringResource(item.titleRes),
                         onClick = if (reorderMode) null else item.onClick,
+                        comingSoon = item.comingSoon,
                         label = MenuTileLabel.Small,
                         onLongClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
