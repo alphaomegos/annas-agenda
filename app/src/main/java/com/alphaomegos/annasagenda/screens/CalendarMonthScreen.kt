@@ -348,7 +348,7 @@ private fun CalendarMonthContent(
 
 /** 6.3: which marks the calendar shows. Written on OK; survives turning the phone. */
 @Composable
-private fun CalendarBadgesDialog(
+internal fun CalendarBadgesDialog(
     initial: Set<CalendarBadge>,
     onDismiss: () -> Unit,
     onSave: (Set<CalendarBadge>) -> Unit,

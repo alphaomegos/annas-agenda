@@ -20,4 +20,12 @@
     <string name="finish_reordering">Done reordering</string>
     <string name="anthropometry_settings_open">Measurement settings</string>
     <string name="reading_item_actions">Actions for this item</string>
+    <!-- Settings screen (0154) -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_section_screens">Sections</string>
+    <string name="settings_on">On</string>
+    <string name="settings_off">Off</string>
+    <string name="settings_calorimeter_hint">Summaries, diet, food library</string>
+    <string name="settings_anthropometry_hint">Measurements, forecast, list</string>
 </resources>

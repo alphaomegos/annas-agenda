@@ -70,7 +70,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.alphaomegos.annasagenda.AppThemeMode
 import com.alphaomegos.annasagenda.ImportMessage
 import com.alphaomegos.annasagenda.ImportOutcome
 import com.alphaomegos.annasagenda.importMessageFor
@@ -84,13 +83,8 @@ import com.alphaomegos.annasagenda.withItemMoved
 import com.alphaomegos.annasagenda.undoneLampFor
 import com.alphaomegos.annasagenda.undoneLampIconRes
 import com.alphaomegos.annasagenda.components.ConfirmDialog
-import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.components.COMING_SOON_ICON_ALPHA
 import com.alphaomegos.annasagenda.components.comingSoonIconFilter
-import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
-import com.alphaomegos.annasagenda.NotificationSettings
-import com.alphaomegos.annasagenda.WidgetStyle
-import com.alphaomegos.annasagenda.components.WidgetStyleDialog
 import com.alphaomegos.annasagenda.util.BackupImportPayload
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.readBackupImportPayload
@@ -134,6 +128,7 @@ fun MainMenuScreen(
     onCounters: () -> Unit,
     onMediaLibrary: () -> Unit,
     onUndone: () -> Unit,
+    onSettings: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -249,12 +244,7 @@ fun MainMenuScreen(
         onHideMenuItem = vm::hideMainMenuItem,
         onShowAllMenuItems = vm::showAllMainMenuItems,
         onLanguage = onLanguage,
-        themeMode = state.themeMode,
-        onThemeModeChange = vm::setThemeMode,
-        notifications = state.notifications,
-        onNotificationsChange = vm::setNotificationSettings,
-        widgetStyle = state.widgetStyle,
-        onWidgetStyleChange = vm::setWidgetStyle,
+        onSettings = onSettings,
         onUndone = onUndone,
         onExport = {
             scope.launch {
@@ -352,13 +342,8 @@ internal fun MainMenuContent(
     onHideMenuItem: (String) -> Unit,
     onShowAllMenuItems: () -> Unit,
     onLanguage: () -> Unit,
-    themeMode: AppThemeMode,
-    onThemeModeChange: (AppThemeMode) -> Unit,
-    // Defaulted so the tests that draw the menu need not know about them.
-    notifications: NotificationSettings = NotificationSettings(),
-    onNotificationsChange: (NotificationSettings) -> Unit = {},
-    widgetStyle: WidgetStyle = WidgetStyle(),
-    onWidgetStyleChange: (WidgetStyle) -> Unit = {},
+    // Defaulted so the tests that draw the menu need not know about it.
+    onSettings: () -> Unit = {},
     onUndone: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -367,13 +352,6 @@ internal fun MainMenuContent(
     var dataMenuExpanded by remember { mutableStateOf(false) }
     var reorderMode by rememberSaveable { mutableStateOf(false) }
     val confirmReset = rememberSaveable { mutableStateOf(false) }
-    val showThemeDialog = rememberSaveable { mutableStateOf(false) }
-    val showNotificationsDialog = rememberSaveable { mutableStateOf(false) }
-    val showWidgetDialog = rememberSaveable { mutableStateOf(false) }
-    // Here rather than in the dialog: the dialog closes on OK, before the answer.
-    val askNotificationPermission = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { }
 
     val haptics = LocalHapticFeedback.current
     val listState = rememberLazyListState()
@@ -426,17 +404,9 @@ internal fun MainMenuContent(
                 onLanguage = onLanguage,
                 onOpenDataMenu = { dataMenuExpanded = true },
                 onDismissDataMenu = { dataMenuExpanded = false },
-                onTheme = {
+                onSettings = {
                     dataMenuExpanded = false
-                    showThemeDialog.value = true
-                },
-                onNotifications = {
-                    dataMenuExpanded = false
-                    showNotificationsDialog.value = true
-                },
-                onWidget = {
-                    dataMenuExpanded = false
-                    showWidgetDialog.value = true
+                    onSettings()
                 },
                 onExport = {
                     dataMenuExpanded = false
@@ -591,41 +561,6 @@ internal fun MainMenuContent(
             confirmReset.value = false
         }
     )
-
-    if (showThemeDialog.value) {
-        ThemeModeDialog(
-            current = themeMode,
-            onPick = onThemeModeChange,
-            onDismiss = { showThemeDialog.value = false }
-        )
-    }
-
-    if (showWidgetDialog.value) {
-        WidgetStyleDialog(
-            initial = widgetStyle,
-            onDismiss = { showWidgetDialog.value = false },
-            onSave = {
-                onWidgetStyleChange(it)
-                showWidgetDialog.value = false
-            },
-        )
-    }
-
-    if (showNotificationsDialog.value) {
-        NotificationSettingsDialog(
-            initial = notifications,
-            onDismiss = { showNotificationsDialog.value = false },
-            onSave = {
-                onNotificationsChange(it)
-                showNotificationsDialog.value = false
-            },
-            onNeedPermission = {
-                if (Build.VERSION.SDK_INT >= 33) {
-                    askNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                }
-            },
-        )
-    }
 }
 
 @OptIn(
@@ -642,9 +577,7 @@ private fun MainMenuTopBar(
     onLanguage: () -> Unit,
     onOpenDataMenu: () -> Unit,
     onDismissDataMenu: () -> Unit,
-    onTheme: () -> Unit,
-    onNotifications: () -> Unit,
-    onWidget: () -> Unit,
+    onSettings: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onReset: () -> Unit,
@@ -702,17 +635,10 @@ private fun MainMenuTopBar(
                     // it is the only place in the app that holds settings at
                     // all, and a second overflow button beside it would be
                     // worse than one menu with a line across it.
+                    // Every setting lives on one screen now (04.10).
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.theme_mode_menu)) },
-                        onClick = onTheme
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.notif_settings_menu)) },
-                        onClick = onNotifications
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.widget_style_menu)) },
-                        onClick = onWidget
+                        text = { Text(stringResource(R.string.settings_title)) },
+                        onClick = onSettings
                     )
 
                     HorizontalDivider()

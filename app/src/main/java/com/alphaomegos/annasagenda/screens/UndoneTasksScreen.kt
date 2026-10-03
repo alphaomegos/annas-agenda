@@ -198,7 +198,7 @@ fun UndoneTasksScreen(
 }
 
 @Composable
-private fun undoneHorizonLabel(days: Int): String = stringResource(
+internal fun undoneHorizonLabel(days: Int): String = stringResource(
     when (days) {
         7 -> R.string.undone_horizon_7
         30 -> R.string.undone_horizon_30

@@ -719,7 +719,7 @@ private fun CalorimeterContent(
  * Written on OK; the boxes ticked survive turning the phone.
  */
 @Composable
-private fun CalorimeterDisplayDialog(
+internal fun CalorimeterDisplayDialog(
     dailyGoal: Boolean,
     weeklyGoal: Boolean,
     potentialLoss: Boolean,

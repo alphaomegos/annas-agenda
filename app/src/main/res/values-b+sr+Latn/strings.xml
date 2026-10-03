@@ -430,4 +430,12 @@
     <string name="new_task_color_short">Boja</string>
     <string name="new_task_counter_attached">Brojač: %1$s</string>
     <string name="new_task_add_subtask_short">+ Dodaj</string>
+    <!-- Settings screen (0154) -->
+    <string name="settings_title">Podešavanja</string>
+    <string name="settings_section_general">Opšte</string>
+    <string name="settings_section_screens">Odeljci</string>
+    <string name="settings_on">Uključena</string>
+    <string name="settings_off">Isključena</string>
+    <string name="settings_calorimeter_hint">Pregledi, dijeta, biblioteka hrane</string>
+    <string name="settings_anthropometry_hint">Merenja, prognoza, spisak</string>
 </resources>

@@ -571,4 +571,12 @@
     <string name="new_task_color_short">Цвет</string>
     <string name="new_task_counter_attached">Счётчик: %1$s</string>
     <string name="new_task_add_subtask_short">+ Добавить</string>
+    <!-- Settings screen (0154) -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_section_general">Общие</string>
+    <string name="settings_section_screens">Разделы</string>
+    <string name="settings_on">Включены</string>
+    <string name="settings_off">Выключены</string>
+    <string name="settings_calorimeter_hint">Сводки, диета, библиотека еды</string>
+    <string name="settings_anthropometry_hint">Замеры, прогноз, список</string>
 </resources>

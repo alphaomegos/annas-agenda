@@ -12,7 +12,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.alphaomegos.annasagenda.AppThemeMode
 import com.alphaomegos.annasagenda.R
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -67,8 +66,6 @@ class MainMenuContentTest {
                     onMenuOrderChange = {},
                     onHideMenuItem = {},
                     onShowAllMenuItems = {},
-                    themeMode = AppThemeMode.SYSTEM,
-                    onThemeModeChange = {},
                     onLanguage = { languageClicks++ },
                     onUndone = {},
                     onExport = {},
@@ -130,8 +127,6 @@ class MainMenuContentTest {
                     onMenuOrderChange = {},
                     onHideMenuItem = {},
                     onShowAllMenuItems = {},
-                    themeMode = AppThemeMode.SYSTEM,
-                    onThemeModeChange = {},
                     onLanguage = {},
                     onUndone = {},
                     onExport = { exportClicks++ },
@@ -230,8 +225,6 @@ class MainMenuContentTest {
                     onMenuOrderChange = {},
                     onHideMenuItem = {},
                     onShowAllMenuItems = {},
-                    themeMode = AppThemeMode.SYSTEM,
-                    onThemeModeChange = {},
                     onLanguage = {},
                     onUndone = {},
                     onExport = {},

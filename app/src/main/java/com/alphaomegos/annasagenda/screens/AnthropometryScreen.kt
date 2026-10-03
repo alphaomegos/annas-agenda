@@ -713,7 +713,7 @@ private val fieldIdSetSaver = listSaver<Set<String>, String>(
 )
 
 @Composable
-private fun AnthropometryFieldsDialog(
+internal fun AnthropometryFieldsDialog(
     fieldDefs: List<AnthropometryFieldDef>,
     enabledFieldIds: Set<String>,
     showForecast: Boolean,

@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.AppThemeMode
 import com.alphaomegos.annasagenda.R
 
-private fun labelResFor(mode: AppThemeMode): Int = when (mode) {
+internal fun themeModeLabelRes(mode: AppThemeMode): Int = when (mode) {
     AppThemeMode.SYSTEM -> R.string.theme_mode_system
     AppThemeMode.LIGHT -> R.string.theme_mode_light
     AppThemeMode.DARK -> R.string.theme_mode_dark
@@ -66,7 +66,7 @@ fun ThemeModeDialog(
                         // not: two targets for one choice reads as two controls
                         // to anything stepping through them.
                         RadioButton(selected = mode == current, onClick = null)
-                        Text(stringResource(labelResFor(mode)))
+                        Text(stringResource(themeModeLabelRes(mode)))
                     }
                 }
             }
