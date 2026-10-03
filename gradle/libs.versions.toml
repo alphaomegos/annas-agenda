@@ -21,6 +21,11 @@ activityCompose = "1.8.0"
 # The home-screen widget (0145). Stable line as remembered on 02.10; the
 # apply command prints what Google's Maven has, to check against.
 glance = "1.1.1"
+# Glance 1.1.1 pulls WorkManager 2.7.1 and Room 2.2.5. That pair crashed the
+# release build on start (0146): R8 dropped WorkDatabase_Impl, which Room finds
+# by name, and WorkManager starts before any activity. Named here to win over
+# the one Glance asks for; 2.8+ carries the R8 rules and the Android 14 fixes.
+work = "2.10.1"
 
 # Robolectric runs Android's own framework classes on the JVM, so tests that
 # need a Context no longer need a device. 4.17 ships images up to Android 17,
@@ -37,6 +42,7 @@ androidx-activity-compose = { group = "androidx.activity", name = "activity-comp
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 

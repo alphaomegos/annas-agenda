@@ -67,3 +67,15 @@
 
 # The widget's tick (0145): Glance creates the callback by its class name.
 -keep class com.alphaomegos.annasagenda.ToggleTaskFromWidget { <init>(); }
+
+# -----------------------------------------------------------------------------
+# Room databases are found by name (0146).
+# -----------------------------------------------------------------------------
+# Room.getGeneratedImplementation builds "<Database>_Impl" from a string. R8
+# sees no caller and removes the class; the WorkManager that Glance brings
+# then fails to open its database inside androidx.startup, before any
+# activity exists — the app dies on launch without drawing a frame. The
+# newer WorkManager named in libs.versions.toml ships this rule itself; it is
+# written here as well, so that the next library to bring Room cannot do it
+# again.
+-keep class * extends androidx.room.RoomDatabase { <init>(); }

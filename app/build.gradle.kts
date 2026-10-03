@@ -222,6 +222,9 @@ dependencies {
 
     // Today's tasks on the home screen.
     implementation(libs.androidx.glance.appwidget)
+    // Not used directly: overrides the WorkManager Glance would bring (see
+    // libs.versions.toml, "work").
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.kotlinx.serialization.json)
 
     coreLibraryDesugaring(libs.android.desugar.jdk.libs)

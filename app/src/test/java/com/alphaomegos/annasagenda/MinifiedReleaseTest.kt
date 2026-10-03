@@ -88,6 +88,37 @@ class MinifiedReleaseTest {
         )
     }
 
+    /**
+     * 0146: the release APK died on launch, before the first frame. Glance's
+     * WorkManager opens a Room database found by name, and R8 had removed it.
+     * Every test was green — R8 runs on release only — so the rule is guarded
+     * here, where its loss would at least be seen.
+     */
+    @Test
+    fun roomDatabasesAreKept() {
+        assertTrue(
+            "the keep rule for Room databases is gone from proguard-rules.pro",
+            keepRules.contains("-keep class * extends androidx.room.RoomDatabase"),
+        )
+    }
+
+    /** The WorkManager Glance asks for (2.7.1) is the one that crashed; ours must win. */
+    @Test
+    fun theWorkManagerIsNotTheOneGlanceBrings() {
+        val catalog = fileNamed("gradle/libs.versions.toml").readText()
+        val version = Regex("""(?m)^work\s*=\s*"(\d+)\.(\d+)""").find(catalog)
+            ?: error("no work = \"…\" version in gradle/libs.versions.toml")
+        val (major, minor) = version.destructured
+        assertTrue(
+            "WorkManager ${major}.${minor} is older than 2.8",
+            major.toInt() > 2 || (major.toInt() == 2 && minor.toInt() >= 8),
+        )
+        assertTrue(
+            "app/build.gradle.kts no longer depends on libs.androidx.work.runtime.ktx",
+            buildFile.contains("libs.androidx.work.runtime.ktx"),
+        )
+    }
+
     private fun fileNamed(path: String): File =
         listOf(path, "../$path", path.removePrefix("app/"))
             .map { File(it) }
