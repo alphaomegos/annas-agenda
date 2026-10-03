@@ -3,6 +3,18 @@ package com.alphaomegos.annasagenda
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.glance.appwidget.CheckboxDefaults
+import androidx.glance.appwidget.cornerRadius
+import androidx.glance.color.ColorProvider as DayNightColorProvider
+import androidx.glance.unit.ColorProvider
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -32,8 +44,6 @@ import androidx.glance.text.TextStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 /*
  * The home-screen widget: today's tasks in day order, ticked from the
@@ -57,56 +67,113 @@ private suspend fun currentStateFor(context: Context): AppState? {
     return (AppStateStore(context.applicationContext).load() as? AppStateLoadResult.Loaded)?.state
 }
 
+/**
+ * Asks every running widget session to read the state again.
+ *
+ * A Glance session outlives one call: update() on a widget whose session is
+ * still alive only recomposes the content — provideGlance does not run
+ * again. 0145 read the state once in provideGlance, so after a tick the
+ * session kept drawing the box as it was (Eduard, 03.10). Now the content
+ * reloads whenever this number moves.
+ */
+internal object TodayWidgetRefresh {
+    val version = MutableStateFlow(0L)
+    fun bump() {
+        version.value = version.value + 1
+    }
+}
+
+/** What one drawing of the widget needs, read in one go. */
+private data class WidgetContentData(
+    val header: String,
+    val empty: String,
+    val rows: List<WidgetTaskRow>,
+    val style: WidgetStyle,
+    val today: LocalDate,
+)
+
+private suspend fun loadWidgetContent(context: Context): WidgetContentData {
+    val today = LocalDate.now()
+    val state = runCatching { currentStateFor(context) }.getOrNull()
+    val words = inAppLanguage(context)
+    val locale = words.resources.configuration.locales[0]
+    return WidgetContentData(
+        header = words.getString(R.string.widget_today_title, formatWidgetDay(today, locale)),
+        empty = words.getString(R.string.widget_nothing_today),
+        rows = state?.let { todayWidgetRows(it, today, currentLocaleWeekStart()) }.orEmpty(),
+        style = state?.widgetStyle ?: WidgetStyle(),
+        today = today,
+    )
+}
+
 class TodayTasksWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val today = LocalDate.now()
-        val state = runCatching { currentStateFor(context) }.getOrNull()
-        val rows = state?.let { todayWidgetRows(it, today, currentLocaleWeekStart()) }.orEmpty()
-
-        val words = inAppLanguage(context)
-        val locale = words.resources.configuration.locales[0]
-        val dateText = today.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
-        val header = words.getString(R.string.widget_today_title, dateText)
-        val empty = words.getString(R.string.widget_nothing_today)
-
-        val openToday = Intent(context, MainActivity::class.java)
-            .putExtra(EXTRA_OPEN_EPOCH_DAY, today.toEpochDay())
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val first = loadWidgetContent(context)
 
         provideContent {
+            var data by remember { mutableStateOf(first) }
+            val version by TodayWidgetRefresh.version.collectAsState()
+            LaunchedEffect(version) {
+                data = loadWidgetContent(context)
+            }
+
+            val openToday = Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_OPEN_EPOCH_DAY, data.today.toEpochDay())
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
             GlanceTheme {
-                WidgetContent(header = header, empty = empty, rows = rows, openToday = openToday)
+                WidgetContent(data = data, openToday = openToday)
             }
         }
     }
 }
 
+/** Light words on a dark backing, dark on a light one; the theme's pair for SYSTEM. */
+private fun widgetTextColor(style: WidgetStyle): ColorProvider = when (style.textColor) {
+    WidgetTextColor.WHITE -> ColorProvider(Color.White)
+    WidgetTextColor.BLACK -> ColorProvider(Color.Black)
+    WidgetTextColor.SYSTEM -> DayNightColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5))
+}
+
+private fun widgetBackground(style: WidgetStyle): ColorProvider {
+    val alpha = style.backgroundPercent / 100f
+    val dark = Color(0xFF1C1B1F).copy(alpha = alpha)
+    val light = Color(0xFFFFFBFE).copy(alpha = alpha)
+    return when (style.textColor) {
+        WidgetTextColor.WHITE -> ColorProvider(dark)
+        WidgetTextColor.BLACK -> ColorProvider(light)
+        WidgetTextColor.SYSTEM -> DayNightColorProvider(day = light, night = dark)
+    }
+}
+
 @Composable
-private fun WidgetContent(header: String, empty: String, rows: List<WidgetTaskRow>, openToday: Intent) {
+private fun WidgetContent(data: WidgetContentData, openToday: Intent) {
+    val text = widgetTextColor(data.style)
+    val checked = data.style.checkColorArgb?.let { ColorProvider(Color(it.toInt())) }
+        ?: GlanceTheme.colors.primary
+    val boxColors = CheckboxDefaults.colors(checkedColor = checked, uncheckedColor = text)
+
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(GlanceTheme.colors.widgetBackground)
+            .background(widgetBackground(data.style))
+            .cornerRadius(16.dp)
             .padding(12.dp),
     ) {
         Text(
-            text = header,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-            ),
+            text = data.header,
+            style = TextStyle(color = text, fontWeight = FontWeight.Bold, fontSize = 16.sp),
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .padding(bottom = 6.dp)
                 .clickable(actionStartActivity(openToday)),
         )
-        if (rows.isEmpty()) {
-            Text(text = empty, style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant))
+        if (data.rows.isEmpty()) {
+            Text(text = data.empty, style = TextStyle(color = text))
         } else {
             LazyColumn {
-                items(rows, itemId = { it.key.hashCode().toLong() }) { row ->
+                items(data.rows, itemId = { it.key.hashCode().toLong() }) { row ->
                     val label = (row.time?.let { formatTaskTime(it) + "  " }.orEmpty()) + row.title
                     CheckBox(
                         checked = row.isDone,
@@ -114,7 +181,8 @@ private fun WidgetContent(header: String, empty: String, rows: List<WidgetTaskRo
                             actionParametersOf(WidgetTaskKey to row.key)
                         ),
                         text = label,
-                        style = TextStyle(color = GlanceTheme.colors.onSurface),
+                        style = TextStyle(color = text),
+                        colors = boxColors,
                         modifier = GlanceModifier.fillMaxWidth(),
                     )
                 }
@@ -150,6 +218,8 @@ class ToggleTaskFromWidget : ActionCallback {
             // The alarm may have been for a reminder of the task just ticked.
             scheduleNextNotification(app, result.state)
         }
+        // A running session redraws from the state; a sleeping one is woken.
+        TodayWidgetRefresh.bump()
         TodayTasksWidget().update(context, glanceId)
     }
 }
@@ -160,5 +230,6 @@ class TodayTasksWidgetReceiver : GlanceAppWidgetReceiver() {
 
 /** Redraws every widget placed; called by the app when today's tasks may have changed. */
 internal suspend fun refreshTodayWidgets(context: Context) {
+    TodayWidgetRefresh.bump()
     runCatching { TodayTasksWidget().updateAll(context) }
 }

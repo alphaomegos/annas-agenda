@@ -57,6 +57,11 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     dietShowPastUnticked = dietShowPastUnticked,
     foodLibraryUserItems = foodLibraryUserItems.map { it.toDto() },
     notifications = notifications.toDto(),
+    widgetStyle = WidgetStyleDto(
+        backgroundPercent = widgetStyle.backgroundPercent,
+        textColor = widgetStyle.textColor.name,
+        checkColorArgb = widgetStyle.checkColorArgb,
+    ),
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -138,6 +143,14 @@ internal fun AppStateDto.toDomain(): AppState {
         // putting it on a wrong shelf.
         foodLibraryUserItems = foodLibraryUserItems.mapNotNull { it.toDomainOrNull() },
         notifications = notifications.toDomain(),
+        widgetStyle = normalizedWidgetStyle(
+            WidgetStyle(
+                backgroundPercent = widgetStyle.backgroundPercent,
+                textColor = WidgetTextColor.entries.firstOrNull { it.name == widgetStyle.textColor }
+                    ?: WidgetTextColor.SYSTEM,
+                checkColorArgb = widgetStyle.checkColorArgb,
+            )
+        ),
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)

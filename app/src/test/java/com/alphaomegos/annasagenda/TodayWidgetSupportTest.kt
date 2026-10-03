@@ -81,3 +81,22 @@ class TodayWidgetSupportTest {
         assertNull(stateAfterTogglingTaskFromWidget(s, "4@${today.toEpochDay()}", today, weekStart, nextIdFor(s)))
     }
 }
+
+/** The header and the look, asked for on 03.10. */
+class TodayWidgetLookTest {
+
+    private val day = LocalDate.of(2026, 10, 3)
+
+    @Test
+    fun theHeaderNamesTheDayAndMonthInTheFormThatFollowsANumber() {
+        assertEquals("3 октября", formatWidgetDay(day, java.util.Locale.forLanguageTag("ru")))
+        assertEquals("3 October", formatWidgetDay(day, java.util.Locale.ENGLISH))
+    }
+
+    @Test
+    fun theDefaultLookIsTheOneTheWidgetHadAndPercentagesStayPercentages() {
+        assertEquals(WidgetStyle(100, WidgetTextColor.SYSTEM, null), AppState().widgetStyle)
+        assertEquals(0, normalizedWidgetStyle(WidgetStyle(backgroundPercent = -20)).backgroundPercent)
+        assertEquals(100, normalizedWidgetStyle(WidgetStyle(backgroundPercent = 140)).backgroundPercent)
+    }
+}

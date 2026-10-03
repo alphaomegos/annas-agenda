@@ -126,4 +126,8 @@ data class AppState(
 
     // Daily summaries and task reminders. Default: silence.
     val notifications: NotificationSettings = NotificationSettings(),
+
+    // How the home-screen widget looks (03.10). No schema step: a display
+    // setting with a default, which an older build simply does not keep.
+    val widgetStyle: WidgetStyle = WidgetStyle(),
 ) : DateTasksData

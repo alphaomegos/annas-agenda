@@ -555,10 +555,19 @@
     <string name="notif_reminder_before">За %1$d мин</string>
     <!-- Widget (0145) -->
     <string name="widget_description">Задачи на сегодня с галочками прямо на главном экране</string>
-    <string name="widget_today_title">Сегодня, %1$s</string>
+    <string name="widget_today_title">Задачи на %1$s</string>
     <string name="widget_today_label">Задачи на сегодня</string>
     <string name="widget_nothing_today">На сегодня ничего не запланировано.</string>
     <!-- Coming soon (0147) -->
     <string name="menu_metro">Метро</string>
     <string name="menu_travel">Путешествия</string>
+    <!-- Widget look (0149) -->
+    <string name="widget_style_menu">Виджет</string>
+    <string name="widget_style_title">Виджет</string>
+    <string name="widget_style_background">Фон: %1$d%%</string>
+    <string name="widget_style_text">Текст</string>
+    <string name="widget_text_system">Как тема телефона</string>
+    <string name="widget_text_white">Белый</string>
+    <string name="widget_text_black">Чёрный</string>
+    <string name="widget_style_checks">Галочка</string>
 </resources>

@@ -283,7 +283,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state
                 .map { s ->
-                    listOf(s.tasks, s.subtasks, s.suppressedRecurrences, s.notifications, s.undoneHorizonDays)
+                    listOf(s.tasks, s.subtasks, s.suppressedRecurrences, s.notifications, s.undoneHorizonDays, s.widgetStyle)
                 }
                 .distinctUntilChanged()
                 .debounce(1000)
@@ -1873,6 +1873,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
         val cur = _state.value
         if (cur.notifications != clean) _state.value = cur.copy(notifications = clean)
+    }
+
+    /** How the home-screen widget looks; the widgets redraw from the same watch as the alarm. */
+    fun setWidgetStyle(style: WidgetStyle) {
+        val clean = normalizedWidgetStyle(style)
+        val cur = _state.value
+        if (cur.widgetStyle != clean) _state.value = cur.copy(widgetStyle = clean)
     }
 
     /** 6.4: whether the add-a-meal dialog offers the food library. */

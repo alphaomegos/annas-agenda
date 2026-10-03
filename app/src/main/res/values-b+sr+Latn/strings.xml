@@ -414,10 +414,19 @@
     <string name="notif_reminder_before">%1$d min ranije</string>
     <!-- Widget (0145) -->
     <string name="widget_description">Današnji zadaci, štikliraju se sa početnog ekrana</string>
-    <string name="widget_today_title">Danas, %1$s</string>
+    <string name="widget_today_title">Zadaci za %1$s</string>
     <string name="widget_today_label">Današnji zadaci</string>
     <string name="widget_nothing_today">Za danas ništa nije zakazano.</string>
     <!-- Coming soon (0147) -->
     <string name="menu_metro">Metro</string>
     <string name="menu_travel">Putovanja</string>
+    <!-- Widget look (0149) -->
+    <string name="widget_style_menu">Vidžet</string>
+    <string name="widget_style_title">Vidžet</string>
+    <string name="widget_style_background">Pozadina: %1$d%%</string>
+    <string name="widget_style_text">Tekst</string>
+    <string name="widget_text_system">Kao tema telefona</string>
+    <string name="widget_text_white">Beli</string>
+    <string name="widget_text_black">Crni</string>
+    <string name="widget_style_checks">Štiklirano polje</string>
 </resources>

@@ -251,6 +251,8 @@ class AppStateWholeRoundTripTest {
             summaryDebts = false,
             reminderLeadMinutes = 15,
         ),
+        // 03.10, no schema step — still every field.
+        widgetStyle = WidgetStyle(backgroundPercent = 35, textColor = WidgetTextColor.WHITE, checkColorArgb = 0xFF43A047L),
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -323,6 +325,7 @@ class AppStateWholeRoundTripTest {
             "dietEnabled", "dietPlan", "dietItemId",
             "dietShowPastUnticked", "foodLibraryUserItems", "notifications",
             "summaryMinutes", "reminderLeadMinutes",
+            "widgetStyle", "backgroundPercent", "checkColorArgb",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))
         }

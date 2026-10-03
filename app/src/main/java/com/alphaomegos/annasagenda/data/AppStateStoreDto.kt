@@ -94,6 +94,17 @@ internal data class AppStateDto(
     val dietShowPastUnticked: Boolean = true,
     val foodLibraryUserItems: List<FoodLibraryUserItemDto> = emptyList(),
     val notifications: NotificationSettingsDto = NotificationSettingsDto(),
+
+    // The widget's look (03.10). Additive with a default, so no version step.
+    val widgetStyle: WidgetStyleDto = WidgetStyleDto(),
+)
+
+@Serializable
+internal data class WidgetStyleDto(
+    val backgroundPercent: Int = 100,
+    // WidgetTextColor by name.
+    val textColor: String = "SYSTEM",
+    val checkColorArgb: Long? = null,
 )
 
 @Serializable

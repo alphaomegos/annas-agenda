@@ -89,6 +89,8 @@ import com.alphaomegos.annasagenda.components.COMING_SOON_ICON_ALPHA
 import com.alphaomegos.annasagenda.components.comingSoonIconFilter
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
 import com.alphaomegos.annasagenda.NotificationSettings
+import com.alphaomegos.annasagenda.WidgetStyle
+import com.alphaomegos.annasagenda.components.WidgetStyleDialog
 import com.alphaomegos.annasagenda.util.BackupImportPayload
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.readBackupImportPayload
@@ -251,6 +253,8 @@ fun MainMenuScreen(
         onThemeModeChange = vm::setThemeMode,
         notifications = state.notifications,
         onNotificationsChange = vm::setNotificationSettings,
+        widgetStyle = state.widgetStyle,
+        onWidgetStyleChange = vm::setWidgetStyle,
         onUndone = onUndone,
         onExport = {
             scope.launch {
@@ -353,6 +357,8 @@ internal fun MainMenuContent(
     // Defaulted so the tests that draw the menu need not know about them.
     notifications: NotificationSettings = NotificationSettings(),
     onNotificationsChange: (NotificationSettings) -> Unit = {},
+    widgetStyle: WidgetStyle = WidgetStyle(),
+    onWidgetStyleChange: (WidgetStyle) -> Unit = {},
     onUndone: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -363,6 +369,7 @@ internal fun MainMenuContent(
     val confirmReset = rememberSaveable { mutableStateOf(false) }
     val showThemeDialog = rememberSaveable { mutableStateOf(false) }
     val showNotificationsDialog = rememberSaveable { mutableStateOf(false) }
+    val showWidgetDialog = rememberSaveable { mutableStateOf(false) }
     // Here rather than in the dialog: the dialog closes on OK, before the answer.
     val askNotificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -426,6 +433,10 @@ internal fun MainMenuContent(
                 onNotifications = {
                     dataMenuExpanded = false
                     showNotificationsDialog.value = true
+                },
+                onWidget = {
+                    dataMenuExpanded = false
+                    showWidgetDialog.value = true
                 },
                 onExport = {
                     dataMenuExpanded = false
@@ -589,6 +600,17 @@ internal fun MainMenuContent(
         )
     }
 
+    if (showWidgetDialog.value) {
+        WidgetStyleDialog(
+            initial = widgetStyle,
+            onDismiss = { showWidgetDialog.value = false },
+            onSave = {
+                onWidgetStyleChange(it)
+                showWidgetDialog.value = false
+            },
+        )
+    }
+
     if (showNotificationsDialog.value) {
         NotificationSettingsDialog(
             initial = notifications,
@@ -622,6 +644,7 @@ private fun MainMenuTopBar(
     onDismissDataMenu: () -> Unit,
     onTheme: () -> Unit,
     onNotifications: () -> Unit,
+    onWidget: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onReset: () -> Unit,
@@ -686,6 +709,10 @@ private fun MainMenuTopBar(
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.notif_settings_menu)) },
                         onClick = onNotifications
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.widget_style_menu)) },
+                        onClick = onWidget
                     )
 
                     HorizontalDivider()

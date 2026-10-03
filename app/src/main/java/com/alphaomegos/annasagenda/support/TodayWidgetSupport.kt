@@ -55,3 +55,11 @@ fun stateAfterTogglingTaskFromWidget(
     val next = state.copy(tasks = after.tasks, subtasks = after.subtasks, counters = after.counters)
     return WidgetToggleResult(stateWithIdHighWaterAtLeast(next, drawn.nextId), drawn.nextId)
 }
+
+/**
+ * The day in the widget's header: "3 октября", "3 October" — day and month,
+ * the month in the form the language uses after a number (the genitive in
+ * Russian), no year and no weekday (03.10).
+ */
+fun formatWidgetDay(date: LocalDate, locale: java.util.Locale): String =
+    date.format(java.time.format.DateTimeFormatter.ofPattern("d MMMM", locale))
