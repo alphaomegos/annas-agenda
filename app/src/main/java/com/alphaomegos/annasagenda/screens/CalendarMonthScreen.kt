@@ -1,7 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -263,7 +261,6 @@ private fun CalendarMonthContent(
                         val count = itemCountByDate[date] ?: 0
                         val isToday = date == today
                         val marks = badgesByDate[date].orEmpty()
-                        val hasAnthro = CalendarBadge.ANTHROPOMETRY in marks
 
                         Surface(
                             tonalElevation = if (isToday) 4.dp else 0.dp,
@@ -282,17 +279,6 @@ private fun CalendarMonthContent(
                                     modifier = Modifier.size(24.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    if (hasAnthro) {
-                                        val markerColor = appExtraColors.dayMarker
-                                        Canvas(modifier = Modifier.matchParentSize()) {
-                                            val stroke = 2.dp.toPx()
-                                            drawCircle(
-                                                color = markerColor,
-                                                radius = (size.minDimension - stroke) / 2f,
-                                                style = Stroke(width = stroke)
-                                            )
-                                        }
-                                    }
                                     Text(
                                         text = date.dayOfMonth.toString(),
                                         style = MaterialTheme.typography.titleMedium
@@ -309,16 +295,20 @@ private fun CalendarMonthContent(
                                         )
                                     }
                                     Spacer(modifier = Modifier.weight(1f))
-                                    // The measurement keeps its circle round the
-                                    // number; the other marks are small pictures.
-                                    listOf(CalendarBadge.FOOD, CalendarBadge.DEBTS)
+                                    // Every mark a small picture; the measurement's
+                                    // ruler keeps the green its circle had (03.10).
+                                    val measured = appExtraColors.dayMarker
+                                    CalendarBadge.entries
                                         .filter { it in marks }
                                         .forEach { badge ->
                                             Icon(
                                                 imageVector = AppIcons.calendarBadge(badge),
                                                 contentDescription = null,
-                                                tint = if (badge == CalendarBadge.DEBTS) MaterialTheme.colorScheme.error
-                                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                tint = when (badge) {
+                                                    CalendarBadge.DEBTS -> MaterialTheme.colorScheme.error
+                                                    CalendarBadge.ANTHROPOMETRY -> measured
+                                                    CalendarBadge.FOOD -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
                                                 modifier = Modifier.size(12.dp),
                                             )
                                         }

@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -177,11 +180,20 @@ fun NewTaskScreen(
         modifier = Modifier
             .fillMaxSize()
             .systemBarsPadding()
+            // The keyboard takes its height off the screen, and the form
+            // rises above it instead of hiding under it (03.10).
+            .imePadding()
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // Taller than what the keyboard leaves: it scrolls, and the
+                // field being typed in is brought into view. The bottom gap
+                // keeps the last row clear of the Back button.
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 56.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
