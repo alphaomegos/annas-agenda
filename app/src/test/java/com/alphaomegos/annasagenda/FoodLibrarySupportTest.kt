@@ -162,3 +162,30 @@ class FoodLibrarySupportTest {
         assertEquals(FoodCategory.OTHER, parsed.foods.single().category)
     }
 }
+
+/** Which food the add-a-meal dialog prices from, moved out of the screen (04.10). */
+class FoodDraftPricingSourceTest {
+
+    private val day = java.time.LocalDate.of(2026, 10, 7)
+    private val standard = parseFoodLibrary("dairy.curd\tDAIRY\t100\tg\t121\ten=Cottage cheese\tru=Творог").foods
+    private val log = listOf(FoodEntry(id = 1, date = day, title = "Творог, 200 г", kcal = 300))
+
+    @Test
+    fun aPickedShelfFoodWinsOverTheSameNameInTheLog() {
+        val src = foodDraftPricingSource("std:dairy.curd", "Творог", standard, emptyList(), log, "ru")!!
+
+        assertEquals(100, src.amount)
+        assertEquals(121, src.kcal)
+    }
+
+    @Test
+    fun withoutAKeyTheLogPricesItAndAGoneKeyFallsBackToTheLog() {
+        assertEquals(300, foodDraftPricingSource(null, "Творог", standard, emptyList(), log, "ru")!!.kcal)
+        assertEquals(300, foodDraftPricingSource("user:99", "Творог", standard, emptyList(), log, "ru")!!.kcal)
+    }
+
+    @Test
+    fun nothingPickedIsNothingPriced() {
+        assertNull(foodDraftPricingSource(null, null, standard, emptyList(), log, "ru"))
+    }
+}

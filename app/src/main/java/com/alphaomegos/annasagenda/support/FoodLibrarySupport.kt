@@ -209,3 +209,21 @@ fun foodLibraryRowFor(item: FoodLibraryUserItem, languageTag: String): String {
         .plus(names)
         .joinToString("\t")
 }
+
+/**
+ * What the add-a-meal dialog is pricing from: a library food by its key if
+ * one was picked and is still there, else a food from the log by name, else
+ * nothing. A key wins over a name because the two can coincide — "Творог"
+ * picked from the shelf must be priced as the shelf says, not as it was
+ * written down last Tuesday.
+ */
+fun foodDraftPricingSource(
+    libraryKey: String?,
+    name: String?,
+    standard: List<StandardFood>,
+    user: List<FoodLibraryUserItem>,
+    log: List<FoodEntry>,
+    languageTag: String,
+): FoodSuggestion? =
+    libraryKey?.let { foodLibraryItemByKey(it, standard, user, languageTag)?.asSuggestion() }
+        ?: name?.let { foodSuggestionForName(it, log) }

@@ -22,11 +22,12 @@ import com.alphaomegos.annasagenda.AppIcons
 import com.alphaomegos.annasagenda.AppState
 import com.alphaomegos.annasagenda.CalendarBadge
 import com.alphaomegos.annasagenda.calendarBadgesByDate
+import com.alphaomegos.annasagenda.calendarItemCountsByDate
+import com.alphaomegos.annasagenda.somedayTaskCount
 import com.alphaomegos.annasagenda.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.appLocale
-import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
 import com.alphaomegos.annasagenda.util.orderedWeekDays
 import java.time.LocalDate
 import java.time.YearMonth
@@ -125,32 +126,8 @@ private fun CalendarMonthContent(
     }
     var showBadgeSettings by rememberSaveable { mutableStateOf(false) }
 
-    val visibleTasks = remember(state.tasks, state.suppressedRecurrences) {
-        state.tasks.filterNot { isSuppressedTemplateTaskOnItsDate(it, state.suppressedRecurrences) }
-    }
-
-    val taskCountByDate = remember(visibleTasks) {
-        visibleTasks.mapNotNull { it.date }.groupingBy { it }.eachCount()
-    }
-
-    val taskDateById = remember(visibleTasks) {
-        visibleTasks.mapNotNull { t -> t.date?.let { d -> t.id to d } }.toMap()
-    }
-
-    val subtaskCountByDate: Map<LocalDate, Int> = remember(state.subtasks, taskDateById) {
-        val m = mutableMapOf<LocalDate, Int>()
-        for (st in state.subtasks) {
-            val d = taskDateById[st.taskId] ?: continue
-            m[d] = (m[d] ?: 0) + 1
-        }
-        m
-    }
-
-    val itemCountByDate = remember(taskCountByDate, subtaskCountByDate) {
-        val m = mutableMapOf<LocalDate, Int>()
-        for ((d, c) in taskCountByDate.entries) m[d] = (m[d] ?: 0) + c
-        for ((d, c) in subtaskCountByDate.entries) m[d] = (m[d] ?: 0) + c
-        m
+    val itemCountByDate = remember(state.tasks, state.subtasks, state.suppressedRecurrences) {
+        calendarItemCountsByDate(state.tasks, state.subtasks, state.suppressedRecurrences)
     }
 
     val cells = remember(yearMonth, offset, daysInMonth) {
@@ -162,9 +139,7 @@ private fun CalendarMonthContent(
     }
 
     val somedayCount = remember(state.tasks, state.suppressedRecurrences) {
-        state.tasks.count { t ->
-            t.date == null && !isSuppressedTemplateTaskOnItsDate(t, state.suppressedRecurrences)
-        }
+        somedayTaskCount(state.tasks, state.suppressedRecurrences)
     }
 
     Column(

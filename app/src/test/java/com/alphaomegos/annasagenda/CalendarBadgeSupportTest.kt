@@ -77,3 +77,48 @@ class CalendarBadgeSupportTest {
         assertEquals(setOf(old), shown.keys)
     }
 }
+
+/** What a calendar day counts, moved out of the month screen (04.10). */
+class CalendarItemCountsTest {
+
+    private val day = LocalDate.of(2026, 10, 7)
+
+    @Test
+    fun aDayCountsItsTasksAndTheirSubtasks() {
+        val tasks = listOf(
+            Task(id = 1, date = day, description = "a"),
+            Task(id = 2, date = day, description = "b"),
+            Task(id = 3, date = day.plusDays(1), description = "c"),
+            Task(id = 4, date = null, description = "someday"),
+        )
+        val subtasks = listOf(
+            Subtask(id = 10, taskId = 1, description = "x"),
+            Subtask(id = 11, taskId = 1, description = "y"),
+            Subtask(id = 12, taskId = 4, description = "on a someday task"),
+        )
+
+        val counts = calendarItemCountsByDate(tasks, subtasks, emptySet())
+
+        assertEquals(mapOf(day to 4, day.plusDays(1) to 1), counts)
+    }
+
+    /** A template deleted for its own day is not on the day, nor are its subtasks. */
+    @Test
+    fun aHiddenTemplateAndItsSubtasksAreNotCounted() {
+        val template = Task(
+            id = 1, date = day, description = "повтор",
+            repeatRule = RepeatRule(freq = RepeatFreq.DAILY, interval = 1, weekStart = java.time.DayOfWeek.MONDAY),
+        )
+        val hidden = setOf(taskSuppressionKey(1, day))
+
+        assertEquals(emptyMap<LocalDate, Int>(), calendarItemCountsByDate(listOf(template), listOf(Subtask(id = 9, taskId = 1, description = "s")), hidden))
+        assertEquals(0, somedayTaskCount(listOf(template), hidden))
+    }
+
+    @Test
+    fun somedayCountsOnlyTasksWithoutADay() {
+        val tasks = listOf(Task(id = 1, date = null, description = "a"), Task(id = 2, date = day, description = "b"))
+
+        assertEquals(1, somedayTaskCount(tasks, emptySet()))
+    }
+}

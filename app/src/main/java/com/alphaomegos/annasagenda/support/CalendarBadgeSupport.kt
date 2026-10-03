@@ -40,3 +40,25 @@ fun calendarBadgesByDate(
     }
     return out
 }
+
+/**
+ * How many things a calendar day holds: its tasks and their subtasks, a
+ * repeat's template deleted for its own day not counted (it is not shown).
+ * Days with nothing are not in the map.
+ */
+fun calendarItemCountsByDate(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    suppressedRecurrences: Set<String>,
+): Map<LocalDate, Int> {
+    val visible = tasks.filterNot { isSuppressedTemplateTaskOnItsDate(it, suppressedRecurrences) }
+    val dateOf = visible.mapNotNull { t -> t.date?.let { t.id to it } }.toMap()
+    val out = mutableMapOf<LocalDate, Int>()
+    dateOf.values.forEach { d -> out[d] = (out[d] ?: 0) + 1 }
+    subtasks.forEach { st -> dateOf[st.taskId]?.let { d -> out[d] = (out[d] ?: 0) + 1 } }
+    return out
+}
+
+/** The tasks waiting for "someday": no day, and not a hidden template. */
+fun somedayTaskCount(tasks: List<Task>, suppressedRecurrences: Set<String>): Int =
+    tasks.count { it.date == null && !isSuppressedTemplateTaskOnItsDate(it, suppressedRecurrences) }

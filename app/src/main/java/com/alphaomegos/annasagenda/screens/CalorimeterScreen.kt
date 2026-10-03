@@ -75,12 +75,11 @@ import com.alphaomegos.annasagenda.components.ExplanationDialog
 import com.alphaomegos.annasagenda.foodDraftAfterKcalTyped
 import com.alphaomegos.annasagenda.foodDraftAfterPickingSuggestion
 import com.alphaomegos.annasagenda.foodDraftAfterTitleChange
-import com.alphaomegos.annasagenda.foodSuggestionForName
 import com.alphaomegos.annasagenda.foodSuggestionsFor
 import com.alphaomegos.annasagenda.DietDishOnDay
 import com.alphaomegos.annasagenda.FoodCategory
 import com.alphaomegos.annasagenda.asSuggestion
-import com.alphaomegos.annasagenda.foodLibraryItemByKey
+import com.alphaomegos.annasagenda.foodDraftPricingSource
 import com.alphaomegos.annasagenda.dietDishesOn
 import com.alphaomegos.annasagenda.foodOutsideDiet
 import com.alphaomegos.annasagenda.util.appLocale
@@ -566,9 +565,14 @@ private fun CalorimeterContent(
         val canAdd = foodName.trim().isNotEmpty() && parsedKcal != null && parsedKcal > 0
 
         val pricedFrom = remember(pricedFromName, pricedFromLibraryKey, state.foodLog, state.foodLibraryUserItems, standardFoods) {
-            pricedFromLibraryKey
-                ?.let { foodLibraryItemByKey(it, standardFoods, state.foodLibraryUserItems, languageTag)?.asSuggestion() }
-                ?: pricedFromName?.let { foodSuggestionForName(it, state.foodLog) }
+            foodDraftPricingSource(
+                libraryKey = pricedFromLibraryKey,
+                name = pricedFromName,
+                standard = standardFoods,
+                user = state.foodLibraryUserItems,
+                log = state.foodLog,
+                languageTag = languageTag,
+            )
         }
 
         val draft = FoodDraftState(
