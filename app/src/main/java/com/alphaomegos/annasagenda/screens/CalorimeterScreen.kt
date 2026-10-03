@@ -38,6 +38,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -626,12 +627,6 @@ private fun CalorimeterContent(
                         },
                     )
 
-                    if (state.foodLibraryVisible) {
-                        TextButton(onClick = { showLibrary.value = true }) {
-                            Text(stringResource(R.string.food_library_open))
-                        }
-                    }
-
                     OutlinedTextField(
                         value = foodKcal,
                         onValueChange = { apply(foodDraftAfterKcalTyped(draft, it)) },
@@ -651,6 +646,22 @@ private fun CalorimeterContent(
                             text = stringResource(R.string.invalid_number),
                             color = MaterialTheme.colorScheme.error
                         )
+                    }
+
+                    // Under both fields, as wide as they are (03.10): the
+                    // library fills them, so it comes after them.
+                    if (state.foodLibraryVisible) {
+                        OutlinedButton(
+                            onClick = { showLibrary.value = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 52.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.food_library_open),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
                     }
                 }
             },

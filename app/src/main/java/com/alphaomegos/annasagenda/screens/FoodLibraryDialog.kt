@@ -11,6 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -75,6 +80,7 @@ internal fun foodCategoryLabelRes(category: FoodCategory): Int = when (category)
     FoodCategory.ALCOHOL -> R.string.food_category_alcohol
     FoodCategory.DESSERT -> R.string.food_category_dessert
     FoodCategory.FASTFOOD -> R.string.food_category_fastfood
+    FoodCategory.OTHER -> R.string.food_category_other
 }
 
 /**
@@ -174,22 +180,32 @@ internal fun FoodLibraryDialog(
                     }
 
                     shelf == null -> {
-                        LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
-                            items(FoodCategory.entries, key = { it.name }) { category ->
-                                Row(
+                        // Two columns: every shelf on the screen at once (03.10).
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.heightIn(max = 440.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            gridItems(FoodCategory.entries, key = { it.name }) { category ->
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { shelfName = category.name }
-                                        .padding(vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
+                                        .padding(vertical = 8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
                                     Icon(
                                         imageVector = AppIcons.foodCategory(category),
                                         contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
+                                        modifier = Modifier.size(28.dp),
                                     )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(stringResource(foodCategoryLabelRes(category)))
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = stringResource(foodCategoryLabelRes(category)),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        textAlign = TextAlign.Center,
+                                    )
                                 }
                             }
                         }

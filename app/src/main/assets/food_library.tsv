@@ -2,7 +2,7 @@
 #
 # One food per line, columns separated by TABs:
 #   id        stable, never reused or renamed: [a-z0-9.-]+
-#   category  MEAT FISH DAIRY VEGETABLES GRAIN BREAD DRINKS ALCOHOL DESSERT FASTFOOD
+#   category  MEAT FISH DAIRY VEGETABLES GRAIN BREAD DRINKS ALCOHOL DESSERT FASTFOOD OTHER
 #   amount    the portion kcal is for, a whole number, or empty
 #   unit      g or ml (written back as г/мл in Russian), or empty with no amount
 #   kcal      for that portion, a whole number

@@ -64,5 +64,6 @@
     <string name="food_category_drinks">Drinks</string>
     <string name="food_category_alcohol">Alcohol</string>
     <string name="food_category_dessert">Desserts</string>
+    <string name="food_category_other">Other</string>
     <string name="food_category_fastfood">Fast food</string>
 </resources>

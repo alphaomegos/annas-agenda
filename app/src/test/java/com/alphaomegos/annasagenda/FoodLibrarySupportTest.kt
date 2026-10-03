@@ -152,4 +152,13 @@ class FoodLibrarySupportTest {
         assertEquals(40, food.amount)
         assertEquals(160, food.kcal)
     }
+
+    /** 03.10: a shelf for what is not sorted yet, shown last, readable from the file. */
+    @Test
+    fun otherIsTheLastShelfAndTheFileKnowsIt() {
+        assertEquals(FoodCategory.OTHER, FoodCategory.entries.last())
+        val parsed = parseFoodLibrary(row("misc.thing", "OTHER", "", "", "10", "en=Thing"))
+        assertTrue(parsed.problems.isEmpty())
+        assertEquals(FoodCategory.OTHER, parsed.foods.single().category)
+    }
 }

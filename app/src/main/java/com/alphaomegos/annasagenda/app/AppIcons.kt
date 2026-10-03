@@ -3,6 +3,7 @@ package com.alphaomegos.annasagenda
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BreakfastDining
 import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Fastfood
@@ -42,5 +43,6 @@ internal object AppIcons {
         FoodCategory.ALCOHOL -> Icons.Filled.WineBar
         FoodCategory.DESSERT -> Icons.Filled.Cake
         FoodCategory.FASTFOOD -> Icons.Filled.Fastfood
+        FoodCategory.OTHER -> Icons.Filled.Category
     }
 }

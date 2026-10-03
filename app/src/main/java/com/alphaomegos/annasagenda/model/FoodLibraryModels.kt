@@ -18,6 +18,9 @@ enum class FoodCategory {
     ALCOHOL,
     DESSERT,
     FASTFOOD,
+
+    /** Everything that is not sorted yet (03.10); sorted later from the backup. */
+    OTHER,
 }
 
 /**

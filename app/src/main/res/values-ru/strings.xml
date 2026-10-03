@@ -529,6 +529,7 @@
     <string name="food_category_drinks">Напитки</string>
     <string name="food_category_alcohol">Алкоголь</string>
     <string name="food_category_dessert">Десерты</string>
+    <string name="food_category_other">Прочее</string>
     <string name="food_category_fastfood">Фастфуд</string>
     <!-- Notifications (0144) -->
     <string name="notif_channel_summary">Сводка дня</string>

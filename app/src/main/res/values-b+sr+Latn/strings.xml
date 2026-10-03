@@ -388,6 +388,7 @@
     <string name="food_category_drinks">Pića</string>
     <string name="food_category_alcohol">Alkohol</string>
     <string name="food_category_dessert">Deserti</string>
+    <string name="food_category_other">Ostalo</string>
     <string name="food_category_fastfood">Brza hrana</string>
     <!-- Notifications (0144) -->
     <string name="notif_channel_summary">Dnevni pregled</string>
