@@ -56,6 +56,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
@@ -699,6 +705,11 @@ private fun MainMenuList(
         ) { index, item ->
             val isDragging = index == draggingIndex
             val isSwiping = swipingItemId == item.id
+            // The gesture below is keyed on the item, not on its place, so it
+            // outlives a move by the arrows: read the place and the rule as
+            // they are now, not as they were when the gesture started (04.10).
+            val currentIndex by rememberUpdatedState(index)
+            val currentCanHide by rememberUpdatedState(canHideItems)
             val rowTranslationX = if (isSwiping) swipeOffsetX else 0f
 
             val baseModifier = Modifier
@@ -717,7 +728,13 @@ private fun MainMenuList(
 
             val tapAndHoldModifier =
                 if (!reorderMode) {
-                    Modifier.pointerInput(item.id) {
+                    // The taps come through a gesture detector, which TalkBack
+                    // cannot press; the same two actions are named for it here.
+                    Modifier.semantics(mergeDescendants = true) {
+                        role = Role.Button
+                        this.onClick(label = null) { item.onClick(); true }
+                        this.onLongClick(label = null) { onStartReorder(); true }
+                    }.pointerInput(item.id) {
                         detectTapGestures(
                             onTap = { item.onClick() },
                             onPress = {
@@ -767,7 +784,7 @@ private fun MainMenuList(
                                         if (
                                             swipingItemId == item.id &&
                                             swipeOffsetX <= -hideThresholdPx &&
-                                            canHideItems
+                                            currentCanHide
                                         ) {
                                             swipingItemId = null
                                             swipeOffsetX = 0f
@@ -809,7 +826,7 @@ private fun MainMenuList(
                                         MenuGestureAxis.Vertical -> {
                                             swipingItemId = null
                                             swipeOffsetX = 0f
-                                            onDragStart(index)
+                                            onDragStart(currentIndex)
                                             return@detectDragGestures
                                         }
                                     }
@@ -819,7 +836,7 @@ private fun MainMenuList(
                                 when (axis) {
                                     MenuGestureAxis.Horizontal -> {
                                         change.consume()
-                                        if (!canHideItems) return@detectDragGestures
+                                        if (!currentCanHide) return@detectDragGestures
                                         swipingItemId = item.id
                                         swipeOffsetX = min(0f, swipeOffsetX + dragAmount.x)
                                     }

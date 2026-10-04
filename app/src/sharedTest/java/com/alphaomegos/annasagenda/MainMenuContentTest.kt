@@ -2,7 +2,10 @@ package com.alphaomegos.annasagenda.screens
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -96,6 +99,52 @@ class MainMenuContentTest {
 
         composeRule.onNodeWithText(activity.getString(R.string.calendar))
             .performTouchInput { click() }
+
+        composeRule.runOnIdle {
+            assertEquals(1, calendarClicks)
+        }
+    }
+
+    /**
+     * A row is pressed through a gesture detector, which carries no
+     * semantics; TalkBack could find "Calendar" and not press it (04.10).
+     * Pressed here the way TalkBack presses: by the semantics action.
+     */
+    @Test
+    fun mainMenuContent_aRowCanBePressedByTalkBack() {
+        var calendarClicks = 0
+
+        composeRule.setContent {
+            MaterialTheme {
+                MainMenuContent(
+                    today = anOrdinaryDay,
+                    langIconRes = R.drawable.ic_langflag_en,
+                    undoneLampIconRes = R.drawable.ic_undone_lamp_green,
+                    menuEntries = listOf(
+                        MenuEntry(
+                            id = "calendar",
+                            iconRes = R.drawable.ic_menu_calendar,
+                            titleRes = R.string.calendar,
+                            onClick = { calendarClicks++ },
+                        ),
+                    ),
+                    menuOrderIds = listOf("calendar"),
+                    menuHiddenIds = emptySet(),
+                    onMenuOrderChange = {},
+                    onHideMenuItem = {},
+                    onShowAllMenuItems = {},
+                    onLanguage = {},
+                    onUndone = {},
+                    onExport = {},
+                    onImport = {},
+                    onResetConfirmed = {},
+                )
+            }
+        }
+
+        val calendar = composeRule.onNodeWithText(composeRule.activity.getString(R.string.calendar))
+        calendar.assertHasClickAction()
+        calendar.performSemanticsAction(SemanticsActions.OnClick)
 
         composeRule.runOnIdle {
             assertEquals(1, calendarClicks)

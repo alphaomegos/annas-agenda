@@ -17,6 +17,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -142,7 +147,13 @@ internal fun MenuTile(
     val longClick = onLongClick
     when {
         enabled && click != null && longClick != null -> ElevatedCard(
-            modifier = modifier.pointerInput(click, longClick) {
+            // Taps through a gesture detector carry no semantics; name the two
+            // actions so TalkBack can press and long-press the tile (04.10).
+            modifier = modifier.semantics(mergeDescendants = true) {
+                role = Role.Button
+                this.onClick(label = null) { click(); true }
+                this.onLongClick(label = null) { longClick(); true }
+            }.pointerInput(click, longClick) {
                 detectTapGestures(
                     onTap = { click() },
                     onLongPress = { longClick() },

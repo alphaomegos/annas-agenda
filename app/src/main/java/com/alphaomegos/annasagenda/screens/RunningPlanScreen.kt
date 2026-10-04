@@ -18,6 +18,7 @@ import com.alphaomegos.annasagenda.RunningMode
 import com.alphaomegos.annasagenda.appExtraColors
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.ConfirmDialog
+import com.alphaomegos.annasagenda.components.PickDateDialog
 import com.alphaomegos.annasagenda.RunningPlanEntry
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -34,7 +35,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
-import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.platform.LocalContext
@@ -58,6 +58,8 @@ fun RunningPlanScreen(
     val showApprove = rememberSaveable { mutableStateOf(false) }
 
     val showReset = rememberSaveable { mutableStateOf(false) }
+    // The bonus day's picker: the app's own, like every other date in it.
+    val showBonusPicker = rememberSaveable { mutableStateOf(false) }
 
     val resetPhrase = rememberSaveable { mutableStateOf("") }
 
@@ -100,26 +102,7 @@ fun RunningPlanScreen(
 
                     if (planActions && approved) {
                         IconButton(
-                            onClick = {
-                                val initial = state.runningPlanEntries.lastOrNull()?.date ?: LocalDate.now()
-                                DatePickerDialog(
-                                    context,
-                                    { _, year, month, dayOfMonth ->
-                                        val picked = LocalDate.of(year, month + 1, dayOfMonth)
-                                        val ok = vm.addRunningPlanBonusEntry(picked)
-                                        if (!ok) {
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(R.string.running_bonus_exists),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    },
-                                    initial.year,
-                                    initial.monthValue - 1,
-                                    initial.dayOfMonth
-                                ).show()
-                            }
+                            onClick = { showBonusPicker.value = true }
                         ) {
                             Icon(
                                 Icons.Default.Add,
@@ -203,6 +186,25 @@ fun RunningPlanScreen(
                 }
             }
         }
+    }
+
+    if (showBonusPicker.value) {
+        // Was the platform DatePickerDialog until 04.10: its buttons spoke the
+        // phone's language, and turning the phone closed it.
+        PickDateDialog(
+            initialDate = state.runningPlanEntries.lastOrNull()?.date ?: LocalDate.now(),
+            onDismiss = { showBonusPicker.value = false },
+            onPicked = { picked ->
+                val ok = vm.addRunningPlanBonusEntry(picked)
+                if (!ok) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.running_bonus_exists),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            },
+        )
     }
 
     if (showApprove.value) {
