@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -85,6 +86,7 @@ import java.time.LocalDate
 fun MetroScreen(
     vm: AppViewModel,
     onBack: () -> Unit,
+    onEditScheme: (Long) -> Unit = {},
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val scheme = remember(state.metroSchemes, state.metroSelection) {
@@ -108,6 +110,13 @@ fun MetroScreen(
                 title = { Text(scheme?.city ?: stringResource(R.string.menu_metro)) },
                 navigationIcon = {
                     TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                },
+                actions = {
+                    if (scheme != null && ownScheme) {
+                        IconButton(onClick = { onEditScheme(scheme.id) }) {
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.metro_edit))
+                        }
+                    }
                 },
             )
         },
@@ -180,7 +189,11 @@ fun MetroScreen(
         CreateSchemeDialog(
             onDismiss = { creating = false },
             onCreate = { city ->
-                if (vm.createMetroScheme(city) != null) creating = false
+                val id = vm.createMetroScheme(city)
+                if (id != null) {
+                    creating = false
+                    onEditScheme(id)
+                }
             },
         )
     }

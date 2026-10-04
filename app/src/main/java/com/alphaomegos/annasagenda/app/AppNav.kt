@@ -29,7 +29,10 @@ import com.alphaomegos.annasagenda.screens.RunningPlanScreen
 import com.alphaomegos.annasagenda.screens.media.SeriesDetailsScreen
 import com.alphaomegos.annasagenda.screens.SomedayScreen
 import com.alphaomegos.annasagenda.screens.UndoneTasksScreen
+import com.alphaomegos.annasagenda.screens.metro.MetroLineEditorScreen
+import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
+import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
 import java.time.LocalDate
 import com.alphaomegos.annasagenda.*
 import com.alphaomegos.annasagenda.model.*
@@ -54,6 +57,9 @@ private object Route {
     const val RUNNING = "running"
     const val COUNTERS = "counters"
     const val METRO = "metro"
+    const val METRO_SCHEME = "metro_scheme"
+    const val METRO_LINE = "metro_line"
+    const val METRO_STATION = "metro_station"
 
     const val UNDONE = "undone"
 
@@ -195,6 +201,40 @@ fun AppNav(
         composable(Route.METRO) {
             MetroScreen(
                 vm = vm,
+                onBack = { nav.popBackStack() },
+                onEditScheme = { id -> nav.navigate("${Route.METRO_SCHEME}/$id") },
+            )
+        }
+
+        composable("${Route.METRO_SCHEME}/{schemeId}") { entry ->
+            val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
+            MetroSchemeEditorScreen(
+                vm = vm,
+                schemeId = schemeId,
+                onBack = { nav.popBackStack() },
+                onOpenLine = { lineId -> nav.navigate("${Route.METRO_LINE}/$schemeId/$lineId") },
+            )
+        }
+
+        composable("${Route.METRO_LINE}/{schemeId}/{lineId}") { entry ->
+            val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
+            val lineId = entry.arguments?.getString("lineId")?.toLongOrNull() ?: -1L
+            MetroLineEditorScreen(
+                vm = vm,
+                schemeId = schemeId,
+                lineId = lineId,
+                onBack = { nav.popBackStack() },
+                onOpenStation = { stationId -> nav.navigate("${Route.METRO_STATION}/$schemeId/$stationId") },
+            )
+        }
+
+        composable("${Route.METRO_STATION}/{schemeId}/{stationId}") { entry ->
+            val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
+            val stationId = entry.arguments?.getString("stationId")?.toLongOrNull() ?: -1L
+            MetroStationEditorScreen(
+                vm = vm,
+                schemeId = schemeId,
+                stationId = stationId,
                 onBack = { nav.popBackStack() },
             )
         }
