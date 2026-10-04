@@ -57,7 +57,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.ReadingShelf
+import com.alphaomegos.annasagenda.model.ReadingShelf
 import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
 import kotlin.math.ceil
 import kotlin.math.floor

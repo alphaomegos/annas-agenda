@@ -23,13 +23,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.RepeatRule
+import com.alphaomegos.annasagenda.model.RepeatRule
 import com.alphaomegos.annasagenda.components.PickTimeDialog
-import com.alphaomegos.annasagenda.formatTaskTime
-import com.alphaomegos.annasagenda.minuteOfDay
-import com.alphaomegos.annasagenda.repeatRuleFromSavedStrings
-import com.alphaomegos.annasagenda.repeatRuleToSavedStrings
-import com.alphaomegos.annasagenda.timeFromMinuteOfDay
+import com.alphaomegos.annasagenda.support.formatTaskTime
+import com.alphaomegos.annasagenda.support.minuteOfDay
+import com.alphaomegos.annasagenda.support.repeatRuleFromSavedStrings
+import com.alphaomegos.annasagenda.support.repeatRuleToSavedStrings
+import com.alphaomegos.annasagenda.support.timeFromMinuteOfDay
 import java.time.LocalTime
 
 /** A rule as five strings in a Bundle; see repeatRuleToSavedStrings. */

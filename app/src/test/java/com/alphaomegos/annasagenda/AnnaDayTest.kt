@@ -4,6 +4,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * The twenty-ninth of July, and the three hundred and sixty-four days that

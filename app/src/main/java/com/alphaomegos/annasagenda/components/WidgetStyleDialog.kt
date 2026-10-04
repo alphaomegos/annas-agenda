@@ -23,8 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.WidgetStyle
-import com.alphaomegos.annasagenda.WidgetTextColor
+import com.alphaomegos.annasagenda.model.WidgetStyle
+import com.alphaomegos.annasagenda.model.WidgetTextColor
 import kotlin.math.roundToInt
 
 /**

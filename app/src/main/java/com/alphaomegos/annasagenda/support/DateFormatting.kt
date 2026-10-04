@@ -1,9 +1,13 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * A date as this app writes dates, in the language the app is set to.

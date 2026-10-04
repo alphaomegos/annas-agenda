@@ -22,10 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.DateTasksBlock
-import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
+import com.alphaomegos.annasagenda.support.isSuppressedTemplateTaskOnItsDate
 
 @Composable
 fun SomedayScreen(

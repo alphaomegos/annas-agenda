@@ -1,6 +1,10 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.model
 
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /** Daily goal changes: new value applies from [date] and all future days. */
 data class CalorieGoalChange(

@@ -1,5 +1,10 @@
 package com.alphaomegos.annasagenda
 
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
+
 /** Real milliseconds per look. See [awaitLoaded] for why this is not a delay. */
 private const val WAIT_STEP_MILLIS = 20L
 

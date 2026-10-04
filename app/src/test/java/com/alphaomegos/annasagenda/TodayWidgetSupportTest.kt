@@ -8,6 +8,10 @@ import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /** The home-screen widget: today's tasks in day order, ticked from outside the app. */
 class TodayWidgetSupportTest {

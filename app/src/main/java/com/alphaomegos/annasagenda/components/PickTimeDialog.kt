@@ -20,7 +20,7 @@ import java.time.temporal.ChronoUnit
  * time most often meant by somebody adding something to today.
  *
  * Fixed to the 24-hour clock, to match how the day shows times
- * ([com.alphaomegos.annasagenda.formatTaskTime]); both people using this app
+ * ([com.alphaomegos.annasagenda.support.formatTaskTime]); both people using this app
  * live on it.
  *
  * Material3 1.3 has no time picker dialog of its own, so the picker sits in

@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.FoodSuggestion
+import com.alphaomegos.annasagenda.support.FoodSuggestion
 import com.alphaomegos.annasagenda.R
 
 /**

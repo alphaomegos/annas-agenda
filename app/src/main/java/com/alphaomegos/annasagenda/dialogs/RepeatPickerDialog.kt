@@ -36,11 +36,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.RepeatFreq
-import com.alphaomegos.annasagenda.RepeatRule
-import com.alphaomegos.annasagenda.repeatFreqFromSavedName
-import com.alphaomegos.annasagenda.weekDaysFromSavedNames
-import com.alphaomegos.annasagenda.weekDaysToSavedNames
+import com.alphaomegos.annasagenda.model.RepeatFreq
+import com.alphaomegos.annasagenda.model.RepeatRule
+import com.alphaomegos.annasagenda.support.repeatFreqFromSavedName
+import com.alphaomegos.annasagenda.support.weekDaysFromSavedNames
+import com.alphaomegos.annasagenda.support.weekDaysToSavedNames
 import com.alphaomegos.annasagenda.util.orderedWeekDays
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.DayOfWeek

@@ -1,4 +1,4 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.data
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -11,6 +11,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.time.LocalDate
 import java.time.DayOfWeek
 import java.util.Locale
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * Brings a stored payload up to the current schema.

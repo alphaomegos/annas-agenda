@@ -1,4 +1,9 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.model
+
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * Which set of colours the app draws itself in.

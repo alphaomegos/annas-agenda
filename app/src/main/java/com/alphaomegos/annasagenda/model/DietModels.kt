@@ -1,4 +1,9 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.model
+
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * What the calendar may mark a day with, each the user's to switch on or off.

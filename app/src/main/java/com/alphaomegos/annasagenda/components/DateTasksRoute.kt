@@ -18,20 +18,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.DateTasksData
-import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.model.DateTasksData
+import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.RepeatRule
-import com.alphaomegos.annasagenda.Subtask
-import com.alphaomegos.annasagenda.Task
+import com.alphaomegos.annasagenda.model.RepeatRule
+import com.alphaomegos.annasagenda.model.Subtask
+import com.alphaomegos.annasagenda.model.Task
 import com.alphaomegos.annasagenda.dialogs.RepeatPickerDialog
-import com.alphaomegos.annasagenda.canMoveTask
-import com.alphaomegos.annasagenda.canShiftSeries
-import com.alphaomegos.annasagenda.isSuppressedTemplateTaskOnItsDate
-import com.alphaomegos.annasagenda.taskDayOrder
+import com.alphaomegos.annasagenda.support.canMoveTask
+import com.alphaomegos.annasagenda.support.canShiftSeries
+import com.alphaomegos.annasagenda.support.isSuppressedTemplateTaskOnItsDate
+import com.alphaomegos.annasagenda.support.taskDayOrder
 import java.time.LocalDate
 import java.time.LocalTime
-import com.alphaomegos.annasagenda.ManualCounter
+import com.alphaomegos.annasagenda.model.ManualCounter
 
 internal data class DateTasksActions(
     val toggleTaskDone: (Long) -> Unit,

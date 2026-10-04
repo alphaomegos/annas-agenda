@@ -1,6 +1,10 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import java.time.DayOfWeek
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * A half-made repeat rule, written down by name so it can be put in a Bundle.

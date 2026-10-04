@@ -1,8 +1,12 @@
 @file:OptIn(kotlinx.serialization.InternalSerializationApi::class)
 
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.data
 
 import java.time.DayOfWeek
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * Outcome of decoding a persisted app-state payload.

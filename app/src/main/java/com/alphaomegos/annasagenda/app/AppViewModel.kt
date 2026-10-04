@@ -1,4 +1,4 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.app
 
 import android.app.Application
 import android.net.Uri
@@ -26,6 +26,10 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import java.time.LocalDate
 import java.time.LocalTime
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
 
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {

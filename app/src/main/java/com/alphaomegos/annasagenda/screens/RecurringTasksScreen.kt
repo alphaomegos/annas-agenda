@@ -27,13 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.dialogs.EditTaskSeriesDialog
-import com.alphaomegos.annasagenda.formatTaskTime
-import com.alphaomegos.annasagenda.RepeatFreq
-import com.alphaomegos.annasagenda.RepeatRule
+import com.alphaomegos.annasagenda.support.formatTaskTime
+import com.alphaomegos.annasagenda.model.RepeatFreq
+import com.alphaomegos.annasagenda.model.RepeatRule
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

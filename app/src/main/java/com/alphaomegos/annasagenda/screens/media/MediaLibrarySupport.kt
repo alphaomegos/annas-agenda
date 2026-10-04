@@ -1,14 +1,14 @@
 package com.alphaomegos.annasagenda.screens.media
 
-import com.alphaomegos.annasagenda.AppState
-import com.alphaomegos.annasagenda.ReadingBook
-import com.alphaomegos.annasagenda.ReadingMediaFilter
-import com.alphaomegos.annasagenda.ReadingMediaType
-import com.alphaomegos.annasagenda.ReadingMovie
-import com.alphaomegos.annasagenda.ReadingSeries
-import com.alphaomegos.annasagenda.ReadingShelf
-import com.alphaomegos.annasagenda.ReadingSort
-import com.alphaomegos.annasagenda.ReadingSortField
+import com.alphaomegos.annasagenda.model.AppState
+import com.alphaomegos.annasagenda.model.ReadingBook
+import com.alphaomegos.annasagenda.model.ReadingMediaFilter
+import com.alphaomegos.annasagenda.model.ReadingMediaType
+import com.alphaomegos.annasagenda.model.ReadingMovie
+import com.alphaomegos.annasagenda.model.ReadingSeries
+import com.alphaomegos.annasagenda.model.ReadingShelf
+import com.alphaomegos.annasagenda.model.ReadingSort
+import com.alphaomegos.annasagenda.model.ReadingSortField
 import java.util.Locale
 
 internal sealed interface ReadingUiItem {

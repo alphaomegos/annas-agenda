@@ -18,6 +18,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.DayOfWeek
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * The first view model asked its questions without a device.

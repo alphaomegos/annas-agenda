@@ -18,6 +18,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayOutputStream
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * A cover is decoded once and kept.

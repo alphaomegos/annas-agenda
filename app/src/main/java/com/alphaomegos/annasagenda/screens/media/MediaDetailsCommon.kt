@@ -37,7 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.ConfirmDialog
-import com.alphaomegos.annasagenda.ReadingShelf
+import com.alphaomegos.annasagenda.model.ReadingShelf
 import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
 
 @Composable

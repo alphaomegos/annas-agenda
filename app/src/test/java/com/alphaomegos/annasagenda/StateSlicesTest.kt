@@ -5,6 +5,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * The point of a slice is that an unrelated change produces an equal value, so

@@ -1,6 +1,10 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.model
 
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 object AnthropometryFieldIds {
     const val ARM = "arm"

@@ -30,9 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.UNDONE_HORIZON_CHOICES
+import com.alphaomegos.annasagenda.support.UNDONE_HORIZON_CHOICES
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.components.WidgetStyleDialog

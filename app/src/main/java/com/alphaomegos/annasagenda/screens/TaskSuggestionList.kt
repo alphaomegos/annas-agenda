@@ -15,7 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.TaskSuggestion
+import com.alphaomegos.annasagenda.support.TaskSuggestion
 
 /**
  * The few things the user has written before that look like what they are

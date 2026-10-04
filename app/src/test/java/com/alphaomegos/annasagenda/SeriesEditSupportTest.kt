@@ -8,6 +8,10 @@ import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * Editing a repeating task from today on.

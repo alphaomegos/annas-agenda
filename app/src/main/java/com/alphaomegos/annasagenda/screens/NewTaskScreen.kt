@@ -45,13 +45,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.components.ColorPickerRow
 import com.alphaomegos.annasagenda.components.PickDateDialog
 import com.alphaomegos.annasagenda.components.PickTimeDialog
-import com.alphaomegos.annasagenda.formatTaskTime
-import com.alphaomegos.annasagenda.minuteOfDay
-import com.alphaomegos.annasagenda.timeFromMinuteOfDay
+import com.alphaomegos.annasagenda.support.formatTaskTime
+import com.alphaomegos.annasagenda.support.minuteOfDay
+import com.alphaomegos.annasagenda.support.timeFromMinuteOfDay
 import com.alphaomegos.annasagenda.components.ColorDot
 import com.alphaomegos.annasagenda.components.nextPaletteColor
 import com.alphaomegos.annasagenda.R
@@ -60,7 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
-import com.alphaomegos.annasagenda.NewTaskDraft
+import com.alphaomegos.annasagenda.data.NewTaskDraft
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.collectAsState
@@ -110,7 +110,7 @@ fun NewTaskScreen(
     var linkedManualCounterId by rememberSaveable { mutableStateOf<Long?>(null) }
     val showCounterPicker = rememberSaveable { mutableStateOf(false) }
 
-    val manualCounters = state.counters.filterIsInstance<com.alphaomegos.annasagenda.ManualCounter>()
+    val manualCounters = state.counters.filterIsInstance<com.alphaomegos.annasagenda.model.ManualCounter>()
     val selectedCounterTitle = manualCounters.firstOrNull { it.id == linkedManualCounterId }?.title
 
     LaunchedEffect(Unit) {

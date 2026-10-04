@@ -2,6 +2,10 @@ package com.alphaomegos.annasagenda
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * Buttons made of nothing but a picture have to say what they are.

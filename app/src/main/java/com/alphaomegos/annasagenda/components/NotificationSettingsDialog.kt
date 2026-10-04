@@ -32,14 +32,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.NotificationSettings
+import com.alphaomegos.annasagenda.model.NotificationSettings
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.REMINDER_LEAD_CHOICES
-import com.alphaomegos.annasagenda.SummaryToday
+import com.alphaomegos.annasagenda.model.REMINDER_LEAD_CHOICES
+import com.alphaomegos.annasagenda.model.SummaryToday
 import com.alphaomegos.annasagenda.canPostNotifications
-import com.alphaomegos.annasagenda.formatTaskTime
-import com.alphaomegos.annasagenda.minuteOfDay
-import com.alphaomegos.annasagenda.timeFromMinuteOfDay
+import com.alphaomegos.annasagenda.support.formatTaskTime
+import com.alphaomegos.annasagenda.support.minuteOfDay
+import com.alphaomegos.annasagenda.support.timeFromMinuteOfDay
 
 /** The lead as the reminders choice reads it; -1 stands for "off" in a Bundle. */
 private const val LEAD_OFF = -1

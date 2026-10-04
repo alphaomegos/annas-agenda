@@ -1,10 +1,14 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.temporal.WeekFields
 import java.util.Locale
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * Recurrence generation, extracted from AppViewModel so it can be exercised by

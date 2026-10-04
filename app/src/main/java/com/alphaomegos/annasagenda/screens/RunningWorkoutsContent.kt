@@ -38,12 +38,12 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.RunningWorkout
+import com.alphaomegos.annasagenda.model.RunningWorkout
 import com.alphaomegos.annasagenda.components.PickDateDialog
-import com.alphaomegos.annasagenda.formatRunningPace
-import com.alphaomegos.annasagenda.formatShortDate
-import com.alphaomegos.annasagenda.runningWorkoutPace
-import com.alphaomegos.annasagenda.runningWorkoutTotals
+import com.alphaomegos.annasagenda.support.formatRunningPace
+import com.alphaomegos.annasagenda.support.formatShortDate
+import com.alphaomegos.annasagenda.support.runningWorkoutPace
+import com.alphaomegos.annasagenda.support.runningWorkoutTotals
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.formatOneDecimal
 import java.time.LocalDate

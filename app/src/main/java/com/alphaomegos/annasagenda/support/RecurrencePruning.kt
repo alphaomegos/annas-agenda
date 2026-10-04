@@ -1,7 +1,11 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import java.time.DayOfWeek
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * How much of a day's list a prune pass was able to drop.

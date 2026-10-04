@@ -1,8 +1,12 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /** One line of the home-screen widget: a task of today, by its series-and-day key. */
 data class WidgetTaskRow(

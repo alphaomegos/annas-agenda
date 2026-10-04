@@ -1,6 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
-import com.alphaomegos.annasagenda.NewTaskDraftSubtask
+import com.alphaomegos.annasagenda.data.NewTaskDraftSubtask
 import java.time.LocalDate
 
 data class EditableNewTaskSubtask(

@@ -1,6 +1,10 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import kotlin.math.sqrt
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /** A point on the chart, in whatever units the caller is drawing in. */
 data class CurvePoint(val x: Float, val y: Float)

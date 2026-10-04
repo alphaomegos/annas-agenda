@@ -26,13 +26,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.ReadingMediaFilter
-import com.alphaomegos.annasagenda.ReadingShelf
-import com.alphaomegos.annasagenda.ReadingSortField
-import com.alphaomegos.annasagenda.ReadingViewMode
+import com.alphaomegos.annasagenda.model.ReadingMediaFilter
+import com.alphaomegos.annasagenda.model.ReadingShelf
+import com.alphaomegos.annasagenda.model.ReadingSortField
+import com.alphaomegos.annasagenda.model.ReadingViewMode
 
 
 @OptIn(ExperimentalMaterial3Api::class)

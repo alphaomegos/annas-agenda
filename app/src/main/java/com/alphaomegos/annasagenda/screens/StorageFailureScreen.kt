@@ -18,7 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppStateLoadResult
+import com.alphaomegos.annasagenda.data.AppStateLoadResult
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 

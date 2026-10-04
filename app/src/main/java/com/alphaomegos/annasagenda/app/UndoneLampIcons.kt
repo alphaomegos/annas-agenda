@@ -1,6 +1,10 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.app
 
 import androidx.annotation.DrawableRes
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
 
 /**
  * The picture for a lamp, in the theme the app is currently wearing.

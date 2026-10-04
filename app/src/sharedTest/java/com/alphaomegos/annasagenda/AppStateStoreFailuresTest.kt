@@ -23,6 +23,10 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.time.LocalDate
 import java.util.UUID
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * What the store does when what it finds is not what it can read.

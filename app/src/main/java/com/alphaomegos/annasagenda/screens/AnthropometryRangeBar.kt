@@ -21,12 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AnthropometryRange
-import com.alphaomegos.annasagenda.DateWindow
+import com.alphaomegos.annasagenda.support.AnthropometryRange
+import com.alphaomegos.annasagenda.support.DateWindow
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.PickDateDialog
-import com.alphaomegos.annasagenda.formatShortDate
+import com.alphaomegos.annasagenda.support.formatShortDate
 import java.time.LocalDate
 
 private val rangeLabels = listOf(

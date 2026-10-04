@@ -33,8 +33,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.ReadingMediaType
-import com.alphaomegos.annasagenda.ReadingShelf
+import com.alphaomegos.annasagenda.model.ReadingMediaType
+import com.alphaomegos.annasagenda.model.ReadingShelf
 
 /**
  * Everything the three details screens say about themselves.

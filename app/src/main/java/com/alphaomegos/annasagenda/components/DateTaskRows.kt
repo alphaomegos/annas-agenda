@@ -35,9 +35,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.Subtask
-import com.alphaomegos.annasagenda.Task
-import com.alphaomegos.annasagenda.formatTaskTime
+import com.alphaomegos.annasagenda.model.Subtask
+import com.alphaomegos.annasagenda.model.Task
+import com.alphaomegos.annasagenda.support.formatTaskTime
 
 @Composable
 internal fun DateTaskRow(

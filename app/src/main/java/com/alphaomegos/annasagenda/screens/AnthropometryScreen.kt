@@ -25,8 +25,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
-import com.alphaomegos.annasagenda.canPageAnthropometryBack
-import com.alphaomegos.annasagenda.canPageAnthropometryForward
+import com.alphaomegos.annasagenda.support.canPageAnthropometryBack
+import com.alphaomegos.annasagenda.support.canPageAnthropometryForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,21 +56,21 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AnthropometryEntry
-import com.alphaomegos.annasagenda.AnthropometryRange
-import com.alphaomegos.annasagenda.CurvePoint
-import com.alphaomegos.annasagenda.DateWindow
-import com.alphaomegos.annasagenda.anthropometryEntriesIn
-import com.alphaomegos.annasagenda.anthropometryWindowFor
-import com.alphaomegos.annasagenda.caloriesBurnedRunning
+import com.alphaomegos.annasagenda.model.AnthropometryEntry
+import com.alphaomegos.annasagenda.support.AnthropometryRange
+import com.alphaomegos.annasagenda.support.CurvePoint
+import com.alphaomegos.annasagenda.support.DateWindow
+import com.alphaomegos.annasagenda.support.anthropometryEntriesIn
+import com.alphaomegos.annasagenda.support.anthropometryWindowFor
+import com.alphaomegos.annasagenda.support.caloriesBurnedRunning
 import com.alphaomegos.annasagenda.dialogs.AnthropometryInputDialog
 import com.alphaomegos.annasagenda.dialogs.AnthropometryDayInputDialog
-import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.app.AppViewModel
 import androidx.compose.ui.graphics.toArgb
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.appExtraColors
-import com.alphaomegos.annasagenda.formatShortDate
-import com.alphaomegos.annasagenda.smoothCurveSegments
+import com.alphaomegos.annasagenda.app.appExtraColors
+import com.alphaomegos.annasagenda.support.formatShortDate
+import com.alphaomegos.annasagenda.support.smoothCurveSegments
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.formatOneDecimal
 import com.alphaomegos.annasagenda.util.formatTwoDecimals
@@ -78,10 +78,10 @@ import com.alphaomegos.annasagenda.util.formatSignedOneDecimal
 import java.time.LocalDate
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import com.alphaomegos.annasagenda.KCAL_PER_KG_FAT
-import com.alphaomegos.annasagenda.calorieDeficitInRange
-import com.alphaomegos.annasagenda.AnthropometryFieldIds
-import com.alphaomegos.annasagenda.defaultAnthropometryFieldIds
+import com.alphaomegos.annasagenda.support.KCAL_PER_KG_FAT
+import com.alphaomegos.annasagenda.support.calorieDeficitInRange
+import com.alphaomegos.annasagenda.model.AnthropometryFieldIds
+import com.alphaomegos.annasagenda.model.defaultAnthropometryFieldIds
 
 enum class AnthropometryAxis { CM, KG }
 

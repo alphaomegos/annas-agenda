@@ -1,8 +1,12 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.data
 
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.app.*
 
 /* ---------------------------
    Mapping

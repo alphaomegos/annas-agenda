@@ -24,8 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.DateTasksData
-import com.alphaomegos.annasagenda.subtaskMoveTargets
+import com.alphaomegos.annasagenda.model.DateTasksData
+import com.alphaomegos.annasagenda.support.subtaskMoveTargets
 import com.alphaomegos.annasagenda.R
 import java.time.LocalDate
 

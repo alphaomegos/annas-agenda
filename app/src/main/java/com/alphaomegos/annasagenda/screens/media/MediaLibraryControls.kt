@@ -32,8 +32,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.appExtraColors
-import com.alphaomegos.annasagenda.ReadingMediaFilter
+import com.alphaomegos.annasagenda.app.appExtraColors
+import com.alphaomegos.annasagenda.model.ReadingMediaFilter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

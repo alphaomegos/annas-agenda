@@ -12,6 +12,10 @@ import org.junit.Assert.assertTrue
 import java.time.DayOfWeek
 import org.junit.Test
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 class AppStateStoreMigrationTest {
 

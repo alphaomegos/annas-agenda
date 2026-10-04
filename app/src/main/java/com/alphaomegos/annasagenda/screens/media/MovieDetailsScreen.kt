@@ -10,14 +10,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import com.alphaomegos.annasagenda.AppViewModel
-import com.alphaomegos.annasagenda.NoShelfYears
+import com.alphaomegos.annasagenda.app.AppViewModel
+import com.alphaomegos.annasagenda.support.NoShelfYears
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.ReadingMediaType
-import com.alphaomegos.annasagenda.ShelfYears
-import com.alphaomegos.annasagenda.isPossibleReleaseYear
-import com.alphaomegos.annasagenda.shelfYearText
-import com.alphaomegos.annasagenda.shelfYearsFromText
+import com.alphaomegos.annasagenda.model.ReadingMediaType
+import com.alphaomegos.annasagenda.support.ShelfYears
+import com.alphaomegos.annasagenda.support.isPossibleReleaseYear
+import com.alphaomegos.annasagenda.support.shelfYearText
+import com.alphaomegos.annasagenda.support.shelfYearsFromText
 import java.time.LocalDate
 
 @Composable

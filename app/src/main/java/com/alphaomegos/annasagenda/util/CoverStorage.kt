@@ -9,7 +9,7 @@ import android.os.Build
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.net.toUri
-import com.alphaomegos.annasagenda.AppState
+import com.alphaomegos.annasagenda.model.AppState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File

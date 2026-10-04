@@ -1,6 +1,6 @@
 @file:OptIn(kotlinx.serialization.InternalSerializationApi::class)
 
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -17,6 +17,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.app.*
 
 internal const val APP_STATE_STORE_NAME = "app_state_store"
 

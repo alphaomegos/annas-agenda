@@ -1,4 +1,9 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
+
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * The state after something happened to a book, with the session in progress

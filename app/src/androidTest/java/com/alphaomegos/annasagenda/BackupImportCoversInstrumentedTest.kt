@@ -15,6 +15,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.nio.charset.StandardCharsets
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * Restoring from a state-only archive must not destroy cover images.

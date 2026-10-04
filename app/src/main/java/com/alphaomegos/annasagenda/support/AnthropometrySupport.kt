@@ -1,7 +1,11 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import java.time.LocalDate
 import kotlin.math.round
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 fun normalizeAnthropometryEnabledFieldIds(ids: Iterable<String>): Set<String> {
     val normalized = ids

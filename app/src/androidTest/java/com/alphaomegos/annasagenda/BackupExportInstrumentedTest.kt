@@ -33,6 +33,10 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.zip.ZipInputStream
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 @RunWith(AndroidJUnit4::class)
 class BackupExportInstrumentedTest {

@@ -2,6 +2,10 @@ package com.alphaomegos.annasagenda
 
 import org.junit.Assert.fail
 import org.junit.Test
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * The tests in src/sharedTest are actually in this run.

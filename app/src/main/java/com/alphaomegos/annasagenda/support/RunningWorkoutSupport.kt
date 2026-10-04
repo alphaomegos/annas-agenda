@@ -1,7 +1,11 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /** Minutes and seconds per kilometre, the way runners say a pace. */
 data class RunningPace(val minutes: Int, val seconds: Int)

@@ -1,6 +1,10 @@
 package com.alphaomegos.annasagenda
 
 import java.io.File
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * The app's own Kotlin sources, for the tests that read the code instead of

@@ -33,14 +33,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.alphaomegos.annasagenda.MAIN_MENU_TILE_GAP_DP
-import com.alphaomegos.annasagenda.MenuCell
+import com.alphaomegos.annasagenda.support.MAIN_MENU_TILE_GAP_DP
+import com.alphaomegos.annasagenda.support.MenuCell
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.MenuTile
 import com.alphaomegos.annasagenda.components.MenuTileLabel
 import com.alphaomegos.annasagenda.components.TinyIconButton
-import com.alphaomegos.annasagenda.mainMenuTileHeightDp
-import com.alphaomegos.annasagenda.menuDropTarget
+import com.alphaomegos.annasagenda.support.mainMenuTileHeightDp
+import com.alphaomegos.annasagenda.support.menuDropTarget
 
 /** How much a held tile grows, so it reads as lifted off the grid. */
 private const val DRAGGED_TILE_SCALE = 1.06f

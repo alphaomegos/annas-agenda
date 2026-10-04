@@ -1,9 +1,13 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
 
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.time.LocalDate
 import java.util.Locale
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 fun parseRunningDurationToMinutes(raw: String): Int? {
     val digitsAll = raw.filter { it.isDigit() }

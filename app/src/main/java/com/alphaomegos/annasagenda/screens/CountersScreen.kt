@@ -20,17 +20,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppViewModel
+import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import java.time.LocalDate
 import kotlin.math.roundToInt
-import com.alphaomegos.annasagenda.ManualCounter
-import com.alphaomegos.annasagenda.DateRangeCounter
+import com.alphaomegos.annasagenda.model.ManualCounter
+import com.alphaomegos.annasagenda.model.DateRangeCounter
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.RemainingPart
-import com.alphaomegos.annasagenda.RemainingUnit
-import com.alphaomegos.annasagenda.remainingFractionOf
-import com.alphaomegos.annasagenda.remainingUntil
+import com.alphaomegos.annasagenda.support.RemainingPart
+import com.alphaomegos.annasagenda.support.RemainingUnit
+import com.alphaomegos.annasagenda.support.remainingFractionOf
+import com.alphaomegos.annasagenda.support.remainingUntil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

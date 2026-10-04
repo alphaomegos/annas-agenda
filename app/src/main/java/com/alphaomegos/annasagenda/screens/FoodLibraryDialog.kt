@@ -42,15 +42,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppIcons
-import com.alphaomegos.annasagenda.FoodCategory
-import com.alphaomegos.annasagenda.FoodLibraryItem
-import com.alphaomegos.annasagenda.FoodLibraryUserItem
+import com.alphaomegos.annasagenda.app.AppIcons
+import com.alphaomegos.annasagenda.model.FoodCategory
+import com.alphaomegos.annasagenda.model.FoodLibraryItem
+import com.alphaomegos.annasagenda.model.FoodLibraryUserItem
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.StandardFood
-import com.alphaomegos.annasagenda.foodLibrarySearch
-import com.alphaomegos.annasagenda.foodLibraryShelf
-import com.alphaomegos.annasagenda.parseFoodLibrary
+import com.alphaomegos.annasagenda.support.StandardFood
+import com.alphaomegos.annasagenda.support.foodLibrarySearch
+import com.alphaomegos.annasagenda.support.foodLibraryShelf
+import com.alphaomegos.annasagenda.support.parseFoodLibrary
 
 /** Where the shipped library lives; see the header of the file for its format. */
 private const val FOOD_LIBRARY_ASSET = "food_library.tsv"

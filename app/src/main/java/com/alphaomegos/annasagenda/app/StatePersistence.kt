@@ -1,4 +1,4 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.app
 
 import android.content.Context
 import androidx.core.net.toUri
@@ -11,6 +11,10 @@ import com.alphaomegos.annasagenda.util.resolveStoredCoverFiles
 import com.alphaomegos.annasagenda.util.writeBackupToDocuments
 import com.alphaomegos.annasagenda.util.writeInternalCoverBytes
 import kotlinx.coroutines.launch
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
 
 /**
  * Everything the app keeps outside memory, in one place (04.10, step 22 of

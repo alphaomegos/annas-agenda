@@ -1,4 +1,9 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.support
+
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * The food library: the shelves that ship with the app (assets/

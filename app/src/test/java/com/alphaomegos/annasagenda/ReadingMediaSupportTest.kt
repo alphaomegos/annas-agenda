@@ -4,6 +4,10 @@ import com.alphaomegos.annasagenda.util.buildInternalCoverRef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
+import com.alphaomegos.annasagenda.app.*
 
 /**
  * The word that names a kind of media inside a cover file name.

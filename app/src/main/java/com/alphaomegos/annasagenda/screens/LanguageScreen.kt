@@ -22,8 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.MenuTile
-import com.alphaomegos.annasagenda.findActivity
-import com.alphaomegos.annasagenda.setAppLanguage
+import com.alphaomegos.annasagenda.app.findActivity
+import com.alphaomegos.annasagenda.app.setAppLanguage
 
 object AppLanguages {
     @Suppress("SpellCheckingInspection")

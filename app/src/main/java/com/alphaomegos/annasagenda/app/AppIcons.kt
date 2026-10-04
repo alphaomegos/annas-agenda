@@ -1,4 +1,4 @@
-package com.alphaomegos.annasagenda
+package com.alphaomegos.annasagenda.app
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BreakfastDining
@@ -16,6 +16,10 @@ import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.WineBar
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.alphaomegos.annasagenda.*
+import com.alphaomegos.annasagenda.model.*
+import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.data.*
 
 /**
  * Every picture the calendar marks and the food library use, in one place.

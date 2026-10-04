@@ -26,10 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.ManualCounter
+import com.alphaomegos.annasagenda.model.ManualCounter
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.Task
-import com.alphaomegos.annasagenda.formatTaskTime
+import com.alphaomegos.annasagenda.model.Task
+import com.alphaomegos.annasagenda.support.formatTaskTime
 
 @Composable
 internal fun EditTaskDialog(

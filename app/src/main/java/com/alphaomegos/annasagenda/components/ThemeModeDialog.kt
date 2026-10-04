@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.alphaomegos.annasagenda.AppThemeMode
+import com.alphaomegos.annasagenda.model.AppThemeMode
 import com.alphaomegos.annasagenda.R
 
 internal fun themeModeLabelRes(mode: AppThemeMode): Int = when (mode) {
