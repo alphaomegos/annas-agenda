@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.model
 
+import java.time.LocalDate
+
 /**
  * A metro map the user writes down, for one city (04.10).
  *
@@ -96,6 +98,7 @@ data class MetroStation(
     val name: String,
     val mapX: Float? = null,
     val mapY: Float? = null,
+    val closure: MetroClosure? = null,
 )
 
 /** A walk between two stations, either way. [minutes] null means the scheme's default. */
@@ -104,6 +107,7 @@ data class MetroTransfer(
     val aStationId: Long,
     val bStationId: Long,
     val minutes: Int? = null,
+    val closure: MetroClosure? = null,
 )
 
 /** How long the train takes between two neighbouring stations, either way. */
@@ -118,7 +122,21 @@ data class MetroExit(
     val id: Long,
     val stationId: Long,
     val name: String,
+    val closure: MetroClosure? = null,
 )
+
+/**
+ * Temporarily closed (04.10): a station, a transfer or an exit, shown grey.
+ *
+ * A closed station is passed through without stopping — one cannot get on,
+ * off or change there, but the train still runs. A closed transfer cannot be
+ * walked; a closed exit is not offered.
+ *
+ * [expectedOpening] is the day the user expects it back, if they know. The
+ * closure does **not** end by itself on that day: the metro screen asks
+ * then whether it has opened or the date moves, and only the answer opens it.
+ */
+data class MetroClosure(val expectedOpening: LocalDate? = null)
 
 /**
  * Where to sit: [car] and [door], both counted from 1 from the head of the

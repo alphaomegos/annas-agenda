@@ -35,7 +35,11 @@ sealed interface MetroRouteStep {
      * says the next station, which is [stationIds]' second.
      *
      * [hints] are where to sit so that getting off is quick: for the transfer
-     * that follows, or, on the last ride, for each of the station's exits.
+     * that follows, or, on the last ride, for each of the station's exits
+     * that is open.
+     *
+     * [passedClosedStationIds] are the closed stations the train runs
+     * through without stopping, in the order it meets them.
      */
     data class Ride(
         val lineId: Long,
@@ -43,6 +47,7 @@ sealed interface MetroRouteStep {
         val towardsStationIds: List<Long>,
         val minutes: Int,
         val hints: List<MetroHint>,
+        val passedClosedStationIds: List<Long> = emptyList(),
     ) : MetroRouteStep
 
     /**
@@ -63,12 +68,17 @@ sealed interface MetroRouteStep {
  * Sets, because a name can stand for more than one station: "Каховская" is on
  * two lines, and whichever one gives the better route is the one meant.
  * Starting where one already is gives an empty route.
+ *
+ * Closed stations (04.10) are neither a start nor an end — the screen warns
+ * about them before asking (decided 04.10) — nor a place to change; trains
+ * run through them. Closed transfers are not walked.
  */
 fun metroRoute(scheme: MetroScheme, from: Set<Long>, to: Set<Long>): MetroRoute? {
-    if (from.isEmpty() || to.isEmpty()) return null
-    if (from.any { it in to }) return MetroRoute(emptyList(), 0, 0)
-
     val net = MetroNetwork(scheme)
+    val starts = from.filter { it in net.stationIds && !net.isClosed(it) }.toSet()
+    val ends = to.filter { it in net.stationIds && !net.isClosed(it) }.toSet()
+    if (starts.isEmpty() || ends.isEmpty()) return null
+    if (starts.any { it in ends }) return MetroRoute(emptyList(), 0, 0)
 
     // A state is a station and the station the train came from; null means
     // the passenger is on the platform, free to take a train either way.
@@ -90,23 +100,26 @@ fun metroRoute(scheme: MetroScheme, from: Set<Long>, to: Set<Long>): MetroRoute?
         queue.add(Entry(state, minutes, transfers, order++))
     }
 
-    from.filter { it in net.stationIds }.sorted().forEach { offer(State(it, null), 0, 0, null) }
+    starts.sorted().forEach { offer(State(it, null), 0, 0, null) }
 
     var goal: State? = null
     while (queue.isNotEmpty()) {
         val (state, minutes, transfers) = queue.poll()
         val known = best[state]
         if (known != null && (known.first != minutes || known.second != transfers)) continue
-        if (state.station in to) {
+        if (state.station in ends) {
             goal = state
             break
         }
         val s = state.station
+        val closed = net.isClosed(s)
         for (n in net.neighbours(s)) {
             if (n == state.prev) continue
             var cost = net.segmentMinutes(s, n)
             var changes = 0
             if (state.prev != null && !net.continues(state.prev, s, n)) {
+                // Nobody gets off at a closed station, so nobody changes there.
+                if (closed) continue
                 cost += scheme.defaultTransferMinutes
                 changes = 1
             }
@@ -163,6 +176,10 @@ internal class MetroNetwork(private val scheme: MetroScheme) {
 
     val stationIds: Set<Long> = scheme.stations.mapTo(HashSet()) { it.id }
 
+    private val closedStations: Set<Long> = scheme.stations.filter { it.closure != null }.mapTo(HashSet()) { it.id }
+
+    fun isClosed(station: Long): Boolean = station in closedStations
+
     private val lineOf: Map<Long, Long> = scheme.stations.associate { it.id to it.lineId }
     private val lines: Map<Long, MetroLine> = scheme.lines.associateBy { it.id }
     private val topologies = HashMap<Long, MetroLineTopology>()
@@ -180,6 +197,7 @@ internal class MetroNetwork(private val scheme: MetroScheme) {
     private val walks: Map<Long, List<Pair<Long, Int>>> = buildMap<Long, MutableList<Pair<Long, Int>>> {
         scheme.transfers.forEach { t ->
             if (t.aStationId == t.bStationId || t.aStationId !in stationIds || t.bStationId !in stationIds) return@forEach
+            if (t.closure != null || t.aStationId in closedStations || t.bStationId in closedStations) return@forEach
             val minutes = (t.minutes ?: scheme.defaultTransferMinutes).coerceAtLeast(0)
             getOrPut(t.aStationId) { mutableListOf() } += t.bStationId to minutes
             getOrPut(t.bStationId) { mutableListOf() } += t.aStationId to minutes
@@ -204,9 +222,10 @@ internal class MetroNetwork(private val scheme: MetroScheme) {
         val lineId = lineOf.getValue(stations.first())
         val alight = stations.last()
         val cameFrom = stations[stations.size - 2]
+        val closedExits = scheme.exits.filter { it.closure != null }.mapTo(HashSet()) { it.id }
         val hints = scheme.hints.filter { h ->
             h.stationId == alight && h.fromStationId == cameFrom && when {
-                last -> h.target is MetroHintTarget.Exit
+                last -> h.target is MetroHintTarget.Exit && h.target.exitId !in closedExits
                 next != null -> h.target == next
                 else -> false
             }
@@ -217,6 +236,7 @@ internal class MetroNetwork(private val scheme: MetroScheme) {
             towardsStationIds = topology(lineId)?.terminalsAhead(cameFrom, alight).orEmpty(),
             minutes = stations.zipWithNext { a, b -> segmentMinutes(a, b) }.sum(),
             hints = hints,
+            passedClosedStationIds = stations.drop(1).dropLast(1).filter { it in closedStations },
         )
     }
 }

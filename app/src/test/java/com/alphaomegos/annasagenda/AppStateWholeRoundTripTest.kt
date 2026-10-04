@@ -273,15 +273,18 @@ class AppStateWholeRoundTripTest {
                 ),
                 stations = listOf(
                     MetroStation(10L, 1L, "Красные ворота", mapX = 0.25f, mapY = 0.5f),
-                    MetroStation(11L, 1L, "Чистые пруды"),
+                    MetroStation(11L, 1L, "Чистые пруды", closure = MetroClosure(expectedOpening = day.plusDays(30))),
                     MetroStation(12L, 1L, "Лубянка"),
                     MetroStation(13L, 1L, "Охотный ряд"),
                     MetroStation(20L, 5L, "Комсомольская"),
                     MetroStation(21L, 5L, "Курская"),
                     MetroStation(22L, 5L, "Таганская"),
                 ),
-                transfers = listOf(MetroTransfer(30L, 10L, 20L, minutes = 4)),
-                exits = listOf(MetroExit(40L, 12L, "к Детскому миру")),
+                transfers = listOf(MetroTransfer(30L, 10L, 20L, minutes = 4, closure = MetroClosure())),
+                exits = listOf(
+                    MetroExit(40L, 12L, "к Детскому миру"),
+                    MetroExit(41L, 12L, "к Политехническому", closure = MetroClosure(expectedOpening = day)),
+                ),
                 hints = listOf(
                     MetroHint(50L, stationId = 10L, fromStationId = 11L, car = 3, door = 2, target = MetroHintTarget.Transfer(20L)),
                     MetroHint(51L, stationId = 12L, fromStationId = 11L, car = 7, door = 1, target = MetroHintTarget.Exit(40L)),
@@ -368,6 +371,7 @@ class AppStateWholeRoundTripTest {
             "summaryMinutes", "reminderLeadMinutes",
             "widgetStyle", "backgroundPercent", "checkColorArgb",
             "metroSchemes", "metroSelection", "trunk", "branches", "fromStationId", "exitId", "toStationId",
+            "closed", "expectedOpeningEpochDay",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))
         }

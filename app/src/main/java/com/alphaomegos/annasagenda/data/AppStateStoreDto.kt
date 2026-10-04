@@ -155,6 +155,8 @@ internal data class MetroStationDto(
     val name: String,
     val mapX: Float? = null,
     val mapY: Float? = null,
+    val closed: Boolean = false,
+    val expectedOpeningEpochDay: Long? = null,
 )
 
 @Serializable
@@ -163,6 +165,8 @@ internal data class MetroTransferDto(
     val aStationId: Long,
     val bStationId: Long,
     val minutes: Int? = null,
+    val closed: Boolean = false,
+    val expectedOpeningEpochDay: Long? = null,
 )
 
 @Serializable
@@ -177,6 +181,8 @@ internal data class MetroExitDto(
     val id: Long,
     val stationId: Long,
     val name: String,
+    val closed: Boolean = false,
+    val expectedOpeningEpochDay: Long? = null,
 )
 
 /** Exactly one of [toStationId] (a transfer) and [exitId] (an exit) is set. */

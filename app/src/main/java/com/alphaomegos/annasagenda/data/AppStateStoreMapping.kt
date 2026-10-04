@@ -645,9 +645,27 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
             branches = l.branches.map { MetroBranchDto(it.id, it.fromStationId, it.stationIds) },
         )
     },
-    stations = stations.map { MetroStationDto(it.id, it.lineId, it.name, it.mapX, it.mapY) },
-    transfers = transfers.map { MetroTransferDto(it.id, it.aStationId, it.bStationId, it.minutes) },
-    exits = exits.map { MetroExitDto(it.id, it.stationId, it.name) },
+    stations = stations.map {
+        MetroStationDto(
+            it.id, it.lineId, it.name, it.mapX, it.mapY,
+            closed = it.closure != null,
+            expectedOpeningEpochDay = it.closure?.expectedOpening?.toEpochDay(),
+        )
+    },
+    transfers = transfers.map {
+        MetroTransferDto(
+            it.id, it.aStationId, it.bStationId, it.minutes,
+            closed = it.closure != null,
+            expectedOpeningEpochDay = it.closure?.expectedOpening?.toEpochDay(),
+        )
+    },
+    exits = exits.map {
+        MetroExitDto(
+            it.id, it.stationId, it.name,
+            closed = it.closure != null,
+            expectedOpeningEpochDay = it.closure?.expectedOpening?.toEpochDay(),
+        )
+    },
     hints = hints.map { h ->
         MetroHintDto(
             id = h.id,
@@ -688,9 +706,16 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
                 branches = l.branches.map { MetroBranch(it.id, it.fromStationId, it.stationIds) },
             )
         },
-        stations = stations.map { MetroStation(it.id, it.lineId, it.name, it.mapX, it.mapY) },
-        transfers = transfers.map { MetroTransfer(it.id, it.aStationId, it.bStationId, it.minutes?.coerceAtLeast(0)) },
-        exits = exits.map { MetroExit(it.id, it.stationId, it.name) },
+        stations = stations.map {
+            MetroStation(it.id, it.lineId, it.name, it.mapX, it.mapY, metroClosureFromDto(it.closed, it.expectedOpeningEpochDay))
+        },
+        transfers = transfers.map {
+            MetroTransfer(
+                it.id, it.aStationId, it.bStationId, it.minutes?.coerceAtLeast(0),
+                metroClosureFromDto(it.closed, it.expectedOpeningEpochDay),
+            )
+        },
+        exits = exits.map { MetroExit(it.id, it.stationId, it.name, metroClosureFromDto(it.closed, it.expectedOpeningEpochDay)) },
         hints = hints.mapNotNull { h ->
             val target = when {
                 h.toStationId != null && h.exitId == null -> MetroHintTarget.Transfer(h.toStationId)
@@ -705,4 +730,11 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
         librarySource = librarySource,
     )
     return reconciled(scheme, scheme)
+}
+
+/** Closed or not; a day this build cannot read leaves it closed with no day, never open. */
+private fun metroClosureFromDto(closed: Boolean, expectedOpeningEpochDay: Long?): MetroClosure? {
+    if (!closed) return null
+    val day = expectedOpeningEpochDay?.let { runCatching { LocalDate.ofEpochDay(it) }.getOrNull() }
+    return MetroClosure(day)
 }
