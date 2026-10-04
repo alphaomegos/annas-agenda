@@ -2,13 +2,6 @@ package com.alphaomegos.annasagenda
 
 import android.app.Application
 import android.net.Uri
-import androidx.core.net.toUri
-import com.alphaomegos.annasagenda.util.AUTO_BACKUP_FILE_NAME
-import com.alphaomegos.annasagenda.util.appBackgroundScope
-import com.alphaomegos.annasagenda.util.isExternalCoverRef
-import com.alphaomegos.annasagenda.util.resolveStoredCoverFiles
-import com.alphaomegos.annasagenda.util.writeBackupToDocuments
-import com.alphaomegos.annasagenda.util.writeInternalCoverBytes
 import com.alphaomegos.annasagenda.util.collectInternalCoverRefs
 import com.alphaomegos.annasagenda.util.deleteInternalCoverIfAny
 import com.alphaomegos.annasagenda.util.importCoverIntoInternalStorage
@@ -36,9 +29,9 @@ import java.time.LocalTime
 
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
-    private val store = AppStateStore(app.applicationContext)
-
-    private val newTaskDraftStore = NewTaskDraftStore(app.applicationContext)
+    // The state file, the draft, the archives and their covers: how they are
+    // read and written lives there; when, and in what order, stays here.
+    private val persistence = StatePersistence(app.applicationContext)
 
     private val appContext
         get() = getApplication<Application>().applicationContext
@@ -62,23 +55,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private suspend fun migrateLegacyCoverRef(
-        coverRef: String?,
-        type: ReadingMediaType,
-        itemId: Long,
-    ): String? {
-        val source = coverRef?.takeIf(::isExternalCoverRef) ?: return coverRef
-
-        return importCoverIntoInternalStorage(
-            context = appContext,
-            sourceUri = source.toUri(),
-            mediaKind = coverMediaKind(type),
-            itemId = itemId
-        ) ?: coverRef
-    }
-
     private suspend fun migrateLegacyMediaCovers(state: AppState): AppState =
-        stateWithCoverRefsMigrated(state, ::migrateLegacyCoverRef)
+        persistence.migrateLegacyMediaCovers(state)
 
     private fun setReadingMediaCoverRef(
         type: ReadingMediaType,
@@ -194,7 +172,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             // a cover migration, a write — can still fail, and the rule has to
             // hold for those too.
             try {
-                when (val result = store.load()) {
+                when (val result = persistence.load()) {
                     is AppStateLoadResult.Failed -> {
                         // Deliberately leave _state at its default and do NOT
                         // start autosave: the payload on disk stays untouched
@@ -332,7 +310,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             newTaskDraftSaveRequests
                 .debounce(350)
                 .distinctUntilChanged()
-                .collect { newTaskDraftStore.save(it) }
+                .collect { persistence.saveDraft(it) }
         }
     }
 
@@ -364,7 +342,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * tombstones and plan rows still refer to.
      */
     fun exportBackupJson(): String {
-        return store.encodeToJson(stateWithIdHighWaterAtLeast(_state.value, nextId))
+        return persistence.encodeBackup(_state.value, nextId)
     }
 
     /**
@@ -387,18 +365,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
         if (!allowed) return
 
-        val json = exportBackupJson()
-        val context = appContext
-
-        appBackgroundScope.launch {
-            runCatching {
-                writeBackupToDocuments(
-                    context = context,
-                    json = json,
-                    fileName = AUTO_BACKUP_FILE_NAME,
-                )
-            }
-        }
+        persistence.writeAutoBackupInBackground(exportBackupJson())
     }
 
     suspend fun exportBackupToDocuments() {
@@ -422,18 +389,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             persist(_state.value)
         }
 
-        val current = stateWithIdHighWaterAtLeast(_state.value, nextId)
-        val json = store.encodeToJson(current)
-        val coverFiles = resolveStoredCoverFiles(appContext, current)
-
-        writeBackupToDocuments(
-            context = appContext,
-            json = json,
-            coverFiles = coverFiles
-        )
+        persistence.exportToDocuments(_state.value, nextId)
     }
     suspend fun loadNewTaskDraft(): NewTaskDraft? {
-        return newTaskDraftStore.load()
+        return persistence.loadDraft()
     }
 
     fun queueNewTaskDraftSave(draft: NewTaskDraft) {
@@ -443,7 +402,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun clearNewTaskDraft() {
         newTaskDraftSaveRequests.tryEmit(NewTaskDraft())
         viewModelScope.launch {
-            newTaskDraftStore.clear()
+            persistence.clearDraft()
         }
     }
 
@@ -457,7 +416,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * that the two disagreed.
      */
     suspend fun importBackupJson(raw: String): ImportOutcome {
-        val decoded = store.decodeFromJson(raw) ?: return ImportOutcome.Failed
+        val decoded = persistence.decodeBackup(raw) ?: return ImportOutcome.Failed
         return ImportOutcome(adopted = adoptImportedState(decoded))
     }
 
@@ -465,34 +424,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         appStateJson: String,
         coverEntries: Map<String, ByteArray>,
     ): ImportOutcome {
-        val decoded = store.decodeFromJson(appStateJson) ?: return ImportOutcome.Failed
-        val expectedRefs = collectInternalCoverRefs(decoded)
-
-        // Deliberately NOT deleting covers the archive happens to lack. A
-        // state-only archive — which is what the automatic backup is — carries
-        // no covers at all, and deleting every cover it does not mention wiped
-        // the images for media the restored state still points at. A missing
-        // entry means "this archive does not carry the image", not "the image
-        // should be destroyed". Covers that the new state no longer references
-        // are removed below, by the orphan sweep, which is the correct place.
-        // Counted rather than ignored. The state and the pictures are not
-        // worth the same — a restored library with no images is still the
-        // titles, the shelves and the pages read — so a cover that will not
-        // write does not fail the import. It does have to be said, though:
-        // this used to report plain success, and the missing pictures were
-        // found later with nothing to connect them to the restore.
-        var coversNotWritten = 0
-
-        coverEntries.forEach { (ref, bytes) ->
-            if (ref in expectedRefs) {
-                val written = writeInternalCoverBytes(
-                    context = appContext,
-                    coverRef = ref,
-                    bytes = bytes
-                )
-                if (!written) coversNotWritten++
-            }
-        }
+        val decoded = persistence.decodeBackup(appStateJson) ?: return ImportOutcome.Failed
+        // Covers the archive lacks are not deleted, and a cover that will not
+        // write does not fail the import but is counted and said: see
+        // StatePersistence.restoreCovers.
+        val coversNotWritten = persistence.restoreCovers(decoded, coverEntries)
 
         val adopted = adoptImportedState(decoded)
 
@@ -1282,7 +1218,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      * See nextIdFor for why an id must never be given out twice.
      */
     private suspend fun persist(state: AppState) {
-        store.save(stateWithIdHighWaterAtLeast(state, nextId))
+        persistence.save(state, nextId)
     }
 
     private fun nextTaskOrderForDate(date: LocalDate?): Int =
