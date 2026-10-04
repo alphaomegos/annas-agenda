@@ -464,6 +464,59 @@ class AppStateStoreMigrationTest {
         assertEquals(null, state.notifications.reminderLeadMinutes)
     }
 
+    /** Schema 8 (04.10): a payload from before the metro has no scheme and nothing chosen. */
+    @Test
+    fun version7_readsWithNoMetro() {
+        val state = decoded("""{ "v": 7, "dietEnabled": true }""")
+
+        assertTrue(state.metroSchemes.isEmpty())
+        assertEquals(null, state.metroSelection)
+        assertTrue(state.dietEnabled)
+    }
+
+    /**
+     * A scheme read back is tidied like an edit leaves it: a hint naming
+     * both targets, or pointing at a station that is not there, goes; so does
+     * a second scheme with an id already taken.
+     */
+    @Test
+    fun aMetroSchemesLooseEndsAreDroppedNotFatal() {
+        val state = decoded(
+            """
+            {
+              "v": 8,
+              "metroSelection": "user:1",
+              "metroSchemes": [
+                {
+                  "id": 1, "city": "Москва",
+                  "lines": [ { "id": 1, "label": "1", "color": 4293141267, "trunk": [10, 11, 12] } ],
+                  "stations": [
+                    { "id": 10, "lineId": 1, "name": "Красные ворота" },
+                    { "id": 11, "lineId": 1, "name": "Чистые пруды" },
+                    { "id": 12, "lineId": 1, "name": "Лубянка" }
+                  ],
+                  "exits": [ { "id": 40, "stationId": 12, "name": "к Детскому миру" } ],
+                  "hints": [
+                    { "id": 50, "stationId": 12, "fromStationId": 11, "car": 1, "door": 1, "exitId": 40 },
+                    { "id": 51, "stationId": 12, "fromStationId": 11, "car": 1, "door": 1, "exitId": 40, "toStationId": 10 },
+                    { "id": 52, "stationId": 404, "fromStationId": 11, "car": 1, "door": 1, "exitId": 40 }
+                  ],
+                  "defaultSegmentMinutes": 0
+                },
+                { "id": 1, "city": "Дубль" }
+              ]
+            }
+            """.trimIndent()
+        )
+
+        val scheme = state.metroSchemes.single()
+        assertEquals("Москва", scheme.city)
+        assertEquals(listOf(50L), scheme.hints.map { it.id })
+        assertEquals(METRO_DEFAULT_SEGMENT_MINUTES, scheme.defaultSegmentMinutes)
+        assertEquals(0xFFE42313L, scheme.lines.single().color)
+        assertEquals("user:1", state.metroSelection)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

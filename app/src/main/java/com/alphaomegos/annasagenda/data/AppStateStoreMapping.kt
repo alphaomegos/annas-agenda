@@ -66,6 +66,8 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
         textColor = widgetStyle.textColor.name,
         checkColorArgb = widgetStyle.checkColorArgb,
     ),
+    metroSchemes = metroSchemes.map { it.toDto() },
+    metroSelection = metroSelection,
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -155,6 +157,10 @@ internal fun AppStateDto.toDomain(): AppState {
                 checkColorArgb = widgetStyle.checkColorArgb,
             )
         ),
+        // A second scheme with an id already taken is dropped: the selection
+        // and the editor find a scheme by its id.
+        metroSchemes = metroSchemes.map { it.toDomain() }.distinctBy { it.id },
+        metroSelection = metroSelection,
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)
@@ -620,3 +626,83 @@ internal fun ActiveReadingDto.toDomain(): ActiveReading = ActiveReading(
     startedAtEpochMillis = startedAtEpochMillis,
     startPage = startPage.coerceAtLeast(0),
 )
+
+/* ---------------- metro ---------------- */
+
+internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
+    id = id,
+    city = city,
+    lines = lines.map { l ->
+        MetroLineDto(
+            id = l.id,
+            label = l.label,
+            name = l.name,
+            color = l.color,
+            ring = l.ring,
+            carCount = l.carCount,
+            doorsPerCar = l.doorsPerCar,
+            trunk = l.trunk,
+            branches = l.branches.map { MetroBranchDto(it.id, it.fromStationId, it.stationIds) },
+        )
+    },
+    stations = stations.map { MetroStationDto(it.id, it.lineId, it.name, it.mapX, it.mapY) },
+    transfers = transfers.map { MetroTransferDto(it.id, it.aStationId, it.bStationId, it.minutes) },
+    exits = exits.map { MetroExitDto(it.id, it.stationId, it.name) },
+    hints = hints.map { h ->
+        MetroHintDto(
+            id = h.id,
+            stationId = h.stationId,
+            fromStationId = h.fromStationId,
+            car = h.car,
+            door = h.door,
+            toStationId = (h.target as? MetroHintTarget.Transfer)?.toStationId,
+            exitId = (h.target as? MetroHintTarget.Exit)?.exitId,
+        )
+    },
+    segmentTimes = segmentTimes.map { MetroSegmentTimeDto(it.aStationId, it.bStationId, it.minutes) },
+    defaultSegmentMinutes = defaultSegmentMinutes,
+    defaultTransferMinutes = defaultTransferMinutes,
+    librarySource = librarySource,
+)
+
+/**
+ * A scheme read back, tidied the way an edit leaves it: anything pointing at
+ * a station, transfer or exit that is not there is dropped (reconciled), a
+ * hint that names both targets or neither is dropped, and a default below
+ * one minute or a train of no cars falls back to the usual.
+ */
+internal fun MetroSchemeDto.toDomain(): MetroScheme {
+    val scheme = MetroScheme(
+        id = id,
+        city = city,
+        lines = lines.map { l ->
+            MetroLine(
+                id = l.id,
+                label = l.label,
+                name = l.name,
+                color = l.color,
+                ring = l.ring,
+                carCount = l.carCount.takeIf { it >= 1 } ?: 8,
+                doorsPerCar = l.doorsPerCar.takeIf { it >= 1 } ?: 4,
+                trunk = l.trunk,
+                branches = l.branches.map { MetroBranch(it.id, it.fromStationId, it.stationIds) },
+            )
+        },
+        stations = stations.map { MetroStation(it.id, it.lineId, it.name, it.mapX, it.mapY) },
+        transfers = transfers.map { MetroTransfer(it.id, it.aStationId, it.bStationId, it.minutes?.coerceAtLeast(0)) },
+        exits = exits.map { MetroExit(it.id, it.stationId, it.name) },
+        hints = hints.mapNotNull { h ->
+            val target = when {
+                h.toStationId != null && h.exitId == null -> MetroHintTarget.Transfer(h.toStationId)
+                h.exitId != null && h.toStationId == null -> MetroHintTarget.Exit(h.exitId)
+                else -> return@mapNotNull null
+            }
+            MetroHint(h.id, h.stationId, h.fromStationId, h.car, h.door, target)
+        },
+        segmentTimes = segmentTimes.filter { it.minutes >= 1 }.map { MetroSegmentTime(it.aStationId, it.bStationId, it.minutes) },
+        defaultSegmentMinutes = defaultSegmentMinutes.takeIf { it >= 1 } ?: METRO_DEFAULT_SEGMENT_MINUTES,
+        defaultTransferMinutes = defaultTransferMinutes.takeIf { it >= 1 } ?: METRO_DEFAULT_TRANSFER_MINUTES,
+        librarySource = librarySource,
+    )
+    return reconciled(scheme, scheme)
+}

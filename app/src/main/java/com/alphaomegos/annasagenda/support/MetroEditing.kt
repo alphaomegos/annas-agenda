@@ -452,9 +452,12 @@ private fun withLine(scheme: MetroScheme, line: MetroLine): MetroScheme =
  * top of the file.
  */
 internal fun reconciled(before: MetroScheme, after: MetroScheme): MetroScheme {
-    val stationIds = after.stations.mapTo(HashSet()) { it.id }
+    val lineIds = after.lines.mapTo(HashSet()) { it.id }
+    val stations = after.stations.filter { it.lineId in lineIds }.distinctBy { it.id }
+    val stationIds = stations.mapTo(HashSet()) { it.id }
+    val lines = after.lines.map { tidiedTracks(it, stations) }
     val oldSides = before.lines.fold(HashMap<Long, Map<MetroSide, Long>>()) { acc, l -> acc.apply { putAll(metroSidesOf(l)) } }
-    val newSides = after.lines.fold(HashMap<Long, Map<MetroSide, Long>>()) { acc, l -> acc.apply { putAll(metroSidesOf(l)) } }
+    val newSides = lines.fold(HashMap<Long, Map<MetroSide, Long>>()) { acc, l -> acc.apply { putAll(metroSidesOf(l)) } }
 
     val transfers = after.transfers.filter { it.aStationId in stationIds && it.bStationId in stationIds }
     val exits = after.exits.filter { it.stationId in stationIds }
@@ -475,8 +478,39 @@ internal fun reconciled(before: MetroScheme, after: MetroScheme): MetroScheme {
         else if (from == h.fromStationId) h else h.copy(fromStationId = from)
     }
 
-    val adjacent = adjacentPairs(after)
+    val adjacent = adjacentPairs(after.copy(lines = lines))
     val segmentTimes = after.segmentTimes.filter { pairOf(it.aStationId, it.bStationId) in adjacent }
 
-    return after.copy(transfers = transfers, exits = exits, hints = hints, segmentTimes = segmentTimes)
+    return after.copy(
+        lines = lines,
+        stations = stations,
+        transfers = transfers,
+        exits = exits,
+        hints = hints,
+        segmentTimes = segmentTimes,
+    )
+}
+
+/**
+ * A line's tracks holding only its own stations, each once: a station
+ * missing from the scheme, or of another line, is left out; a branch left
+ * empty, or leaving from a station no longer on the line, goes. Edits never
+ * produce such a line; a payload read from disk may.
+ */
+private fun tidiedTracks(line: MetroLine, stations: List<MetroStation>): MetroLine {
+    val own = stations.filter { it.lineId == line.id }.mapTo(HashSet()) { it.id }
+    val placed = HashSet<Long>()
+    val trunk = line.trunk.filter { it in own && placed.add(it) }
+    var branches = line.branches.map { b -> b.copy(stationIds = b.stationIds.filter { it in own && placed.add(it) }) }
+        .filter { it.stationIds.isNotEmpty() }
+    // A branch may leave from another branch's station: drop, until nothing
+    // more goes, the branches that leave from nowhere.
+    while (true) {
+        val onLine = trunk.toHashSet().apply { branches.forEach { addAll(it.stationIds) } }
+        val kept = branches.filter { it.fromStationId in onLine && it.fromStationId !in it.stationIds }
+        if (kept.size == branches.size) break
+        branches = kept
+    }
+    if (trunk == line.trunk && branches == line.branches) return line
+    return line.copy(trunk = trunk, branches = branches)
 }

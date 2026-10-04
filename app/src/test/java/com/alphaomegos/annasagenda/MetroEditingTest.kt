@@ -232,6 +232,27 @@ class MetroEditingTest {
     }
 
     @Test
+    fun looseEndsInAPayload_areTidied() {
+        val messy = base.copy(
+            lines = base.lines.map {
+                if (it.id == 100L) it.copy(
+                    trunk = listOf(1, 2, 2, 404, 11, 3),
+                    branches = listOf(
+                        MetroBranch(500, fromStationId = 3, stationIds = listOf(404)), // nothing real in it
+                        MetroBranch(501, fromStationId = 999, stationIds = listOf(1)), // leaves from nowhere
+                    ),
+                ) else it
+            },
+            stations = base.stations + MetroStation(77, lineId = 999, name = "без ветки"),
+        )
+        val tidy = reconciled(messy, messy)
+        assertEquals(listOf(1L, 2L, 3L), tidy.line(100).trunk)
+        assertTrue(tidy.line(100).branches.isEmpty())
+        assertTrue(tidy.stations.none { it.id == 77L })
+        assertEquals(base, reconciled(base, base))
+    }
+
+    @Test
     fun aRouteRunsThroughAStationInsertedLater() {
         val after = metroStationAdded(base, 100, null, 2, "X")
         val r = metroRoute(after, setOf(1), setOf(3))!!

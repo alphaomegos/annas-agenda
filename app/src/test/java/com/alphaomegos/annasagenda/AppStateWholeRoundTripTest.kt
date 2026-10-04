@@ -257,6 +257,42 @@ class AppStateWholeRoundTripTest {
         ),
         // 03.10, no schema step — still every field.
         widgetStyle = WidgetStyle(backgroundPercent = 35, textColor = WidgetTextColor.WHITE, checkColorArgb = 0xFF43A047L),
+        // Schema 8 — a scheme with one of everything, nothing at its default.
+        metroSchemes = listOf(
+            MetroScheme(
+                id = 3L,
+                city = "Москва",
+                lines = listOf(
+                    MetroLine(
+                        id = 1L, label = "1", name = "Сокольническая", color = 0xFFE42313L,
+                        ring = false, carCount = 7, doorsPerCar = 3,
+                        trunk = listOf(10L, 11L, 12L),
+                        branches = listOf(MetroBranch(id = 2L, fromStationId = 12L, stationIds = listOf(13L))),
+                    ),
+                    MetroLine(id = 5L, label = "5", name = "Кольцевая", color = 0xFF915133L, ring = true, trunk = listOf(20L, 21L, 22L)),
+                ),
+                stations = listOf(
+                    MetroStation(10L, 1L, "Красные ворота", mapX = 0.25f, mapY = 0.5f),
+                    MetroStation(11L, 1L, "Чистые пруды"),
+                    MetroStation(12L, 1L, "Лубянка"),
+                    MetroStation(13L, 1L, "Охотный ряд"),
+                    MetroStation(20L, 5L, "Комсомольская"),
+                    MetroStation(21L, 5L, "Курская"),
+                    MetroStation(22L, 5L, "Таганская"),
+                ),
+                transfers = listOf(MetroTransfer(30L, 10L, 20L, minutes = 4)),
+                exits = listOf(MetroExit(40L, 12L, "к Детскому миру")),
+                hints = listOf(
+                    MetroHint(50L, stationId = 10L, fromStationId = 11L, car = 3, door = 2, target = MetroHintTarget.Transfer(20L)),
+                    MetroHint(51L, stationId = 12L, fromStationId = 11L, car = 7, door = 1, target = MetroHintTarget.Exit(40L)),
+                ),
+                segmentTimes = listOf(MetroSegmentTime(10L, 11L, 2)),
+                defaultSegmentMinutes = 2,
+                defaultTransferMinutes = 5,
+                librarySource = "moscow",
+            ),
+        ),
+        metroSelection = "user:3",
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -307,6 +343,7 @@ class AppStateWholeRoundTripTest {
         assertTrue(whole.foodLog.any { it.dietItemId != null })
         assertTrue(whole.foodLibraryUserItems.isNotEmpty())
         assertTrue(whole.notifications.summaryMinutes.isNotEmpty())
+        assertTrue(whole.metroSchemes.single().hints.size == 2)
     }
 
     /**
@@ -330,6 +367,7 @@ class AppStateWholeRoundTripTest {
             "dietShowPastUnticked", "foodLibraryUserItems", "notifications",
             "summaryMinutes", "reminderLeadMinutes",
             "widgetStyle", "backgroundPercent", "checkColorArgb",
+            "metroSchemes", "metroSelection", "trunk", "branches", "fromStationId", "exitId", "toStationId",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))
         }

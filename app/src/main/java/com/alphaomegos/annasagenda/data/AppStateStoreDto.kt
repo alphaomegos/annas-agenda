@@ -101,6 +101,94 @@ internal data class AppStateDto(
 
     // The widget's look (03.10). Additive with a default, so no version step.
     val widgetStyle: WidgetStyleDto = WidgetStyleDto(),
+
+    // Schema 8 (04.10): the metro schemes, and which one is chosen.
+    val metroSchemes: List<MetroSchemeDto> = emptyList(),
+    val metroSelection: String? = null,
+)
+
+/*
+ * The metro. A scheme is written whole, with its ids, so the same shape is
+ * also the format of a scheme shipped in the library (assets/metro/).
+ */
+
+@Serializable
+internal data class MetroSchemeDto(
+    val id: Long,
+    val city: String,
+    val lines: List<MetroLineDto> = emptyList(),
+    val stations: List<MetroStationDto> = emptyList(),
+    val transfers: List<MetroTransferDto> = emptyList(),
+    val exits: List<MetroExitDto> = emptyList(),
+    val hints: List<MetroHintDto> = emptyList(),
+    val segmentTimes: List<MetroSegmentTimeDto> = emptyList(),
+    val defaultSegmentMinutes: Int = METRO_DEFAULT_SEGMENT_MINUTES,
+    val defaultTransferMinutes: Int = METRO_DEFAULT_TRANSFER_MINUTES,
+    val librarySource: String? = null,
+)
+
+@Serializable
+internal data class MetroLineDto(
+    val id: Long,
+    val label: String,
+    val name: String = "",
+    // ARGB.
+    val color: Long,
+    val ring: Boolean = false,
+    val carCount: Int = 8,
+    val doorsPerCar: Int = 4,
+    val trunk: List<Long> = emptyList(),
+    val branches: List<MetroBranchDto> = emptyList(),
+)
+
+@Serializable
+internal data class MetroBranchDto(
+    val id: Long,
+    val fromStationId: Long,
+    val stationIds: List<Long> = emptyList(),
+)
+
+@Serializable
+internal data class MetroStationDto(
+    val id: Long,
+    val lineId: Long,
+    val name: String,
+    val mapX: Float? = null,
+    val mapY: Float? = null,
+)
+
+@Serializable
+internal data class MetroTransferDto(
+    val id: Long,
+    val aStationId: Long,
+    val bStationId: Long,
+    val minutes: Int? = null,
+)
+
+@Serializable
+internal data class MetroSegmentTimeDto(
+    val aStationId: Long,
+    val bStationId: Long,
+    val minutes: Int,
+)
+
+@Serializable
+internal data class MetroExitDto(
+    val id: Long,
+    val stationId: Long,
+    val name: String,
+)
+
+/** Exactly one of [toStationId] (a transfer) and [exitId] (an exit) is set. */
+@Serializable
+internal data class MetroHintDto(
+    val id: Long,
+    val stationId: Long,
+    val fromStationId: Long,
+    val car: Int,
+    val door: Int,
+    val toStationId: Long? = null,
+    val exitId: Long? = null,
 )
 
 @Serializable

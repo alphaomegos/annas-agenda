@@ -134,4 +134,10 @@ data class AppState(
     // How the home-screen widget looks (03.10). No schema step: a display
     // setting with a default, which an older build simply does not keep.
     val widgetStyle: WidgetStyle = WidgetStyle(),
+
+    // --- Schema 8 (04.10): the metro. The schemes the user wrote down are
+    // data nothing else holds — the reason for the number. Which scheme the
+    // metro screen uses is a setting that rides along; see MetroSelection.
+    val metroSchemes: List<MetroScheme> = emptyList(),
+    val metroSelection: String? = null,
 ) : DateTasksData

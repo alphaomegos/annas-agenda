@@ -56,6 +56,7 @@ internal fun migrateAppStateRawJson(
             4 -> migrateAppState4To5(cur)
             5 -> migrateAppState5To6(cur)
             6 -> migrateAppState6To7(cur)
+            7 -> migrateAppState7To8(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -146,6 +147,21 @@ private fun migrateAppState5To6(obj: JsonObject): JsonObject {
 private fun migrateAppState6To7(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(7)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp.
+ *
+ * Version 8 (04.10) adds the metro schemes the user writes down — data
+ * nothing else holds, which is why the number goes up: a build that knows
+ * only 7 would read a payload with schemes, drop them, and save it back
+ * without them. The default is no scheme and nothing chosen, which is what
+ * every payload before it means.
+ */
+private fun migrateAppState7To8(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(8)
     return JsonObject(m)
 }
 
