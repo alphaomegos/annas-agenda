@@ -17,6 +17,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -284,7 +285,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     @OptIn(FlowPreview::class)
     private fun startNotificationScheduling() {
         val context = appContext
-        viewModelScope.launch {
+        // Off the main thread, all of it — the second it waits, the alarm and
+        // the widget. Nothing here needs Main, and a debounce resuming on Main
+        // a second after a JVM test has finished collided with the next
+        // test's Dispatchers.setMain (AppViewModelUndoneHorizonTest, 04.10).
+        viewModelScope.launch(Dispatchers.Default) {
             _state
                 .map { s ->
                     listOf(s.tasks, s.subtasks, s.suppressedRecurrences, s.notifications, s.undoneHorizonDays, s.widgetStyle)
