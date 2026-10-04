@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Metro (04.10) -->
+    <string name="metro_from">From</string>
+    <string name="metro_to">To</string>
+    <string name="metro_swap">Swap from and to</string>
+    <string name="metro_no_scheme">There is no metro map yet. Create one, then add its lines and stations.</string>
+    <string name="metro_create_scheme">Create a map</string>
+    <string name="metro_city">City</string>
+    <string name="metro_no_route">This map has no way between these stations.</string>
+    <string name="metro_unknown_station">There is no station called %1$s</string>
+    <string name="metro_station_closed">%1$s is closed</string>
+    <string name="metro_station_closed_until">%1$s is closed until %2$s</string>
+    <string name="metro_same_station">You are already there.</string>
+    <string name="metro_line">Line %1$s</string>
+    <string name="metro_towards">towards %1$s</string>
+    <plurals name="metro_ride_stations">
+        <item quantity="one">%1$d station to %2$s</item>
+        <item quantity="other">%1$d stations to %2$s</item>
+    </plurals>
+    <string name="metro_passes_closed">%1$s is closed: the train passes without stopping</string>
+    <string name="metro_car_door">car %1$d, door %2$d</string>
+    <string name="metro_last_car_door">last car, door %1$d</string>
+    <string name="metro_hint_transfer">Best for the transfer: %1$s</string>
+    <string name="metro_hint_exit">%1$s: exit %2$s</string>
+    <string name="metro_change_to">Change to %1$s, line %2$s</string>
+    <string name="metro_change_fork">Change trains at %1$s</string>
+    <string name="metro_minutes">%1$d min</string>
+    <string name="metro_no_transfers">no transfers</string>
+    <plurals name="metro_transfers">
+        <item quantity="one">%1$d transfer</item>
+        <item quantity="other">%1$d transfers</item>
+    </plurals>
+    <string name="metro_reopen_title">Has it opened?</string>
+    <string name="metro_reopen_station">%1$s was expected to open on %2$s. Has it?</string>
+    <string name="metro_reopen_transfer">The transfer between %1$s and %2$s was expected to open on %3$s. Has it?</string>
+    <string name="metro_reopen_exit">The exit %1$s at %2$s was expected to open on %3$s. Has it?</string>
+    <string name="metro_reopen_yes">Yes, it is open</string>
+    <string name="metro_reopen_move">Move the date</string>
+    <string name="metro_reopen_later">Later</string>
+    <string name="metro_settings_scheme">Metro map</string>
+    <string name="metro_quoted">%1$s</string>
+    <string name="metro_settings_none">Not chosen</string>
+</resources>

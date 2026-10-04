@@ -438,4 +438,48 @@
     <string name="settings_off">Isključena</string>
     <string name="settings_calorimeter_hint">Pregledi, dijeta, biblioteka hrane</string>
     <string name="settings_anthropometry_hint">Merenja, prognoza, spisak</string>
+
+    <!-- Metro (04.10) -->
+    <string name="metro_from">Odakle</string>
+    <string name="metro_to">Kuda</string>
+    <string name="metro_swap">Zameni „odakle“ i „kuda“</string>
+    <string name="metro_no_scheme">Mape metroa još nema. Napravite je, pa dodajte linije i stanice.</string>
+    <string name="metro_create_scheme">Napravi mapu</string>
+    <string name="metro_city">Grad</string>
+    <string name="metro_no_route">Na ovoj mapi nema puta između ovih stanica.</string>
+    <string name="metro_unknown_station">Nema stanice „%1$s“</string>
+    <string name="metro_station_closed">„%1$s“ je zatvorena</string>
+    <string name="metro_station_closed_until">„%1$s“ je zatvorena do %2$s</string>
+    <string name="metro_same_station">Već ste na mestu.</string>
+    <string name="metro_line">Linija %1$s</string>
+    <string name="metro_towards">u pravcu %1$s</string>
+    <plurals name="metro_ride_stations">
+        <item quantity="one">%1$d stanica do „%2$s“</item>
+        <item quantity="few">%1$d stanice do „%2$s“</item>
+        <item quantity="other">%1$d stanica do „%2$s“</item>
+    </plurals>
+    <string name="metro_passes_closed">„%1$s“ je zatvorena — voz prolazi bez zaustavljanja</string>
+    <string name="metro_car_door">vagon %1$d, vrata %2$d</string>
+    <string name="metro_last_car_door">poslednji vagon, vrata %1$d</string>
+    <string name="metro_hint_transfer">Zgodno za presedanje: %1$s</string>
+    <string name="metro_hint_exit">%1$s — izlaz %2$s</string>
+    <string name="metro_change_to">Presedanje na „%1$s“, linija %2$s</string>
+    <string name="metro_change_fork">Presedanje na drugi voz na „%1$s“</string>
+    <string name="metro_minutes">%1$d min</string>
+    <string name="metro_no_transfers">bez presedanja</string>
+    <plurals name="metro_transfers">
+        <item quantity="one">%1$d presedanje</item>
+        <item quantity="few">%1$d presedanja</item>
+        <item quantity="other">%1$d presedanja</item>
+    </plurals>
+    <string name="metro_reopen_title">Da li je otvoreno?</string>
+    <string name="metro_reopen_station">„%1$s“ je trebalo da se otvori %2$s. Da li je otvorena?</string>
+    <string name="metro_reopen_transfer">Presedanje „%1$s“ — „%2$s“ je trebalo da se otvori %3$s. Da li je otvoreno?</string>
+    <string name="metro_reopen_exit">Izlaz %1$s na „%2$s“ je trebalo da se otvori %3$s. Da li je otvoren?</string>
+    <string name="metro_reopen_yes">Da, otvoreno je</string>
+    <string name="metro_reopen_move">Pomeri datum</string>
+    <string name="metro_reopen_later">Kasnije</string>
+    <string name="metro_settings_scheme">Mapa metroa</string>
+    <string name="metro_quoted">„%1$s“</string>
+    <string name="metro_settings_none">Nije izabrana</string>
 </resources>

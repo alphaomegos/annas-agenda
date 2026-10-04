@@ -135,6 +135,7 @@ fun MainMenuScreen(
     onMediaLibrary: () -> Unit,
     onUndone: () -> Unit,
     onSettings: () -> Unit,
+    onMetro: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -236,7 +237,8 @@ fun MainMenuScreen(
         onCalorimeter = onCalorimeter,
         onRunning = onRunning,
         onCounters = onCounters,
-        onMediaLibrary = onMediaLibrary
+        onMediaLibrary = onMediaLibrary,
+        onMetro = onMetro,
     )
 
     MainMenuContent(
@@ -302,6 +304,7 @@ private fun rememberMainMenuEntries(
     onRunning: () -> Unit,
     onCounters: () -> Unit,
     onMediaLibrary: () -> Unit,
+    onMetro: () -> Unit,
 ): List<MenuEntry> {
     return remember(
         onCalendar,
@@ -312,7 +315,8 @@ private fun rememberMainMenuEntries(
         onCalorimeter,
         onRunning,
         onCounters,
-        onMediaLibrary
+        onMediaLibrary,
+        onMetro,
     ) {
         listOf(
             MenuEntry("calendar", R.drawable.ic_menu_calendar, R.string.calendar, onCalendar),
@@ -324,9 +328,9 @@ private fun rememberMainMenuEntries(
             MenuEntry("running", R.drawable.ic_menu_running, R.string.running_title, onRunning),
             MenuEntry("counters", R.drawable.ic_menu_counters, R.string.counters_title, onCounters),
             MenuEntry("reading", R.drawable.ic_menu_reading, R.string.menu_reading, onMediaLibrary),
-            // Coming soon (0147). The pictures are the real ones, drawn grey
-            // until the sections exist.
-            MenuEntry("metro", R.drawable.ic_menu_metro, R.string.menu_metro, onClick = {}, comingSoon = true),
+            MenuEntry("metro", R.drawable.ic_menu_metro, R.string.menu_metro, onMetro),
+            // Coming soon (0147). The picture is the real one, drawn grey
+            // until the section exists.
             MenuEntry("travel", R.drawable.ic_menu_travel, R.string.menu_travel, onClick = {}, comingSoon = true),
         )
     }

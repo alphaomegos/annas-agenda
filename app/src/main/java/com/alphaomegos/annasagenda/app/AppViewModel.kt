@@ -1831,6 +1831,50 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (cur.widgetStyle != clean) _state.value = cur.copy(widgetStyle = clean)
     }
 
+    /* ---------------- metro (04.10) ---------------- */
+
+    /**
+     * One edit of the user's scheme [schemeId], as a rule from
+     * support/MetroEditing.kt or MetroClosures.kt. An edit that gives back the
+     * same scheme changes nothing and writes nothing.
+     */
+    fun editMetroScheme(schemeId: Long, edit: (MetroScheme) -> MetroScheme) {
+        val cur = _state.value
+        val scheme = cur.metroSchemes.firstOrNull { it.id == schemeId } ?: return
+        val edited = edit(scheme)
+        if (edited === scheme || edited == scheme) return
+        _state.value = cur.copy(metroSchemes = metroSchemesAfterSaving(cur.metroSchemes, edited.copy(id = schemeId)))
+    }
+
+    /** A new, empty scheme for [city], chosen at once; its id, or null for a blank name. */
+    fun createMetroScheme(city: String): Long? {
+        val cur = _state.value
+        val id = metroNewSchemeId(cur.metroSchemes)
+        val scheme = metroSchemeRenamed(MetroScheme(id = id, city = ""), city)
+        if (scheme.city.isEmpty()) return null
+        _state.value = cur.copy(
+            metroSchemes = cur.metroSchemes + scheme,
+            metroSelection = metroSelectionText(MetroSelection.User(id)),
+        )
+        return id
+    }
+
+    fun removeMetroScheme(schemeId: Long) {
+        val cur = _state.value
+        if (cur.metroSchemes.none { it.id == schemeId }) return
+        _state.value = cur.copy(
+            metroSchemes = cur.metroSchemes.filterNot { it.id == schemeId },
+            metroSelection = metroSelectionAfterRemoving(cur.metroSelection, schemeId),
+        )
+    }
+
+    /** Which scheme the metro screen shows (Settings). */
+    fun setMetroSelection(selection: MetroSelection) {
+        val cur = _state.value
+        val text = metroSelectionText(selection)
+        if (cur.metroSelection != text) _state.value = cur.copy(metroSelection = text)
+    }
+
     /** 6.4: whether the add-a-meal dialog offers the food library. */
     fun setFoodLibraryVisible(visible: Boolean) {
         val cur = _state.value

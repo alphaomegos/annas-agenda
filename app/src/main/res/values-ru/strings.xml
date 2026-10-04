@@ -579,4 +579,50 @@
     <string name="settings_off">Выключены</string>
     <string name="settings_calorimeter_hint">Сводки, диета, библиотека еды</string>
     <string name="settings_anthropometry_hint">Замеры, прогноз, список</string>
+
+    <!-- Метро (04.10) -->
+    <string name="metro_from">Откуда</string>
+    <string name="metro_to">Куда</string>
+    <string name="metro_swap">Поменять «откуда» и «куда»</string>
+    <string name="metro_no_scheme">Схемы метро пока нет. Создайте её и добавьте ветки и станции.</string>
+    <string name="metro_create_scheme">Создать схему</string>
+    <string name="metro_city">Город</string>
+    <string name="metro_no_route">На этой схеме между этими станциями нет пути.</string>
+    <string name="metro_unknown_station">Станции «%1$s» нет</string>
+    <string name="metro_station_closed">«%1$s» закрыта</string>
+    <string name="metro_station_closed_until">«%1$s» закрыта до %2$s</string>
+    <string name="metro_same_station">Вы уже на месте.</string>
+    <string name="metro_line">Линия %1$s</string>
+    <string name="metro_towards">в сторону %1$s</string>
+    <plurals name="metro_ride_stations">
+        <item quantity="one">%1$d станция до «%2$s»</item>
+        <item quantity="few">%1$d станции до «%2$s»</item>
+        <item quantity="many">%1$d станций до «%2$s»</item>
+        <item quantity="other">%1$d станции до «%2$s»</item>
+    </plurals>
+    <string name="metro_passes_closed">«%1$s» закрыта — поезд проследует без остановки</string>
+    <string name="metro_car_door">вагон %1$d, дверь %2$d</string>
+    <string name="metro_last_car_door">последний вагон, дверь %1$d</string>
+    <string name="metro_hint_transfer">Удобно для пересадки: %1$s</string>
+    <string name="metro_hint_exit">%1$s — выход %2$s</string>
+    <string name="metro_change_to">Пересадка на «%1$s», линия %2$s</string>
+    <string name="metro_change_fork">Пересадка на другой поезд на «%1$s»</string>
+    <string name="metro_minutes">%1$d мин</string>
+    <string name="metro_no_transfers">без пересадок</string>
+    <plurals name="metro_transfers">
+        <item quantity="one">%1$d пересадка</item>
+        <item quantity="few">%1$d пересадки</item>
+        <item quantity="many">%1$d пересадок</item>
+        <item quantity="other">%1$d пересадки</item>
+    </plurals>
+    <string name="metro_reopen_title">Открылось?</string>
+    <string name="metro_reopen_station">«%1$s» обещали открыть %2$s. Открылась?</string>
+    <string name="metro_reopen_transfer">Пересадку «%1$s» — «%2$s» обещали открыть %3$s. Открылась?</string>
+    <string name="metro_reopen_exit">Выход %1$s на «%2$s» обещали открыть %3$s. Открылся?</string>
+    <string name="metro_reopen_yes">Да, открыто</string>
+    <string name="metro_reopen_move">Перенести срок</string>
+    <string name="metro_reopen_later">Позже</string>
+    <string name="metro_settings_scheme">Схема метро</string>
+    <string name="metro_quoted">«%1$s»</string>
+    <string name="metro_settings_none">Не выбрана</string>
 </resources>

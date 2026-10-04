@@ -29,6 +29,7 @@ import com.alphaomegos.annasagenda.screens.RunningPlanScreen
 import com.alphaomegos.annasagenda.screens.media.SeriesDetailsScreen
 import com.alphaomegos.annasagenda.screens.SomedayScreen
 import com.alphaomegos.annasagenda.screens.UndoneTasksScreen
+import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import java.time.LocalDate
 import com.alphaomegos.annasagenda.*
 import com.alphaomegos.annasagenda.model.*
@@ -52,6 +53,7 @@ private object Route {
     const val SETTINGS = "settings"
     const val RUNNING = "running"
     const val COUNTERS = "counters"
+    const val METRO = "metro"
 
     const val UNDONE = "undone"
 
@@ -105,6 +107,7 @@ fun AppNav(
                 onRunning = { nav.navigate(Route.RUNNING) },
                 onCounters = { nav.navigate(Route.COUNTERS) },
                 onMediaLibrary = { nav.navigate(Route.READING) },
+                onMetro = { nav.navigate(Route.METRO) },
                 onUndone = { nav.navigate(Route.UNDONE) },
                 onSettings = { nav.navigate(Route.SETTINGS) },
             )
@@ -186,6 +189,13 @@ fun AppNav(
             CountersScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
+            )
+        }
+
+        composable(Route.METRO) {
+            MetroScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() },
             )
         }
 

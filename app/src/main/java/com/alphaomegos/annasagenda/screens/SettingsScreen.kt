@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.support.MetroSelection
 import com.alphaomegos.annasagenda.support.UNDONE_HORIZON_CHOICES
+import com.alphaomegos.annasagenda.support.metroSchemeToShow
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.components.WidgetStyleDialog
@@ -129,6 +131,16 @@ fun SettingsScreen(
                     undoneHorizonLabel(state.undoneHorizonDays),
                 ) { open = SETTINGS_UNDONE }
             }
+            // The metro's city (04.10), once there is more than nothing to choose from.
+            if (state.metroSchemes.isNotEmpty()) {
+                item {
+                    SettingsRow(
+                        stringResource(R.string.metro_settings_scheme),
+                        metroSchemeToShow(state.metroSchemes, state.metroSelection, emptyMap())?.city
+                            ?: stringResource(R.string.metro_settings_none),
+                    ) { open = SETTINGS_METRO }
+                }
+            }
         }
     }
 
@@ -205,6 +217,16 @@ fun SettingsScreen(
             },
         )
 
+        SETTINGS_METRO -> MetroSchemeDialog(
+            cities = state.metroSchemes.map { it.id to it.city },
+            currentId = metroSchemeToShow(state.metroSchemes, state.metroSelection, emptyMap())?.id,
+            onPick = {
+                vm.setMetroSelection(MetroSelection.User(it))
+                close()
+            },
+            onDismiss = close,
+        )
+
         SETTINGS_UNDONE -> UndoneHorizonDialog(
             current = state.undoneHorizonDays,
             onPick = {
@@ -223,6 +245,7 @@ private const val SETTINGS_CALENDAR = "calendar"
 private const val SETTINGS_CALORIMETER = "calorimeter"
 private const val SETTINGS_ANTHROPOMETRY = "anthropometry"
 private const val SETTINGS_UNDONE = "undone"
+private const val SETTINGS_METRO = "metro"
 
 @Composable
 private fun SettingsSection(title: String) {
@@ -272,6 +295,38 @@ private fun UndoneHorizonDialog(current: Int, onPick: (Int) -> Unit, onDismiss: 
                     ) {
                         RadioButton(selected = days == current, onClick = { onPick(days) })
                         Text(undoneHorizonLabel(days))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+/** The user's metro schemes by city, as radio buttons. */
+@Composable
+private fun MetroSchemeDialog(
+    cities: List<Pair<Long, String>>,
+    currentId: Long?,
+    onPick: (Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.metro_settings_scheme)) },
+        text = {
+            Column(Modifier.selectableGroup()) {
+                cities.forEach { (id, city) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(id) },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = id == currentId, onClick = { onPick(id) })
+                        Text(city)
                     }
                 }
             }
