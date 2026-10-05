@@ -296,6 +296,25 @@ class AppStateWholeRoundTripTest {
             ),
         ),
         metroSelection = "user:3",
+        // Schema 9 — travel, nothing at its default.
+        travelCountries = listOf(
+            TravelCountryRecord(
+                countryId = "BY",
+                trips = listOf(
+                    TravelTrip(id = 60L, year = 2018, month = 5, cities = listOf("Минск")),
+                    TravelTrip(id = 61L, year = 2021, month = 7, cities = listOf("Брест", "Гродно")),
+                ),
+                continentOverride = TravelContinent.ASIA,
+            ),
+            TravelCountryRecord(
+                countryId = "user:62",
+                trips = listOf(TravelTrip(id = 63L, year = 2020, month = 1)),
+                continentOverride = TravelContinent.OCEANIA,
+                customName = "Нарния",
+                customPoint = TravelMapPoint(1234.5f, 678f),
+            ),
+        ),
+        travelView = TravelViewPrefs(view = TravelView.CONTINENTS, reversed = true, onlyMine = false),
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -347,6 +366,7 @@ class AppStateWholeRoundTripTest {
         assertTrue(whole.foodLibraryUserItems.isNotEmpty())
         assertTrue(whole.notifications.summaryMinutes.isNotEmpty())
         assertTrue(whole.metroSchemes.single().hints.size == 2)
+        assertTrue(whole.travelCountries.any { it.isUserCountry && it.customPoint != null })
     }
 
     /**
@@ -372,6 +392,7 @@ class AppStateWholeRoundTripTest {
             "widgetStyle", "backgroundPercent", "checkColorArgb",
             "metroSchemes", "metroSelection", "trunk", "branches", "fromStationId", "exitId", "toStationId",
             "closed", "expectedOpeningEpochDay",
+            "travelCountries", "travelView", "countryId", "trips", "month", "cities", "continent",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))
         }

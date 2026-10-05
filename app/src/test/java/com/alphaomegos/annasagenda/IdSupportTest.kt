@@ -69,6 +69,14 @@ class IdSupportTest {
                     FoodLibraryUserItem(id = 40L, category = FoodCategory.DAIRY, name = "Сырок", amount = 40, unit = "г", kcal = 160)
                 )
             ),
+            "travel trips" to AppState(
+                travelCountries = listOf(TravelCountryRecord("BY", trips = listOf(TravelTrip(id = 40L, year = 2018, month = 5))))
+            ),
+            "travel user countries" to AppState(
+                travelCountries = listOf(
+                    TravelCountryRecord("user:40", continentOverride = TravelContinent.EUROPE, customName = "Нарния"),
+                )
+            ),
         )
 
         cases.forEach { (name, state) ->

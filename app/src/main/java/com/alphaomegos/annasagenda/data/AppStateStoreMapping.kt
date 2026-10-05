@@ -68,6 +68,17 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     ),
     metroSchemes = metroSchemes.map { it.toDto() },
     metroSelection = metroSelection,
+    travelCountries = travelCountries.map { r ->
+        TravelCountryDto(
+            countryId = r.countryId,
+            trips = r.trips.map { TravelTripDto(it.id, it.year, it.month, it.cities) },
+            continent = r.continentOverride?.name,
+            name = r.customName,
+            mapX = r.customPoint?.x,
+            mapY = r.customPoint?.y,
+        )
+    },
+    travelView = TravelViewDto(view = travelView.view.name, reversed = travelView.reversed, onlyMine = travelView.onlyMine),
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -161,6 +172,12 @@ internal fun AppStateDto.toDomain(): AppState {
         // and the editor find a scheme by its id.
         metroSchemes = metroSchemes.map { it.toDomain() }.distinctBy { it.id },
         metroSelection = metroSelection,
+        travelCountries = travelCountriesFromDto(travelCountries),
+        travelView = TravelViewPrefs(
+            view = TravelView.entries.firstOrNull { it.name == travelView.view } ?: TravelView.YEARS,
+            reversed = travelView.reversed,
+            onlyMine = travelView.onlyMine,
+        ),
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)
@@ -737,4 +754,37 @@ private fun metroClosureFromDto(closed: Boolean, expectedOpeningEpochDay: Long?)
     if (!closed) return null
     val day = expectedOpeningEpochDay?.let { runCatching { LocalDate.ofEpochDay(it) }.getOrNull() }
     return MetroClosure(day)
+}
+
+/* ---------------- travel ---------------- */
+
+/**
+ * The travel records read back. A trip with a month or year that cannot be
+ * is dropped, the rest of the country kept; a continent this build does not
+ * know is no continent — the base's applies — except for the user's own
+ * country, which needs one and gets Europe rather than vanish; a user's
+ * country without a place on the map keeps its trips and has no dot; a
+ * second record for the same country is joined into the first.
+ */
+internal fun travelCountriesFromDto(dtos: List<TravelCountryDto>): List<TravelCountryRecord> {
+    val out = LinkedHashMap<String, TravelCountryRecord>()
+    dtos.forEach { d ->
+        val id = d.countryId.trim()
+        if (id.isEmpty()) return@forEach
+        val trips = d.trips
+            .filter { it.year in TRAVEL_YEARS && it.month in 1..12 }
+            .map { TravelTrip(it.id, it.year, it.month, travelCleanCities(it.cities)) }
+        val continent = TravelContinent.entries.firstOrNull { it.name == d.continent }
+        val user = id.startsWith(TRAVEL_USER_COUNTRY_PREFIX)
+        val record = TravelCountryRecord(
+            countryId = id,
+            trips = trips,
+            continentOverride = continent ?: if (user) TravelContinent.EUROPE else null,
+            customName = if (user) d.name?.trim()?.takeIf { it.isNotEmpty() } ?: id else null,
+            customPoint = if (user && d.mapX != null && d.mapY != null) TravelMapPoint(d.mapX, d.mapY) else null,
+        )
+        val before = out[id]
+        out[id] = if (before == null) record else before.copy(trips = before.trips + record.trips)
+    }
+    return out.values.filter { it.isUserCountry || it.trips.isNotEmpty() || it.continentOverride != null }
 }

@@ -57,6 +57,7 @@ internal fun migrateAppStateRawJson(
             5 -> migrateAppState5To6(cur)
             6 -> migrateAppState6To7(cur)
             7 -> migrateAppState7To8(cur)
+            8 -> migrateAppState8To9(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -162,6 +163,17 @@ private fun migrateAppState6To7(obj: JsonObject): JsonObject {
 private fun migrateAppState7To8(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(8)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp. Version 9 (05.10) adds travel — the trips and the user's own
+ * countries, data nothing else holds. No trips and the view by years is what
+ * every payload before it means.
+ */
+private fun migrateAppState8To9(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(9)
     return JsonObject(m)
 }
 

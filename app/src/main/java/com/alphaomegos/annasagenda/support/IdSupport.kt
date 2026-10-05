@@ -28,6 +28,9 @@ fun highestIdIn(state: AppState): Long =
         state.runningWorkouts.maxOfOrNull { it.id },
         state.dietPlan.values.flatten().maxOfOrNull { it.id },
         state.foodLibraryUserItems.maxOfOrNull { it.id },
+        // Travel (05.10): every trip, and the number in a user's own country's "user:<n>".
+        state.travelCountries.flatMap { it.trips }.maxOfOrNull { it.id },
+        state.travelCountries.mapNotNull { it.countryId.removePrefix(TRAVEL_USER_COUNTRY_PREFIX).toLongOrNull() }.maxOrNull(),
     ).filterNotNull().maxOrNull() ?: 0L
 
 /**

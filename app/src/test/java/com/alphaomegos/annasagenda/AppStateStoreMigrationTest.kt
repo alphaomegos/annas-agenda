@@ -517,6 +517,49 @@ class AppStateStoreMigrationTest {
         assertEquals("user:1", state.metroSelection)
     }
 
+    /** Schema 9 (05.10): a payload from before travel has no trips and shows the view by years. */
+    @Test
+    fun version8_readsWithNoTravel() {
+        val state = decoded("""{ "v": 8, "dietEnabled": true }""")
+
+        assertTrue(state.travelCountries.isEmpty())
+        assertEquals(TravelViewPrefs(), state.travelView)
+    }
+
+    /**
+     * A trip that cannot be is dropped and its country kept; an unknown
+     * continent is the base's; the user's own country keeps its trips even
+     * with a broken continent; two records of one country are one.
+     */
+    @Test
+    fun travelLooseEndsAreDroppedNotFatal() {
+        val state = decoded(
+            """
+            {
+              "v": 9,
+              "travelView": { "view": "SIDEWAYS" },
+              "travelCountries": [
+                { "countryId": "BY", "trips": [
+                    { "id": 1, "year": 2018, "month": 5, "cities": ["Минск", " минск "] },
+                    { "id": 2, "year": 2018, "month": 13 } ] },
+                { "countryId": "BY", "trips": [ { "id": 3, "year": 2021, "month": 7 } ] },
+                { "countryId": "TR", "continent": "ATLANTIS" },
+                { "countryId": "user:9", "continent": "ATLANTIS", "trips": [ { "id": 4, "year": 2020, "month": 1 } ] }
+              ]
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(TravelView.YEARS, state.travelView.view)
+        val by = state.travelCountries.single { it.countryId == "BY" }
+        assertEquals(listOf(1L, 3L), by.trips.map { it.id })
+        assertEquals(listOf("Минск"), by.trips.first().cities)
+        assertTrue(state.travelCountries.none { it.countryId == "TR" })
+        val own = state.travelCountries.single { it.countryId == "user:9" }
+        assertEquals(TravelContinent.EUROPE, own.continentOverride)
+        assertEquals("user:9", own.customName)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

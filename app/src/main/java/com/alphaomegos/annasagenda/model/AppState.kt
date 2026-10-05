@@ -140,4 +140,9 @@ data class AppState(
     // metro screen uses is a setting that rides along; see MetroSelection.
     val metroSchemes: List<MetroScheme> = emptyList(),
     val metroSelection: String? = null,
+
+    // --- Schema 9 (05.10): travel. The trips and the user's own countries
+    // are data nothing else holds; how the screen was left rides along.
+    val travelCountries: List<TravelCountryRecord> = emptyList(),
+    val travelView: TravelViewPrefs = TravelViewPrefs(),
 ) : DateTasksData

@@ -105,6 +105,38 @@ internal data class AppStateDto(
     // Schema 8 (04.10): the metro schemes, and which one is chosen.
     val metroSchemes: List<MetroSchemeDto> = emptyList(),
     val metroSelection: String? = null,
+
+    // Schema 9 (05.10): travel.
+    val travelCountries: List<TravelCountryDto> = emptyList(),
+    val travelView: TravelViewDto = TravelViewDto(),
+)
+
+@Serializable
+internal data class TravelCountryDto(
+    // An ISO code, or "user:<n>" for a country of the user's own.
+    val countryId: String,
+    val trips: List<TravelTripDto> = emptyList(),
+    // TravelContinent by name.
+    val continent: String? = null,
+    val name: String? = null,
+    val mapX: Float? = null,
+    val mapY: Float? = null,
+)
+
+@Serializable
+internal data class TravelTripDto(
+    val id: Long,
+    val year: Int,
+    val month: Int,
+    val cities: List<String> = emptyList(),
+)
+
+@Serializable
+internal data class TravelViewDto(
+    // TravelView by name.
+    val view: String = "YEARS",
+    val reversed: Boolean = false,
+    val onlyMine: Boolean = true,
 )
 
 /*
