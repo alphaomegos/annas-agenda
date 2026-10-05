@@ -23,6 +23,7 @@ import com.alphaomegos.annasagenda.awaitWorkingStore
 import com.alphaomegos.annasagenda.clearAppStateStoreFile
 import com.alphaomegos.annasagenda.model.TravelView
 import com.alphaomegos.annasagenda.screens.metro.MetroLineEditorScreen
+import com.alphaomegos.annasagenda.screens.metro.MetroMapEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
@@ -189,6 +190,24 @@ class ScreenWiringTest {
 
         val ride = composeRule.activity.resources.getQuantityString(R.plurals.metro_ride_stations, 2, 2, "Gamma")
         composeRule.onNodeWithText(ride, substring = true).assertExists()
+    }
+
+    @Test
+    fun theMapEditorsTicks_turnOnTheGridAndTransfersTogether() {
+        val id = schemeWith("Alpha", "Beta")
+        composeRule.setContent {
+            MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
+        }
+
+        composeRule.onNodeWithText(word(R.string.metro_map_grid)).performClick()
+        composeRule.onNodeWithText(word(R.string.metro_transfers_together)).performClick()
+        composeRule.waitForIdle()
+        assertTrue(scheme(id).mapGrid)
+        assertTrue(scheme(id).transfersTogether)
+
+        composeRule.onNodeWithText(word(R.string.metro_map_grid)).performClick()
+        composeRule.waitForIdle()
+        assertEquals(false, scheme(id).mapGrid)
     }
 
     /* ---------------- travel ---------------- */

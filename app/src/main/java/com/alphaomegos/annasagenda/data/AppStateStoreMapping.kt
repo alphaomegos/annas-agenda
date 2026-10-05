@@ -698,6 +698,8 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
     defaultSegmentMinutes = defaultSegmentMinutes,
     defaultTransferMinutes = defaultTransferMinutes,
     librarySource = librarySource,
+    mapGrid = mapGrid,
+    transfersTogether = transfersTogether,
 )
 
 /**
@@ -745,6 +747,8 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
         defaultSegmentMinutes = defaultSegmentMinutes.takeIf { it >= 1 } ?: METRO_DEFAULT_SEGMENT_MINUTES,
         defaultTransferMinutes = defaultTransferMinutes.takeIf { it >= 1 } ?: METRO_DEFAULT_TRANSFER_MINUTES,
         librarySource = librarySource,
+        mapGrid = mapGrid,
+        transfersTogether = transfersTogether,
     )
     return reconciled(scheme, scheme)
 }

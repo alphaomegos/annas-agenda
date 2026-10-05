@@ -293,6 +293,8 @@ class AppStateWholeRoundTripTest {
                 defaultSegmentMinutes = 2,
                 defaultTransferMinutes = 5,
                 librarySource = "moscow",
+                mapGrid = true,
+                transfersTogether = true,
             ),
         ),
         metroSelection = "user:3",

@@ -157,6 +157,8 @@ internal data class MetroSchemeDto(
     val defaultSegmentMinutes: Int = METRO_DEFAULT_SEGMENT_MINUTES,
     val defaultTransferMinutes: Int = METRO_DEFAULT_TRANSFER_MINUTES,
     val librarySource: String? = null,
+    val mapGrid: Boolean = false,
+    val transfersTogether: Boolean = false,
 )
 
 @Serializable

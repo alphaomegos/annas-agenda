@@ -1,11 +1,13 @@
 package com.alphaomegos.annasagenda.screens.metro
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -17,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -24,10 +27,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.components.ConfirmDialog
+import com.alphaomegos.annasagenda.support.METRO_GRID_STEP
 import com.alphaomegos.annasagenda.support.MetroPoint
 import com.alphaomegos.annasagenda.support.metroLayout
 import com.alphaomegos.annasagenda.support.metroLayoutCleared
 import com.alphaomegos.annasagenda.support.metroStationPlaced
+import com.alphaomegos.annasagenda.support.metroTransfersTogether
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -36,6 +41,9 @@ import kotlinx.coroutines.withContext
  * dragged by the finger that starts on it and let go where it belongs. The
  * first move keeps every other station where the picture showed it, so only
  * the one dragged moves. "Lay out again" forgets every place.
+ *
+ * Two ticks (06.10): the grid, which a dropped station snaps to, and
+ * transfers kept together, their stations side by side and moving as one.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +77,20 @@ fun MetroMapEditorScreen(
                 )
                 TextButton(onClick = { confirmReset = true }) { Text(stringResource(R.string.metro_layout_again)) }
             }
+            if (scheme != null) {
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                    MetroMapTick(
+                        stringResource(R.string.metro_map_grid),
+                        scheme.mapGrid,
+                        Modifier.weight(1f),
+                    ) { on -> vm.editMetroScheme(schemeId) { it.copy(mapGrid = on) } }
+                    MetroMapTick(
+                        stringResource(R.string.metro_transfers_together),
+                        scheme.transfersTogether,
+                        Modifier.weight(2f),
+                    ) { on -> vm.editMetroScheme(schemeId) { metroTransfersTogether(it, on) } }
+                }
+            }
             val l = layout
             if (scheme != null && l != null) {
                 MetroMapView(
@@ -76,6 +98,7 @@ fun MetroMapEditorScreen(
                     layout = l,
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     onMoveStation = { id, x, y -> vm.editMetroScheme(schemeId) { metroStationPlaced(it, id, x, y) } },
+                    gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
                 )
             }
         }
@@ -91,5 +114,17 @@ fun MetroMapEditorScreen(
             },
             onDismiss = { confirmReset = false },
         )
+    }
+}
+
+/** A tick with its words; the words toggle it too. */
+@Composable
+private fun MetroMapTick(text: String, checked: Boolean, modifier: Modifier, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = modifier.clickable { onChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onChange)
+        Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }

@@ -36,7 +36,10 @@ import com.alphaomegos.annasagenda.support.MetroRoute
 import com.alphaomegos.annasagenda.support.MetroRouteStep
 import com.alphaomegos.annasagenda.support.metroLayoutBounds
 import com.alphaomegos.annasagenda.support.metroSidesOf
+import com.alphaomegos.annasagenda.support.metroSnapped
 import com.alphaomegos.annasagenda.support.metroStationAt
+import com.alphaomegos.annasagenda.support.metroStationsMovingWith
+import kotlin.math.floor
 
 /**
  * The picture of the metro map (05.10): lines in their colours, stations as
@@ -48,6 +51,10 @@ import com.alphaomegos.annasagenda.support.metroStationAt
  * [onTapStation]; with [onMoveStation] (the editor) a station is dragged by
  * a finger that starts on it, and let go where it should be. Two fingers
  * zoom, one finger off a station pans; the view survives turning the phone.
+ *
+ * With [gridStep] (06.10) the grid is drawn and a dragged station lands on
+ * its nearest node; with the scheme's transfers kept together, the whole
+ * transfer moves with the station dragged.
  */
 @Composable
 internal fun MetroMapView(
@@ -58,16 +65,18 @@ internal fun MetroMapView(
     marked: Set<Long> = emptySet(),
     onTapStation: (Long) -> Unit = {},
     onMoveStation: ((Long, Float, Float) -> Unit)? = null,
+    gridStep: Float? = null,
 ) {
     var zoom by rememberSaveable { mutableStateOf(1f) }
     var panX by rememberSaveable { mutableStateOf(0f) }
     var panY by rememberSaveable { mutableStateOf(0f) }
-    // A drag in flight: the station and where the finger is.
+    // A drag in flight: the station and where on the screen it is now.
     var dragId by remember { mutableStateOf<Long?>(null) }
     var dragAt by remember { mutableStateOf(Offset.Zero) }
 
     val currentTap by rememberUpdatedState(onTapStation)
     val currentMove by rememberUpdatedState(onMoveStation)
+    val currentGrid by rememberUpdatedState(gridStep)
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     val labelColor = MaterialTheme.colorScheme.onSurface
@@ -75,6 +84,7 @@ internal fun MetroMapView(
     val ringFill = MaterialTheme.colorScheme.surface
     val markColor = MaterialTheme.colorScheme.primary
     val transferColor = MaterialTheme.colorScheme.outline
+    val gridColor = MaterialTheme.colorScheme.outlineVariant
     val labels = remember(scheme.stations, measurer, labelColor) {
         scheme.stations.associate { it.id to measurer.measure(it.name, labelStyle) }
     }
@@ -124,6 +134,10 @@ internal fun MetroMapView(
                 val kk = fit * zoom
                 return MetroPoint((o.x - w / 2 - panX) / kk + cx, (o.y - h / 2 - panY) / kk + cy)
             }
+            fun toScreenNow(p: MetroPoint): Offset {
+                val kk = fit * zoom
+                return Offset((p.x - cx) * kk + w / 2 + panX, (p.y - cy) * kk + h / 2 + panY)
+            }
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val start = toMap(down.position)
@@ -131,9 +145,11 @@ internal fun MetroMapView(
                 val grabbed = if (currentMove != null) metroStationAt(layout, start.x, start.y, hitRadius) else null
                 var travelled = 0f
                 var fingers = 1
+                // The station keeps where it sits under the finger, rather than jumping to it.
+                val grabOffset = grabbed?.let { toScreenNow(layout.getValue(it)) - down.position } ?: Offset.Zero
                 if (grabbed != null) {
                     dragId = grabbed
-                    dragAt = down.position
+                    dragAt = down.position + grabOffset
                 }
                 do {
                     val event = awaitPointerEvent()
@@ -142,7 +158,7 @@ internal fun MetroMapView(
                     if (grabbed != null && pressed.size == 1) {
                         val change = pressed[0]
                         travelled += change.positionChange().getDistance()
-                        dragAt = change.position
+                        dragAt = change.position + grabOffset
                         change.consume()
                     } else {
                         val zoomChange = event.calculateZoom()
@@ -165,7 +181,7 @@ internal fun MetroMapView(
 
                 val slop = viewConfiguration.touchSlop
                 if (grabbed != null && travelled > slop) {
-                    val at = toMap(dragAt)
+                    val at = toMap(dragAt).let { p -> currentGrid?.let { metroSnapped(p, it) } ?: p }
                     currentMove?.invoke(grabbed, at.x, at.y)
                 } else if (travelled <= slop && fingers == 1) {
                     metroStationAt(layout, start.x, start.y, hitRadius)?.let { currentTap(it) }
@@ -179,9 +195,42 @@ internal fun MetroMapView(
             val radius = (0.13f * k).coerceIn(4.dp.toPx(), 9.dp.toPx())
             val (routePairs, routeStations) = onRoute
             val fade = route != null
+            // A drag in flight moves its station (snapped, with a grid) and,
+            // with transfers kept together, the rest of its transfer as far.
+            val dragged = dragId?.let { layout[it] }
+            val moving = dragId?.takeIf { dragged != null }?.let { metroStationsMovingWith(scheme, it) } ?: emptySet()
+            val shift = dragged?.let { from ->
+                val raw = MetroPoint((dragAt.x - w / 2 - panX) / k + cx, (dragAt.y - h / 2 - panY) / k + cy)
+                val to = gridStep?.let { metroSnapped(raw, it) } ?: raw
+                MetroPoint(to.x - from.x, to.y - from.y)
+            }
             fun at(id: Long): Offset? {
-                if (id == dragId) return dragAt
-                return layout[id]?.let(::toScreen)
+                val p = layout[id] ?: return null
+                if (shift != null && id in moving) return toScreen(MetroPoint(p.x + shift.x, p.y + shift.y))
+                return toScreen(p)
+            }
+
+            if (gridStep != null && gridStep > 0f) {
+                // Never denser than a line every 8 dp: zoomed out, every other one goes.
+                var step = gridStep
+                while (step * k < 8.dp.toPx()) step *= 2
+                val thin = 1.dp.toPx()
+                val left = (-w / 2 - panX) / k + cx
+                val right = (w / 2 - panX) / k + cx
+                val top = (-h / 2 - panY) / k + cy
+                val bottom = (h / 2 - panY) / k + cy
+                var gx = floor(left / step) * step
+                while (gx <= right) {
+                    val sx = (gx - cx) * k + w / 2 + panX
+                    drawLine(gridColor, Offset(sx, 0f), Offset(sx, h), strokeWidth = thin)
+                    gx += step
+                }
+                var gy = floor(top / step) * step
+                while (gy <= bottom) {
+                    val sy = (gy - cy) * k + h / 2 + panY
+                    drawLine(gridColor, Offset(0f, sy), Offset(w, sy), strokeWidth = thin)
+                    gy += step
+                }
             }
 
             scheme.transfers.forEach { t ->

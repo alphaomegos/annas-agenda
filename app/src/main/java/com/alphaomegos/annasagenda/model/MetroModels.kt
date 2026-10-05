@@ -32,6 +32,11 @@ data class MetroScheme(
     val defaultSegmentMinutes: Int = METRO_DEFAULT_SEGMENT_MINUTES,
     val defaultTransferMinutes: Int = METRO_DEFAULT_TRANSFER_MINUTES,
     val librarySource: String? = null,
+    // The picture's editor (06.10): a grid to snap stations to, and the
+    // stations of a transfer kept side by side, moving as one. Settings,
+    // with defaults, so no schema bump.
+    val mapGrid: Boolean = false,
+    val transfersTogether: Boolean = false,
 )
 
 /** What a ride between two neighbouring stations costs when the user has not said (04.10). */

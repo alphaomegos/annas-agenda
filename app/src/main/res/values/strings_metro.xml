@@ -104,7 +104,9 @@
     <string name="metro_hide_map">Hide the map</string>
     <string name="metro_place_stations">Stations on the map</string>
     <string name="metro_place_stations_summary">Laid out by themselves; drag them where they belong</string>
-    <string name="metro_place_stations_hint">Drag a station with your finger. Two fingers zoom.</string>
+    <string name="metro_place_stations_hint">Drag a station with your finger; with the grid on, it lands on the nearest node. Two fingers zoom.</string>
+    <string name="metro_map_grid">Grid</string>
+    <string name="metro_transfers_together">Transfer stations together</string>
     <string name="metro_layout_again">Lay out again</string>
     <string name="metro_layout_again_text">Every station you moved goes back to where the app would put it.</string>
 </resources>

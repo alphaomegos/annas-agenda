@@ -89,4 +89,85 @@ class MetroLayoutTest {
         assertNull(metroStationAt(l, 0.5f, 3f, 0.5f))
         assertEquals(floatArrayOf(0f, 0f, 1f, 0f).toList(), metroLayoutBounds(l.values).toList())
     }
+
+    /* ---------------- grid and transfers kept together (06.10) ---------------- */
+
+    private fun close(a: MetroPoint, b: MetroPoint) =
+        assertTrue("$a is not $b", hypot(a.x - b.x, a.y - b.y) < 1e-3f)
+
+    @Test
+    fun aPointSnapsToTheNearestNodeOfTheGrid() {
+        assertEquals(MetroPoint(0.5f, 0f), metroSnapped(MetroPoint(0.26f, -0.24f)))
+        assertEquals(MetroPoint(1.5f, -1.5f), metroSnapped(MetroPoint(1.74f, -1.26f)))
+        assertEquals(MetroPoint(2f, 3f), metroSnapped(MetroPoint(2.4f, 2.6f), step = 1f))
+    }
+
+    @Test
+    fun transferGroups_joinAThreeLineInterchangeIntoOne() {
+        val three = scheme.copy(transfers = scheme.transfers + MetroTransfer(3, 12, 22))
+        assertEquals(listOf(listOf(3L, 12L, 22L), listOf(14L, 21L)), metroTransferGroups(three))
+        assertEquals(setOf(3L, 12L, 22L), metroStationsMovingWith(three.copy(transfersTogether = true), 12))
+        assertEquals(setOf(12L), metroStationsMovingWith(three, 12))
+        assertEquals(setOf(1L), metroStationsMovingWith(three.copy(transfersTogether = true), 1))
+    }
+
+    @Test
+    fun together_aTransfersStationsStandOneNodeApart_andNothingElseCrowds() {
+        val tog = scheme.copy(transfersTogether = true)
+        val l = metroLayout(tog)
+        assertEquals(l, metroLayout(tog))
+        assertEquals(METRO_TOGETHER_GAP, d(l, 3, 12), 1e-3f)
+        assertEquals(METRO_TOGETHER_GAP, d(l, 14, 21), 1e-3f)
+        listOf(1L to 2L, 11L to 12L, 21L to 22L).forEach { (a, b) ->
+            assertTrue("$a–$b is ${d(l, a, b)}", d(l, a, b) in 0.5f..1.7f)
+        }
+        val ids = l.keys.toList()
+        for (i in ids.indices) for (j in i + 1 until ids.size) {
+            assertTrue("${ids[i]} and ${ids[j]} overlap", d(l, ids[i], ids[j]) > 0.15f)
+        }
+    }
+
+    @Test
+    fun together_draggingOneStation_bringsItsTransferAlong_andNothingElse() {
+        val tog = scheme.copy(transfersTogether = true)
+        val before = metroLayout(tog)
+        val now = metroLayout(metroStationPlaced(tog, 3, 9f, 9f))
+        val b3 = before.getValue(3); val b12 = before.getValue(12)
+        assertEquals(MetroPoint(9f, 9f), now.getValue(3))
+        close(MetroPoint(b12.x + (9f - b3.x), b12.y + (9f - b3.y)), now.getValue(12))
+        listOf(1L, 2L, 11L, 14L, 21L).forEach { assertEquals(before.getValue(it), now.getValue(it)) }
+        // Without the tick, only the one dragged moves, as before.
+        assertEquals(metroLayout(scheme).getValue(12), metroLayout(metroStationPlaced(scheme, 3, 9f, 9f)).getValue(12))
+    }
+
+    @Test
+    fun turningTogetherOn_forAPictureByHand_bringsEachTransferBesideItsFirstStation() {
+        val placed = metroSchemeWithLayoutFrozen(scheme)
+        val on = metroTransfersTogether(placed, true)
+        val at = metroLayout(on)
+        val was = placed.stations.associateBy { it.id }
+        assertTrue(on.transfersTogether)
+        assertEquals(MetroPoint(was.getValue(3).mapX!!, was.getValue(3).mapY!!), at.getValue(3))
+        close(MetroPoint(at.getValue(3).x + METRO_TOGETHER_GAP, at.getValue(3).y), at.getValue(12))
+        close(MetroPoint(at.getValue(14).x + METRO_TOGETHER_GAP, at.getValue(14).y), at.getValue(21))
+        assertEquals(MetroPoint(was.getValue(1).mapX!!, was.getValue(1).mapY!!), at.getValue(1))
+        // Letting go leaves every station where it stands.
+        val off = metroTransfersTogether(on, false)
+        assertEquals(false, off.transfersTogether)
+        assertEquals(on.stations, off.stations)
+        assertSame(on, metroTransfersTogether(on, true))
+        // Nothing placed by hand: only the tick changes, the layout does the rest.
+        assertEquals(scheme.stations, metroTransfersTogether(scheme, true).stations)
+    }
+
+    @Test
+    fun together_aStationJoinedToAPlacedTransfer_standsBesideTheOnePlaced() {
+        val tog = scheme.copy(
+            transfersTogether = true,
+            stations = scheme.stations.map { if (it.id == 3L) it.copy(mapX = 5f, mapY = 5f) else it },
+        )
+        val l = metroLayout(tog)
+        assertEquals(MetroPoint(5f, 5f), l.getValue(3))
+        assertEquals(MetroPoint(5f + METRO_TOGETHER_GAP, 5f), l.getValue(12))
+    }
 }
