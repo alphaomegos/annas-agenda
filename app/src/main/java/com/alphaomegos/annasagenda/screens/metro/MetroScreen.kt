@@ -13,12 +13,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.AlertDialog
@@ -73,7 +77,8 @@ import com.alphaomegos.annasagenda.support.metroLayout
 import com.alphaomegos.annasagenda.support.metroRoute
 import com.alphaomegos.annasagenda.support.metroShown
 import com.alphaomegos.annasagenda.support.metroStationSuggestions
-import com.alphaomegos.annasagenda.support.metroStationsForName
+import com.alphaomegos.annasagenda.support.MetroNameChoice
+import com.alphaomegos.annasagenda.support.metroStationsForField
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
@@ -108,6 +113,10 @@ fun MetroScreen(
 
     var fromText by rememberSaveable { mutableStateOf("") }
     var toText by rememberSaveable { mutableStateOf("") }
+    // The very station picked from the list or on the picture (06.10): with
+    // "Печатники" on three lines, which one is meant changes the route.
+    var fromPick by rememberSaveable { mutableStateOf<Long?>(null) }
+    var toPick by rememberSaveable { mutableStateOf<Long?>(null) }
     // Which field the list of names is open under: "from", "to", or none.
     var typingIn by rememberSaveable { mutableStateOf<String?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
@@ -121,8 +130,8 @@ fun MetroScreen(
     val layout by produceState<Map<Long, MetroPoint>?>(null, scheme) {
         value = scheme?.let { s -> withContext(Dispatchers.Default) { metroLayout(s) } }
     }
-    val fromIds = remember(scheme, fromText) { scheme?.let { metroStationsForName(it, fromText) }.orEmpty() }
-    val toIds = remember(scheme, toText) { scheme?.let { metroStationsForName(it, toText) }.orEmpty() }
+    val fromIds = remember(scheme, fromText, fromPick) { scheme?.let { metroStationsForField(it, fromText, fromPick) }.orEmpty() }
+    val toIds = remember(scheme, toText, toPick) { scheme?.let { metroStationsForField(it, toText, toPick) }.orEmpty() }
     val shownRoute = remember(scheme, fromIds, toIds) {
         if (scheme == null || fromIds.isEmpty() || toIds.isEmpty()) null else metroRoute(scheme, fromIds, toIds)
     }
@@ -175,9 +184,12 @@ fun MetroScreen(
                     // The first tap is "from", the second "to"; a third starts again.
                     if (fromText.isBlank() || toText.isNotBlank()) {
                         fromText = name
+                        fromPick = id
                         toText = ""
+                        toPick = null
                     } else {
                         toText = name
+                        toPick = id
                     }
                     typingIn = null
                 },
@@ -205,12 +217,14 @@ fun MetroScreen(
                         value = fromText,
                         onValueChange = {
                             fromText = it
+                            fromPick = null
                             typingIn = "from"
                         },
                     )
                     if (typingIn == "from") {
                         Suggestions(scheme, fromText) {
-                            fromText = it
+                            fromText = it.name
+                            fromPick = it.stationId
                             typingIn = null
                         }
                     }
@@ -219,12 +233,14 @@ fun MetroScreen(
                         value = toText,
                         onValueChange = {
                             toText = it
+                            toPick = null
                             typingIn = "to"
                         },
                     )
                     if (typingIn == "to") {
                         Suggestions(scheme, toText) {
-                            toText = it
+                            toText = it.name
+                            toPick = it.stationId
                             typingIn = null
                         }
                     }
@@ -233,6 +249,9 @@ fun MetroScreen(
                     val was = fromText
                     fromText = toText
                     toText = was
+                    val wasPick = fromPick
+                    fromPick = toPick
+                    toPick = wasPick
                     typingIn = null
                 }) {
                     Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.metro_swap))
@@ -241,7 +260,7 @@ fun MetroScreen(
 
             if (fromText.isNotBlank() && toText.isNotBlank()) {
                 HorizontalDivider()
-                RouteOrWhyNot(scheme, fromText, toText)
+                RouteOrWhyNot(scheme, fromText, toText, fromIds, toIds)
             }
         }
         }
@@ -307,16 +326,16 @@ private fun StationField(label: String, value: String, onValueChange: (String) -
     )
 }
 
-/** The names the typed text could stand for, each with the colours of its lines. */
+/** The stations the typed text could stand for, each with its line. */
 @Composable
-private fun Suggestions(scheme: MetroScheme, typed: String, onPick: (String) -> Unit) {
+private fun Suggestions(scheme: MetroScheme, typed: String, onPick: (MetroNameChoice) -> Unit) {
     val choices = remember(scheme, typed) { metroStationSuggestions(scheme, typed) }
     val lines = remember(scheme) { scheme.lines.associateBy { it.id } }
     choices.forEach { choice ->
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onPick(choice.name) }
+                .clickable { onPick(choice) }
                 .alpha(if (choice.allClosed) 0.45f else 1f)
                 .padding(vertical = 8.dp, horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -356,10 +375,8 @@ internal fun LineDot(line: MetroLine, size: Int = 22) {
 
 /** The route, or the reason there is none. */
 @Composable
-private fun RouteOrWhyNot(scheme: MetroScheme, fromText: String, toText: String) {
+private fun RouteOrWhyNot(scheme: MetroScheme, fromText: String, toText: String, fromIds: Set<Long>, toIds: Set<Long>) {
     val locale = appLocale()
-    val fromIds = remember(scheme, fromText) { metroStationsForName(scheme, fromText) }
-    val toIds = remember(scheme, toText) { metroStationsForName(scheme, toText) }
 
     @Composable
     fun closedMessage(ids: Set<Long>): String? {
@@ -441,10 +458,23 @@ private fun RideStep(scheme: MetroScheme, line: MetroLine, ride: MetroRouteStep.
         val towardsText = towards.map { stringResource(R.string.metro_quoted, nameOf(it)) }.joinToString(", ")
         Text(nameOf(ride.stationIds.first()) + ", " + stringResource(R.string.metro_towards, towardsText))
         val count = ride.stationIds.size - 1
-        Text(
-            pluralStringResource(R.plurals.metro_ride_stations, count, count, nameOf(ride.stationIds.last())) +
-                " · " + stringResource(R.string.metro_minutes, ride.minutes),
-        )
+        // A tap unfolds the stations the train calls at on the way (06.10).
+        var open by rememberSaveable(ride.stationIds) { mutableStateOf(false) }
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { open = !open },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                pluralStringResource(R.plurals.metro_ride_stations, count, count, nameOf(ride.stationIds.last())) +
+                    " · " + stringResource(R.string.metro_minutes, ride.minutes),
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Icon(
+                if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = stringResource(if (open) R.string.metro_hide_stations else R.string.metro_show_stations),
+            )
+        }
+        if (open) RideStations(line, ride, nameOf)
         ride.passedClosedStationIds.forEach {
             Text(
                 stringResource(R.string.metro_passes_closed, nameOf(it)),
@@ -465,6 +495,36 @@ private fun RideStep(scheme: MetroScheme, line: MetroLine, ride: MetroRouteStep.
                 Text(
                     stringResource(R.string.metro_hint_exit, carDoor(line, hint), exits[target.exitId]?.name.orEmpty()),
                     color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The stations of one ride, first to last, on a thin line of its colour: the
+ * ends bold, a closed one the train runs through grey.
+ */
+@Composable
+private fun RideStations(line: MetroLine, ride: MetroRouteStep.Ride, nameOf: (Long) -> String) {
+    val color = Color(line.color)
+    val passed = ride.passedClosedStationIds.toSet()
+    Column(modifier = Modifier.padding(start = 8.dp)) {
+        ride.stationIds.forEachIndexed { i, id ->
+            val end = i == 0 || i == ride.stationIds.lastIndex
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .padding(end = 10.dp)
+                        .size(if (end) 12.dp else 8.dp)
+                        .background(if (id in passed) MaterialTheme.colorScheme.outline else color, CircleShape),
+                )
+                Text(
+                    nameOf(id),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (end) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (id in passed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 2.dp),
                 )
             }
         }

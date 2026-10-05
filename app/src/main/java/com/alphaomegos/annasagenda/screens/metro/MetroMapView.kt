@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -113,7 +114,9 @@ internal fun MetroMapView(
         pairs to stations
     }
 
-    BoxWithConstraints(modifier = modifier) {
+    // Clipped: a Canvas draws past its own edges, and the picture zoomed or
+    // panned went over the fields below it (06.10).
+    BoxWithConstraints(modifier = modifier.clipToBounds()) {
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
         if (w <= 0f || h <= 0f || layout.isEmpty()) return@BoxWithConstraints

@@ -28,21 +28,41 @@ class MetroSearchTest {
 
     @Test
     fun startsWith_thenAWordStartsWith_thenContains() {
-        assertEquals(listOf("Каховская", "Новокузнецкая", "Улица Старокачаловская"), names("ка"))
+        assertEquals(listOf("Каховская", "Каховская", "Новокузнецкая", "Улица Старокачаловская"), names("ка"))
         assertEquals(listOf("Новокузнецкая"), names("куз"))
         assertEquals(listOf("Улица Старокачаловская"), names("стар"))
     }
 
     @Test
-    fun aNameOnTwoLines_isOneChoice_withBothLinesInTheSchemesOrder() {
-        val choice = metroStationSuggestions(scheme, "Кахов").single()
-        assertEquals(listOf(2L, 11L), choice.lineIds)
-        assertEquals(false, choice.allClosed) // one of the two is open
+    fun aNameOnTwoLines_isAChoicePerStation_inTheSchemesOrderOfLines() {
+        val choices = metroStationSuggestions(scheme, "Кахов")
+        assertEquals(listOf(1L, 3L), choices.map { it.stationId })
+        assertEquals(listOf(listOf(2L), listOf(11L)), choices.map { it.lineIds })
+        assertEquals(listOf(false, true), choices.map { it.allClosed })
     }
 
     @Test
-    fun everyStationOfTheNameClosed_isMarked() {
+    fun aClosedStation_isMarked() {
         assertTrue(metroStationSuggestions(scheme, "улица").single().allClosed)
+    }
+
+    @Test
+    fun theFullNameOfSeveralStations_stillOffersThem_soOneCanBePicked() {
+        assertEquals(listOf(1L, 3L), metroStationSuggestions(scheme, "каховская").map { it.stationId })
+        assertTrue(names("новокузнецкая").isEmpty())
+    }
+
+    @Test
+    fun aPickedStation_standsForTheField_whileTheTextNamesIt() {
+        val open = scheme.copy(stations = scheme.stations.map { if (it.id == 3L) it.copy(closure = null) else it })
+        assertEquals(setOf(3L), metroStationsForField(open, "Каховская", 3))
+        assertEquals(setOf(1L, 3L), metroStationsForField(open, "Каховская", null))
+        // The text changed: the pick no longer counts.
+        assertEquals(setOf(2L), metroStationsForField(open, "Новокузнецкая", 3))
+        // Picked but closed, with another of the name open: the open one is used.
+        assertEquals(setOf(1L, 3L), metroStationsForField(scheme, "Каховская", 3))
+        // Picked and closed, and the only one: kept, so the screen can say so.
+        assertEquals(setOf(4L), metroStationsForField(scheme, "Улица Старокачаловская", 4))
     }
 
     @Test
@@ -55,12 +75,37 @@ class MetroSearchTest {
     @Test
     fun nothingTyped_orTheNameComplete_offersNothing() {
         assertTrue(names("  ").isEmpty())
-        assertTrue(names("каховская").isEmpty())
+        assertTrue(names("новокузнецкая").isEmpty())
         assertEquals(setOf(1L, 3L), metroStationsForName(scheme, "каховская"))
     }
 
     @Test
     fun theListIsCut() {
         assertEquals(1, metroStationSuggestions(scheme, "а", limit = 1).size)
+    }
+
+    @Test
+    fun pickingTheStationOfOneLine_countsTheWalkToIt() {
+        // 06.10: Кучино → Печатники (10). "Печатники" alone ends on line 11,
+        // where the train arrives; the pick of line 10 adds the walk there.
+        val net = MetroScheme(
+            id = 1, city = "Москва",
+            lines = listOf(
+                MetroLine(id = 11, label = "11", name = "", color = 0, trunk = listOf(1, 2)),
+                MetroLine(id = 10, label = "10", name = "", color = 0, trunk = listOf(3, 4)),
+            ),
+            stations = listOf(
+                MetroStation(1, 11, "Кучино"),
+                MetroStation(2, 11, "Печатники"),
+                MetroStation(3, 10, "Печатники"),
+                MetroStation(4, 10, "Кожуховская"),
+            ),
+            transfers = listOf(MetroTransfer(1, 2, 3)),
+        )
+        val from = metroStationsForField(net, "Кучино", null)
+        assertEquals(3, metroRoute(net, from, metroStationsForField(net, "Печатники", null))!!.minutes)
+        val exact = metroRoute(net, from, metroStationsForField(net, "Печатники", 3))!!
+        assertEquals(6, exact.minutes)
+        assertEquals(1, exact.transfers)
     }
 }

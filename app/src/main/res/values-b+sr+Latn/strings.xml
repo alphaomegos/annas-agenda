@@ -675,6 +675,8 @@
     <string name="metro_place_stations_hint">Prevlačite stanicu prstom; sa mrežom staje u najbliži čvor. Sa dva prsta — uvećanje.</string>
     <string name="metro_map_grid">Mreža</string>
     <string name="metro_transfers_together">Stanice presedanja zajedno</string>
+    <string name="metro_show_stations">Prikaži stanice usput</string>
+    <string name="metro_hide_stations">Sakrij stanice usput</string>
     <string name="metro_layout_again">Rasporedi ponovo</string>
     <string name="metro_layout_again_text">Sve stanice koje ste pomerali vratiće se tamo gde bi ih aplikacija stavila.</string>
 </resources>
