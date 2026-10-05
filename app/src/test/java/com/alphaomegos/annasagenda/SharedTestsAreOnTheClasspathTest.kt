@@ -40,6 +40,7 @@ class SharedTestsAreOnTheClasspathTest {
         "com.alphaomegos.annasagenda.components.CopyToDateDialogsTest",
         "com.alphaomegos.annasagenda.components.PickDateDialogTest",
         "com.alphaomegos.annasagenda.screens.MainMenuContentTest",
+        "com.alphaomegos.annasagenda.screens.ScreenWiringTest",
         "com.alphaomegos.annasagenda.screens.media.MediaDetailsFormTest",
     )
 
