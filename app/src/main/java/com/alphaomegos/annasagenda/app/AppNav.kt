@@ -30,6 +30,7 @@ import com.alphaomegos.annasagenda.screens.media.SeriesDetailsScreen
 import com.alphaomegos.annasagenda.screens.SomedayScreen
 import com.alphaomegos.annasagenda.screens.UndoneTasksScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroLineEditorScreen
+import com.alphaomegos.annasagenda.screens.metro.MetroMapEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
@@ -62,6 +63,7 @@ private object Route {
     const val METRO_SCHEME = "metro_scheme"
     const val METRO_LINE = "metro_line"
     const val METRO_STATION = "metro_station"
+    const val METRO_MAP = "metro_map"
     const val TRAVEL = "travel"
     const val TRAVEL_COUNTRY = "travel_country"
 
@@ -218,6 +220,15 @@ fun AppNav(
                 schemeId = schemeId,
                 onBack = { nav.popBackStack() },
                 onOpenLine = { lineId -> nav.navigate("${Route.METRO_LINE}/$schemeId/$lineId") },
+                onOpenMap = { nav.navigate("${Route.METRO_MAP}/$schemeId") },
+            )
+        }
+
+        composable("${Route.METRO_MAP}/{schemeId}") { entry ->
+            MetroMapEditorScreen(
+                vm = vm,
+                schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L,
+                onBack = { nav.popBackStack() },
             )
         }
 

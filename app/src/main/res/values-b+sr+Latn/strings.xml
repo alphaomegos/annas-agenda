@@ -668,4 +668,11 @@
     <string name="undone_horizon_90">Poslednjih 90 dana</string>
     <string name="undone_horizon_365">Poslednja godina</string>
     <string name="undone_horizon_all">Sve vreme</string>
+    <string name="metro_show_map">Prikaži mapu</string>
+    <string name="metro_hide_map">Sakrij mapu</string>
+    <string name="metro_place_stations">Stanice na mapi</string>
+    <string name="metro_place_stations_summary">Raspoređene same; prevucite ih gde im je mesto</string>
+    <string name="metro_place_stations_hint">Prevlačite stanicu prstom. Sa dva prsta — uvećanje.</string>
+    <string name="metro_layout_again">Rasporedi ponovo</string>
+    <string name="metro_layout_again_text">Sve stanice koje ste pomerali vratiće se tamo gde bi ih aplikacija stavila.</string>
 </resources>

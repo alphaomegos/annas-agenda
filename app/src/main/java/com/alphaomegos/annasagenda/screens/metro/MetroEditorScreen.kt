@@ -210,6 +210,7 @@ fun MetroSchemeEditorScreen(
     schemeId: Long,
     onBack: () -> Unit,
     onOpenLine: (Long) -> Unit,
+    onOpenMap: () -> Unit = {},
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val scheme = state.metroSchemes.firstOrNull { it.id == schemeId }
@@ -224,6 +225,11 @@ fun MetroSchemeEditorScreen(
             stringResource(R.string.metro_defaults),
             stringResource(R.string.metro_defaults_summary, scheme.defaultSegmentMinutes, scheme.defaultTransferMinutes),
         ) { dialog = "defaults" }
+        if (scheme.stations.isNotEmpty()) {
+            EditorRow(stringResource(R.string.metro_place_stations), stringResource(R.string.metro_place_stations_summary)) {
+                onOpenMap()
+            }
+        }
 
         SectionTitle(stringResource(R.string.metro_lines), stringResource(R.string.metro_add_line)) { dialog = "line" }
         scheme.lines.forEachIndexed { index, line ->

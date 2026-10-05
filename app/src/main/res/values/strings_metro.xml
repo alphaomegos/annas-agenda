@@ -100,4 +100,11 @@
     <string name="metro_library_suffix">(library)</string>
     <string name="metro_add_at_start">At the start</string>
     <string name="metro_add_after">After %1$s</string>
+    <string name="metro_show_map">Show the map</string>
+    <string name="metro_hide_map">Hide the map</string>
+    <string name="metro_place_stations">Stations on the map</string>
+    <string name="metro_place_stations_summary">Laid out by themselves; drag them where they belong</string>
+    <string name="metro_place_stations_hint">Drag a station with your finger. Two fingers zoom.</string>
+    <string name="metro_layout_again">Lay out again</string>
+    <string name="metro_layout_again_text">Every station you moved goes back to where the app would put it.</string>
 </resources>

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -34,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -59,18 +62,22 @@ import com.alphaomegos.annasagenda.model.MetroLine
 import com.alphaomegos.annasagenda.model.MetroScheme
 import com.alphaomegos.annasagenda.support.MetroClosable
 import com.alphaomegos.annasagenda.support.MetroClosureDue
+import com.alphaomegos.annasagenda.support.MetroPoint
 import com.alphaomegos.annasagenda.support.MetroRoute
 import com.alphaomegos.annasagenda.support.MetroRouteStep
 import com.alphaomegos.annasagenda.support.formatShortDate
 import com.alphaomegos.annasagenda.support.metroClosedStations
 import com.alphaomegos.annasagenda.support.metroClosureSet
 import com.alphaomegos.annasagenda.support.metroClosuresDue
+import com.alphaomegos.annasagenda.support.metroLayout
 import com.alphaomegos.annasagenda.support.metroRoute
 import com.alphaomegos.annasagenda.support.metroShown
 import com.alphaomegos.annasagenda.support.metroStationSuggestions
 import com.alphaomegos.annasagenda.support.metroStationsForName
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * The metro (04.10): "from" and "to", and the way between them on the scheme
@@ -106,8 +113,19 @@ fun MetroScreen(
     var creating by rememberSaveable { mutableStateOf(false) }
     var putOff by rememberSaveable { mutableStateOf(listOf<String>()) }
     var movingDateOf by rememberSaveable { mutableStateOf<String?>(null) }
+    var showMap by rememberSaveable { mutableStateOf(true) }
 
     val today = remember { LocalDate.now() }
+
+    // The picture (05.10): laid out off the main thread, again after every edit.
+    val layout by produceState<Map<Long, MetroPoint>?>(null, scheme) {
+        value = scheme?.let { s -> withContext(Dispatchers.Default) { metroLayout(s) } }
+    }
+    val fromIds = remember(scheme, fromText) { scheme?.let { metroStationsForName(it, fromText) }.orEmpty() }
+    val toIds = remember(scheme, toText) { scheme?.let { metroStationsForName(it, toText) }.orEmpty() }
+    val shownRoute = remember(scheme, fromIds, toIds) {
+        if (scheme == null || fromIds.isEmpty() || toIds.isEmpty()) null else metroRoute(scheme, fromIds, toIds)
+    }
 
     Scaffold(
         topBar = {
@@ -117,6 +135,14 @@ fun MetroScreen(
                     TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
                 },
                 actions = {
+                    if (scheme != null && scheme.stations.isNotEmpty()) {
+                        IconButton(onClick = { showMap = !showMap }) {
+                            Icon(
+                                Icons.Default.Map,
+                                contentDescription = stringResource(if (showMap) R.string.metro_hide_map else R.string.metro_show_map),
+                            )
+                        }
+                    }
                     if (scheme != null) {
                         IconButton(onClick = {
                             val id = if (libraryKey == null) scheme.id else vm.copyMetroLibraryScheme(libraryKey)
@@ -134,7 +160,34 @@ fun MetroScreen(
                 .fillMaxSize()
                 .padding(inner)
                 .consumeWindowInsets(inner)
-                .imePadding()
+                .imePadding(),
+        ) {
+        val pictured = layout
+        if (scheme != null && showMap && pictured != null && scheme.stations.isNotEmpty()) {
+            // Outside the scrolling part: a finger on the picture pans the picture.
+            MetroMapView(
+                scheme = scheme,
+                layout = pictured,
+                route = shownRoute?.takeIf { it.steps.isNotEmpty() },
+                marked = fromIds + toIds,
+                onTapStation = { id ->
+                    val name = scheme.stations.firstOrNull { it.id == id }?.name ?: return@MetroMapView
+                    // The first tap is "from", the second "to"; a third starts again.
+                    if (fromText.isBlank() || toText.isNotBlank()) {
+                        fromText = name
+                        toText = ""
+                    } else {
+                        toText = name
+                    }
+                    typingIn = null
+                },
+                modifier = Modifier.fillMaxWidth().height(300.dp),
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -190,6 +243,7 @@ fun MetroScreen(
                 HorizontalDivider()
                 RouteOrWhyNot(scheme, fromText, toText)
             }
+        }
         }
     }
 

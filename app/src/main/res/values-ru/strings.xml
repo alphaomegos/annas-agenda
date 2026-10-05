@@ -733,4 +733,11 @@
         <item quantity="other">%1$d города</item>
     </plurals>
     <string name="menu_coming_soon">Скоро</string>
+    <string name="metro_show_map">Показать схему</string>
+    <string name="metro_hide_map">Скрыть схему</string>
+    <string name="metro_place_stations">Станции на схеме</string>
+    <string name="metro_place_stations_summary">Расставлены сами; перетащите туда, где им место</string>
+    <string name="metro_place_stations_hint">Перетаскивайте станцию пальцем. Двумя пальцами — масштаб.</string>
+    <string name="metro_layout_again">Расставить заново</string>
+    <string name="metro_layout_again_text">Все станции, которые вы двигали, вернутся туда, куда их поставит приложение.</string>
 </resources>

@@ -72,6 +72,8 @@ class TypedStateSurvivesRotationTest {
             "nothing: the item is still there and one tap asks again. The item itself " +
             "does not go into a Bundle",
         "ReadingSessionScreen.kt:nowMs" to "a clock tick, refreshed every second",
+        "MetroMapView.kt:dragId" to "a station being dragged; a rotation ends the drag, the drop is what is kept",
+        "MetroMapView.kt:dragAt" to "as dragId",
         "ReadingSessionScreen.kt:errorText" to
             "a message about the last tap on Save, recomputed by the next one; the three " +
             "numbers typed in that dialog are saveable",
