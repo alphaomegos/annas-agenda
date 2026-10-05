@@ -12,7 +12,6 @@
     <string name="metro_station_closed">%1$s is closed</string>
     <string name="metro_station_closed_until">%1$s is closed until %2$s</string>
     <string name="metro_same_station">You are already there.</string>
-    <string name="metro_line">Line %1$s</string>
     <string name="metro_towards">towards %1$s</string>
     <plurals name="metro_ride_stations">
         <item quantity="one">%1$d station to %2$s</item>
@@ -23,7 +22,7 @@
     <string name="metro_last_car_door">last car, door %1$d</string>
     <string name="metro_hint_transfer">Best for the transfer: %1$s</string>
     <string name="metro_hint_exit">%1$s: exit %2$s</string>
-    <string name="metro_change_to">Change to %1$s, line %2$s</string>
+    <string name="metro_change_to">Change to %1$s</string>
     <string name="metro_change_fork">Change trains at %1$s</string>
     <string name="metro_minutes">%1$d min</string>
     <string name="metro_no_transfers">no transfers</string>
@@ -79,9 +78,6 @@
     <string name="metro_hint_for_exit_name">to the exit %1$s</string>
     <string name="metro_hint_for_transfer_to">for the transfer to %1$s</string>
     <string name="metro_hint_from">Coming from %1$s</string>
-    <string name="metro_hints">Where to sit</string>
-    <string name="metro_insert_after">Insert a station after</string>
-    <string name="metro_insert_before">Insert a station before</string>
     <string name="metro_line_cars">Cars in a train</string>
     <string name="metro_line_color">Colour</string>
     <string name="metro_line_doors">Doors per car</string>
@@ -98,8 +94,10 @@
     <string name="metro_ride_times">Ride times</string>
     <string name="metro_station_name">Station</string>
     <string name="metro_stations">Stations</string>
-    <string name="metro_transfer_to">To %1$s, line %2$s</string>
+    <string name="metro_transfer_to">To %1$s</string>
     <string name="metro_transfers_title">Transfers</string>
     <string name="metro_use_default">Default</string>
     <string name="metro_library_suffix">(library)</string>
+    <string name="metro_add_at_start">At the start</string>
+    <string name="metro_add_after">After %1$s</string>
 </resources>

@@ -451,7 +451,6 @@
     <string name="metro_station_closed">„%1$s“ je zatvorena</string>
     <string name="metro_station_closed_until">„%1$s“ je zatvorena do %2$s</string>
     <string name="metro_same_station">Već ste na mestu.</string>
-    <string name="metro_line">Linija %1$s</string>
     <string name="metro_towards">u pravcu %1$s</string>
     <plurals name="metro_ride_stations">
         <item quantity="one">%1$d stanica do „%2$s“</item>
@@ -463,7 +462,7 @@
     <string name="metro_last_car_door">poslednji vagon, vrata %1$d</string>
     <string name="metro_hint_transfer">Zgodno za presedanje: %1$s</string>
     <string name="metro_hint_exit">%1$s — izlaz %2$s</string>
-    <string name="metro_change_to">Presedanje na „%1$s“, linija %2$s</string>
+    <string name="metro_change_to">Presedanje na „%1$s“</string>
     <string name="metro_change_fork">Presedanje na drugi voz na „%1$s“</string>
     <string name="metro_minutes">%1$d min</string>
     <string name="metro_no_transfers">bez presedanja</string>
@@ -520,9 +519,6 @@
     <string name="metro_hint_for_exit_name">do izlaza %1$s</string>
     <string name="metro_hint_for_transfer_to">za presedanje na „%1$s“</string>
     <string name="metro_hint_from">Iz pravca „%1$s“</string>
-    <string name="metro_hints">Gde sesti</string>
-    <string name="metro_insert_after">Umetni stanicu posle</string>
-    <string name="metro_insert_before">Umetni stanicu pre</string>
     <string name="metro_line_cars">Vagona u vozu</string>
     <string name="metro_line_color">Boja</string>
     <string name="metro_line_doors">Vrata po vagonu</string>
@@ -539,8 +535,10 @@
     <string name="metro_ride_times">Vreme vožnje</string>
     <string name="metro_station_name">Stanica</string>
     <string name="metro_stations">Stanice</string>
-    <string name="metro_transfer_to">Na „%1$s“, linija %2$s</string>
+    <string name="metro_transfer_to">Na „%1$s“</string>
     <string name="metro_transfers_title">Presedanja</string>
     <string name="metro_use_default">Podrazumevano</string>
     <string name="metro_library_suffix">(biblioteka)</string>
+    <string name="metro_add_at_start">Na početak</string>
+    <string name="metro_add_after">Posle „%1$s“</string>
 </resources>

@@ -7,13 +7,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -41,11 +41,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
@@ -266,19 +268,36 @@ private fun Suggestions(scheme: MetroScheme, typed: String, onPick: (String) -> 
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            choice.lineIds.forEach { id -> lines[id]?.let { LineDot(it) } }
+            choice.lineIds.forEach { id -> lines[id]?.let { LineDot(it, size = 20) } }
             Text(choice.name, modifier = Modifier.padding(start = 4.dp))
         }
     }
 }
 
+/**
+ * A line as people see it on the map: its number in a circle of its colour
+ * (05.10 — no word "line" beside it). A longer number ("11А", "D1") widens
+ * the circle into a pill; the number is dark on a light colour, light on a
+ * dark one.
+ */
 @Composable
-internal fun LineDot(line: MetroLine, size: Int = 12) {
+internal fun LineDot(line: MetroLine, size: Int = 22) {
+    val background = Color(line.color)
     Box(
         modifier = Modifier
-            .size(size.dp)
-            .background(Color(line.color), CircleShape),
-    )
+            .defaultMinSize(minWidth = size.dp, minHeight = size.dp)
+            .background(background, RoundedCornerShape(percent = 50))
+            .padding(horizontal = (size / 6).dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = line.label,
+            color = if (background.luminance() > 0.55f) Color.Black else Color.White,
+            fontSize = (size * 0.48f).sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+    }
 }
 
 /** The route, or the reason there is none. */
@@ -335,17 +354,22 @@ private fun RouteSteps(scheme: MetroScheme, route: MetroRoute) {
                 RideStep(scheme, line, step, ::nameOf)
             }
             is MetroRouteStep.Change -> {
-                val text = if (step.fromStationId == step.toStationId) {
+                val fork = step.fromStationId == step.toStationId
+                val text = if (fork) {
                     stringResource(R.string.metro_change_fork, nameOf(step.toStationId))
                 } else {
-                    val toLine = stations[step.toStationId]?.lineId?.let { lines[it] }
-                    stringResource(R.string.metro_change_to, nameOf(step.toStationId), toLine?.label.orEmpty())
+                    stringResource(R.string.metro_change_to, nameOf(step.toStationId))
                 }
-                Text(
-                    text + " · " + stringResource(R.string.metro_minutes, step.minutes),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                val toLine = stations[step.toStationId]?.lineId?.let { lines[it] }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text + " · " + stringResource(R.string.metro_minutes, step.minutes),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (!fork && toLine != null) LineDot(toLine, size = 20)
+                }
             }
         }
     }
@@ -356,10 +380,8 @@ private fun RideStep(scheme: MetroScheme, line: MetroLine, ride: MetroRouteStep.
     val exits = remember(scheme) { scheme.exits.associateBy { it.id } }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(vertical = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LineDot(line, size = 14)
-            val title = stringResource(R.string.metro_line, line.label) +
-                if (line.name.isNotBlank()) " · ${line.name}" else ""
-            Text(title, style = MaterialTheme.typography.titleSmall)
+            LineDot(line, size = 24)
+            if (line.name.isNotBlank()) Text(line.name, style = MaterialTheme.typography.titleSmall)
         }
         val towards = ride.towardsStationIds.ifEmpty { listOf(ride.stationIds[1]) }
         val towardsText = towards.map { stringResource(R.string.metro_quoted, nameOf(it)) }.joinToString(", ")

@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.screens.metro.MetroTextDialog
 import com.alphaomegos.annasagenda.support.MetroSelection
 import com.alphaomegos.annasagenda.support.UNDONE_HORIZON_CHOICES
 import com.alphaomegos.annasagenda.support.metroShown
@@ -131,15 +132,13 @@ fun SettingsScreen(
                     undoneHorizonLabel(state.undoneHorizonDays),
                 ) { open = SETTINGS_UNDONE }
             }
-            // The metro's city (04.10), once there is more than nothing to choose from.
-            if (state.metroSchemes.isNotEmpty() || vm.metroLibrary.isNotEmpty()) {
-                item {
-                    SettingsRow(
-                        stringResource(R.string.metro_settings_scheme),
-                        metroShown(state.metroSchemes, state.metroSelection, vm.metroLibrary)?.scheme?.city
-                            ?: stringResource(R.string.metro_settings_none),
-                    ) { open = SETTINGS_METRO }
-                }
+            // The metro's city (04.10), and where another city's map is started (05.10).
+            item {
+                SettingsRow(
+                    stringResource(R.string.metro_settings_scheme),
+                    metroShown(state.metroSchemes, state.metroSelection, vm.metroLibrary)?.scheme?.city
+                        ?: stringResource(R.string.metro_settings_none),
+                ) { open = SETTINGS_METRO }
             }
         }
     }
@@ -233,9 +232,21 @@ fun SettingsScreen(
                     vm.setMetroSelection(it)
                     close()
                 },
+                onCreate = { open = SETTINGS_METRO_NEW },
                 onDismiss = close,
             )
         }
+
+        SETTINGS_METRO_NEW -> MetroTextDialog(
+            title = stringResource(R.string.metro_create_scheme),
+            label = stringResource(R.string.metro_city),
+            initial = "",
+            onDismiss = close,
+            onSave = { city ->
+                // Made and chosen at once; its lines are added from the Metro screen's pencil.
+                if (vm.createMetroScheme(city) != null) close()
+            },
+        )
 
         SETTINGS_UNDONE -> UndoneHorizonDialog(
             current = state.undoneHorizonDays,
@@ -256,6 +267,7 @@ private const val SETTINGS_CALORIMETER = "calorimeter"
 private const val SETTINGS_ANTHROPOMETRY = "anthropometry"
 private const val SETTINGS_UNDONE = "undone"
 private const val SETTINGS_METRO = "metro"
+private const val SETTINGS_METRO_NEW = "metro_new"
 
 @Composable
 private fun SettingsSection(title: String) {
@@ -321,6 +333,7 @@ private fun MetroSchemeDialog(
     choices: List<Pair<MetroSelection, String>>,
     current: MetroSelection?,
     onPick: (MetroSelection) -> Unit,
+    onCreate: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -343,6 +356,9 @@ private fun MetroSchemeDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onCreate) { Text(stringResource(R.string.metro_create_scheme)) }
         },
     )
 }

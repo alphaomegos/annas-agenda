@@ -592,7 +592,6 @@
     <string name="metro_station_closed">«%1$s» закрыта</string>
     <string name="metro_station_closed_until">«%1$s» закрыта до %2$s</string>
     <string name="metro_same_station">Вы уже на месте.</string>
-    <string name="metro_line">Линия %1$s</string>
     <string name="metro_towards">в сторону %1$s</string>
     <plurals name="metro_ride_stations">
         <item quantity="one">%1$d станция до «%2$s»</item>
@@ -605,7 +604,7 @@
     <string name="metro_last_car_door">последний вагон, дверь %1$d</string>
     <string name="metro_hint_transfer">Удобно для пересадки: %1$s</string>
     <string name="metro_hint_exit">%1$s — выход %2$s</string>
-    <string name="metro_change_to">Пересадка на «%1$s», линия %2$s</string>
+    <string name="metro_change_to">Пересадка на «%1$s»</string>
     <string name="metro_change_fork">Пересадка на другой поезд на «%1$s»</string>
     <string name="metro_minutes">%1$d мин</string>
     <string name="metro_no_transfers">без пересадок</string>
@@ -663,9 +662,6 @@
     <string name="metro_hint_for_exit_name">к выходу %1$s</string>
     <string name="metro_hint_for_transfer_to">для пересадки на «%1$s»</string>
     <string name="metro_hint_from">Со стороны «%1$s»</string>
-    <string name="metro_hints">Где садиться</string>
-    <string name="metro_insert_after">Вставить станцию после</string>
-    <string name="metro_insert_before">Вставить станцию перед</string>
     <string name="metro_line_cars">Вагонов в поезде</string>
     <string name="metro_line_color">Цвет</string>
     <string name="metro_line_doors">Дверей в вагоне</string>
@@ -682,8 +678,10 @@
     <string name="metro_ride_times">Время перегонов</string>
     <string name="metro_station_name">Станция</string>
     <string name="metro_stations">Станции</string>
-    <string name="metro_transfer_to">На «%1$s», линия %2$s</string>
+    <string name="metro_transfer_to">На «%1$s»</string>
     <string name="metro_transfers_title">Пересадки</string>
     <string name="metro_use_default">По умолчанию</string>
     <string name="metro_library_suffix">(библиотека)</string>
+    <string name="metro_add_at_start">В начало</string>
+    <string name="metro_add_after">После «%1$s»</string>
 </resources>

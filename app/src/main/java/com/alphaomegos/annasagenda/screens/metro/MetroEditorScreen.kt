@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -68,7 +71,6 @@ import com.alphaomegos.annasagenda.support.metroStationAdded
 import com.alphaomegos.annasagenda.support.metroStationMoved
 import com.alphaomegos.annasagenda.support.metroStationRemoved
 import com.alphaomegos.annasagenda.support.metroStationRenamed
-import com.alphaomegos.annasagenda.support.metroTrackPlace
 import com.alphaomegos.annasagenda.support.metroTransferRemoved
 import com.alphaomegos.annasagenda.support.metroTransferSet
 import com.alphaomegos.annasagenda.util.appLocale
@@ -108,14 +110,38 @@ private fun MetroEditorScaffold(title: String, onBack: () -> Unit, content: @Com
     }
 }
 
+/**
+ * A section's heading; with [onAdd], a "+" in a circle at its right adds
+ * one more of what the section lists (05.10), named [addLabel] for TalkBack.
+ */
 @Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 16.dp, bottom = 4.dp),
-    )
+private fun SectionTitle(
+    text: String,
+    addLabel: String? = null,
+    onAdd: (() -> Unit)? = null,
+    extra: @Composable () -> Unit = {},
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+        extra()
+        if (onAdd != null) {
+            IconButton(onClick = onAdd) {
+                Icon(
+                    Icons.Default.AddCircleOutline,
+                    contentDescription = addLabel,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
 }
 
 /** "closed", or "closed until 20.10", or null when open. */
@@ -126,19 +152,30 @@ private fun closedLabel(closure: MetroClosure?): String? {
     return stringResource(R.string.metro_closed_until_short, formatShortDate(day, appLocale()))
 }
 
-/** A row that opens something, with what it is set to underneath. */
+/** A row that opens something, with what it is set to underneath; [leading] goes before it, a line's badge say. */
 @Composable
-private fun EditorRow(title: String, summary: String? = null, dimmed: Boolean = false, onClick: () -> Unit) {
-    Column(
+private fun EditorRow(
+    title: String,
+    summary: String? = null,
+    dimmed: Boolean = false,
+    leading: (@Composable () -> Unit)? = null,
+    onClick: () -> Unit,
+) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .alpha(if (dimmed) 0.5f else 1f)
             .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(title, style = MaterialTheme.typography.bodyLarge)
-        if (summary != null) {
-            Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        leading?.invoke()
+        Column {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            if (summary != null) {
+                Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
@@ -185,7 +222,7 @@ fun MetroSchemeEditorScreen(
             stringResource(R.string.metro_defaults_summary, scheme.defaultSegmentMinutes, scheme.defaultTransferMinutes),
         ) { dialog = "defaults" }
 
-        SectionTitle(stringResource(R.string.metro_lines))
+        SectionTitle(stringResource(R.string.metro_lines), stringResource(R.string.metro_add_line)) { dialog = "line" }
         scheme.lines.forEachIndexed { index, line ->
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -196,8 +233,8 @@ fun MetroSchemeEditorScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    LineDot(line, size = 16)
-                    Text(lineTitle(line))
+                    LineDot(line, size = 26)
+                    Text(line.name)
                 }
                 IconButton(onClick = { vm.editMetroScheme(schemeId) { metroLineMoved(it, line.id, -1) } }, enabled = index > 0) {
                     Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.metro_move_up))
@@ -210,7 +247,6 @@ fun MetroSchemeEditorScreen(
                 }
             }
         }
-        OutlinedButton(onClick = { dialog = "line" }) { Text(stringResource(R.string.metro_add_line)) }
 
         HorizontalDivider(modifier = Modifier.padding(top = 24.dp))
         TextButton(onClick = { dialog = "delete" }) {
@@ -266,9 +302,7 @@ fun MetroSchemeEditorScreen(
     }
 }
 
-@Composable
-private fun lineTitle(line: MetroLine): String =
-    stringResource(R.string.metro_line, line.label) + if (line.name.isNotBlank()) " · ${line.name}" else ""
+private fun lineTitle(line: MetroLine): String = line.name.ifBlank { line.label }
 
 /* ---------------- a line ---------------- */
 
@@ -291,28 +325,27 @@ fun MetroLineEditorScreen(
         val stations = scheme.stations.associateBy { it.id }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LineDot(line, size = 16)
+            LineDot(line, size = 26)
             TextButton(onClick = { dialog = "edit" }) { Text(stringResource(R.string.metro_edit_line)) }
         }
 
-        SectionTitle(stringResource(R.string.metro_stations))
+        SectionTitle(stringResource(R.string.metro_stations), stringResource(R.string.metro_add_station)) {
+            dialog = "add:t"
+        }
         TrackRows(line.trunk, stations, schemeId, vm, onOpenStation)
-        OutlinedButton(onClick = { dialog = "add:t" }) { Text(stringResource(R.string.metro_add_station)) }
 
         line.branches.forEach { branch ->
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    stringResource(R.string.metro_branch_from, stations[branch.fromStationId]?.name.orEmpty()),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f).padding(top = 16.dp),
-                )
-                IconButton(onClick = { dialog = "delbranch:${branch.id}" }) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.metro_delete_branch))
-                }
-            }
+            SectionTitle(
+                text = stringResource(R.string.metro_branch_from, stations[branch.fromStationId]?.name.orEmpty()),
+                addLabel = stringResource(R.string.metro_add_station),
+                onAdd = { dialog = "add:${branch.id}" },
+                extra = {
+                    IconButton(onClick = { dialog = "delbranch:${branch.id}" }) {
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.metro_delete_branch))
+                    }
+                },
+            )
             TrackRows(branch.stationIds, stations, schemeId, vm, onOpenStation)
-            OutlinedButton(onClick = { dialog = "add:${branch.id}" }) { Text(stringResource(R.string.metro_add_station)) }
         }
 
         HorizontalDivider(modifier = Modifier.padding(top = 24.dp))
@@ -334,13 +367,13 @@ fun MetroLineEditorScreen(
         )
         d != null && d.startsWith("add:") -> {
             val branchId = d.removePrefix("add:").toLongOrNull()
-            MetroTextDialog(
-                title = stringResource(R.string.metro_add_station),
-                label = stringResource(R.string.metro_station_name),
-                initial = "",
+            val track = if (branchId == null) line.trunk else line.branches.firstOrNull { it.id == branchId }?.stationIds.orEmpty()
+            val names = scheme.stations.associate { it.id to it.name }
+            MetroAddStationDialog(
+                trackNames = track.map { names[it].orEmpty() },
                 onDismiss = close,
-                onSave = { name ->
-                    vm.editMetroScheme(schemeId) { metroStationAdded(it, lineId, branchId, Int.MAX_VALUE, name) }
+                onSave = { name, at ->
+                    vm.editMetroScheme(schemeId) { metroStationAdded(it, lineId, branchId, at, name) }
                     close()
                 },
             )
@@ -429,26 +462,13 @@ fun MetroStationEditorScreen(
         val sides = metroSidesOf(line)[stationId].orEmpty().values.distinct()
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LineDot(line, size = 16)
-            Text(lineTitle(line), style = MaterialTheme.typography.titleSmall)
+            LineDot(line, size = 26)
+            if (line.name.isNotBlank()) Text(line.name, style = MaterialTheme.typography.titleSmall)
         }
-        EditorRow(stringResource(R.string.metro_rename), station.name) { dialog = "rename" }
         EditorRow(
-            if (station.closure == null) stringResource(R.string.metro_close) else stringResource(R.string.metro_open),
-            closedLabel(station.closure),
-        ) {
-            if (station.closure == null) {
-                dialog = "close:s$stationId"
-            } else {
-                edit { metroClosureSet(it, MetroClosable.Station(stationId), null) }
-            }
-        }
-        if (station.closure != null) {
-            EditorRow(stringResource(R.string.metro_change_date)) { dialog = "date:s$stationId" }
-        }
-        EditorRow(stringResource(R.string.metro_insert_before)) { dialog = "insert:0" }
-        EditorRow(stringResource(R.string.metro_insert_after)) { dialog = "insert:1" }
-        EditorRow(stringResource(R.string.metro_add_branch)) { dialog = "branch" }
+            stringResource(R.string.metro_rename),
+            listOfNotNull(station.name, closedLabel(station.closure)).joinToString(" · "),
+        ) { dialog = "rename" }
 
         SectionTitle(stringResource(R.string.metro_ride_times))
         sides.forEach { n ->
@@ -462,27 +482,29 @@ fun MetroStationEditorScreen(
             ) { dialog = "segment:$n" }
         }
 
-        SectionTitle(stringResource(R.string.metro_transfers_title))
+        SectionTitle(stringResource(R.string.metro_transfers_title), stringResource(R.string.metro_add_transfer)) {
+            dialog = "addtransfer"
+        }
         scheme.transfers.filter { it.aStationId == stationId || it.bStationId == stationId }.forEach { t ->
             val other = if (t.aStationId == stationId) t.bStationId else t.aStationId
             val otherLine = scheme.stations.firstOrNull { it.id == other }?.lineId?.let { lines[it] }
             val minutes = t.minutes?.let { stringResource(R.string.metro_minutes, it) }
                 ?: stringResource(R.string.metro_default_value, scheme.defaultTransferMinutes)
             EditorRow(
-                stringResource(R.string.metro_transfer_to, names[other].orEmpty(), otherLine?.label.orEmpty()),
+                stringResource(R.string.metro_transfer_to, names[other].orEmpty()),
                 listOfNotNull(minutes, closedLabel(t.closure)).joinToString(" · "),
                 dimmed = t.closure != null,
+                leading = { otherLine?.let { LineDot(it) } },
             ) { dialog = "transfer:${t.id}" }
         }
-        OutlinedButton(onClick = { dialog = "addtransfer" }) { Text(stringResource(R.string.metro_add_transfer)) }
 
-        SectionTitle(stringResource(R.string.metro_exits))
+        SectionTitle(stringResource(R.string.metro_exits), stringResource(R.string.metro_add_exit)) { dialog = "addexit" }
         scheme.exits.filter { it.stationId == stationId }.forEach { e ->
             EditorRow(e.name, closedLabel(e.closure), dimmed = e.closure != null) { dialog = "exit:${e.id}" }
         }
-        OutlinedButton(onClick = { dialog = "addexit" }) { Text(stringResource(R.string.metro_add_exit)) }
 
-        SectionTitle(stringResource(R.string.metro_hints))
+        // Where to sit: no heading of its own (05.10), the rows and the button say it.
+        Spacer(modifier = Modifier.height(12.dp))
         scheme.hints.filter { it.stationId == stationId }.sortedWith(compareBy({ it.fromStationId }, { it.car }, { it.door })).forEach { h ->
             val what = when (val t = h.target) {
                 is MetroHintTarget.Transfer -> stringResource(R.string.metro_hint_for_transfer_to, names[t.toStationId].orEmpty())
@@ -501,7 +523,22 @@ fun MetroStationEditorScreen(
             OutlinedButton(onClick = { dialog = "addhint" }) { Text(stringResource(R.string.metro_add_hint)) }
         }
 
+        // Rarely used, so at the bottom (05.10).
         HorizontalDivider(modifier = Modifier.padding(top = 24.dp))
+        EditorRow(
+            if (station.closure == null) stringResource(R.string.metro_close) else stringResource(R.string.metro_open),
+            closedLabel(station.closure),
+        ) {
+            if (station.closure == null) {
+                dialog = "close:s$stationId"
+            } else {
+                edit { metroClosureSet(it, MetroClosable.Station(stationId), null) }
+            }
+        }
+        if (station.closure != null) {
+            EditorRow(stringResource(R.string.metro_change_date)) { dialog = "date:s$stationId" }
+        }
+        EditorRow(stringResource(R.string.metro_add_branch)) { dialog = "branch" }
         TextButton(onClick = { dialog = "delete" }) {
             Text(stringResource(R.string.metro_delete_station), color = MaterialTheme.colorScheme.error)
         }
@@ -539,22 +576,6 @@ fun MetroStationEditorScreen(
                 onDismiss = close,
                 onPicked = { day ->
                     target?.let { t -> edit { metroClosureSet(it, t, MetroClosure(day)) } }
-                    close()
-                },
-            )
-        }
-        "insert" -> {
-            val place = metroTrackPlace(line, stationId)
-            MetroTextDialog(
-                title = stringResource(if (arg == "0") R.string.metro_insert_before else R.string.metro_insert_after),
-                label = stringResource(R.string.metro_station_name),
-                initial = "",
-                onDismiss = close,
-                onSave = { name ->
-                    if (place != null) {
-                        val at = place.index + (if (arg == "0") 0 else 1)
-                        edit { metroStationAdded(it, line.id, place.branchId, at, name) }
-                    }
                     close()
                 },
             )

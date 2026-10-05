@@ -3,7 +3,6 @@ package com.alphaomegos.annasagenda.screens.metro
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,11 +42,14 @@ import com.alphaomegos.annasagenda.model.MetroLine
 import com.alphaomegos.annasagenda.model.MetroScheme
 import com.alphaomegos.annasagenda.support.metroStationSuggestions
 
-/** Line colours to choose from: the usual ones of a metro map. */
+/**
+ * Line colours to choose from: the usual ones of a metro map. Twenty-one, in
+ * three rows of seven — seven is what fits across the folded phone (05.10).
+ */
 internal val MetroLineColors: List<Long> = listOf(
-    0xFFE42313, 0xFF4FB04F, 0xFF0072BA, 0xFF1EBCEF, 0xFF915133, 0xFFF07E24,
-    0xFF943E90, 0xFFFFD803, 0xFFADACAC, 0xFFBED12C, 0xFF88CDCF, 0xFFBAC8E8,
-    0xFFF9BCD1, 0xFF0A6F20, 0xFFE94282, 0xFF000000,
+    0xFFE42313, 0xFF4FB04F, 0xFF0072BA, 0xFF1EBCEF, 0xFF915133, 0xFFF07E24, 0xFF943E90,
+    0xFFFFD803, 0xFFADACAC, 0xFFBED12C, 0xFF88CDCF, 0xFFBAC8E8, 0xFFF9BCD1, 0xFFE94282,
+    0xFF0A6F20, 0xFF00A099, 0xFF1A237E, 0xFFF6A600, 0xFFE95B0C, 0xFF40B280, 0xFF000000,
 )
 
 /** One line of text: a name, a city, an exit. Blank cannot be saved. */
@@ -205,21 +207,22 @@ internal fun MetroLineDialog(
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 )
                 Text(stringResource(R.string.metro_line_color), style = MaterialTheme.typography.labelLarge)
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    MetroLineColors.forEach { c ->
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(Color(c), CircleShape)
-                                .then(
-                                    if (c == color) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                    else Modifier
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MetroLineColors.chunked(7).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            row.forEach { c ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .background(Color(c), CircleShape)
+                                        .then(
+                                            if (c == color) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                                            else Modifier
+                                        )
+                                        .clickable { color = c },
                                 )
-                                .clickable { color = c },
-                        )
+                            }
+                        }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { ring = !ring }) {
@@ -297,7 +300,7 @@ internal fun MetroTransferDialog(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             lines[st.lineId]?.let { LineDot(it) }
-                            Text(st.name + " · " + stringResource(R.string.metro_line, lines[st.lineId]?.label.orEmpty()))
+                            Text(st.name)
                         }
                     }
                 }
@@ -424,6 +427,65 @@ internal fun MetroCloseDialog(
                 TextButton(onClick = onNoDate) { Text(stringResource(R.string.metro_close_no_date)) }
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
+        },
+    )
+}
+
+/**
+ * A new station on a track, and where: at the start, or after one of the
+ * stations already there — at the end unless told otherwise (05.10:
+ * inserting is done here, not from a station).
+ */
+@Composable
+internal fun MetroAddStationDialog(
+    trackNames: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (name: String, index: Int) -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf("") }
+    // The place the new station takes: 0 is the start, the track's length the end.
+    var at by rememberSaveable { mutableStateOf(trackNames.size) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.metro_add_station)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    label = { Text(stringResource(R.string.metro_station_name)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (trackNames.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .heightIn(max = 260.dp)
+                            .verticalScroll(rememberScrollState())
+                            .selectableGroup(),
+                    ) {
+                        (0..trackNames.size).forEach { i ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().clickable { at = i },
+                            ) {
+                                RadioButton(selected = at == i, onClick = { at = i })
+                                Text(
+                                    if (i == 0) stringResource(R.string.metro_add_at_start)
+                                    else stringResource(R.string.metro_add_after, trackNames[i - 1])
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(text, at) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
