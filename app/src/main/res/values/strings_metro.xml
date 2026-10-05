@@ -101,4 +101,5 @@
     <string name="metro_transfer_to">To %1$s, line %2$s</string>
     <string name="metro_transfers_title">Transfers</string>
     <string name="metro_use_default">Default</string>
+    <string name="metro_library_suffix">(library)</string>
 </resources>

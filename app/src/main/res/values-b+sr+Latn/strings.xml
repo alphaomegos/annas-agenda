@@ -542,4 +542,5 @@
     <string name="metro_transfer_to">Na „%1$s“, linija %2$s</string>
     <string name="metro_transfers_title">Presedanja</string>
     <string name="metro_use_default">Podrazumevano</string>
+    <string name="metro_library_suffix">(biblioteka)</string>
 </resources>

@@ -64,7 +64,7 @@ import com.alphaomegos.annasagenda.support.metroClosedStations
 import com.alphaomegos.annasagenda.support.metroClosureSet
 import com.alphaomegos.annasagenda.support.metroClosuresDue
 import com.alphaomegos.annasagenda.support.metroRoute
-import com.alphaomegos.annasagenda.support.metroSchemeToShow
+import com.alphaomegos.annasagenda.support.metroShown
 import com.alphaomegos.annasagenda.support.metroStationSuggestions
 import com.alphaomegos.annasagenda.support.metroStationsForName
 import com.alphaomegos.annasagenda.util.appLocale
@@ -89,10 +89,13 @@ fun MetroScreen(
     onEditScheme: (Long) -> Unit = {},
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val scheme = remember(state.metroSchemes, state.metroSelection) {
-        metroSchemeToShow(state.metroSchemes, state.metroSelection, emptyMap())
+    val shown = remember(state.metroSchemes, state.metroSelection) {
+        metroShown(state.metroSchemes, state.metroSelection, vm.metroLibrary)
     }
-    val ownScheme = scheme != null && state.metroSchemes.any { it.id == scheme.id }
+    val scheme = shown?.scheme
+    // A library scheme is read-only: its pencil makes the user's own copy first.
+    val libraryKey = shown?.libraryKey
+    val ownScheme = scheme != null && libraryKey == null
 
     var fromText by rememberSaveable { mutableStateOf("") }
     var toText by rememberSaveable { mutableStateOf("") }
@@ -112,8 +115,11 @@ fun MetroScreen(
                     TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
                 },
                 actions = {
-                    if (scheme != null && ownScheme) {
-                        IconButton(onClick = { onEditScheme(scheme.id) }) {
+                    if (scheme != null) {
+                        IconButton(onClick = {
+                            val id = if (libraryKey == null) scheme.id else vm.copyMetroLibraryScheme(libraryKey)
+                            if (id != null) onEditScheme(id)
+                        }) {
                             Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.metro_edit))
                         }
                     }

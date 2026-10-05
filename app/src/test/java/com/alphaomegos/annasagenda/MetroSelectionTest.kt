@@ -44,6 +44,14 @@ class MetroSelectionTest {
     }
 
     @Test
+    fun aLibrarySchemeIsToldApartByWhereItCameFrom_notByItsId() {
+        // The library's Петербург has id 1, as does the user's Москва.
+        assertEquals(MetroShown(library.getValue("spb"), "spb"), metroShown(listOf(moscow), "library:spb", library))
+        assertEquals(MetroShown(moscow, null), metroShown(listOf(moscow), "user:1", library))
+        assertEquals("moscow", metroShown(emptyList(), null, library)!!.libraryKey)
+    }
+
+    @Test
     fun aNewScheme_getsAnIdPastTheOthers() {
         assertEquals(1L, metroNewSchemeId(emptyList()))
         assertEquals(3L, metroNewSchemeId(listOf(belgrade, moscow)))

@@ -685,4 +685,5 @@
     <string name="metro_transfer_to">На «%1$s», линия %2$s</string>
     <string name="metro_transfers_title">Пересадки</string>
     <string name="metro_use_default">По умолчанию</string>
+    <string name="metro_library_suffix">(библиотека)</string>
 </resources>

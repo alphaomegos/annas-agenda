@@ -42,13 +42,28 @@ fun metroSchemeToShow(
     schemes: List<MetroScheme>,
     selection: String?,
     library: Map<String, MetroScheme>,
-): MetroScheme? {
-    val chosen = when (val s = metroSelectionOf(selection)) {
-        is MetroSelection.User -> schemes.firstOrNull { it.id == s.schemeId }
-        is MetroSelection.Library -> library[s.key]
-        null -> null
+): MetroScheme? = metroShown(schemes, selection, library)?.scheme
+
+/**
+ * The scheme to show, and which kind it is: [libraryKey] is set for a
+ * library scheme, which is read-only, and null for one of the user's. Told
+ * apart by where it came from, not by id — a library scheme's id is its
+ * own file's, and may well equal one of the user's.
+ */
+data class MetroShown(val scheme: MetroScheme, val libraryKey: String?)
+
+fun metroShown(
+    schemes: List<MetroScheme>,
+    selection: String?,
+    library: Map<String, MetroScheme>,
+): MetroShown? {
+    when (val s = metroSelectionOf(selection)) {
+        is MetroSelection.User -> schemes.firstOrNull { it.id == s.schemeId }?.let { return MetroShown(it, null) }
+        is MetroSelection.Library -> library[s.key]?.let { return MetroShown(it, s.key) }
+        null -> Unit
     }
-    return chosen ?: schemes.firstOrNull() ?: library.entries.sortedBy { it.key }.firstOrNull()?.value
+    schemes.firstOrNull()?.let { return MetroShown(it, null) }
+    return library.entries.minByOrNull { it.key }?.let { MetroShown(it.value, it.key) }
 }
 
 /** An id for a new scheme of the user's: past all of theirs. */

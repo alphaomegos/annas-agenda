@@ -34,7 +34,7 @@ import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.support.MetroSelection
 import com.alphaomegos.annasagenda.support.UNDONE_HORIZON_CHOICES
-import com.alphaomegos.annasagenda.support.metroSchemeToShow
+import com.alphaomegos.annasagenda.support.metroShown
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.components.WidgetStyleDialog
@@ -132,11 +132,11 @@ fun SettingsScreen(
                 ) { open = SETTINGS_UNDONE }
             }
             // The metro's city (04.10), once there is more than nothing to choose from.
-            if (state.metroSchemes.isNotEmpty()) {
+            if (state.metroSchemes.isNotEmpty() || vm.metroLibrary.isNotEmpty()) {
                 item {
                     SettingsRow(
                         stringResource(R.string.metro_settings_scheme),
-                        metroSchemeToShow(state.metroSchemes, state.metroSelection, emptyMap())?.city
+                        metroShown(state.metroSchemes, state.metroSelection, vm.metroLibrary)?.scheme?.city
                             ?: stringResource(R.string.metro_settings_none),
                     ) { open = SETTINGS_METRO }
                 }
@@ -217,15 +217,25 @@ fun SettingsScreen(
             },
         )
 
-        SETTINGS_METRO -> MetroSchemeDialog(
-            cities = state.metroSchemes.map { it.id to it.city },
-            currentId = metroSchemeToShow(state.metroSchemes, state.metroSelection, emptyMap())?.id,
-            onPick = {
-                vm.setMetroSelection(MetroSelection.User(it))
-                close()
-            },
-            onDismiss = close,
-        )
+        SETTINGS_METRO -> {
+            val shown = metroShown(state.metroSchemes, state.metroSelection, vm.metroLibrary)
+            val librarySuffix = stringResource(R.string.metro_library_suffix)
+            MetroSchemeDialog(
+                // The user's own first, then the library's — those the user
+                // has not already copied, since the copy is the one to use.
+                choices = state.metroSchemes.map { MetroSelection.User(it.id) to it.city } +
+                    vm.metroLibrary.entries
+                        .filter { (key, _) -> state.metroSchemes.none { it.librarySource == key } }
+                        .sortedBy { it.key }
+                        .map { (key, scheme) -> MetroSelection.Library(key) to "${scheme.city} $librarySuffix" },
+                current = shown?.let { if (it.libraryKey != null) MetroSelection.Library(it.libraryKey) else MetroSelection.User(it.scheme.id) },
+                onPick = {
+                    vm.setMetroSelection(it)
+                    close()
+                },
+                onDismiss = close,
+            )
+        }
 
         SETTINGS_UNDONE -> UndoneHorizonDialog(
             current = state.undoneHorizonDays,
@@ -305,12 +315,12 @@ private fun UndoneHorizonDialog(current: Int, onPick: (Int) -> Unit, onDismiss: 
     )
 }
 
-/** The user's metro schemes by city, as radio buttons. */
+/** The metro schemes by city, the user's and the library's, as radio buttons. */
 @Composable
 private fun MetroSchemeDialog(
-    cities: List<Pair<Long, String>>,
-    currentId: Long?,
-    onPick: (Long) -> Unit,
+    choices: List<Pair<MetroSelection, String>>,
+    current: MetroSelection?,
+    onPick: (MetroSelection) -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -318,14 +328,14 @@ private fun MetroSchemeDialog(
         title = { Text(stringResource(R.string.metro_settings_scheme)) },
         text = {
             Column(Modifier.selectableGroup()) {
-                cities.forEach { (id, city) ->
+                choices.forEach { (choice, city) ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onPick(id) },
+                            .clickable { onPick(choice) },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = id == currentId, onClick = { onPick(id) })
+                        RadioButton(selected = choice == current, onClick = { onPick(choice) })
                         Text(city)
                     }
                 }

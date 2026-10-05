@@ -37,6 +37,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // read and written lives there; when, and in what order, stays here.
     private val persistence = StatePersistence(app.applicationContext)
 
+    /** The metro schemes that ship with the app (assets/metro/), read the first time they are asked for. */
+    val metroLibrary: Map<String, MetroScheme> by lazy { loadMetroLibrary(app.applicationContext) }
+
     private val appContext
         get() = getApplication<Application>().applicationContext
 
@@ -1866,6 +1869,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             metroSchemes = cur.metroSchemes.filterNot { it.id == schemeId },
             metroSelection = metroSelectionAfterRemoving(cur.metroSelection, schemeId),
         )
+    }
+
+    /**
+     * The user's own copy of library scheme [key], chosen at once — the one
+     * they already have, if they made one before, so a second tap on the
+     * pencil does not make a second copy. Its id, or null when there is no
+     * such library scheme.
+     */
+    fun copyMetroLibraryScheme(key: String): Long? {
+        val cur = _state.value
+        val existing = cur.metroSchemes.firstOrNull { it.librarySource == key }
+        val id = existing?.id ?: run {
+            val library = metroLibrary[key] ?: return null
+            val copy = metroSchemeCopied(library, metroNewSchemeId(cur.metroSchemes), key)
+            _state.value = cur.copy(metroSchemes = cur.metroSchemes + copy)
+            copy.id
+        }
+        setMetroSelection(MetroSelection.User(id))
+        return id
     }
 
     /** Which scheme the metro screen shows (Settings). */
