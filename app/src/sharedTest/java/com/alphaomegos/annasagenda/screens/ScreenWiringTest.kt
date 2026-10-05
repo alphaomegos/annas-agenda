@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -11,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
@@ -239,6 +241,9 @@ class ScreenWiringTest {
             MaterialTheme { SettingsScreen(vm, onBack = {}, onLanguage = {}, onOpenDiet = {}) }
         }
 
+        // The metro row sits low in the list: a lazy list does not compose
+        // what is off the screen, so the test scrolls to it first.
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText(word(R.string.metro_settings_scheme)))
         composeRule.onNodeWithText(word(R.string.metro_settings_scheme)).performClick()
         composeRule.onNodeWithText(word(R.string.metro_create_scheme)).performClick()
         field(word(R.string.metro_city)).performTextInput("Beograd")
