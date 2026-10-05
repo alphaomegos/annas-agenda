@@ -118,8 +118,11 @@ private fun MetroEditorScaffold(title: String, onBack: () -> Unit, content: @Com
 private fun SectionTitle(
     text: String,
     addLabel: String? = null,
-    onAdd: (() -> Unit)? = null,
+    // Before onAdd on purpose: a trailing lambda goes to the last parameter,
+    // and with extra last, "SectionTitle(...) { dialog = x }" ran the click as
+    // content on every recomposition — the dialog reopened for ever (0168).
     extra: @Composable () -> Unit = {},
+    onAdd: (() -> Unit)? = null,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
