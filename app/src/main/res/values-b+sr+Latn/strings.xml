@@ -541,4 +541,50 @@
     <string name="metro_library_suffix">(biblioteka)</string>
     <string name="metro_add_at_start">Na početak</string>
     <string name="metro_add_after">Posle „%1$s“</string>
+
+    <!-- Travel (05.10) -->
+    <string name="travel_add_city">Dodaj grad</string>
+    <string name="travel_add_trip">Unesi putovanje</string>
+    <string name="travel_all_countries">Sve zemlje</string>
+    <string name="travel_city">Grad</string>
+    <string name="travel_continent">Kontinent</string>
+    <string name="travel_continent_africa">Afrika</string>
+    <string name="travel_continent_antarctica">Antarktik</string>
+    <string name="travel_continent_asia">Azija</string>
+    <string name="travel_continent_europe">Evropa</string>
+    <string name="travel_continent_north_america">Severna Amerika</string>
+    <string name="travel_continent_oceania">Australija i Okeanija</string>
+    <string name="travel_continent_south_america">Južna Amerika</string>
+    <string name="travel_country_name">Zemlja</string>
+    <string name="travel_delete_country">Obriši zemlju</string>
+    <string name="travel_delete_country_text">Zemlja se briše zajedno sa svim putovanjima.</string>
+    <string name="travel_edit_trip">Izmeni putovanje</string>
+    <string name="travel_empty">Još nema putovanja. Dodirnite zemlju na mapi ili je pronađite pretragom da biste uneli putovanje.</string>
+    <string name="travel_my_countries">Moje zemlje</string>
+    <string name="travel_nothing_found">Ništa nije pronađeno.</string>
+    <string name="travel_place_next">Izaberi mesto</string>
+    <string name="travel_place_on_map">Dodirnite mapu tamo gde je %1$s</string>
+    <string name="travel_remove_city">Ukloni grad</string>
+    <string name="travel_rename_country">Preimenuj zemlju</string>
+    <string name="travel_reverse">Obrnuti redosled</string>
+    <string name="travel_search">Pretraga</string>
+    <string name="travel_search_label">Zemlja, grad ili godina</string>
+    <string name="travel_terra_incognito">Terra inkognita</string>
+    <string name="travel_terra_incognito_hint">Sopstvena zemlja koje nema na spisku: naziv, kontinent, a zatim mesto na mapi.</string>
+    <string name="travel_view_cities">Po gradovima</string>
+    <string name="travel_view_continents">Po kontinentima</string>
+    <string name="travel_view_countries">Po zemljama</string>
+    <string name="travel_view_years">Po godinama</string>
+    <string name="travel_visited">posećena</string>
+    <string name="travel_year">Godina</string>
+    <plurals name="travel_countries">
+        <item quantity="one">%1$d zemlja</item>
+        <item quantity="few">%1$d zemlje</item>
+        <item quantity="other">%1$d zemalja</item>
+    </plurals>
+    <plurals name="travel_cities">
+        <item quantity="one">%1$d grad</item>
+        <item quantity="few">%1$d grada</item>
+        <item quantity="other">%1$d gradova</item>
+    </plurals>
 </resources>

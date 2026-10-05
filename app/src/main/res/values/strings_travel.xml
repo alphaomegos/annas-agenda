@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Travel (05.10) -->
+    <string name="travel_add_city">Add the city</string>
+    <string name="travel_add_trip">Add a trip</string>
+    <string name="travel_all_countries">All countries</string>
+    <string name="travel_city">City</string>
+    <string name="travel_continent">Continent</string>
+    <string name="travel_continent_africa">Africa</string>
+    <string name="travel_continent_antarctica">Antarctica</string>
+    <string name="travel_continent_asia">Asia</string>
+    <string name="travel_continent_europe">Europe</string>
+    <string name="travel_continent_north_america">North America</string>
+    <string name="travel_continent_oceania">Australia and Oceania</string>
+    <string name="travel_continent_south_america">South America</string>
+    <string name="travel_country_name">Country</string>
+    <string name="travel_delete_country">Delete the country</string>
+    <string name="travel_delete_country_text">The country goes with all its trips.</string>
+    <string name="travel_edit_trip">Change the trip</string>
+    <string name="travel_empty">No trips yet. Tap a country on the map, or find it with the search, to add one.</string>
+    <string name="travel_my_countries">My countries</string>
+    <string name="travel_nothing_found">Nothing found.</string>
+    <string name="travel_place_next">Pick the place</string>
+    <string name="travel_place_on_map">Tap the map where %1$s is</string>
+    <string name="travel_remove_city">Remove the city</string>
+    <string name="travel_rename_country">Rename the country</string>
+    <string name="travel_reverse">Reverse the order</string>
+    <string name="travel_search">Search</string>
+    <string name="travel_search_label">Country, city or year</string>
+    <string name="travel_terra_incognito">Terra incognita</string>
+    <string name="travel_terra_incognito_hint">A country of your own, not in the list: a name, a continent, and then its place on the map.</string>
+    <string name="travel_view_cities">By cities</string>
+    <string name="travel_view_continents">By continents</string>
+    <string name="travel_view_countries">By countries</string>
+    <string name="travel_view_years">By years</string>
+    <string name="travel_visited">visited</string>
+    <string name="travel_year">Year</string>
+    <plurals name="travel_countries">
+        <item quantity="one">%1$d country</item>
+        <item quantity="other">%1$d countries</item>
+    </plurals>
+    <plurals name="travel_cities">
+        <item quantity="one">%1$d city</item>
+        <item quantity="other">%1$d cities</item>
+    </plurals>
+</resources>

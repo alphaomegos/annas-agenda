@@ -40,6 +40,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** The metro schemes that ship with the app (assets/metro/), read the first time they are asked for. */
     val metroLibrary: Map<String, MetroScheme> by lazy { loadMetroLibrary(app.applicationContext) }
 
+    /** The travel country base and world map (assets/travel/), read the first time they are asked for. */
+    val travelBase: List<TravelBaseCountry> by lazy { loadTravelBase(app.applicationContext) }
+    val travelMap: TravelWorldMap by lazy { loadTravelMap(app.applicationContext) }
+
     private val appContext
         get() = getApplication<Application>().applicationContext
 
@@ -1895,6 +1899,48 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val cur = _state.value
         val text = metroSelectionText(selection)
         if (cur.metroSelection != text) _state.value = cur.copy(metroSelection = text)
+    }
+
+    /* ---------------- travel (05.10) ---------------- */
+
+    private fun setTravelCountries(next: List<TravelCountryRecord>) {
+        val cur = _state.value
+        if (next !== cur.travelCountries && next != cur.travelCountries) _state.value = cur.copy(travelCountries = next)
+    }
+
+    fun addTravelTrip(countryId: String, year: Int, month: Int, cities: List<String>) {
+        // Read, take an id, write: never newId() inside an update loop.
+        setTravelCountries(travelAfterAddingTrip(_state.value.travelCountries, countryId, year, month, cities, ::newId))
+    }
+
+    fun editTravelTrip(tripId: Long, year: Int, month: Int, cities: List<String>) =
+        setTravelCountries(travelAfterEditingTrip(_state.value.travelCountries, tripId, year, month, cities))
+
+    fun removeTravelTrip(tripId: Long) =
+        setTravelCountries(travelAfterRemovingTrip(_state.value.travelCountries, tripId))
+
+    fun setTravelContinent(countryId: String, continent: TravelContinent?) = setTravelCountries(
+        travelAfterSettingContinent(_state.value.travelCountries, countryId, continent, travelBase.associateBy { it.code })
+    )
+
+    /** A country of the user's own; its id, or null for a blank name. */
+    fun addTravelUserCountry(name: String, continent: TravelContinent, point: TravelMapPoint): String? {
+        val before = _state.value.travelCountries
+        val after = travelAfterAddingUserCountry(before, name, continent, point, ::newId)
+        if (after === before) return null
+        setTravelCountries(after)
+        return after.last().countryId
+    }
+
+    fun editTravelUserCountry(countryId: String, name: String, point: TravelMapPoint?) =
+        setTravelCountries(travelAfterEditingUserCountry(_state.value.travelCountries, countryId, name, point))
+
+    fun removeTravelUserCountry(countryId: String) =
+        setTravelCountries(travelAfterRemovingUserCountry(_state.value.travelCountries, countryId))
+
+    fun setTravelView(prefs: TravelViewPrefs) {
+        val cur = _state.value
+        if (cur.travelView != prefs) _state.value = cur.copy(travelView = prefs)
     }
 
     /** 6.4: whether the add-a-meal dialog offers the food library. */

@@ -33,6 +33,8 @@ import com.alphaomegos.annasagenda.screens.metro.MetroLineEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
+import com.alphaomegos.annasagenda.screens.travel.TravelCountryScreen
+import com.alphaomegos.annasagenda.screens.travel.TravelScreen
 import java.time.LocalDate
 import com.alphaomegos.annasagenda.*
 import com.alphaomegos.annasagenda.model.*
@@ -60,6 +62,8 @@ private object Route {
     const val METRO_SCHEME = "metro_scheme"
     const val METRO_LINE = "metro_line"
     const val METRO_STATION = "metro_station"
+    const val TRAVEL = "travel"
+    const val TRAVEL_COUNTRY = "travel_country"
 
     const val UNDONE = "undone"
 
@@ -114,6 +118,7 @@ fun AppNav(
                 onCounters = { nav.navigate(Route.COUNTERS) },
                 onMediaLibrary = { nav.navigate(Route.READING) },
                 onMetro = { nav.navigate(Route.METRO) },
+                onTravel = { nav.navigate(Route.TRAVEL) },
                 onUndone = { nav.navigate(Route.UNDONE) },
                 onSettings = { nav.navigate(Route.SETTINGS) },
             )
@@ -235,6 +240,23 @@ fun AppNav(
                 vm = vm,
                 schemeId = schemeId,
                 stationId = stationId,
+                onBack = { nav.popBackStack() },
+            )
+        }
+
+        composable(Route.TRAVEL) {
+            TravelScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() },
+                // Encoded: a country of the user's own is "user:<n>".
+                onOpenCountry = { id -> nav.navigate("${Route.TRAVEL_COUNTRY}/${android.net.Uri.encode(id)}") },
+            )
+        }
+
+        composable("${Route.TRAVEL_COUNTRY}/{countryId}") { entry ->
+            TravelCountryScreen(
+                vm = vm,
+                countryId = entry.arguments?.getString("countryId").orEmpty(),
                 onBack = { nav.popBackStack() },
             )
         }
