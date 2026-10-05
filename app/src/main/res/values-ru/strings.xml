@@ -732,4 +732,5 @@
         <item quantity="many">%1$d городов</item>
         <item quantity="other">%1$d города</item>
     </plurals>
+    <string name="menu_coming_soon">Скоро</string>
 </resources>

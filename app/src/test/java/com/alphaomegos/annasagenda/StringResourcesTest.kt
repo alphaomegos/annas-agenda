@@ -53,6 +53,21 @@ class StringResourcesTest {
         }
     }
 
+    /**
+     * Russian and Serbian have every key the base has (05.10, when Serbian
+     * caught up). A key missing there shows the English text in the middle
+     * of a Russian or Serbian screen. Gilbertese is left out on purpose: it
+     * falls back to English by design, nobody here writes it.
+     */
+    @Test
+    fun russianAndSerbianTranslateEverything() {
+        val base = entriesIn(baseDir()).map { it.name }.toSet() + pluralsIn(baseDir()).keys
+        translationDirs().filter { it.name == "values-ru" || it.name == "values-b+sr+Latn" }.forEach { dir ->
+            val have = entriesIn(dir).map { it.name }.toSet() + pluralsIn(dir).keys
+            assertEquals("${dir.name} lacks translations", emptyList<String>(), (base - have).sorted())
+        }
+    }
+
     @Test
     fun noLocaleDeclaresTheSameKeyTwice() {
         (listOf(baseDir()) + translationDirs()).forEach { dir ->
