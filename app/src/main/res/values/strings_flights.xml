@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Flights (06.10) -->
+    <string name="flights_title">Flights</string>
+    <string name="flights_open">Flights</string>
+    <string name="flights_upcoming">Upcoming</string>
+    <string name="flights_past">Past</string>
+    <string name="flights_empty">No flights yet. Add one with + or import a file from App in the Air.</string>
+    <string name="flights_add">Add a flight</string>
+    <string name="flights_edit">Flight</string>
+    <string name="flights_import">Import from App in the Air</string>
+    <string name="flights_more">More</string>
+    <string name="flights_show_map">Show the map</string>
+    <string name="flights_hide_map">Hide the map</string>
+    <string name="flights_group">Group connecting flights</string>
+    <string name="flights_regroup_title">Flights already in the log</string>
+    <string name="flights_regroup_text">Group the flights already in the log too?</string>
+    <string name="flights_ungroup_text">Take the journeys already in the log apart too?</string>
+    <string name="flights_all_of_them">Yes, all</string>
+    <string name="flights_only_new">Only new ones</string>
+    <string name="flights_from">From</string>
+    <string name="flights_to">To</string>
+    <string name="flights_departure">Departure</string>
+    <string name="flights_arrival">Arrival</string>
+    <string name="flights_actual_departure">Actual departure</string>
+    <string name="flights_actual_arrival">Actual arrival</string>
+    <string name="flights_not_set">Not set</string>
+    <string name="flights_clear">Clear</string>
+    <string name="flights_airline">Airline code</string>
+    <string name="flights_number">Flight number</string>
+    <string name="flights_aircraft">Aircraft type code</string>
+    <string name="flights_class">Class</string>
+    <string name="flights_seat">Seat</string>
+    <string name="flights_booking">Booking reference</string>
+    <string name="flights_note">Note</string>
+    <string name="flights_delete">Delete the flight</string>
+    <string name="flights_delete_text">The flight goes from the log.</string>
+    <string name="flights_split">Split off</string>
+    <string name="flights_journey">Journey</string>
+    <string name="flights_rename_city">Rename the city</string>
+    <string name="flights_rename_airline">Rename the airline</string>
+    <string name="flights_rename_hint">Used for every flight. Empty brings back the usual name.</string>
+    <string name="flights_name">Name</string>
+    <string name="flights_unknown_airport">Unknown airport</string>
+    <string name="flights_invalid">Fill in both airports and both times.</string>
+    <string name="flights_import_title">Import flights</string>
+    <string name="flights_import_found">Flights in the file: %1$d. New: %2$d. Already in the log: %3$d.</string>
+    <string name="flights_import_unknown">Airports the app does not know (kept as codes): %1$s</string>
+    <string name="flights_import_problems">Lines that could not be read: %1$d</string>
+    <string name="flights_import_not_recognised">This does not look like an App in the Air export.</string>
+    <string name="flights_import_button">Import</string>
+    <string name="flights_imported">Flights imported: %1$d</string>
+    <string name="flights_hm">%1$dh %2$dm</string>
+    <string name="flights_plus_days">+%1$d</string>
+    <plurals name="flights_count">
+        <item quantity="one">%d flight</item>
+        <item quantity="other">%d flights</item>
+    </plurals>
+</resources>

@@ -34,6 +34,8 @@ import com.alphaomegos.annasagenda.screens.metro.MetroMapEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
+import com.alphaomegos.annasagenda.screens.travel.FlightEditScreen
+import com.alphaomegos.annasagenda.screens.travel.FlightsScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelCountryScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelScreen
 import java.time.LocalDate
@@ -66,6 +68,8 @@ private object Route {
     const val METRO_MAP = "metro_map"
     const val TRAVEL = "travel"
     const val TRAVEL_COUNTRY = "travel_country"
+    const val FLIGHTS = "flights"
+    const val FLIGHT_EDIT = "flight_edit"
 
     const val UNDONE = "undone"
 
@@ -261,6 +265,24 @@ fun AppNav(
                 onBack = { nav.popBackStack() },
                 // Encoded: a country of the user's own is "user:<n>".
                 onOpenCountry = { id -> nav.navigate("${Route.TRAVEL_COUNTRY}/${android.net.Uri.encode(id)}") },
+                onOpenFlights = { nav.navigate(Route.FLIGHTS) },
+            )
+        }
+
+        composable(Route.FLIGHTS) {
+            FlightsScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() },
+                onAdd = { nav.navigate("${Route.FLIGHT_EDIT}/-1") },
+                onEdit = { id -> nav.navigate("${Route.FLIGHT_EDIT}/$id") },
+            )
+        }
+
+        composable("${Route.FLIGHT_EDIT}/{flightId}") { entry ->
+            FlightEditScreen(
+                vm = vm,
+                flightId = entry.arguments?.getString("flightId")?.toLongOrNull() ?: -1L,
+                onBack = { nav.popBackStack() },
             )
         }
 

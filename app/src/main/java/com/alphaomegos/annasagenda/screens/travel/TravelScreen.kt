@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddLocationAlt
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
@@ -90,6 +91,7 @@ fun TravelScreen(
     vm: AppViewModel,
     onBack: () -> Unit,
     onOpenCountry: (String) -> Unit,
+    onOpenFlights: () -> Unit = {},
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val base = remember { vm.travelBase }
@@ -118,6 +120,9 @@ fun TravelScreen(
                 title = { Text(stringResource(R.string.menu_travel)) },
                 navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
                 actions = {
+                    IconButton(onClick = onOpenFlights) {
+                        Icon(Icons.Default.Flight, contentDescription = stringResource(R.string.flights_open))
+                    }
                     IconButton(onClick = { creating = true }) {
                         Icon(Icons.Default.AddLocationAlt, contentDescription = stringResource(R.string.travel_terra_incognito))
                     }

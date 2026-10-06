@@ -44,6 +44,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val travelBase: List<TravelBaseCountry> by lazy { loadTravelBase(app.applicationContext) }
     val travelMap: TravelWorldMap by lazy { loadTravelMap(app.applicationContext) }
 
+    /** Airports, airlines and aircraft for the flight log (assets/flights/), read the first time they are asked for. */
+    val flightBase: FlightBase by lazy { loadFlightBase(app.applicationContext) }
+
+    // An App in the Air file read and waiting for "Import?" (06.10). Kept here,
+    // not on the screen: a whole log is too big for the saved instance state,
+    // and turning the phone must not lose it.
+    private var stagedFlightText: String? = null
+    private val _stagedFlightImport = MutableStateFlow<FlightImportPlan?>(null)
+    val stagedFlightImport: StateFlow<FlightImportPlan?> = _stagedFlightImport.asStateFlow()
+
     private val appContext
         get() = getApplication<Application>().applicationContext
 
@@ -1941,6 +1951,97 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setTravelView(prefs: TravelViewPrefs) {
         val cur = _state.value
         if (cur.travelView != prefs) _state.value = cur.copy(travelView = prefs)
+    }
+
+    /* ---------------- flights (06.10) ---------------- */
+
+    private fun setFlights(next: List<Flight>) {
+        val cur = _state.value
+        if (next !== cur.flights && next != cur.flights) _state.value = cur.copy(flights = next)
+    }
+
+    /** A new flight; its id. The id in [flight] is ignored. */
+    fun addFlight(flight: Flight): Long {
+        // Read, take an id, write: never newId() inside an update loop.
+        val id = newId()
+        val cur = _state.value
+        setFlights(flightAdded(cur.flights, flight.copy(id = id), flightBase, cur.flightPrefs.groupJourneys))
+        return id
+    }
+
+    fun editFlight(flight: Flight) {
+        val cur = _state.value
+        setFlights(flightEdited(cur.flights, flight, flightBase, cur.flightPrefs.groupJourneys))
+    }
+
+    fun removeFlight(id: Long) = setFlights(flightRemoved(_state.value.flights, id, flightBase))
+
+    /** [id] split off the flight before it, for good (06.10). */
+    fun splitFlight(id: Long) = setFlights(flightSplitOff(_state.value.flights, id, flightBase))
+
+    /**
+     * Grouping turned on or off (06.10); [earlierToo] is the answer to "and
+     * the flights already in the log?" — regroup them all, or take every
+     * journey apart.
+     */
+    fun setFlightGrouping(on: Boolean, earlierToo: Boolean) {
+        val cur = _state.value
+        val flights = when {
+            !earlierToo -> cur.flights
+            on -> flightsRegrouped(cur.flights, flightBase)
+            else -> flightsUngrouped(cur.flights)
+        }
+        _state.value = cur.copy(flights = flights, flightPrefs = cur.flightPrefs.copy(groupJourneys = on))
+    }
+
+    fun setFlightPrefs(prefs: FlightPrefs) {
+        val cur = _state.value
+        if (cur.flightPrefs != prefs) _state.value = cur.copy(flightPrefs = prefs)
+    }
+
+    /** The user's own name for the city of airport [code]; blank brings back the base's. */
+    fun renameFlightCity(code: String, name: String) {
+        val cur = _state.value
+        val next = if (name.isBlank()) cur.flightCityNames - code else cur.flightCityNames + (code to name.trim())
+        if (next != cur.flightCityNames) _state.value = cur.copy(flightCityNames = next)
+    }
+
+    /** The user's own name for airline [code]; blank brings back the base's. */
+    fun renameFlightAirline(code: String, name: String) {
+        val cur = _state.value
+        val next = if (name.isBlank()) cur.flightAirlineNames - code else cur.flightAirlineNames + (code to name.trim())
+        if (next != cur.flightAirlineNames) _state.value = cur.copy(flightAirlineNames = next)
+    }
+
+    /**
+     * A file read for import: what it would do is shown by [stagedFlightImport]
+     * until [confirmFlightImport] or [cancelFlightImport]. False when the text
+     * is not App in the Air's export.
+     */
+    fun stageFlightImport(text: String): Boolean {
+        val parse = parseAitaExport(text)
+        if (!parse.recognised) return false
+        var fake = 0L
+        stagedFlightText = text
+        _stagedFlightImport.value = flightImportPlan(parse, _state.value.flights, flightBase) { fake++ }
+        return true
+    }
+
+    fun cancelFlightImport() {
+        stagedFlightText = null
+        _stagedFlightImport.value = null
+    }
+
+    /** The staged file imported; how many flights were added. */
+    fun confirmFlightImport(): Int {
+        val text = stagedFlightText
+        cancelFlightImport()
+        if (text == null) return 0
+        val cur = _state.value
+        val plan = flightImportPlan(parseAitaExport(text), cur.flights, flightBase, ::newId)
+        if (plan.flights.isEmpty()) return 0
+        setFlights(flightsAdded(cur.flights, plan.flights, flightBase, cur.flightPrefs.groupJourneys))
+        return plan.flights.size
     }
 
     /** 6.4: whether the add-a-meal dialog offers the food library. */

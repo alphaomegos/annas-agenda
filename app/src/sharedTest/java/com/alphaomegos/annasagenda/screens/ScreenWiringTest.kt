@@ -28,7 +28,11 @@ import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelCountryScreen
+import com.alphaomegos.annasagenda.screens.travel.FlightEditScreen
+import com.alphaomegos.annasagenda.screens.travel.FlightsScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelScreen
+import com.alphaomegos.annasagenda.model.Flight
+import java.time.LocalDateTime
 import com.alphaomegos.annasagenda.screens.travel.travelMonthName
 import com.alphaomegos.annasagenda.support.metroLineAdded
 import com.alphaomegos.annasagenda.support.metroStationAdded
@@ -272,5 +276,44 @@ class ScreenWiringTest {
         val schemes = vm.state.value.metroSchemes
         assertEquals(listOf("Beograd"), schemes.map { it.city })
         assertEquals("user:${schemes.single().id}", vm.state.value.metroSelection)
+    }
+
+    /* ---------------- flights (06.10) ---------------- */
+
+    private fun twoConnectingFlights(): Pair<Long, Long> {
+        val a = vm.addFlight(Flight(0, "TLV", "ATH", LocalDateTime.parse("2024-07-11T04:00"), LocalDateTime.parse("2024-07-11T06:00")))
+        val b = vm.addFlight(Flight(0, "ATH", "BEG", LocalDateTime.parse("2024-07-11T08:00"), LocalDateTime.parse("2024-07-11T09:00")))
+        return a to b
+    }
+
+    @Test
+    fun aFlightsNumber_isSavedFromItsScreen() {
+        val (a, _) = twoConnectingFlights()
+        composeRule.setContent {
+            MaterialTheme { FlightEditScreen(vm, a, onBack = {}) }
+        }
+
+        field(word(R.string.flights_number)).performTextInput("931")
+        composeRule.onNodeWithText(word(R.string.save)).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals("931", vm.state.value.flights.single { it.id == a }.number)
+    }
+
+    @Test
+    fun groupingTurnedOff_asksAboutTheEarlierFlights_andTakesThemApart() {
+        twoConnectingFlights()
+        assertTrue(vm.state.value.flights.all { it.journeyId != null })
+        composeRule.setContent {
+            MaterialTheme { FlightsScreen(vm, onBack = {}, onAdd = {}, onEdit = {}) }
+        }
+
+        composeRule.onNodeWithContentDescription(word(R.string.flights_more)).performClick()
+        composeRule.onNodeWithText(word(R.string.flights_group)).performClick()
+        composeRule.onNodeWithText(word(R.string.flights_all_of_them)).performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(false, vm.state.value.flightPrefs.groupJourneys)
+        assertTrue(vm.state.value.flights.all { it.journeyId == null })
     }
 }

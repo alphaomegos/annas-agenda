@@ -19,16 +19,21 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.alphaomegos.annasagenda.support.FlightMapRoute
 import com.alphaomegos.annasagenda.support.TravelWorldMap
 
 /** The green of a visited country, on the map and in the lists. */
 internal val TravelVisitedGreen = Color(0xFF43A047)
+
+/** The blue of a flight's arc, on the flights' map and over the travel map (06.10). */
+internal val FlightArcBlue = Color(0xFF3D6FE0)
 
 /** A country of the user's own on the map: where, and whether it was visited. */
 internal data class TravelUserDot(val countryId: String, val x: Float, val y: Float, val visited: Boolean)
@@ -43,6 +48,10 @@ internal data class TravelUserDot(val countryId: String, val x: Float, val y: Fl
  * the user's own can be put there. With [focus] (left, top, right, bottom on
  * the grid) it shows just that part, still: a country's card.
  *
+ * Flights (06.10): [routes] are drawn over the countries as great-circle
+ * arcs, with their airports; when [litFlights] is not empty, the routes of
+ * those flights stand out and the rest fade.
+ *
  * Zoom and pan survive turning the phone.
  */
 @Composable
@@ -53,6 +62,8 @@ internal fun TravelMapView(
     modifier: Modifier = Modifier,
     highlight: String? = null,
     focus: FloatArray? = null,
+    routes: List<FlightMapRoute> = emptyList(),
+    litFlights: Set<Long> = emptySet(),
     onTap: (countryId: String?, gridX: Float, gridY: Float) -> Unit = { _, _, _ -> },
 ) {
     val paths = remember(map) {
@@ -83,6 +94,16 @@ internal fun TravelMapView(
     val dotPx = with(density) { 3.dp.toPx() }
     val glowPx = with(density) { 11.dp.toPx() }
     val hitPx = with(density) { 14.dp.toPx() }
+    val arcPx = with(density) { 1.6.dp.toPx() }
+    val airportPx = with(density) { 2.5.dp.toPx() }
+    val airportRing = MaterialTheme.colorScheme.surface
+    val ends = remember(routes) {
+        // The airports: where each arc starts and ends, not where the date line cuts it.
+        routes.flatMap { r ->
+            val first = r.polylines.firstOrNull(); val last = r.polylines.lastOrNull()
+            listOfNotNull(first?.let { it[0] to it[1] }, last?.let { it[it.size - 2] to it[it.size - 1] })
+        }.distinct()
+    }
 
     BoxWithConstraints(modifier = modifier) {
         val w = constraints.maxWidth.toFloat()
@@ -145,6 +166,29 @@ internal fun TravelMapView(
                         drawPath(path, border, style = Stroke(width = 0.8f / k))
                         if (code == highlight) drawPath(path, highlightColor, style = Stroke(width = 2.5f / k))
                     }
+                }
+            }
+            if (routes.isNotEmpty()) {
+                translate(offX, offY) {
+                    scale(k, k, pivot = Offset.Zero) {
+                        routes.forEach { r ->
+                            val lit = litFlights.isEmpty() || r.flightIds.any { it in litFlights }
+                            val color = FlightArcBlue.copy(alpha = if (lit) 0.85f else 0.18f)
+                            val width = (if (lit && litFlights.isNotEmpty()) arcPx * 2f else arcPx) / k
+                            r.polylines.forEach { line ->
+                                val path = Path().apply {
+                                    moveTo(line[0], line[1])
+                                    for (i in 2 until line.size step 2) lineTo(line[i], line[i + 1])
+                                }
+                                drawPath(path, color, style = Stroke(width = width, cap = StrokeCap.Round))
+                            }
+                        }
+                    }
+                }
+                ends.forEach { (x, y) ->
+                    val c = Offset(x * k + offX, y * k + offY)
+                    drawCircle(airportRing, radius = airportPx * 1.6f, center = c)
+                    drawCircle(FlightArcBlue, radius = airportPx, center = c)
                 }
             }
             dots.forEach { (code, at) ->
