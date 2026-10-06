@@ -317,6 +317,30 @@ class AppStateWholeRoundTripTest {
             ),
         ),
         travelView = TravelViewPrefs(view = TravelView.CONTINENTS, reversed = true, onlyMine = false),
+        // Schema 10 — flights, nothing at its default.
+        flights = listOf(
+            Flight(
+                id = 70L, from = "AUH", to = "BEG",
+                departure = java.time.LocalDateTime.parse("2024-02-24T14:05"),
+                arrival = java.time.LocalDateTime.parse("2024-02-24T17:10"),
+                departureOffsetMinutes = 240, arrivalOffsetMinutes = 60,
+                actualDeparture = java.time.LocalDateTime.parse("2024-02-24T14:19"),
+                actualArrival = java.time.LocalDateTime.parse("2024-02-24T17:03"),
+                airline = "WAZ", number = "7043", aircraft = "32Q",
+                seatClass = "Экономический", seat = "3A", booking = "FWUWIW", note = "Окно",
+                journeyId = 71L, keptApart = true,
+            ),
+            Flight(
+                id = 71L, from = "TLV", to = "AUH",
+                departure = java.time.LocalDateTime.parse("2024-02-24T05:00"),
+                arrival = java.time.LocalDateTime.parse("2024-02-24T09:00"),
+                journeyId = 71L,
+            ),
+        ),
+        flightPrefs = FlightPrefs(groupJourneys = false, showMap = false, showOnTravelMap = true),
+        flightCityNames = mapOf("BEG" to "Белград"),
+        flightAirlineNames = mapOf("WAZ" to "Виззэйр"),
+        flightHomes = setOf("RS:belgrade"),
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -369,6 +393,7 @@ class AppStateWholeRoundTripTest {
         assertTrue(whole.notifications.summaryMinutes.isNotEmpty())
         assertTrue(whole.metroSchemes.single().hints.size == 2)
         assertTrue(whole.travelCountries.any { it.isUserCountry && it.customPoint != null })
+        assertTrue(whole.flights.any { it.actualArrival != null && it.keptApart })
     }
 
     /**
@@ -395,6 +420,8 @@ class AppStateWholeRoundTripTest {
             "metroSchemes", "metroSelection", "trunk", "branches", "fromStationId", "exitId", "toStationId",
             "closed", "expectedOpeningEpochDay",
             "travelCountries", "travelView", "countryId", "trips", "month", "cities", "continent",
+            "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes",
+            "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))
         }

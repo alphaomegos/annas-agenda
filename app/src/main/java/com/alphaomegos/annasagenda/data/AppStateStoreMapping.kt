@@ -79,6 +79,11 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
         )
     },
     travelView = TravelViewDto(view = travelView.view.name, reversed = travelView.reversed, onlyMine = travelView.onlyMine),
+    flights = flights.map { it.toDto() },
+    flightPrefs = FlightPrefsDto(flightPrefs.groupJourneys, flightPrefs.showMap, flightPrefs.showOnTravelMap),
+    flightCityNames = flightCityNames,
+    flightAirlineNames = flightAirlineNames,
+    flightHomes = flightHomes.sorted(),
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -178,6 +183,11 @@ internal fun AppStateDto.toDomain(): AppState {
             reversed = travelView.reversed,
             onlyMine = travelView.onlyMine,
         ),
+        flights = flightsFromDto(flights),
+        flightPrefs = FlightPrefs(flightPrefs.groupJourneys, flightPrefs.showMap, flightPrefs.showOnTravelMap),
+        flightCityNames = flightCityNames.filter { it.key.isNotBlank() && it.value.isNotBlank() },
+        flightAirlineNames = flightAirlineNames.filter { it.key.isNotBlank() && it.value.isNotBlank() },
+        flightHomes = flightHomes.filter { it.isNotBlank() }.toSet(),
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)
@@ -791,4 +801,47 @@ internal fun travelCountriesFromDto(dtos: List<TravelCountryDto>): List<TravelCo
         out[id] = if (before == null) record else before.copy(trips = before.trips + record.trips)
     }
     return out.values.filter { it.isUserCountry || it.trips.isNotEmpty() || it.continentOverride != null }
+}
+
+/* ---------------- flights ---------------- */
+
+internal fun Flight.toDto(): FlightDto = FlightDto(
+    id = id, from = from, to = to,
+    departure = departure.toString(), arrival = arrival.toString(),
+    departureOffsetMinutes = departureOffsetMinutes, arrivalOffsetMinutes = arrivalOffsetMinutes,
+    actualDeparture = actualDeparture?.toString(), actualArrival = actualArrival?.toString(),
+    airline = airline, number = number, aircraft = aircraft,
+    seatClass = seatClass, seat = seat, booking = booking, note = note,
+    journeyId = journeyId, keptApart = keptApart,
+)
+
+private fun flightTime(s: String?): java.time.LocalDateTime? =
+    s?.let { runCatching { java.time.LocalDateTime.parse(it) }.getOrNull() }
+
+/**
+ * The flight log read back. A flight whose times cannot be read, or with no
+ * airports, is dropped; a second flight with an id already taken too. A
+ * journey pointing at a flight that is not there is forgotten, and so is
+ * an offset beyond any clock on Earth (±18 h).
+ */
+internal fun flightsFromDto(dtos: List<FlightDto>): List<Flight> {
+    val flights = dtos.mapNotNull { d ->
+        val dep = flightTime(d.departure) ?: return@mapNotNull null
+        val arr = flightTime(d.arrival) ?: return@mapNotNull null
+        if (d.from.isBlank() || d.to.isBlank()) return@mapNotNull null
+        fun offset(m: Int?) = m?.takeIf { it in -18 * 60..18 * 60 }
+        Flight(
+            id = d.id, from = d.from.trim().uppercase(), to = d.to.trim().uppercase(),
+            departure = dep, arrival = arr,
+            departureOffsetMinutes = offset(d.departureOffsetMinutes), arrivalOffsetMinutes = offset(d.arrivalOffsetMinutes),
+            actualDeparture = flightTime(d.actualDeparture), actualArrival = flightTime(d.actualArrival),
+            airline = d.airline?.takeIf { it.isNotBlank() }, number = d.number?.takeIf { it.isNotBlank() },
+            aircraft = d.aircraft?.takeIf { it.isNotBlank() },
+            seatClass = d.seatClass?.takeIf { it.isNotBlank() }, seat = d.seat?.takeIf { it.isNotBlank() },
+            booking = d.booking?.takeIf { it.isNotBlank() }, note = d.note,
+            journeyId = d.journeyId, keptApart = d.keptApart,
+        )
+    }.distinctBy { it.id }
+    val ids = flights.mapTo(HashSet()) { it.id }
+    return flights.map { if (it.journeyId != null && it.journeyId !in ids) it.copy(journeyId = null) else it }
 }

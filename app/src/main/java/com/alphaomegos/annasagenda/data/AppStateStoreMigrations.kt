@@ -58,6 +58,7 @@ internal fun migrateAppStateRawJson(
             6 -> migrateAppState6To7(cur)
             7 -> migrateAppState7To8(cur)
             8 -> migrateAppState8To9(cur)
+            9 -> migrateAppState9To10(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -174,6 +175,17 @@ private fun migrateAppState7To8(obj: JsonObject): JsonObject {
 private fun migrateAppState8To9(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(9)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp. Version 10 (06.10) adds flights — the log, the user's own names
+ * for cities and airlines, their home cities — data nothing else holds. No
+ * flights is what every payload before it means.
+ */
+private fun migrateAppState9To10(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(10)
     return JsonObject(m)
 }
 

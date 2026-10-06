@@ -109,6 +109,43 @@ internal data class AppStateDto(
     // Schema 9 (05.10): travel.
     val travelCountries: List<TravelCountryDto> = emptyList(),
     val travelView: TravelViewDto = TravelViewDto(),
+
+    // Schema 10 (06.10): flights.
+    val flights: List<FlightDto> = emptyList(),
+    val flightPrefs: FlightPrefsDto = FlightPrefsDto(),
+    val flightCityNames: Map<String, String> = emptyMap(),
+    val flightAirlineNames: Map<String, String> = emptyMap(),
+    val flightHomes: List<String> = emptyList(),
+)
+
+/** A flight; times are the airports' local clocks as "2024-02-24T14:05". */
+@Serializable
+internal data class FlightDto(
+    val id: Long,
+    val from: String,
+    val to: String,
+    val departure: String,
+    val arrival: String,
+    val departureOffsetMinutes: Int? = null,
+    val arrivalOffsetMinutes: Int? = null,
+    val actualDeparture: String? = null,
+    val actualArrival: String? = null,
+    val airline: String? = null,
+    val number: String? = null,
+    val aircraft: String? = null,
+    val seatClass: String? = null,
+    val seat: String? = null,
+    val booking: String? = null,
+    val note: String = "",
+    val journeyId: Long? = null,
+    val keptApart: Boolean = false,
+)
+
+@Serializable
+internal data class FlightPrefsDto(
+    val groupJourneys: Boolean = true,
+    val showMap: Boolean = true,
+    val showOnTravelMap: Boolean = false,
 )
 
 @Serializable

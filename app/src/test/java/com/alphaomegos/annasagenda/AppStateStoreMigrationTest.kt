@@ -560,6 +560,46 @@ class AppStateStoreMigrationTest {
         assertEquals("user:9", own.customName)
     }
 
+    /** Schema 10 (06.10): a payload from before flights has no flights and the default settings. */
+    @Test
+    fun version9_readsWithNoFlights() {
+        val state = decoded("""{ "v": 9, "travelCountries": [ { "countryId": "BY" } ] }""")
+
+        assertTrue(state.flights.isEmpty())
+        assertEquals(FlightPrefs(), state.flightPrefs)
+        assertTrue(state.flightHomes.isEmpty())
+    }
+
+    /**
+     * A flight whose time cannot be read is dropped, the rest kept; a second
+     * flight with a taken id is dropped; a journey pointing nowhere and an
+     * impossible offset are forgotten; codes are tidied.
+     */
+    @Test
+    fun flightLooseEndsAreDroppedNotFatal() {
+        val state = decoded(
+            """
+            {
+              "v": 10,
+              "flights": [
+                { "id": 1, "from": " auh", "to": "BEG", "departure": "2024-02-24T14:05", "arrival": "2024-02-24T17:10",
+                  "departureOffsetMinutes": 240, "arrivalOffsetMinutes": 5000, "journeyId": 77 },
+                { "id": 1, "from": "TLV", "to": "BEG", "departure": "2024-01-01T10:00", "arrival": "2024-01-01T13:00" },
+                { "id": 2, "from": "TLV", "to": "BEG", "departure": "yesterday", "arrival": "2024-01-01T13:00" }
+              ],
+              "flightHomes": [ "RS:belgrade", "" ]
+            }
+            """.trimIndent()
+        )
+
+        val f = state.flights.single()
+        assertEquals("AUH", f.from)
+        assertEquals(240, f.departureOffsetMinutes)
+        assertEquals(null, f.arrivalOffsetMinutes)
+        assertEquals(null, f.journeyId)
+        assertEquals(setOf("RS:belgrade"), state.flightHomes)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

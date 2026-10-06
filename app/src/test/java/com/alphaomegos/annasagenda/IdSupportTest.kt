@@ -72,6 +72,11 @@ class IdSupportTest {
             "travel trips" to AppState(
                 travelCountries = listOf(TravelCountryRecord("BY", trips = listOf(TravelTrip(id = 40L, year = 2018, month = 5))))
             ),
+            "flights" to AppState(
+                flights = listOf(
+                    Flight(40L, "TLV", "BEG", java.time.LocalDateTime.parse("2024-01-01T10:00"), java.time.LocalDateTime.parse("2024-01-01T13:00")),
+                )
+            ),
             "travel user countries" to AppState(
                 travelCountries = listOf(
                     TravelCountryRecord("user:40", continentOverride = TravelContinent.EUROPE, customName = "Нарния"),

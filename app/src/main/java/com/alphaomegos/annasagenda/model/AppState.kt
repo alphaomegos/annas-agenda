@@ -145,4 +145,16 @@ data class AppState(
     // are data nothing else holds; how the screen was left rides along.
     val travelCountries: List<TravelCountryRecord> = emptyList(),
     val travelView: TravelViewPrefs = TravelViewPrefs(),
+
+    // --- Schema 10 (06.10): flights. The log, and the user's own names for
+    // cities and airlines and their home cities, are data nothing else
+    // holds; the section's settings ride along.
+    val flights: List<Flight> = emptyList(),
+    val flightPrefs: FlightPrefs = FlightPrefs(),
+    // By airport code: the city as the user names it.
+    val flightCityNames: Map<String, String> = emptyMap(),
+    // By airline code.
+    val flightAirlineNames: Map<String, String> = emptyMap(),
+    // Places never suggested to the travel section (flightPlaceKey).
+    val flightHomes: Set<String> = emptySet(),
 ) : DateTasksData

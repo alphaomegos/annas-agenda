@@ -31,6 +31,8 @@ fun highestIdIn(state: AppState): Long =
         // Travel (05.10): every trip, and the number in a user's own country's "user:<n>".
         state.travelCountries.flatMap { it.trips }.maxOfOrNull { it.id },
         state.travelCountries.mapNotNull { it.countryId.removePrefix(TRAVEL_USER_COUNTRY_PREFIX).toLongOrNull() }.maxOrNull(),
+        // Flights (06.10).
+        state.flights.maxOfOrNull { it.id },
     ).filterNotNull().maxOrNull() ?: 0L
 
 /**
