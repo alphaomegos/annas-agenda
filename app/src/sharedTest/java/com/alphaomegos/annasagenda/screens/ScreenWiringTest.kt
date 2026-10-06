@@ -327,8 +327,8 @@ class ScreenWiringTest {
             MaterialTheme { FlightProfileScreen(vm, onBack = {}, onAchievements = { opened = true }) }
         }
 
-        // Two flights earn the first-flight milestone, one of twelve.
-        val label = word(R.string.flights_achievements_count, 1, 12)
+        // Two flights earn the first-flight milestone, one of nineteen.
+        val label = word(R.string.flights_achievements_count, 1, 19)
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty() }
         // Below the tiles: off the test's small screen until scrolled to.
         composeRule.onNodeWithText(label).performScrollTo().performClick()

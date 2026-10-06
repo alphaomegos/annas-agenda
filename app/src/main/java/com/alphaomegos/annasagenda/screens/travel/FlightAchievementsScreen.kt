@@ -1,6 +1,18 @@
 package com.alphaomegos.annasagenda.screens.travel
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -71,9 +83,11 @@ fun FlightAchievementsScreen(vm: AppViewModel, onBack: () -> Unit) {
     }
     val names = rememberTravelNames(vm.travelBase, state.travelCountries)
     val collator = rememberTravelCollator()
-    val locale = appLocale()
+    val userLocale = appLocale()
     // 0 all, 1 earned, 2 not yet.
     var filter by rememberSaveable { mutableStateOf(0) }
+    // The achievement opened in its dialog.
+    var opened by rememberSaveable { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -84,7 +98,9 @@ fun FlightAchievementsScreen(vm: AppViewModel, onBack: () -> Unit) {
         },
     ) { inner ->
         val s = stats ?: return@Scaffold
-        val milestones = flightAchievements(s).filter { keep(filter, it.taken) }
+        val achievements = flightAchievements(s)
+        val milestones = achievements.filter { keep(filter, it.taken) }
+        achievements.firstOrNull { it.id == opened }?.let { a -> AchievementDialog(a, userLocale) { opened = null } }
         val flown = flightCountriesFlown(s)
         val countries = remember(names, collator) { vm.travelBase.map { it.code }.sortedWith { a, b -> collator.compare(names.nameOf(a), names.nameOf(b)) } }
             .filter { keep(filter, it in flown) }
@@ -105,7 +121,7 @@ fun FlightAchievementsScreen(vm: AppViewModel, onBack: () -> Unit) {
             }
             if (milestones.isNotEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) { Header(milestonesTitle) }
-                items(milestones, key = { "m:" + it.id }) { a -> Milestone(a, locale) }
+                items(milestones, key = { "m:" + it.id }) { a -> Milestone(a, userLocale) { opened = a.id } }
             }
             if (countries.isNotEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) { Header(countriesTitle) }
@@ -127,31 +143,114 @@ private fun Header(text: String) {
 }
 
 @Composable
-private fun Milestone(a: FlightAchievement, locale: java.util.Locale) {
-    val (title, text) = achievementRes(a.id)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .alpha(if (a.taken) 1f else 0.45f)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-            .padding(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            Icons.Default.EmojiEvents,
-            contentDescription = null,
-            tint = if (a.taken) AchievementGold else MaterialTheme.colorScheme.outline,
-        )
-        Text(stringResource(title), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-        Text(stringResource(text), style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
-        if (!a.taken) {
+private fun Milestone(a: FlightAchievement, userLocale: java.util.Locale, onOpen: () -> Unit) {
+    val (title, text, _) = achievementRes(a.id)
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+                .clickable(onClick = onOpen)
+                .padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AchievementPicture(a.id, a.taken, Modifier.size(64.dp))
             Text(
-                stringResource(R.string.flights_progress, flightNumber(a.value, locale), flightNumber(a.goal, locale)),
+                stringResource(title),
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.alpha(if (a.taken) 1f else 0.55f),
+            )
+            Text(
+                stringResource(text),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.alpha(if (a.taken) 1f else 0.55f),
+            )
+            if (!a.taken) {
+                Text(
+                    stringResource(R.string.flights_progress, flightNumber(a.value, userLocale), flightNumber(a.goal, userLocale)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        // Earned more than once (06.10): "×2" in the corner.
+        if (a.times > 1) {
+            Text(
+                stringResource(R.string.ach_times, flightNumber(a.times, userLocale)),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .background(AchievementGold, RoundedCornerShape(50))
+                    .padding(horizontal = 7.dp, vertical = 2.dp),
             )
         }
     }
+}
+
+/**
+ * An achievement's picture, assets/achievements/<id>.png (06.10; made
+ * elsewhere, see the README there), grey while not earned; the trophy
+ * while the picture is not there yet.
+ */
+@Composable
+private fun AchievementPicture(id: String, taken: Boolean, modifier: Modifier) {
+    val context = LocalContext.current
+    val picture by produceState<ImageBitmap?>(null, id) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                context.assets.open("achievements/$id.png").use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
+            }.getOrNull()
+        }
+    }
+    val grey = remember { ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) }
+    val p = picture
+    if (p != null) {
+        Image(
+            bitmap = p,
+            contentDescription = null,
+            colorFilter = if (taken) null else grey,
+            modifier = modifier.clip(RoundedCornerShape(12.dp)).alpha(if (taken) 1f else 0.5f),
+        )
+    } else {
+        Icon(
+            Icons.Default.EmojiEvents,
+            contentDescription = null,
+            tint = if (taken) AchievementGold else MaterialTheme.colorScheme.outline,
+            modifier = modifier,
+        )
+    }
+}
+
+/** An achievement opened (06.10): the big picture, its name, what it takes, the joke, and how it stands. */
+@Composable
+private fun AchievementDialog(a: FlightAchievement, userLocale: java.util.Locale, onDismiss: () -> Unit) {
+    val (title, text, joke) = achievementRes(a.id)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(title), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                AchievementPicture(a.id, a.taken, Modifier.size(220.dp))
+                Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                Text(stringResource(joke), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+                Text(
+                    when {
+                        a.times > 1 -> stringResource(R.string.ach_earned_times, flightNumber(a.times, userLocale))
+                        a.taken -> stringResource(R.string.ach_earned)
+                        else -> stringResource(R.string.ach_not_yet, flightNumber(a.value, userLocale), flightNumber(a.goal, userLocale))
+                    },
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (a.taken) AchievementGold else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
+    )
 }
 
 @Composable
@@ -172,17 +271,24 @@ private fun CountryBadge(flag: String, name: String, taken: Boolean) {
     }
 }
 
-private fun achievementRes(id: String): Pair<Int, Int> = when (id) {
-    "first_flight" -> R.string.ach_first_flight to R.string.ach_first_flight_text
-    "flights_100" -> R.string.ach_flights_100 to R.string.ach_flights_100_text
-    "flights_500" -> R.string.ach_flights_500 to R.string.ach_flights_500_text
-    "flights_1000" -> R.string.ach_flights_1000 to R.string.ach_flights_1000_text
-    "around_the_earth" -> R.string.ach_around_the_earth to R.string.ach_around_the_earth_text
-    "to_the_moon" -> R.string.ach_to_the_moon to R.string.ach_to_the_moon_text
-    "day_in_the_air" -> R.string.ach_day_in_the_air to R.string.ach_day_in_the_air_text
-    "week_in_the_air" -> R.string.ach_week_in_the_air to R.string.ach_week_in_the_air_text
-    "countries_10" -> R.string.ach_countries_10 to R.string.ach_countries_10_text
-    "countries_50" -> R.string.ach_countries_50 to R.string.ach_countries_50_text
-    "airlines_10" -> R.string.ach_airlines_10 to R.string.ach_airlines_10_text
-    else -> R.string.ach_turnarounds_10 to R.string.ach_turnarounds_10_text
+private fun achievementRes(id: String): Triple<Int, Int, Int> = when (id) {
+    "first_flight" -> Triple(R.string.ach_first_flight, R.string.ach_first_flight_text, R.string.ach_first_flight_joke)
+    "flights_100" -> Triple(R.string.ach_flights_100, R.string.ach_flights_100_text, R.string.ach_flights_100_joke)
+    "flights_1000" -> Triple(R.string.ach_flights_1000, R.string.ach_flights_1000_text, R.string.ach_flights_1000_joke)
+    "around_the_earth" -> Triple(R.string.ach_around_the_earth, R.string.ach_around_the_earth_text, R.string.ach_around_the_earth_joke)
+    "to_the_moon" -> Triple(R.string.ach_to_the_moon, R.string.ach_to_the_moon_text, R.string.ach_to_the_moon_joke)
+    "day_in_the_air" -> Triple(R.string.ach_day_in_the_air, R.string.ach_day_in_the_air_text, R.string.ach_day_in_the_air_joke)
+    "week_in_the_air" -> Triple(R.string.ach_week_in_the_air, R.string.ach_week_in_the_air_text, R.string.ach_week_in_the_air_joke)
+    "month_in_the_air" -> Triple(R.string.ach_month_in_the_air, R.string.ach_month_in_the_air_text, R.string.ach_month_in_the_air_joke)
+    "year_in_the_air" -> Triple(R.string.ach_year_in_the_air, R.string.ach_year_in_the_air_text, R.string.ach_year_in_the_air_joke)
+    "countries_10" -> Triple(R.string.ach_countries_10, R.string.ach_countries_10_text, R.string.ach_countries_10_joke)
+    "countries_50" -> Triple(R.string.ach_countries_50, R.string.ach_countries_50_text, R.string.ach_countries_50_joke)
+    "airlines_10" -> Triple(R.string.ach_airlines_10, R.string.ach_airlines_10_text, R.string.ach_airlines_10_joke)
+    "aircraft_10" -> Triple(R.string.ach_aircraft_10, R.string.ach_aircraft_10_text, R.string.ach_aircraft_10_joke)
+    "airports_10" -> Triple(R.string.ach_airports_10, R.string.ach_airports_10_text, R.string.ach_airports_10_joke)
+    "airports_100" -> Triple(R.string.ach_airports_100, R.string.ach_airports_100_text, R.string.ach_airports_100_joke)
+    "airports_1000" -> Triple(R.string.ach_airports_1000, R.string.ach_airports_1000_text, R.string.ach_airports_1000_joke)
+    "time_killer" -> Triple(R.string.ach_time_killer, R.string.ach_time_killer_text, R.string.ach_time_killer_joke)
+    "time_traveller" -> Triple(R.string.ach_time_traveller, R.string.ach_time_traveller_text, R.string.ach_time_traveller_joke)
+    else -> Triple(R.string.ach_flight_attendant, R.string.ach_flight_attendant_text, R.string.ach_flight_attendant_joke)
 }

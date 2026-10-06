@@ -323,7 +323,27 @@ data class FlightStats(
     // Turnarounds (06.10): how many, and where to, most first.
     val turnarounds: Int = 0,
     val turnaroundPlaces: List<FlightCount> = emptyList(),
+    // Changes of planes that took 8 hours or more (06.10, "time killer").
+    val longLayovers: Int = 0,
+    // Flights that landed, by the local clocks, before they left (06.10, "time traveller").
+    val timeTravels: Int = 0,
 )
+
+/** How long a change has to take to count as a long one (06.10). */
+val FLIGHT_LONG_LAYOVER: Duration = Duration.ofHours(8)
+
+/** The changes of planes among [flights] that took at least [FLIGHT_LONG_LAYOVER]. */
+fun flightLongLayovers(flights: List<Flight>, base: FlightBase): Int {
+    val ordered = flights.sortedWith(compareBy({ departureKey(it, base) }, { it.id }))
+    return ordered.zipWithNext().count { (a, b) ->
+        flightConnects(a, b, base) &&
+            Duration.between(arrivalKey(a, base), departureKey(b, base)) >= FLIGHT_LONG_LAYOVER
+    }
+}
+
+/** Whether [f] landed, by the clocks on the ground, before it took off — Tokyo to Los Angeles. */
+fun flightIsTimeTravel(f: Flight): Boolean =
+    (f.actualArrival ?: f.arrival) < (f.actualDeparture ?: f.departure)
 
 fun flightStats(flights: List<Flight>, base: FlightBase, now: Instant): FlightStats {
     val flown = flights.filter { flightIsPast(it, base, now) }
@@ -350,6 +370,8 @@ fun flightStats(flights: List<Flight>, base: FlightBase, now: Instant): FlightSt
         }.sortedBy { it.year },
         turnarounds = turns.size,
         turnaroundPlaces = counted(turns.mapNotNull { (out, _) -> flown.firstOrNull { it.id == out }?.to }),
+        longLayovers = flightLongLayovers(flown, base),
+        timeTravels = flown.count(::flightIsTimeTravel),
     )
 }
 
