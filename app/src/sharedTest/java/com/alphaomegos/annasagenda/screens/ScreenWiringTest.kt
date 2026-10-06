@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
@@ -304,7 +305,7 @@ class ScreenWiringTest {
     @Test
     fun groupingTurnedOff_asksAboutTheEarlierFlights_andTakesThemApart() {
         twoConnectingFlights()
-        assertTrue(vm.state.value.flights.all { it.journeyId != null })
+        assertTrue("the two flights were not grouped", vm.state.value.flights.all { it.journeyId != null })
         composeRule.setContent {
             MaterialTheme { FlightsScreen(vm, onBack = {}, onAdd = {}, onEdit = {}) }
         }
@@ -329,8 +330,9 @@ class ScreenWiringTest {
         // Two flights earn the first-flight milestone, one of twelve.
         val label = word(R.string.flights_achievements_count, 1, 12)
         composeRule.waitUntil(5_000) { composeRule.onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty() }
-        composeRule.onNodeWithText(label).performClick()
+        // Below the tiles: off the test's small screen until scrolled to.
+        composeRule.onNodeWithText(label).performScrollTo().performClick()
 
-        assertTrue(opened)
+        assertTrue("the achievements did not open", opened)
     }
 }
