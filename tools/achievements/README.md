@@ -9,8 +9,14 @@ app greys it out itself while the achievement is not earned.
   64 × 64 (the card) as well as at 220 dp (the dialog).
 - A plain or softly graded background filling the square (no transparency);
   the app rounds the corners.
-- The same style for the whole set; no text, letters or digits in the
-  picture; no real logos, liveries or brands.
+- The app's style (06.10): an oil painting on canvas — visible brushwork and
+  canvas grain, warm muted old-master colours, a quietly absurd, deadpan
+  humour — as in the reference picture of the white cat the generator is
+  shown with every prompt. The same style for the whole set.
+- No text, letters or digits in the picture; no real logos, liveries or
+  brands.
+- The card shows the picture square across its whole width, the dialog
+  larger still: keep the subject large and simple enough to read small.
 
 | id | name |
 |---|---|

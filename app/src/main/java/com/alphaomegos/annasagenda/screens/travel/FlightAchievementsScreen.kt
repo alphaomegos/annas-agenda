@@ -1,10 +1,11 @@
 package com.alphaomegos.annasagenda.screens.travel
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
@@ -154,26 +155,33 @@ private fun Milestone(a: FlightAchievement, userLocale: java.util.Locale, onOpen
                 .padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AchievementPicture(a.id, a.taken, Modifier.size(64.dp))
+            // Every tile the same shape (06.10): a square picture, two lines of
+            // name, two of what it takes, one of progress — kept even when empty.
+            AchievementPicture(a.id, a.taken, Modifier.fillMaxWidth().aspectRatio(1f))
             Text(
                 stringResource(title),
                 fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.alpha(if (a.taken) 1f else 0.55f),
+                minLines = 2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 6.dp).alpha(if (a.taken) 1f else 0.55f),
             )
             Text(
                 stringResource(text),
                 style = MaterialTheme.typography.labelSmall,
                 textAlign = TextAlign.Center,
+                minLines = 2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.alpha(if (a.taken) 1f else 0.55f),
             )
-            if (!a.taken) {
-                Text(
-                    stringResource(R.string.flights_progress, flightNumber(a.value, userLocale), flightNumber(a.goal, userLocale)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                if (a.taken) "" else stringResource(R.string.flights_progress, flightNumber(a.value, userLocale), flightNumber(a.goal, userLocale)),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
         // Earned more than once (06.10): "×2" in the corner.
         if (a.times > 1) {
@@ -222,12 +230,14 @@ private fun AchievementPicture(id: String, taken: Boolean, modifier: Modifier) {
             modifier = modifier.clip(RoundedCornerShape(12.dp)).alpha(if (taken) 1f else 0.5f),
         )
     } else {
-        Icon(
-            Icons.Default.EmojiEvents,
-            contentDescription = null,
-            tint = if (taken) AchievementGold else MaterialTheme.colorScheme.outline,
-            modifier = modifier,
-        )
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            Icon(
+                Icons.Default.EmojiEvents,
+                contentDescription = null,
+                tint = if (taken) AchievementGold else MaterialTheme.colorScheme.outline,
+                modifier = Modifier.fillMaxSize(0.5f),
+            )
+        }
     }
 }
 
@@ -240,7 +250,7 @@ private fun AchievementDialog(a: FlightAchievement, userLocale: java.util.Locale
         title = { Text(stringResource(title), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                AchievementPicture(a.id, a.taken, Modifier.size(220.dp))
+                AchievementPicture(a.id, a.taken, Modifier.fillMaxWidth().aspectRatio(1f))
                 Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                 Text(stringResource(joke), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
                 Text(
@@ -272,7 +282,14 @@ private fun CountryBadge(flag: String, name: String, taken: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(flag, fontSize = 28.sp)
-        Text(name, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2)
+        Text(
+            name,
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.Center,
+            minLines = 2,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
