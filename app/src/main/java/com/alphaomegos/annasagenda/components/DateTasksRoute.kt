@@ -28,7 +28,7 @@ import com.alphaomegos.annasagenda.dialogs.RepeatPickerDialog
 import com.alphaomegos.annasagenda.support.canMoveTask
 import com.alphaomegos.annasagenda.support.canShiftSeries
 import com.alphaomegos.annasagenda.support.isSuppressedTemplateTaskOnItsDate
-import com.alphaomegos.annasagenda.support.taskDayOrder
+import com.alphaomegos.annasagenda.support.taskDisplayOrder
 import java.time.LocalDate
 import java.time.LocalTime
 import com.alphaomegos.annasagenda.model.ManualCounter
@@ -76,6 +76,7 @@ internal fun DateTasksBlock(
 ) {
     val tasks = remember(
         state.tasks,
+        state.doneTasksLast,
         state.suppressedRecurrences,
         date,
         includeDoneTasks,
@@ -86,7 +87,7 @@ internal fun DateTasksBlock(
             .filter { includeDoneTasks || !it.isDone }
             .filter { visibleTaskIds == null || it.id in visibleTaskIds }
             .filterNot { isSuppressedTemplateTaskOnItsDate(it, state.suppressedRecurrences) }
-            .sortedWith(taskDayOrder)
+            .sortedWith(taskDisplayOrder(state.doneTasksLast))
     }
     if (tasks.isEmpty()) return
 
@@ -217,8 +218,8 @@ private fun DateTasksBlockContent(
             onCopy = { copyTaskId.value = task.id },
             // Asked of the whole day, done ones included: that is what the
             // move itself looks at.
-            canMoveUp = canMoveTask(state.tasks, task.id, step = -1),
-            canMoveDown = canMoveTask(state.tasks, task.id, step = 1),
+            canMoveUp = canMoveTask(state.tasks, task.id, step = -1, doneLast = state.doneTasksLast),
+            canMoveDown = canMoveTask(state.tasks, task.id, step = 1, doneLast = state.doneTasksLast),
         )
 
         Row(

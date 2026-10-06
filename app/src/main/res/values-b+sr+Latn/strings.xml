@@ -794,4 +794,5 @@
     <string name="ach_airlines_10_text">Leteti sa 10 avio-kompanija</string>
     <string name="ach_turnarounds_10">Bumerang</string>
     <string name="ach_turnarounds_10_text">Napraviti 10 obrta</string>
+    <string name="settings_done_tasks_last">Urađeni zadaci — na dno liste</string>
 </resources>

@@ -146,6 +146,7 @@ class AppStateWholeRoundTripTest {
         themeMode = AppThemeMode.DARK,
         idHighWater = 900L,
         undoneLampMuted = true,
+        doneTasksLast = true,
         undoneHorizonDays = 90,
         readingBooks = listOf(
             ReadingBook(

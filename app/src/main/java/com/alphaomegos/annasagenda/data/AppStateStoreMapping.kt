@@ -28,6 +28,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     mainMenuOrder = mainMenuOrder,
     mainMenuHiddenIds = mainMenuHiddenIds.toList(),
     undoneLampMuted = undoneLampMuted,
+    doneTasksLast = doneTasksLast,
     undoneHorizonDays = undoneHorizonDays,
     themeMode = themeMode.name,
     idHighWater = idHighWater,
@@ -128,6 +129,7 @@ internal fun AppStateDto.toDomain(): AppState {
         mainMenuOrder = normalizeMainMenuOrderIds(mainMenuOrder),
         mainMenuHiddenIds = mainMenuHiddenIds.toSet(),
         undoneLampMuted = undoneLampMuted,
+        doneTasksLast = doneTasksLast,
         undoneHorizonDays = normalizeUndoneHorizonDays(undoneHorizonDays),
         themeMode = parseAppThemeMode(themeMode),
         // Never below zero: a payload claiming a negative mark would make

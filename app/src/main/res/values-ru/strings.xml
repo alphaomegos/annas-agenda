@@ -860,4 +860,5 @@
     <string name="ach_airlines_10_text">Полетать с 10 авиакомпаниями</string>
     <string name="ach_turnarounds_10">Бумеранг</string>
     <string name="ach_turnarounds_10_text">Сделать 10 разворотов</string>
+    <string name="settings_done_tasks_last">Сделанные задачи — вниз списка</string>
 </resources>

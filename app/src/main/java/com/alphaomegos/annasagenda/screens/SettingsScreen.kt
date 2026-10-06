@@ -100,6 +100,13 @@ fun SettingsScreen(
                     ),
                 ) { open = SETTINGS_NOTIFICATIONS }
             }
+            // Done tasks at the bottom of their day (06.10): a tap turns it on or off.
+            item {
+                SettingsRow(
+                    stringResource(R.string.settings_done_tasks_last),
+                    stringResource(if (state.doneTasksLast) R.string.settings_on else R.string.settings_off),
+                ) { vm.setDoneTasksLast(!state.doneTasksLast) }
+            }
             item {
                 SettingsRow(
                     stringResource(R.string.widget_style_menu),

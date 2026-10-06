@@ -41,6 +41,8 @@ internal data class AppStateDto(
     val mainMenuOrder: List<String> = emptyList(),
     val mainMenuHiddenIds: List<String> = emptyList(),
     val undoneLampMuted: Boolean = false,
+    // Done tasks at the bottom of their day (06.10). A setting: no version step.
+    val doneTasksLast: Boolean = false,
 
     // Additive with a default: an older payload simply decodes to the default,
     // so this needs no schema migration.

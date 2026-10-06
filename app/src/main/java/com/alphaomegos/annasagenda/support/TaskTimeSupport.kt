@@ -22,8 +22,17 @@ import com.alphaomegos.annasagenda.app.*
 val taskDayOrder: Comparator<Task> =
     compareBy<Task>({ it.time == null }, { it.time }, { it.order }, { it.id })
 
-/** [tasks] in [taskDayOrder]. */
-fun tasksInDayOrder(tasks: List<Task>): List<Task> = tasks.sortedWith(taskDayOrder)
+/**
+ * The order the day is shown in (06.10): [taskDayOrder], and with
+ * [doneLast] — a setting — the done tasks after all the rest, each part in
+ * that same order.
+ */
+fun taskDisplayOrder(doneLast: Boolean): Comparator<Task> =
+    if (doneLast) compareBy<Task> { it.isDone }.then(taskDayOrder) else taskDayOrder
+
+/** [tasks] in [taskDisplayOrder]. */
+fun tasksInDayOrder(tasks: List<Task>, doneLast: Boolean = false): List<Task> =
+    tasks.sortedWith(taskDisplayOrder(doneLast))
 
 /**
  * Whether the arrows may move this task by [step] within its day.
@@ -37,11 +46,12 @@ fun tasksInDayOrder(tasks: List<Task>): List<Task> = tasks.sortedWith(taskDayOrd
  * the same rule, so a stale tap on a button that should have been grey still
  * does nothing.
  */
-fun canMoveTask(tasks: List<Task>, taskId: Long, step: Int): Boolean {
+fun canMoveTask(tasks: List<Task>, taskId: Long, step: Int, doneLast: Boolean = false): Boolean {
     val victim = tasks.firstOrNull { it.id == taskId } ?: return false
     if (victim.time != null) return false
 
-    val untimed = untimedSiblings(tasks, victim)
+    // With done tasks at the bottom, a task moves among those that are shown next to it.
+    val untimed = untimedSiblings(tasks, victim).filter { !doneLast || it.isDone == victim.isDone }
     val idx = untimed.indexOfFirst { it.id == taskId }
     return idx >= 0 && (idx + step) in untimed.indices
 }

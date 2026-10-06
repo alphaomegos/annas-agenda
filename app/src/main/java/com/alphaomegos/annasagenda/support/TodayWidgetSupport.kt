@@ -18,7 +18,7 @@ data class WidgetTaskRow(
 
 /** Today's tasks as the day screen orders them: timed ones by the clock, then the rest by hand. */
 fun todayWidgetRows(state: AppState, today: LocalDate, weekStart: DayOfWeek): List<WidgetTaskRow> =
-    tasksInDayOrder(tasksForNotifications(state, today, today, weekStart))
+    tasksInDayOrder(tasksForNotifications(state, today, today, weekStart), state.doneTasksLast)
         .map { WidgetTaskRow(notificationTaskKey(it), it.description, it.time, it.isDone) }
 
 /** What a tick from the widget produced, and where the id counter now stands. */

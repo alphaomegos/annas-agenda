@@ -24,17 +24,23 @@ fun moveTaskWithinDate(
     tasks: List<Task>,
     taskId: Long,
     step: Int,
+    doneLast: Boolean = false,
 ): List<Task> {
-    if (!canMoveTask(tasks, taskId, step)) return tasks
+    if (!canMoveTask(tasks, taskId, step, doneLast)) return tasks
     val victim = tasks.first { it.id == taskId }
 
+    // With done tasks at the bottom (06.10) the swap is with the neighbour as
+    // shown — among the tasks done or not done like this one — and the
+    // others keep their places in the day's numbering.
     val untimed = untimedSiblings(tasks, victim).toMutableList()
-    val idx = untimed.indexOfFirst { it.id == taskId }
-    val targetIdx = idx + step
+    val slots = untimed.indices.filter { !doneLast || untimed[it].isDone == victim.isDone }
+    val idx = slots.indexOfFirst { untimed[it].id == taskId }
+    val a = slots[idx]
+    val b = slots[idx + step]
 
-    val tmp = untimed[targetIdx]
-    untimed[targetIdx] = untimed[idx]
-    untimed[idx] = tmp
+    val tmp = untimed[b]
+    untimed[b] = untimed[a]
+    untimed[a] = tmp
 
     val timed = tasks
         .filter { it.date == victim.date && it.time != null }

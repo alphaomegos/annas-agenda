@@ -335,4 +335,21 @@ class ScreenWiringTest {
 
         assertTrue("the achievements did not open", opened)
     }
+
+    /* ---------------- tasks (06.10) ---------------- */
+
+    @Test
+    fun doneTasksToTheBottom_isTurnedOnAndOffInSettings() {
+        composeRule.setContent {
+            MaterialTheme { SettingsScreen(vm, onBack = {}, onLanguage = {}, onOpenDiet = {}) }
+        }
+
+        composeRule.onNodeWithText(word(R.string.settings_done_tasks_last)).performClick()
+        composeRule.waitForIdle()
+        assertTrue("not turned on", vm.state.value.doneTasksLast)
+
+        composeRule.onNodeWithText(word(R.string.settings_done_tasks_last)).performClick()
+        composeRule.waitForIdle()
+        assertEquals(false, vm.state.value.doneTasksLast)
+    }
 }

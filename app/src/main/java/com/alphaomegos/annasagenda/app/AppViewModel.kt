@@ -530,6 +530,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = cur.copy(mainMenuHiddenIds = emptySet())
     }
 
+    /** Done tasks at the bottom of their day, or in their place (06.10). */
+    fun setDoneTasksLast(value: Boolean) {
+        val cur = _state.value
+        if (cur.doneTasksLast != value) _state.value = cur.copy(doneTasksLast = value)
+    }
+
     fun setUndoneLampMuted(value: Boolean) {
         val cur = _state.value
         if (cur.undoneLampMuted == value) return
@@ -1601,13 +1607,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun moveTaskUp(taskId: Long) {
         val cur = _state.value
-        val newTasks = moveTaskWithinDate(cur.tasks, taskId, step = -1)
+        val newTasks = moveTaskWithinDate(cur.tasks, taskId, step = -1, doneLast = cur.doneTasksLast)
         if (newTasks == cur.tasks) return
         _state.value = cur.copy(tasks = newTasks)
     }
     fun moveTaskDown(taskId: Long) {
         val cur = _state.value
-        val newTasks = moveTaskWithinDate(cur.tasks, taskId, step = 1)
+        val newTasks = moveTaskWithinDate(cur.tasks, taskId, step = 1, doneLast = cur.doneTasksLast)
         if (newTasks == cur.tasks) return
         _state.value = cur.copy(tasks = newTasks)
     }
