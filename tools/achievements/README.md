@@ -1,6 +1,6 @@
 # Achievement pictures
 
-The app looks for `app/src/main/assets/achievements/<id>.png` (06.10) and
+The app looks for `app/src/main/assets/achievements/<id>.webp` (or `.png`, 06.10) and
 shows a trophy while a picture is missing. One picture per achievement: the
 app greys it out itself while the achievement is not earned.
 
@@ -33,3 +33,6 @@ app greys it out itself while the achievement is not earned.
 | time_killer | Time killer |
 | time_traveller | Time traveller |
 | flight_attendant | Flight attendant |
+
+Shipped as WebP, 1024 × 1024, quality 75 (Pillow: `im.save(path, 'WEBP',
+quality=75, method=6)`), about 170 KB each.

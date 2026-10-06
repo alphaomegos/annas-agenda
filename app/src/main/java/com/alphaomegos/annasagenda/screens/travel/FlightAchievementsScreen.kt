@@ -193,7 +193,7 @@ private fun Milestone(a: FlightAchievement, userLocale: java.util.Locale, onOpen
 }
 
 /**
- * An achievement's picture, assets/achievements/<id>.png (06.10; made
+ * An achievement's picture, assets/achievements/<id>.webp or .png (06.10; made
  * elsewhere, see the README there), grey while not earned; the trophy
  * while the picture is not there yet.
  */
@@ -203,7 +203,12 @@ private fun AchievementPicture(id: String, taken: Boolean, modifier: Modifier) {
     val picture by produceState<ImageBitmap?>(null, id) {
         value = withContext(Dispatchers.IO) {
             runCatching {
-                context.assets.open("achievements/$id.png").use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
+                // WebP as shipped, PNG as a picture arrives from the generator.
+                listOf("webp", "png").firstNotNullOfOrNull { ext ->
+                    runCatching {
+                        context.assets.open("achievements/$id.$ext").use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
+                    }.getOrNull()
+                }
             }.getOrNull()
         }
     }
