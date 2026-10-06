@@ -1,0 +1,7 @@
+# IATA<TAB>ICAO<TAB>lat<TAB>lon<TAB>country<TAB>tz<TAB>city<TAB>name
+# Airports the base lacks: codes renamed or airports closed, still met in old
+# flight logs (App in the Air, 06.10.2026).
+KIV	LUKK	46.9277	28.9310	MD	Europe/Chisinau	Chisinau	Chisinau International Airport
+FRU	UCFM	43.0613	74.4776	KG	Asia/Bishkek	Bishkek	Manas International Airport
+TSE	UACC	51.0222	71.4669	KZ	Asia/Almaty	Astana	Nursultan Nazarbayev International Airport
+SXF	EDDB	52.3800	13.5225	DE	Europe/Berlin	Berlin	Berlin-Schonefeld Airport
