@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
@@ -73,6 +74,7 @@ import com.alphaomegos.annasagenda.support.flightFlag
 import com.alphaomegos.annasagenda.support.flightIsPast
 import com.alphaomegos.annasagenda.support.flightJourneys
 import com.alphaomegos.annasagenda.support.flightMapRoutes
+import com.alphaomegos.annasagenda.support.flightTurnarounds
 import com.alphaomegos.annasagenda.util.appLocale
 import java.time.Duration
 import java.time.Instant
@@ -103,6 +105,7 @@ fun FlightsScreen(
     onBack: () -> Unit,
     onAdd: () -> Unit,
     onEdit: (Long) -> Unit,
+    onProfile: () -> Unit = {},
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val staged by vm.stagedFlightImport.collectAsStateWithLifecycle()
@@ -117,6 +120,7 @@ fun FlightsScreen(
     val journeys = remember(state.flights) { flightJourneys(state.flights, base) }
     val past = remember(journeys) { journeys.filter { flightIsPast(it.first, base, now) }.reversed() }
     val upcoming = remember(journeys) { journeys.filter { !flightIsPast(it.first, base, now) } }
+    val turnarounds = remember(state.flights) { flightTurnarounds(state.flights, base).flatMap { listOf(it.first, it.second) }.toSet() }
 
     var tab by rememberSaveable { mutableStateOf(if (upcoming.isEmpty()) 1 else 0) }
     var menu by rememberSaveable { mutableStateOf(false) }
@@ -146,6 +150,9 @@ fun FlightsScreen(
                 title = { Text(stringResource(R.string.flights_title)) },
                 navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
                 actions = {
+                    IconButton(onClick = onProfile) {
+                        Icon(Icons.Default.Person, contentDescription = stringResource(R.string.flights_profile))
+                    }
                     IconButton(onClick = { vm.setFlightPrefs(prefs.copy(showMap = !prefs.showMap)) }) {
                         Icon(
                             Icons.Default.Map,
@@ -220,6 +227,7 @@ fun FlightsScreen(
                         journey = journey,
                         base = base,
                         cityNames = state.flightCityNames,
+                        turnaround = journey.flights.size == 1 && journey.first.id in turnarounds,
                         modifier = Modifier.widthIn(max = 560.dp).padding(horizontal = 16.dp, vertical = 6.dp),
                     ) { openJourney = journey.first.id }
                 }
@@ -311,14 +319,17 @@ internal fun flightHoursMinutes(minutes: Long): String =
 
 private fun hm(t: LocalDateTime): String = "%02d:%02d".format(t.hour, t.minute)
 
-/** "11 Jul 2024", "03 — 04 Jul 2024", "30 Jun — 01 Jul 2024". */
+/**
+ * "11 July 2024", "03 — 04 July 2024", "30 June — 01 July 2024": the month
+ * in full, so Russian says "11 июля", not the standalone "11 июль" (06.10).
+ */
 private fun journeyDates(from: LocalDateTime, to: LocalDateTime, locale: Locale): String {
-    val full = DateTimeFormatter.ofPattern("dd MMM yyyy", locale)
+    val full = DateTimeFormatter.ofPattern("dd MMMM yyyy", locale)
     val a = from.toLocalDate(); val b = to.toLocalDate()
     return when {
         a == b -> a.format(full)
         a.year == b.year && a.month == b.month -> "%02d — %s".format(a.dayOfMonth, b.format(full))
-        a.year == b.year -> a.format(DateTimeFormatter.ofPattern("dd MMM", locale)) + " — " + b.format(full)
+        a.year == b.year -> a.format(DateTimeFormatter.ofPattern("dd MMMM", locale)) + " — " + b.format(full)
         else -> a.format(full) + " — " + b.format(full)
     }
 }
@@ -328,6 +339,7 @@ private fun JourneyCard(
     journey: FlightJourney,
     base: FlightBase,
     cityNames: Map<String, String>,
+    turnaround: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
@@ -385,6 +397,14 @@ private fun JourneyCard(
                         Text(
                             stringResource(R.string.flights_plus_days, dayShift.toInt()),
                             style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
+                    if (turnaround) {
+                        // Out and straight back the same day (06.10).
+                        Text(
+                            "⇄ " + stringResource(R.string.flights_turnaround),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = FlightArcBlue,
                         )
                     }
                 }

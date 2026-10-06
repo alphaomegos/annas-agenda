@@ -149,4 +149,38 @@ class FlightSupportTest {
         assertEquals("XXX", flightCityName("XXX", base, emptyMap()))
         assertEquals("Air Serbia", flightAirlineName("JU", base, emptyMap()))
     }
+
+    @Test
+    fun straightBackWithinADay_isATurnaround_notAJourney() {
+        val out = fl(1, "SVO", "BEG", "2016-12-12T10:00", "2016-12-12T12:00")
+        val back = fl(2, "BEG", "SVO", "2016-12-12T13:00", "2016-12-12T17:00")
+        val later = fl(3, "SVO", "TLV", "2016-12-20T10:00", "2016-12-20T14:00")
+        assertTrue(!flightConnects(out, back, base))
+        val log = flightsRegrouped(listOf(out, back, later), base)
+        assertTrue(log.all { it.journeyId == null })
+        assertEquals(listOf(1L to 2L), flightTurnarounds(log, base))
+        // Back the next week is no turnaround.
+        assertTrue(flightTurnarounds(listOf(out, back.copy(departure = t("2016-12-19T13:00"), arrival = t("2016-12-19T17:00"))), base).isEmpty())
+        // Out and on to a third place is a change, not a turnaround.
+        val on = fl(4, "BEG", "TLV", "2016-12-12T13:00", "2016-12-12T16:00")
+        assertTrue(flightTurnarounds(listOf(out, on), base).isEmpty())
+        assertTrue(flightConnects(out, on, base))
+    }
+
+    @Test
+    fun turnarounds_areCountedOnTheirOwn_andAreNoVisit() {
+        val log = listOf(
+            fl(1, "SVO", "BEG", "2016-12-12T10:00", "2016-12-12T12:00"),
+            fl(2, "BEG", "SVO", "2016-12-12T13:00", "2016-12-12T17:00"),
+            fl(3, "SVO", "BEG", "2016-12-14T10:00", "2016-12-14T12:00"),
+            fl(4, "BEG", "SVO", "2016-12-14T13:00", "2016-12-14T17:00"),
+            fl(5, "SVO", "TLV", "2016-12-15T10:00", "2016-12-15T14:00"),
+            fl(6, "TLV", "SVO", "2016-12-15T15:00", "2016-12-15T19:00"),
+        )
+        val s = flightStats(log, base, now)
+        assertEquals(3, s.turnarounds)
+        assertEquals(listOf(FlightCount("BEG", 2), FlightCount("TLV", 1)), s.turnaroundPlaces)
+        val home = setOf(flightPlaceKey(base.airports.getValue("SVO")))
+        assertTrue(flightTravelSuggestions(log, base, emptyMap(), emptyList(), home, now).isEmpty())
+    }
 }

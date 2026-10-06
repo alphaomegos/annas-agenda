@@ -14,6 +14,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -105,7 +106,8 @@ internal fun TravelMapView(
         }.distinct()
     }
 
-    BoxWithConstraints(modifier = modifier) {
+    // Clipped: zoomed in, the Canvas drew past its box, over the list below (06.10).
+    BoxWithConstraints(modifier = modifier.clipToBounds()) {
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
         if (w <= 0f || h <= 0f || map.width <= 1) return@BoxWithConstraints

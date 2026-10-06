@@ -29,6 +29,7 @@ import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelCountryScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightEditScreen
+import com.alphaomegos.annasagenda.screens.travel.FlightProfileScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightsScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelScreen
 import com.alphaomegos.annasagenda.model.Flight
@@ -315,5 +316,21 @@ class ScreenWiringTest {
 
         assertEquals(false, vm.state.value.flightPrefs.groupJourneys)
         assertTrue(vm.state.value.flights.all { it.journeyId == null })
+    }
+
+    @Test
+    fun theProfile_countsTheAchievements_andOpensThem() {
+        twoConnectingFlights()
+        var opened = false
+        composeRule.setContent {
+            MaterialTheme { FlightProfileScreen(vm, onBack = {}, onAchievements = { opened = true }) }
+        }
+
+        // Two flights earn the first-flight milestone, one of twelve.
+        val label = word(R.string.flights_achievements_count, 1, 12)
+        composeRule.waitUntil(5_000) { composeRule.onAllNodesWithText(label).fetchSemanticsNodes().isNotEmpty() }
+        composeRule.onNodeWithText(label).performClick()
+
+        assertTrue(opened)
     }
 }

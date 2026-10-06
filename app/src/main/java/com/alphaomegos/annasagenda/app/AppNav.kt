@@ -34,7 +34,9 @@ import com.alphaomegos.annasagenda.screens.metro.MetroMapEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
+import com.alphaomegos.annasagenda.screens.travel.FlightAchievementsScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightEditScreen
+import com.alphaomegos.annasagenda.screens.travel.FlightProfileScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightsScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelCountryScreen
 import com.alphaomegos.annasagenda.screens.travel.TravelScreen
@@ -70,6 +72,8 @@ private object Route {
     const val TRAVEL_COUNTRY = "travel_country"
     const val FLIGHTS = "flights"
     const val FLIGHT_EDIT = "flight_edit"
+    const val FLIGHT_PROFILE = "flight_profile"
+    const val FLIGHT_ACHIEVEMENTS = "flight_achievements"
 
     const val UNDONE = "undone"
 
@@ -275,7 +279,20 @@ fun AppNav(
                 onBack = { nav.popBackStack() },
                 onAdd = { nav.navigate("${Route.FLIGHT_EDIT}/-1") },
                 onEdit = { id -> nav.navigate("${Route.FLIGHT_EDIT}/$id") },
+                onProfile = { nav.navigate(Route.FLIGHT_PROFILE) },
             )
+        }
+
+        composable(Route.FLIGHT_PROFILE) {
+            FlightProfileScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() },
+                onAchievements = { nav.navigate(Route.FLIGHT_ACHIEVEMENTS) },
+            )
+        }
+
+        composable(Route.FLIGHT_ACHIEVEMENTS) {
+            FlightAchievementsScreen(vm = vm, onBack = { nav.popBackStack() })
         }
 
         composable("${Route.FLIGHT_EDIT}/{flightId}") { entry ->

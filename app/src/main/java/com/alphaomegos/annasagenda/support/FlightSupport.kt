@@ -140,8 +140,36 @@ private fun samePlace(a: String, b: String, base: FlightBase): Boolean {
 /** Whether [next] is a change from [prev]: from where it landed, within a day, not kept apart. */
 fun flightConnects(prev: Flight, next: Flight, base: FlightBase): Boolean {
     if (next.keptApart || prev.id == next.id || !samePlace(prev.to, next.from, base)) return false
+    // Straight back where it came from is a turnaround, not a change (decided 06.10).
+    if (samePlace(next.to, prev.from, base)) return false
+    return withinADay(prev, next, base)
+}
+
+private fun withinADay(prev: Flight, next: Flight, base: FlightBase): Boolean {
     val gap = Duration.between(arrivalKey(prev, base), departureKey(next, base))
     return !gap.isNegative && gap <= FLIGHT_CHANGE_LIMIT
+}
+
+/**
+ * Turnarounds (decided 06.10): a flight out and the next one straight back
+ * to where it left from, within a day — "SVO → KRR → SVO" — as pairs (out,
+ * back). Not a change of planes and not a visit; the statistics count them
+ * on their own. A flight is in one pair at most.
+ */
+fun flightTurnarounds(flights: List<Flight>, base: FlightBase): List<Pair<Long, Long>> {
+    val ordered = flights.sortedWith(compareBy({ departureKey(it, base) }, { it.id }))
+    val used = HashSet<Long>()
+    val pairs = mutableListOf<Pair<Long, Long>>()
+    ordered.forEachIndexed { i, out ->
+        if (out.id in used || samePlace(out.from, out.to, base)) return@forEachIndexed
+        // The next flight after it: the one that takes the traveller on.
+        val back = ordered.drop(i + 1).firstOrNull { departureKey(it, base) >= arrivalKey(out, base) } ?: return@forEachIndexed
+        if (back.id !in used && samePlace(out.to, back.from, base) && samePlace(back.to, out.from, base) && withinADay(out, back, base)) {
+            pairs += out.id to back.id
+            used += out.id; used += back.id
+        }
+    }
+    return pairs
 }
 
 /** The log cut into journeys, each in the order flown, the journeys by their first departure. */
@@ -292,10 +320,14 @@ data class FlightStats(
     val longestByDistance: Flight?,
     val longestByTime: Flight?,
     val years: List<FlightYear>,
+    // Turnarounds (06.10): how many, and where to, most first.
+    val turnarounds: Int = 0,
+    val turnaroundPlaces: List<FlightCount> = emptyList(),
 )
 
 fun flightStats(flights: List<Flight>, base: FlightBase, now: Instant): FlightStats {
     val flown = flights.filter { flightIsPast(it, base, now) }
+    val turns = flightTurnarounds(flown, base)
     fun counted(keys: List<String>) = keys.groupingBy { it }.eachCount()
         .map { FlightCount(it.key, it.value) }
         .sortedWith(compareByDescending<FlightCount> { it.flights }.thenBy { it.key })
@@ -316,6 +348,8 @@ fun flightStats(flights: List<Flight>, base: FlightBase, now: Instant): FlightSt
         years = flown.groupBy { it.departure.year }.map { (year, list) ->
             FlightYear(year, list.size, list.sumOf { km.getValue(it.id) }.toLong(), list.sumOf { minutes.getValue(it.id) })
         }.sortedBy { it.year },
+        turnarounds = turns.size,
+        turnaroundPlaces = counted(turns.mapNotNull { (out, _) -> flown.firstOrNull { it.id == out }?.to }),
     )
 }
 
@@ -351,8 +385,11 @@ fun flightTravelSuggestions(
     now: Instant,
 ): List<FlightTravelSuggestion> {
     val found = LinkedHashMap<Triple<String, String, Pair<Int, Int>>, MutableList<Long>>()
+    // A turnaround's far end was not a visit.
+    val turnedAround = flightTurnarounds(flights, base).map { it.first }.toSet()
     flightJourneys(flights, base).forEach { journey ->
         val f = journey.last
+        if (f.id in turnedAround) return@forEach
         if (!flightIsPast(f, base, now)) return@forEach
         val airport = base.airports[f.to] ?: return@forEach
         if (flightPlaceKey(airport) in homes) return@forEach

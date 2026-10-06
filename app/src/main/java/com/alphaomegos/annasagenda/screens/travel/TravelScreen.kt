@@ -63,7 +63,9 @@ import com.alphaomegos.annasagenda.app.appExtraColors
 import com.alphaomegos.annasagenda.model.TravelContinent
 import com.alphaomegos.annasagenda.model.TravelMapPoint
 import com.alphaomegos.annasagenda.model.TravelView
+import com.alphaomegos.annasagenda.support.FlightMapRoute
 import com.alphaomegos.annasagenda.support.TravelWorldMap
+import com.alphaomegos.annasagenda.support.flightMapRoutes
 import com.alphaomegos.annasagenda.support.travelAllCountryIds
 import com.alphaomegos.annasagenda.support.travelByCities
 import com.alphaomegos.annasagenda.support.travelByContinents
@@ -102,6 +104,13 @@ fun TravelScreen(
     val collator = rememberTravelCollator()
     val locale = appLocale()
     val visited = remember(records) { travelVisited(records) }
+    // Flights over the countries (06.10), when switched on.
+    val flightPrefs = state.flightPrefs
+    val routes by produceState(emptyList<FlightMapRoute>(), state.flights, map, flightPrefs.showOnTravelMap) {
+        val m = map
+        value = if (m == null || !flightPrefs.showOnTravelMap) emptyList()
+        else withContext(Dispatchers.Default) { flightMapRoutes(state.flights, vm.flightBase, m.width) }
+    }
     val userDots = remember(records) {
         records.filter { it.isUserCountry && it.customPoint != null }
             .map { TravelUserDot(it.countryId, it.customPoint!!.x, it.customPoint.y, it.trips.isNotEmpty()) }
@@ -164,6 +173,7 @@ fun TravelScreen(
                         map = m,
                         visited = visited,
                         userDots = userDots,
+                        routes = routes,
                         modifier = Modifier.fillMaxSize(),
                         onTap = { countryId, gx, gy ->
                             val p = placing
@@ -201,6 +211,13 @@ fun TravelScreen(
                     }
                 }
                 Spacer(modifier = Modifier.weight(1f))
+                if (state.flights.isNotEmpty()) {
+                    PanelIcon(
+                        vector = Icons.Default.Flight,
+                        checked = flightPrefs.showOnTravelMap,
+                        description = stringResource(R.string.flights_show_on_travel_map),
+                    ) { vm.setFlightPrefs(flightPrefs.copy(showOnTravelMap = !flightPrefs.showOnTravelMap)) }
+                }
                 PanelIcon(
                     painterRes = R.drawable.ic_filter_sort,
                     checked = prefs.reversed,
