@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,7 +67,7 @@ internal fun flightNumber(n: Long, userLocale: Locale): String = String.format(u
  * used first (five each, "show all" for the rest) and the years. The
  * achievements are a button away.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlightProfileScreen(
     vm: AppViewModel,
@@ -107,21 +105,28 @@ fun FlightProfileScreen(
                 if (s.flights == 0) {
                     Text(stringResource(R.string.flights_no_flights_yet), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Tile(flightNumber(s.flights.toLong(), userLocale), stringResource(R.string.flights_stat_flights))
-                    Tile(
+                // Two tiles a row. Not FlowRow: the Compose the app builds with and
+                // the one the tests run on disagree about its signature (06.10).
+                val tiles = listOf(
+                    Triple(flightNumber(s.flights.toLong(), userLocale), stringResource(R.string.flights_stat_flights), null),
+                    Triple(
                         flightNumber(s.km, userLocale), stringResource(R.string.flights_stat_km),
                         stringResource(R.string.flights_stat_earths, String.format(userLocale, "%.1f", s.km.toDouble() / FLIGHT_EARTH_KM)),
-                    )
-                    Tile(
+                    ),
+                    Triple(
                         flightNumber(s.minutes / 60, userLocale), stringResource(R.string.flights_stat_hours),
                         stringResource(R.string.flights_stat_days, String.format(userLocale, "%.1f", s.minutes / 1440.0)),
-                    )
-                    Tile(s.countries.size.toString(), stringResource(R.string.flights_stat_countries))
-                    Tile(s.airports.size.toString(), stringResource(R.string.flights_stat_airports))
-                    Tile(s.airlines.size.toString(), stringResource(R.string.flights_stat_airlines))
-                    Tile(s.aircraft.size.toString(), stringResource(R.string.flights_stat_aircraft))
-                    Tile(s.turnarounds.toString(), stringResource(R.string.flights_stat_turnarounds))
+                    ),
+                    Triple(s.countries.size.toString(), stringResource(R.string.flights_stat_countries), null),
+                    Triple(s.airports.size.toString(), stringResource(R.string.flights_stat_airports), null),
+                    Triple(s.airlines.size.toString(), stringResource(R.string.flights_stat_airlines), null),
+                    Triple(s.aircraft.size.toString(), stringResource(R.string.flights_stat_aircraft), null),
+                    Triple(s.turnarounds.toString(), stringResource(R.string.flights_stat_turnarounds), null),
+                )
+                tiles.chunked(2).forEach { pair ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        pair.forEach { (value, label, extra) -> Tile(value, label, extra, Modifier.weight(1f)) }
+                    }
                 }
 
                 val achievements = flightAchievements(s)
@@ -180,10 +185,9 @@ fun FlightProfileScreen(
 }
 
 @Composable
-private fun Tile(value: String, label: String, extra: String? = null) {
+private fun Tile(value: String, label: String, extra: String?, modifier: Modifier) {
     Column(
-        modifier = Modifier
-            .widthIn(min = 140.dp)
+        modifier = modifier
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
