@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -89,7 +90,8 @@ import kotlin.math.floor
  * Each name goes on its station's side (support/MetroLabels.kt); with
  * [namingMode] every name shows, the hidden ones faintly, for the editor's
  * names tool. A drag of a station in [group] moves the whole group, with
- * the track bent between its stations (the editor's selection).
+ * the track bent between its stations (the editor's selection). A new
+ * [fitKey] fits the whole picture to the view again.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -114,10 +116,21 @@ internal fun MetroMapView(
     onBend: (MetroBendAction) -> Unit = {},
     namingMode: Boolean = false,
     group: Set<Long> = emptySet(),
+    fitKey: Int = 0,
 ) {
     var zoom by rememberSaveable { mutableStateOf(1f) }
     var panX by rememberSaveable { mutableStateOf(0f) }
     var panY by rememberSaveable { mutableStateOf(0f) }
+    // "Fit to the screen" (08.10): each new [fitKey] brings the whole picture
+    // back into view. The one last acted on is kept, so turning the phone
+    // does not undo the zoom.
+    var fitDone by rememberSaveable { mutableStateOf(fitKey) }
+    LaunchedEffect(fitKey) {
+        if (fitKey != fitDone) {
+            zoom = 1f; panX = 0f; panY = 0f
+            fitDone = fitKey
+        }
+    }
     // A drag in flight: the station and where on the screen it is now.
     var dragId by remember { mutableStateOf<Long?>(null) }
     var dragAt by remember { mutableStateOf(Offset.Zero) }

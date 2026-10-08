@@ -371,4 +371,19 @@ class ScreenWiringTest {
         composeRule.waitForIdle()
         assertTrue("redo did not bring the grid back", scheme(id).mapGrid)
     }
+
+    @Test
+    fun theMapEditorsTools_selectAndFit_doNotChangeTheScheme() {
+        val id = schemeWith("Alpha", "Beta")
+        composeRule.setContent {
+            MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
+        }
+        val before = scheme(id)
+
+        composeRule.onNodeWithText(word(R.string.metro_tool_select)).performScrollTo().performClick()
+        composeRule.onNodeWithText(word(R.string.metro_select_lines)).assertExists()
+        composeRule.onNodeWithContentDescription(word(R.string.metro_fit)).performClick()
+        composeRule.waitForIdle()
+        assertEquals(before, scheme(id))
+    }
 }

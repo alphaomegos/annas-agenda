@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -103,6 +104,8 @@ fun MetroMapEditorScreen(
     var moveWhole by rememberSaveable { mutableStateOf(true) }
     // The look's panel open (08.10).
     var looking by rememberSaveable { mutableStateOf(false) }
+    // Bumped by "Fit to the screen" (08.10).
+    var fitKey by rememberSaveable { mutableStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -116,6 +119,9 @@ fun MetroMapEditorScreen(
                     }
                     IconButton(onClick = { vm.redoMetroScheme(schemeId) }, enabled = history?.canRedo == true) {
                         Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = stringResource(R.string.metro_redo))
+                    }
+                    IconButton(onClick = { fitKey++ }) {
+                        Icon(Icons.Default.FitScreen, contentDescription = stringResource(R.string.metro_fit))
                     }
                     IconButton(onClick = { looking = true }) {
                         Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.metro_look))
@@ -208,6 +214,7 @@ fun MetroMapEditorScreen(
                     namingMode = naming,
                     marked = if (selecting) selection else emptySet(),
                     group = if (selecting) selection else emptySet(),
+                    fitKey = fitKey,
                     gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
                     moveAlone = !(scheme.transfersTogether && moveWhole),
                     bendMode = bending,
