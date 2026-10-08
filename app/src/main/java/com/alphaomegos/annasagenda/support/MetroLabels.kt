@@ -51,20 +51,33 @@ fun metroLabelAngle(side: Int): Double = side * PI / 4
 // Right first, as before; then left; then above and below; the corners last.
 private val PREFERENCE = listOf(0, 4, 6, 2, 1, 7, 5, 3)
 
+/** How near another station has to be, in steps, to crowd a name's side (08.10). */
+const val METRO_LABEL_CROWD_REACH = 2f
+
 /**
  * The side a name goes by itself (08.10): the one furthest from every
  * direction something leaves the station, right when it is free — so a
- * name never lies along its own line.
+ * name never lies along its own line. Between sides equally clear of it,
+ * the one with fewer other stations close by that way (within 30°, as near
+ * as [METRO_LABEL_CROWD_REACH]) wins: a name keeps off a line running
+ * alongside.
  */
 fun metroAutoLabelSide(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): Int {
     val dirs = metroStationDirections(scheme, layout, stationId)
     if (dirs.isEmpty()) return 0
-    fun clearance(side: Int): Double = dirs.minOf { d ->
-        val diff = abs(metroLabelAngle(side) - d) % (2 * PI)
-        minOf(diff, 2 * PI - diff)
-    }
+    fun gap(a: Double, b: Double): Double { val d = abs(a - b) % (2 * PI); return minOf(d, 2 * PI - d) }
+    fun clearance(side: Int): Double = dirs.minOf { d -> gap(metroLabelAngle(side), d) }
     val best = PREFERENCE.maxOf { clearance(it) }
-    return PREFERENCE.first { clearance(it) >= best - 1e-6 }
+    val clear = PREFERENCE.filter { clearance(it) >= best - 1e-6 }
+    if (clear.size == 1) return clear[0]
+    val p = layout[stationId] ?: return clear[0]
+    val near = layout.filter { (id, q) ->
+        id != stationId && (q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y) <= METRO_LABEL_CROWD_REACH * METRO_LABEL_CROWD_REACH &&
+            (q.x != p.x || q.y != p.y)
+    }.values.map { atan2((it.y - p.y).toDouble(), (it.x - p.x).toDouble()) }
+    fun crowd(side: Int): Int = near.count { gap(metroLabelAngle(side), it) <= PI / 6 + 1e-6 }
+    // Stable: fewest crowding first, then the order of preference.
+    return clear.minByOrNull { crowd(it) } ?: clear[0]
 }
 
 /** The side [stationId]'s name is written on, or [METRO_LABEL_HIDDEN]. */

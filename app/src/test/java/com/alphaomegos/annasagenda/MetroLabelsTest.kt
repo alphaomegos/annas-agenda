@@ -62,4 +62,24 @@ class MetroLabelsTest {
         close(MetroPoint(0f, -5f), metroLabelTopLeft(10f, 10f, 5f, 6, 20f, 10f))   // above, centred
         close(MetroPoint(0f, 15f), metroLabelTopLeft(10f, 10f, 5f, 2, 20f, 10f))   // below
     }
+
+    @Test
+    fun byItself_aNameKeepsOffALineRunningAlongside() {
+        // Two lines along x, the second 0.6 above the first: names on the first go under it.
+        val two = MetroScheme(
+            id = 2, city = "Тест",
+            lines = listOf(
+                MetroLine(1, "1", "Red", 0, trunk = listOf(1, 2, 3)),
+                MetroLine(2, "2", "Green", 0, trunk = listOf(11, 12, 13)),
+            ),
+            stations = listOf(
+                MetroStation(1, 1, "A", 0f, 0f), MetroStation(2, 1, "B", 1f, 0f), MetroStation(3, 1, "C", 2f, 0f),
+                MetroStation(11, 2, "D", 0f, -0.6f), MetroStation(12, 2, "E", 1f, -0.6f), MetroStation(13, 2, "F", 2f, -0.6f),
+            ),
+        )
+        val l = metroLayout(two)
+        assertEquals(2, metroAutoLabelSide(two, l, 2))
+        // And those on the second, over it.
+        assertEquals(6, metroAutoLabelSide(two, l, 12))
+    }
 }
