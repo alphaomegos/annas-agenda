@@ -41,6 +41,7 @@ import com.alphaomegos.annasagenda.support.metroSidesOf
 import com.alphaomegos.annasagenda.support.metroSnapped
 import com.alphaomegos.annasagenda.support.metroStationAt
 import com.alphaomegos.annasagenda.support.metroStationsMovingWith
+import com.alphaomegos.annasagenda.support.METRO_CASING
 import com.alphaomegos.annasagenda.support.METRO_STATION_RADIUS
 import com.alphaomegos.annasagenda.support.MetroBendHit
 import com.alphaomegos.annasagenda.support.MetroTrack
@@ -76,7 +77,8 @@ import kotlin.math.floor
  * the next one, and straight again), a finger along a track puts a point
  * there and drags it, a tap on a point takes it away — each said through
  * [onBend]. Track is drawn through its bends; with one name per interchange
- * only the names [metroLabelledStations] picks are written.
+ * only the names [metroLabelledStations] picks are written. With the
+ * scheme's casing each line is edged in the background colour.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -321,11 +323,10 @@ internal fun MetroMapView(
                 drawLine(transferColor.copy(alpha = if (lit) 1f else 0.25f), a, c, strokeWidth = lineWidth * 0.8f, cap = StrokeCap.Round)
             }
             val bendDrag = dragBend
-            edges.forEach { (lineId, s, t) ->
-                val a = at(s) ?: return@forEach
-                val c = at(t) ?: return@forEach
-                val color = Color(lines[lineId]?.color ?: 0xFF888888)
-                val lit = !fade || (s to t) in routePairs
+            // Each track as drawn: its ends, its bends (the one being dragged where the finger is).
+            fun trackPoints(s: Long, t: Long): List<Offset>? {
+                val a = at(s) ?: return null
+                val c = at(t) ?: return null
                 val track = MetroTrack(s, t)
                 val bends = metroBendPoints(scheme, track).toMutableList()
                 if (bendDrag != null && bendDrag.first.track == track) {
@@ -333,19 +334,36 @@ internal fun MetroMapView(
                     val i = bendDrag.first.index
                     if (bendDrag.second) bends.add(i.coerceIn(0, bends.size), p) else if (i in bends.indices) bends[i] = p
                 }
-                val width = if (fade && lit) lineWidth * 1.5f else lineWidth
-                val paint = color.copy(alpha = if (lit) 1f else 0.25f)
-                if (bends.isEmpty()) {
-                    drawLine(paint, a, c, strokeWidth = width, cap = StrokeCap.Round)
+                return listOf(a) + bends.map { toScreen(it) } + c
+            }
+            fun drawTrack(pts: List<Offset>, paint: Color, width: Float) {
+                if (pts.size == 2) {
+                    drawLine(paint, pts[0], pts[1], strokeWidth = width, cap = StrokeCap.Round)
                 } else {
                     // Track drawn through its bends (08.10).
                     val path = Path().apply {
-                        moveTo(a.x, a.y)
-                        bends.forEach { val q = toScreen(it); lineTo(q.x, q.y) }
-                        lineTo(c.x, c.y)
+                        moveTo(pts[0].x, pts[0].y)
+                        pts.drop(1).forEach { lineTo(it.x, it.y) }
                     }
                     drawPath(path, paint, style = Stroke(width = width, cap = StrokeCap.Round, join = StrokeJoin.Round))
-                    if (bendMode) bends.forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = toScreen(it)) }
+                }
+            }
+            // Line by line (08.10): with casing, a line's edging first and then
+            // its colour, so a line drawn later crosses an earlier one with a
+            // gap of the background on each side, as on a printed map.
+            edges.groupBy { it.first }.forEach { (lineId, ofLine) ->
+                val color = Color(lines[lineId]?.color ?: 0xFF888888)
+                val drawn = ofLine.mapNotNull { (_, s, t) ->
+                    val pts = trackPoints(s, t) ?: return@mapNotNull null
+                    val lit = !fade || (s to t) in routePairs
+                    Triple(pts, lit, if (fade && lit) lineWidth * 1.5f else lineWidth)
+                }
+                if (scheme.lineCasing) drawn.forEach { (pts, lit, width) ->
+                    drawTrack(pts, ringFill.copy(alpha = if (lit) 1f else 0.25f), width * (1f + 2 * METRO_CASING))
+                }
+                drawn.forEach { (pts, lit, width) -> drawTrack(pts, color.copy(alpha = if (lit) 1f else 0.25f), width) }
+                if (bendMode) drawn.forEach { (pts, _, _) ->
+                    pts.subList(1, pts.size - 1).forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = it) }
                 }
             }
             val showLabels = when (scheme.labelsMode) {

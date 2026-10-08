@@ -304,6 +304,7 @@ class AppStateWholeRoundTripTest {
                 stationScale = 1.2f,
                 labelsMode = MetroLabelsMode.ALWAYS,
                 showTransferLinks = false,
+                lineCasing = true,
                 bends = listOf(MetroBend(10L, 11L, listOf(MetroMapPoint(1f, 0.5f), MetroMapPoint(1f, 2.5f)))),
             ),
         ),

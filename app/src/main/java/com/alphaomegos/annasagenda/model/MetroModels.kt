@@ -52,6 +52,8 @@ data class MetroScheme(
     val stationScale: Float = 1f,
     val labelsMode: MetroLabelsMode = MetroLabelsMode.AUTO,
     val showTransferLinks: Boolean = true,
+    // Lines edged in the background colour (08.10), so crossings read apart. A setting.
+    val lineCasing: Boolean = false,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),

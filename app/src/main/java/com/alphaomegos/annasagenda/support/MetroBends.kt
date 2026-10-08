@@ -140,6 +140,9 @@ fun metroTogetherGap(scheme: MetroScheme): Float = if (scheme.glue > 0) metroGlu
 /** The glue gap at the scheme's ring size (08.10): bigger rings stand further apart to touch. */
 fun metroGlueGap(scheme: MetroScheme): Float = METRO_GLUE_GAP * scheme.stationScale
 
+/** How wide a line's edging is on each side, as a part of the line's width (08.10). */
+const val METRO_CASING = 0.35f
+
 /** How much larger or smaller names, track and rings can be made (08.10). */
 const val METRO_SCALE_MIN = 0.5f
 const val METRO_SCALE_MAX = 2.5f

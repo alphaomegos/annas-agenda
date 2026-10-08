@@ -843,6 +843,7 @@
     <string name="metro_snap_angles">Uglovi od 45°</string>
     <string name="metro_look">Izgled</string>
     <string name="metro_transfer_links">Veze presedanja</string>
+    <string name="metro_line_casing">Obrub linija (čista ukrštanja)</string>
     <string name="metro_labels_when">Nazivi stanica</string>
     <string name="metro_labels_auto">Kad je čitljivo</string>
     <string name="metro_labels_always">Uvek</string>

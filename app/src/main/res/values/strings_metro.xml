@@ -122,6 +122,7 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_line_casing">Edge the lines (clean crossings)</string>
     <string name="metro_labels_when">Station names</string>
     <string name="metro_labels_auto">When readable</string>
     <string name="metro_labels_always">Always</string>

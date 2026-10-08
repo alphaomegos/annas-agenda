@@ -720,6 +720,7 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
     stationScale = stationScale,
     labelsMode = labelsMode.name,
     showTransferLinks = showTransferLinks,
+    lineCasing = lineCasing,
     bends = bends.map { b -> MetroBendDto(b.aStationId, b.bStationId, b.points.map { it.x }, b.points.map { it.y }) },
 )
 
@@ -778,6 +779,7 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
         stationScale = stationScale.takeIf { it.isFinite() }?.coerceIn(METRO_SCALE_MIN, METRO_SCALE_MAX) ?: 1f,
         labelsMode = MetroLabelsMode.entries.firstOrNull { it.name == labelsMode } ?: MetroLabelsMode.AUTO,
         showTransferLinks = showTransferLinks,
+        lineCasing = lineCasing,
         // Glue at 8 or 12 points; anything else is off.
         glue = glue.takeIf { it == 8 || it == 12 } ?: 0,
         // A bend's points come in pairs; one whose x and y do not pair up, or are not numbers, is dropped.

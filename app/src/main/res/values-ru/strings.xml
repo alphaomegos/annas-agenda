@@ -909,6 +909,7 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_line_casing">Обводка линий (чистые пересечения)</string>
     <string name="metro_labels_when">Названия станций</string>
     <string name="metro_labels_auto">Когда читаемо</string>
     <string name="metro_labels_always">Всегда</string>
