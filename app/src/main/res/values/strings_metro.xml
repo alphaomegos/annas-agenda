@@ -122,6 +122,9 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_turn_45">Turn 45°</string>
+    <string name="metro_mirror_across">Mirror ⇆</string>
+    <string name="metro_mirror_updown">Mirror ⇅</string>
     <string name="metro_align_row">In a row</string>
     <string name="metro_align_column">In a column</string>
     <string name="metro_align_spaced">Equal steps</string>

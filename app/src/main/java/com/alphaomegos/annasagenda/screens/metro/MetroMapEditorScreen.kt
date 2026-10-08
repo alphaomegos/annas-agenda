@@ -61,6 +61,8 @@ import com.alphaomegos.annasagenda.support.metroSelectionToggled
 import com.alphaomegos.annasagenda.support.metroSelectionWholeLines
 import com.alphaomegos.annasagenda.support.metroSelectionLinedUp
 import com.alphaomegos.annasagenda.support.metroSelectionSpaced
+import com.alphaomegos.annasagenda.support.metroSelectionTurned
+import com.alphaomegos.annasagenda.support.MetroTurn
 import androidx.compose.foundation.horizontalScroll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -191,6 +193,17 @@ fun MetroMapEditorScreen(
                             onClick = { vm.editMetroScheme(schemeId) { metroSelectionSpaced(it, selection) } },
                             enabled = selection.size >= 3,
                         ) { Text(stringResource(R.string.metro_align_spaced)) }
+                        // Turned or mirrored about its middle (08.10).
+                        listOf(
+                            MetroTurn.CLOCKWISE_45 to R.string.metro_turn_45,
+                            MetroTurn.MIRROR_ACROSS to R.string.metro_mirror_across,
+                            MetroTurn.MIRROR_UPDOWN to R.string.metro_mirror_updown,
+                        ).forEach { (turn, words) ->
+                            TextButton(
+                                onClick = { vm.editMetroScheme(schemeId) { metroSelectionTurned(it, selection, turn) } },
+                                enabled = selection.size >= 2,
+                            ) { Text(stringResource(words)) }
+                        }
                     }
                 }
                 if (bending || naming || selecting) {

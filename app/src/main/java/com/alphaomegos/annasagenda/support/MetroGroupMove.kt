@@ -86,3 +86,34 @@ fun metroSelectionSpaced(scheme: MetroScheme, ids: Set<Long>): MetroScheme {
     }.toMap()
     return withPlaces(frozen, places)
 }
+
+/* ---------------- turning and mirroring (08.10) ---------------- */
+
+/** How the selection is turned over: a quarter of 45°-steps clockwise, or mirrored. */
+enum class MetroTurn { CLOCKWISE_45, MIRROR_ACROSS, MIRROR_UPDOWN }
+
+/**
+ * The selection turned by [turn] about its middle (08.10), with the track
+ * bent between its stations. Clockwise is on the screen, where y goes down.
+ */
+fun metroSelectionTurned(scheme: MetroScheme, ids: Set<Long>, turn: MetroTurn): MetroScheme {
+    val (frozen, at) = placedOf(scheme, ids)
+    if (at.size < 2) return scheme
+    val cx = at.values.map { it.x }.average().toFloat()
+    val cy = at.values.map { it.y }.average().toFloat()
+    val c = (kotlin.math.sqrt(2.0) / 2).toFloat()
+    fun move(x: Float, y: Float): MetroPoint {
+        val dx = x - cx; val dy = y - cy
+        return when (turn) {
+            MetroTurn.CLOCKWISE_45 -> MetroPoint(cx + c * (dx - dy), cy + c * (dx + dy))
+            MetroTurn.MIRROR_ACROSS -> MetroPoint(cx - dx, y)
+            MetroTurn.MIRROR_UPDOWN -> MetroPoint(x, cy - dy)
+        }
+    }
+    val moved = withPlaces(frozen, at.mapValues { (_, p) -> move(p.x, p.y) })
+    return moved.copy(bends = moved.bends.map { b ->
+        if (b.aStationId in at && b.bStationId in at) {
+            MetroBend(b.aStationId, b.bStationId, b.points.map { val q = move(it.x, it.y); MetroMapPoint(q.x, q.y) })
+        } else b
+    })
+}
