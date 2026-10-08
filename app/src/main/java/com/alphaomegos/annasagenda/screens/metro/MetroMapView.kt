@@ -40,6 +40,16 @@ import com.alphaomegos.annasagenda.support.metroSidesOf
 import com.alphaomegos.annasagenda.support.metroSnapped
 import com.alphaomegos.annasagenda.support.metroStationAt
 import com.alphaomegos.annasagenda.support.metroStationsMovingWith
+import com.alphaomegos.annasagenda.support.METRO_STATION_RADIUS
+import com.alphaomegos.annasagenda.support.MetroBendHit
+import com.alphaomegos.annasagenda.support.MetroTrack
+import com.alphaomegos.annasagenda.support.metroAloneDropPoint
+import com.alphaomegos.annasagenda.support.metroBendPointAt
+import com.alphaomegos.annasagenda.support.metroBendPoints
+import com.alphaomegos.annasagenda.support.metroLabelledStations
+import com.alphaomegos.annasagenda.support.metroTrackAt
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeJoin
 import kotlin.math.floor
 
 /**
@@ -56,7 +66,23 @@ import kotlin.math.floor
  * With [gridStep] (06.10) the grid is drawn and a dragged station lands on
  * its nearest node; with the scheme's transfers kept together, the whole
  * transfer moves with the station dragged.
+ *
+ * 08.10: with [moveAlone] a dragged station moves by itself — glued to its
+ * interchange when the scheme glues rings; with [bendMode] a finger bends
+ * track instead of moving stations: a tap on a track gives it an elbow (and
+ * the next one, and straight again), a finger along a track puts a point
+ * there and drags it, a tap on a point takes it away — each said through
+ * [onBend]. Track is drawn through its bends; with one name per interchange
+ * only the names [metroLabelledStations] picks are written.
  */
+internal sealed interface MetroBendAction {
+    data class Cycle(val track: MetroTrack) : MetroBendAction
+    data class Insert(val hit: MetroBendHit, val x: Float, val y: Float) : MetroBendAction
+    data class Move(val hit: MetroBendHit, val x: Float, val y: Float) : MetroBendAction
+    data class Remove(val hit: MetroBendHit) : MetroBendAction
+}
+
+/** See [MetroMapView]. */
 @Composable
 internal fun MetroMapView(
     scheme: MetroScheme,
@@ -67,6 +93,9 @@ internal fun MetroMapView(
     onTapStation: (Long) -> Unit = {},
     onMoveStation: ((Long, Float, Float) -> Unit)? = null,
     gridStep: Float? = null,
+    moveAlone: Boolean = false,
+    bendMode: Boolean = false,
+    onBend: (MetroBendAction) -> Unit = {},
 ) {
     var zoom by rememberSaveable { mutableStateOf(1f) }
     var panX by rememberSaveable { mutableStateOf(0f) }
@@ -74,10 +103,15 @@ internal fun MetroMapView(
     // A drag in flight: the station and where on the screen it is now.
     var dragId by remember { mutableStateOf<Long?>(null) }
     var dragAt by remember { mutableStateOf(Offset.Zero) }
+    // A bend point being dragged: which, and whether it is a new one put in.
+    var dragBend by remember { mutableStateOf<Pair<MetroBendHit, Boolean>?>(null) }
 
     val currentTap by rememberUpdatedState(onTapStation)
     val currentMove by rememberUpdatedState(onMoveStation)
     val currentGrid by rememberUpdatedState(gridStep)
+    val currentScheme by rememberUpdatedState(scheme)
+    val currentBendMode by rememberUpdatedState(bendMode)
+    val currentBend by rememberUpdatedState(onBend)
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     val labelColor = MaterialTheme.colorScheme.onSurface
@@ -91,6 +125,7 @@ internal fun MetroMapView(
     }
     val lines = remember(scheme.lines) { scheme.lines.associateBy { it.id } }
     val lineOf = remember(scheme.stations) { scheme.stations.associate { it.id to it.lineId } }
+    val labelled = remember(scheme, layout) { metroLabelledStations(scheme, layout) }
     val edges = remember(scheme.lines) {
         scheme.lines.flatMap { line ->
             metroSidesOf(line).flatMap { (s, sides) -> sides.values.filter { s < it }.map { Triple(line.id, s, it) } }
@@ -145,20 +180,36 @@ internal fun MetroMapView(
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val start = toMap(down.position)
                 val hitRadius = hitPx / (fit * zoom)
-                val grabbed = if (currentMove != null) metroStationAt(layout, start.x, start.y, hitRadius) else null
+                val bending = currentBendMode
+                val bendPoint = if (bending) metroBendPointAt(currentScheme, start.x, start.y, hitRadius) else null
+                val onTrack = if (bending && bendPoint == null) metroTrackAt(currentScheme, layout, start.x, start.y, hitRadius * 0.7f) else null
+                val grabbed = if (currentMove != null && !bending) metroStationAt(layout, start.x, start.y, hitRadius) else null
                 var travelled = 0f
                 var fingers = 1
                 // The station keeps where it sits under the finger, rather than jumping to it.
-                val grabOffset = grabbed?.let { toScreenNow(layout.getValue(it)) - down.position } ?: Offset.Zero
+                val grabOffset = when {
+                    grabbed != null -> toScreenNow(layout.getValue(grabbed)) - down.position
+                    bendPoint != null -> toScreenNow(metroBendPoints(currentScheme, bendPoint.track)[bendPoint.index]) - down.position
+                    else -> Offset.Zero
+                }
                 if (grabbed != null) {
                     dragId = grabbed
+                    dragAt = down.position + grabOffset
+                }
+                val grabbedBend = when {
+                    bendPoint != null -> bendPoint to false
+                    onTrack != null -> onTrack to true
+                    else -> null
+                }
+                if (grabbedBend != null) {
+                    dragBend = grabbedBend
                     dragAt = down.position + grabOffset
                 }
                 do {
                     val event = awaitPointerEvent()
                     val pressed = event.changes.filter { it.pressed }
                     fingers = maxOf(fingers, pressed.size)
-                    if (grabbed != null && pressed.size == 1) {
+                    if ((grabbed != null || grabbedBend != null) && pressed.size == 1) {
                         val change = pressed[0]
                         travelled += change.positionChange().getDistance()
                         dragAt = change.position + grabOffset
@@ -183,7 +234,16 @@ internal fun MetroMapView(
                 } while (event.changes.any { it.pressed })
 
                 val slop = viewConfiguration.touchSlop
-                if (grabbed != null && travelled > slop) {
+                if (grabbedBend != null) {
+                    val (hit, insert) = grabbedBend
+                    if (travelled > slop) {
+                        val at = toMap(dragAt).let { p -> currentGrid?.let { metroSnapped(p, it) } ?: p }
+                        currentBend(if (insert) MetroBendAction.Insert(hit, at.x, at.y) else MetroBendAction.Move(hit, at.x, at.y))
+                    } else if (fingers == 1) {
+                        currentBend(if (insert) MetroBendAction.Cycle(hit.track) else MetroBendAction.Remove(hit))
+                    }
+                    dragBend = null
+                } else if (grabbed != null && travelled > slop) {
                     val at = toMap(dragAt).let { p -> currentGrid?.let { metroSnapped(p, it) } ?: p }
                     currentMove?.invoke(grabbed, at.x, at.y)
                 } else if (travelled <= slop && fingers == 1) {
@@ -194,17 +254,23 @@ internal fun MetroMapView(
         }
 
         Canvas(modifier = Modifier.fillMaxSize().then(gestures)) {
-            val lineWidth = (0.16f * k).coerceIn(3.dp.toPx(), 10.dp.toPx())
-            val radius = (0.13f * k).coerceIn(4.dp.toPx(), 9.dp.toPx())
+            // Glued rings touch in the picture's units, so then they scale with it, unclamped.
+            val glued = scheme.glue > 0
+            val lineWidth = if (glued) (0.16f * k).coerceAtMost(10.dp.toPx()) else (0.16f * k).coerceIn(3.dp.toPx(), 10.dp.toPx())
+            val radius = if (glued) METRO_STATION_RADIUS * k else (METRO_STATION_RADIUS * k).coerceIn(4.dp.toPx(), 9.dp.toPx())
             val (routePairs, routeStations) = onRoute
             val fade = route != null
             // A drag in flight moves its station (snapped, with a grid) and,
             // with transfers kept together, the rest of its transfer as far.
             val dragged = dragId?.let { layout[it] }
-            val moving = dragId?.takeIf { dragged != null }?.let { metroStationsMovingWith(scheme, it) } ?: emptySet()
-            val shift = dragged?.let { from ->
+            val moving = dragId?.takeIf { dragged != null }?.let { if (moveAlone) setOf(it) else metroStationsMovingWith(scheme, it) } ?: emptySet()
+            fun dragPoint(): MetroPoint {
                 val raw = MetroPoint((dragAt.x - w / 2 - panX) / k + cx, (dragAt.y - h / 2 - panY) / k + cy)
-                val to = gridStep?.let { metroSnapped(raw, it) } ?: raw
+                return gridStep?.let { metroSnapped(raw, it) } ?: raw
+            }
+            val shift = dragged?.let { from ->
+                val snapped = dragPoint()
+                val to = if (moveAlone) metroAloneDropPoint(scheme, layout, dragId!!, snapped) else snapped
                 MetroPoint(to.x - from.x, to.y - from.y)
             }
             fun at(id: Long): Offset? {
@@ -242,17 +308,33 @@ internal fun MetroMapView(
                 val lit = !fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs
                 drawLine(transferColor.copy(alpha = if (lit) 1f else 0.25f), a, c, strokeWidth = lineWidth * 0.8f, cap = StrokeCap.Round)
             }
+            val bendDrag = dragBend
             edges.forEach { (lineId, s, t) ->
                 val a = at(s) ?: return@forEach
                 val c = at(t) ?: return@forEach
                 val color = Color(lines[lineId]?.color ?: 0xFF888888)
                 val lit = !fade || (s to t) in routePairs
-                drawLine(
-                    color.copy(alpha = if (lit) 1f else 0.25f),
-                    a, c,
-                    strokeWidth = if (fade && lit) lineWidth * 1.5f else lineWidth,
-                    cap = StrokeCap.Round,
-                )
+                val track = MetroTrack(s, t)
+                val bends = metroBendPoints(scheme, track).toMutableList()
+                if (bendDrag != null && bendDrag.first.track == track) {
+                    val p = dragPoint()
+                    val i = bendDrag.first.index
+                    if (bendDrag.second) bends.add(i.coerceIn(0, bends.size), p) else if (i in bends.indices) bends[i] = p
+                }
+                val width = if (fade && lit) lineWidth * 1.5f else lineWidth
+                val paint = color.copy(alpha = if (lit) 1f else 0.25f)
+                if (bends.isEmpty()) {
+                    drawLine(paint, a, c, strokeWidth = width, cap = StrokeCap.Round)
+                } else {
+                    // Track drawn through its bends (08.10).
+                    val path = Path().apply {
+                        moveTo(a.x, a.y)
+                        bends.forEach { val q = toScreen(it); lineTo(q.x, q.y) }
+                        lineTo(c.x, c.y)
+                    }
+                    drawPath(path, paint, style = Stroke(width = width, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                    if (bendMode) bends.forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = toScreen(it)) }
+                }
             }
             val showLabels = k * METRO_LAYOUT_STEP > 52.dp.toPx()
             scheme.stations.forEach { st ->
@@ -263,7 +345,7 @@ internal fun MetroMapView(
                 drawCircle(if (st.closure != null) transferColor else ringFill, radius = radius, center = p, alpha = alpha)
                 drawCircle(color, radius = radius, center = p, style = Stroke(radius * 0.45f), alpha = alpha)
                 if (st.id in marked) drawCircle(markColor, radius = radius * 1.8f, center = p, style = Stroke(2.5f.dp.toPx()))
-                if (showLabels || (fade && lit) || st.id in marked || st.id == dragId) {
+                if ((st.id in labelled && (showLabels || (fade && lit))) || st.id in marked || st.id == dragId) {
                     val label = labels[st.id] ?: return@forEach
                     drawText(
                         label,

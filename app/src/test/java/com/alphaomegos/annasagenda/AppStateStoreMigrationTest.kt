@@ -600,6 +600,17 @@ class AppStateStoreMigrationTest {
         assertEquals(setOf("RS:belgrade"), state.flightHomes)
     }
 
+    /** Schema 11 (08.10): a payload from before bent track has none, and glue off. */
+    @Test
+    fun version10_readsWithNoBends() {
+        val state = decoded("""{ "v": 10, "metroSchemes": [ { "id": 1, "city": "Москва", "glue": 7 } ] }""")
+
+        val scheme = state.metroSchemes.single()
+        assertTrue(scheme.bends.isEmpty())
+        assertEquals(0, scheme.glue)
+        assertEquals(false, scheme.labelsOncePerInterchange)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

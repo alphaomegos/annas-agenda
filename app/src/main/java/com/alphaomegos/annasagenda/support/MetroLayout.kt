@@ -112,6 +112,7 @@ fun metroLayout(scheme: MetroScheme, rounds: Int = 300): Map<Long, MetroPoint> {
     // hand is anchored there, the rest of it on the free places beside it;
     // one with none is set round where its stations were guessed to be.
     val together = scheme.transfersTogether
+    val gap = metroTogetherGap(scheme)
     val groupOf = IntArray(n) { -1 }
     val bodies = mutableListOf<IntArray>()
     if (together) {
@@ -123,7 +124,7 @@ fun metroLayout(scheme: MetroScheme, rounds: Int = 300): Map<Long, MetroPoint> {
                 var slot = 0
                 members.filter { !fixed[it] }.forEach { i ->
                     while (true) {
-                        val (sx, sy) = metroTogetherSlot(slot++)
+                        val (sx, sy) = metroTogetherSlot(slot++, gap)
                         val px = x[anchor] + sx; val py = y[anchor] + sy
                         if (members.none { fixed[it] && hypot2(x[it] - px, y[it] - py) < 0.01f }) {
                             x[i] = px; y[i] = py; break
@@ -132,7 +133,7 @@ fun metroLayout(scheme: MetroScheme, rounds: Int = 300): Map<Long, MetroPoint> {
                 }
                 members.forEach { fixed[it] = true }
             } else {
-                val slots = members.indices.map { metroTogetherSlot(it) }
+                val slots = members.indices.map { metroTogetherSlot(it, gap) }
                 val ox = members.map { x[it] }.average().toFloat() - slots.map { it.first }.average().toFloat()
                 val oy = members.map { y[it] }.average().toFloat() - slots.map { it.second }.average().toFloat()
                 members.forEachIndexed { k, i -> x[i] = ox + slots[k].first; y[i] = oy + slots[k].second; groupOf[i] = bodies.size }
@@ -276,7 +277,7 @@ fun metroTransfersTogether(scheme: MetroScheme, on: Boolean): MetroScheme {
     metroTransferGroups(frozen).forEach { group ->
         val anchor = byId.getValue(group.first())
         val ax = anchor.mapX ?: 0f; val ay = anchor.mapY ?: 0f
-        group.forEachIndexed { k, id -> val (sx, sy) = metroTogetherSlot(k); at[id] = ax + sx to ay + sy }
+        group.forEachIndexed { k, id -> val (sx, sy) = metroTogetherSlot(k, metroTogetherGap(scheme)); at[id] = ax + sx to ay + sy }
     }
     return frozen.copy(
         transfersTogether = true,
@@ -290,8 +291,8 @@ fun metroSnapped(p: MetroPoint, step: Float = METRO_GRID_STEP): MetroPoint =
     MetroPoint(round(p.x / step) * step + 0f, round(p.y / step) * step + 0f)
 
 /** Where the [k]-th station of a transfer kept together stands from the first: two abreast, then the next row. */
-internal fun metroTogetherSlot(k: Int): Pair<Float, Float> =
-    (k % 2) * METRO_TOGETHER_GAP to (k / 2) * METRO_TOGETHER_GAP
+internal fun metroTogetherSlot(k: Int, gap: Float = METRO_TOGETHER_GAP): Pair<Float, Float> =
+    (k % 2) * gap to (k / 2) * gap
 
 private fun hypot2(dx: Float, dy: Float) = dx * dx + dy * dy
 

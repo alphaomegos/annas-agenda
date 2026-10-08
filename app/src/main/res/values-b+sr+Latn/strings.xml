@@ -832,4 +832,10 @@
     <string name="ach_earned_times">Osvojeno ×%1$s</string>
     <string name="ach_not_yet">Još ne: %1$s od %2$s</string>
     <string name="ach_times">×%1$s</string>
+    <string name="metro_labels_once">Jedan naziv po čvoru</string>
+    <string name="metro_glue">Lepiti: %1$s</string>
+    <string name="metro_glue_off">ne</string>
+    <string name="metro_bend_tracks">Saviti deonice</string>
+    <string name="metro_move_whole">Pomerati čvor u celini</string>
+    <string name="metro_bend_hint">Dodir na deonicu — ugao, još jedan — drugi ugao, još jedan — opet pravo. Prevucite po deonici — nova tačka; dodir na tačku — uklanja je.</string>
 </resources>

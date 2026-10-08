@@ -198,6 +198,19 @@ internal data class MetroSchemeDto(
     val librarySource: String? = null,
     val mapGrid: Boolean = false,
     val transfersTogether: Boolean = false,
+    val labelsOncePerInterchange: Boolean = false,
+    val glue: Int = 0,
+    // Schema 11 (08.10): bent track.
+    val bends: List<MetroBendDto> = emptyList(),
+)
+
+/** Track between two neighbours drawn through points, from a to b: x and y side by side. */
+@Serializable
+internal data class MetroBendDto(
+    val aStationId: Long,
+    val bStationId: Long,
+    val x: List<Float> = emptyList(),
+    val y: List<Float> = emptyList(),
 )
 
 @Serializable

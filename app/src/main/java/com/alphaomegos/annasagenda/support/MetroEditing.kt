@@ -480,6 +480,8 @@ internal fun reconciled(before: MetroScheme, after: MetroScheme): MetroScheme {
 
     val adjacent = adjacentPairs(after.copy(lines = lines))
     val segmentTimes = after.segmentTimes.filter { pairOf(it.aStationId, it.bStationId) in adjacent }
+    // A bend lives on a track: it goes when its two stations stop being neighbours.
+    val bends = after.bends.filter { pairOf(it.aStationId, it.bStationId) in adjacent }
 
     return after.copy(
         lines = lines,
@@ -488,6 +490,7 @@ internal fun reconciled(before: MetroScheme, after: MetroScheme): MetroScheme {
         exits = exits,
         hints = hints,
         segmentTimes = segmentTimes,
+        bends = bends,
     )
 }
 

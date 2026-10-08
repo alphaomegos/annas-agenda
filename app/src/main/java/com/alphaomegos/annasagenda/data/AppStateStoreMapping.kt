@@ -712,6 +712,9 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
     librarySource = librarySource,
     mapGrid = mapGrid,
     transfersTogether = transfersTogether,
+    labelsOncePerInterchange = labelsOncePerInterchange,
+    glue = glue,
+    bends = bends.map { b -> MetroBendDto(b.aStationId, b.bStationId, b.points.map { it.x }, b.points.map { it.y }) },
 )
 
 /**
@@ -761,6 +764,15 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
         librarySource = librarySource,
         mapGrid = mapGrid,
         transfersTogether = transfersTogether,
+        labelsOncePerInterchange = labelsOncePerInterchange,
+        // Glue at 8 or 12 points; anything else is off.
+        glue = glue.takeIf { it == 8 || it == 12 } ?: 0,
+        // A bend's points come in pairs; one whose x and y do not pair up, or are not numbers, is dropped.
+        bends = bends.mapNotNull { b ->
+            if (b.x.size != b.y.size || b.x.isEmpty()) return@mapNotNull null
+            val pts = b.x.zip(b.y).map { (x, y) -> MetroMapPoint(x, y) }
+            if (pts.any { !it.x.isFinite() || !it.y.isFinite() }) null else MetroBend(b.aStationId, b.bStationId, pts)
+        },
     )
     return reconciled(scheme, scheme)
 }

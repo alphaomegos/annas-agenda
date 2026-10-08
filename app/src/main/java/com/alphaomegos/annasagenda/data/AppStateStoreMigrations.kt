@@ -59,6 +59,7 @@ internal fun migrateAppStateRawJson(
             7 -> migrateAppState7To8(cur)
             8 -> migrateAppState8To9(cur)
             9 -> migrateAppState9To10(cur)
+            10 -> migrateAppState10To11(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -186,6 +187,17 @@ private fun migrateAppState8To9(obj: JsonObject): JsonObject {
 private fun migrateAppState9To10(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(10)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp. Version 11 (08.10) adds bent track to the metro schemes — points
+ * the user drew, data nothing else holds. No bends is what every payload
+ * before it means.
+ */
+private fun migrateAppState10To11(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(11)
     return JsonObject(m)
 }
 

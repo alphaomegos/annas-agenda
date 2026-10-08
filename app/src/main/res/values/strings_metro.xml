@@ -111,4 +111,10 @@
     <string name="metro_hide_stations">Hide the stations on the way</string>
     <string name="metro_layout_again">Lay out again</string>
     <string name="metro_layout_again_text">Every station you moved goes back to where the app would put it.</string>
+    <string name="metro_labels_once">One name per interchange</string>
+    <string name="metro_glue">Glue rings: %1$s</string>
+    <string name="metro_glue_off">off</string>
+    <string name="metro_bend_tracks">Bend track</string>
+    <string name="metro_move_whole">Move an interchange whole</string>
+    <string name="metro_bend_hint">Tap a track for a corner, again for the other one, again for straight. Drag along a track to add a point; tap a point to remove it.</string>
 </resources>

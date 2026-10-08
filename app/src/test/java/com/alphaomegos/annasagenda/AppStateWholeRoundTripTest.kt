@@ -296,6 +296,9 @@ class AppStateWholeRoundTripTest {
                 librarySource = "moscow",
                 mapGrid = true,
                 transfersTogether = true,
+                labelsOncePerInterchange = true,
+                glue = 12,
+                bends = listOf(MetroBend(10L, 11L, listOf(MetroMapPoint(1f, 0.5f), MetroMapPoint(1f, 2.5f)))),
             ),
         ),
         metroSelection = "user:3",
@@ -395,6 +398,7 @@ class AppStateWholeRoundTripTest {
         assertTrue(whole.metroSchemes.single().hints.size == 2)
         assertTrue(whole.travelCountries.any { it.isUserCountry && it.customPoint != null })
         assertTrue(whole.flights.any { it.actualArrival != null && it.keptApart })
+        assertTrue(whole.metroSchemes.single().bends.single().points.size == 2)
     }
 
     /**
@@ -421,6 +425,7 @@ class AppStateWholeRoundTripTest {
             "metroSchemes", "metroSelection", "trunk", "branches", "fromStationId", "exitId", "toStationId",
             "closed", "expectedOpeningEpochDay",
             "travelCountries", "travelView", "countryId", "trips", "month", "cities", "continent",
+            "bends", "glue", "labelsOncePerInterchange",
             "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes",
             "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
         ).forEach { key ->

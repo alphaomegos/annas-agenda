@@ -37,6 +37,27 @@ data class MetroScheme(
     // with defaults, so no schema bump.
     val mapGrid: Boolean = false,
     val transfersTogether: Boolean = false,
+    // The picture, more (08.10): one name per interchange instead of one per
+    // station; interchange rings glued edge to edge at 8 or 12 points round
+    // the circle (0 is off). Settings.
+    val labelsOncePerInterchange: Boolean = false,
+    val glue: Int = 0,
+    // Track drawn bent between two neighbouring stations (08.10): data the
+    // user drew, so schema 11.
+    val bends: List<MetroBend> = emptyList(),
+)
+
+/** A place on the scheme's picture, in its own units (one step between neighbours). */
+data class MetroMapPoint(val x: Float, val y: Float)
+
+/**
+ * The track between neighbours [aStationId] and [bStationId] drawn through
+ * [points], in that order from a to b, instead of straight (08.10).
+ */
+data class MetroBend(
+    val aStationId: Long,
+    val bStationId: Long,
+    val points: List<MetroMapPoint>,
 )
 
 /** What a ride between two neighbouring stations costs when the user has not said (04.10). */

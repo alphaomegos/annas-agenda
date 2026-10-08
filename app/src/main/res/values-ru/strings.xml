@@ -898,4 +898,10 @@
     <string name="ach_earned_times">Получено ×%1$s</string>
     <string name="ach_not_yet">Ещё нет: %1$s из %2$s</string>
     <string name="ach_times">×%1$s</string>
+    <string name="metro_labels_once">Одно название на узел</string>
+    <string name="metro_glue">Слеплять: %1$s</string>
+    <string name="metro_glue_off">нет</string>
+    <string name="metro_bend_tracks">Гнуть перегоны</string>
+    <string name="metro_move_whole">Двигать узел целиком</string>
+    <string name="metro_bend_hint">Тап по перегону — угол, ещё тап — другой угол, ещё — снова прямо. Протяните по перегону — новая точка; тап по точке — убрать её.</string>
 </resources>
