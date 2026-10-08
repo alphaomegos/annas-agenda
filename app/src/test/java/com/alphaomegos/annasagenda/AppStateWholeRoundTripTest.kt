@@ -308,6 +308,7 @@ class AppStateWholeRoundTripTest {
                 transferCapsules = true,
                 roundCorners = true,
                 tickStations = true,
+                lineBadges = true,
                 bends = listOf(MetroBend(10L, 11L, listOf(MetroMapPoint(1f, 0.5f), MetroMapPoint(1f, 2.5f)))),
             ),
         ),

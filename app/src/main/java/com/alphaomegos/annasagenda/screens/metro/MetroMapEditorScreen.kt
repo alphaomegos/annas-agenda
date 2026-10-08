@@ -296,6 +296,9 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                 MetroMapTick(stringResource(R.string.metro_tick_stations), scheme.tickStations, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(tickStations = on) }
                 }
+                MetroMapTick(stringResource(R.string.metro_line_badges), scheme.lineBadges, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(lineBadges = on) }
+                }
                 MetroMapTick(stringResource(R.string.metro_round_corners), scheme.roundCorners, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(roundCorners = on) }
                 }

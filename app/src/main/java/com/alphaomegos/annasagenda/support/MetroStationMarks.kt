@@ -56,3 +56,20 @@ fun metroTickAngle(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId
     val right = axis + PI / 2
     return if (gap(right) < gap(left) - 1e-9) right else left
 }
+
+/**
+ * The way out past the end of a line at a terminus (08.10), where its
+ * number is put: straight on from the track that comes in. Null for a
+ * station that is no terminus.
+ */
+fun metroTerminusOutward(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): Double? {
+    val dirs = trackDirections(scheme, layout, stationId)
+    if (dirs.size != 1) return null
+    return dirs[0] + PI
+}
+
+/** Whether a name on [labelSide] goes the way [outward] points, give or take 45°: then it starts past the badge. */
+fun metroLabelFacesOutward(labelSide: Int, outward: Double): Boolean {
+    val d = abs(metroLabelAngle(labelSide) - outward) % (2 * PI)
+    return minOf(d, 2 * PI - d) <= PI / 4 + 1e-6
+}

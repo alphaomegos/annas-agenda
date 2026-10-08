@@ -67,6 +67,10 @@ import kotlin.math.sin
 import com.alphaomegos.annasagenda.support.metroInterchangeStations
 import com.alphaomegos.annasagenda.support.metroTermini
 import com.alphaomegos.annasagenda.support.metroTickAngle
+import com.alphaomegos.annasagenda.support.metroTerminusOutward
+import com.alphaomegos.annasagenda.support.metroLabelFacesOutward
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.luminance
 
 /**
  * The picture of the metro map (05.10): lines in their colours, stations as
@@ -176,6 +180,15 @@ internal fun MetroMapView(
     val tickAngles = remember(scheme, layout, labelSides) {
         if (!scheme.tickStations) emptyMap()
         else scheme.stations.mapNotNull { st -> metroTickAngle(scheme, layout, st.id, labelSides[st.id] ?: 0)?.let { st.id to it } }.toMap()
+    }
+    // Line numbers past the ends of lines (08.10): which way out at each end, and the numbers measured.
+    val outwards = remember(scheme, layout) {
+        if (!scheme.lineBadges) emptyMap()
+        else termini.mapNotNull { id -> metroTerminusOutward(scheme, layout, id)?.let { id to it } }.toMap()
+    }
+    val badgeStyle = TextStyle(fontSize = 10.sp * scheme.labelScale, color = Color.White, fontWeight = FontWeight.Bold)
+    val badges = remember(scheme.lines, measurer, scheme.labelScale) {
+        scheme.lines.associate { it.id to measurer.measure(it.label, badgeStyle) }
     }
     val hiddenLabels = remember(scheme.stations) { scheme.stations.filter { it.labelSide == METRO_LABEL_HIDDEN }.map { it.id }.toSet() }
     val edges = remember(scheme.lines) {
@@ -474,13 +487,31 @@ internal fun MetroMapView(
                     drawCircle(color, radius = radius, center = p, style = Stroke(radius * 0.45f), alpha = alpha)
                 }
                 if (st.id in marked) drawCircle(markColor, radius = radius * 1.8f, center = p, style = Stroke(2.5f.dp.toPx()))
+                // The line's number in a disc past its end (08.10); a name that way starts past it.
+                val out = outwards[st.id]
+                val markEnd = (if (tick != null) tickLen else radius) + 3.dp.toPx()
+                var badgeRoom = 0f
+                val badge = lineOf[st.id]?.let { badges[it] }
+                if (out != null && badge != null) {
+                    val r = maxOf(badge.size.width, badge.size.height) / 2f + 2.dp.toPx()
+                    val c = p + Offset(cos(out).toFloat(), sin(out).toFloat()) * (markEnd + r)
+                    drawCircle(color, radius = r, center = c, alpha = alpha)
+                    // Dark figures on a light line (the yellow one), white on the rest.
+                    drawText(
+                        badge,
+                        color = if (color.luminance() > 0.55f) Color.Black else Color.White,
+                        topLeft = Offset(c.x - badge.size.width / 2f, c.y - badge.size.height / 2f),
+                        alpha = alpha,
+                    )
+                    if (metroLabelFacesOutward(labelSides[st.id] ?: 0, out)) badgeRoom = 2 * r + 3.dp.toPx()
+                }
                 val written = st.id in labelled && st.id !in hiddenLabels
                 if ((written && (showLabels || (fade && lit))) || st.id in marked || st.id == dragId || namingMode) {
                     val label = labels[st.id] ?: return@forEach
                     // With the names tool every name shows; one not written on the picture, faintly.
                     val faint = namingMode && !written
                     val corner = metroLabelTopLeft(
-                        p.x, p.y, (if (tick != null) tickLen else radius) + 3.dp.toPx(), labelSides[st.id] ?: 0,
+                        p.x, p.y, markEnd + badgeRoom, labelSides[st.id] ?: 0,
                         label.size.width.toFloat(), label.size.height.toFloat(),
                     )
                     drawText(label, topLeft = Offset(corner.x, corner.y), alpha = if (faint) alpha * 0.35f else alpha)

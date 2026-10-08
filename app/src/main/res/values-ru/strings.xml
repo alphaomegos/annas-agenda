@@ -909,6 +909,7 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_line_badges">Номера линий на конечных</string>
     <string name="metro_tick_stations">Станции засечками (пересадки — кружками)</string>
     <string name="metro_fit">Вписать в экран</string>
     <string name="metro_tool_move">Двигать</string>

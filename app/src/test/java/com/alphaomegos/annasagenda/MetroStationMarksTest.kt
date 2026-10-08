@@ -52,4 +52,15 @@ class MetroStationMarksTest {
         // −22.5° or 157.5°; the name on the right takes −22.5°.
         same(-PI / 8, metroTickAngle(scheme, layout, 12, labelSide = 0))
     }
+
+    @Test
+    fun aLinesNumberGoesOnPastItsEnd_andANameThatWayMakesRoom() {
+        // C ends the line going right: out is to the right; A ends it going left.
+        same(0.0, metroTerminusOutward(scheme, layout, 3))
+        same(PI, metroTerminusOutward(scheme, layout, 1))
+        assertEquals(null, metroTerminusOutward(scheme, layout, 2))
+        assertEquals(true, metroLabelFacesOutward(0, 0.0))
+        assertEquals(true, metroLabelFacesOutward(7, 0.0))
+        assertEquals(false, metroLabelFacesOutward(6, 0.0))
+    }
 }
