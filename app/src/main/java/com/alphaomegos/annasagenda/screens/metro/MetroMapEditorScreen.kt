@@ -227,6 +227,11 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                 MetroMapTick(stringResource(R.string.metro_transfer_links), scheme.showTransferLinks, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(showTransferLinks = on) }
                 }
+                if (scheme.showTransferLinks) {
+                    MetroMapTick(stringResource(R.string.metro_transfer_capsules), scheme.transferCapsules, Modifier.fillMaxWidth()) { on ->
+                        onEdit { it.copy(transferCapsules = on) }
+                    }
+                }
                 MetroMapTick(stringResource(R.string.metro_line_casing), scheme.lineCasing, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(lineCasing = on) }
                 }

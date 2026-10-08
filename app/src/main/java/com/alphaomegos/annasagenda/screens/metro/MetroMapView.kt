@@ -78,7 +78,8 @@ import kotlin.math.floor
  * there and drags it, a tap on a point takes it away — each said through
  * [onBend]. Track is drawn through its bends; with one name per interchange
  * only the names [metroLabelledStations] picks are written. With the
- * scheme's casing each line is edged in the background colour.
+ * scheme's casing each line is edged in the background colour; with its
+ * capsules the links between interchange stations are drawn as passages.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -316,12 +317,23 @@ internal fun MetroMapView(
                 }
             }
 
-            if (scheme.showTransferLinks) scheme.transfers.forEach { t ->
+            val capsules = scheme.showTransferLinks && scheme.transferCapsules
+            fun drawLinks() = scheme.transfers.forEach { t ->
                 val a = at(t.aStationId) ?: return@forEach
                 val c = at(t.bStationId) ?: return@forEach
                 val lit = !fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs
-                drawLine(transferColor.copy(alpha = if (lit) 1f else 0.25f), a, c, strokeWidth = lineWidth * 0.8f, cap = StrokeCap.Round)
+                val alpha = if (lit) 1f else 0.25f
+                if (capsules) {
+                    // A passage as on the Moscow map (08.10): a band as wide as the
+                    // rings, edged dark, over the track; the rings sit on its ends.
+                    val outer = radius * 2f
+                    drawLine(labelColor.copy(alpha = alpha), a, c, strokeWidth = outer, cap = StrokeCap.Round)
+                    drawLine(ringFill.copy(alpha = alpha), a, c, strokeWidth = outer - radius * 0.6f, cap = StrokeCap.Round)
+                } else {
+                    drawLine(transferColor.copy(alpha = alpha), a, c, strokeWidth = lineWidth * 0.8f, cap = StrokeCap.Round)
+                }
             }
+            if (scheme.showTransferLinks && !capsules) drawLinks()
             val bendDrag = dragBend
             // Each track as drawn: its ends, its bends (the one being dragged where the finger is).
             fun trackPoints(s: Long, t: Long): List<Offset>? {
@@ -366,6 +378,7 @@ internal fun MetroMapView(
                     pts.subList(1, pts.size - 1).forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = it) }
                 }
             }
+            if (capsules) drawLinks()
             val showLabels = when (scheme.labelsMode) {
                 MetroLabelsMode.AUTO -> k * METRO_LAYOUT_STEP > 52.dp.toPx() * scheme.labelScale
                 MetroLabelsMode.ALWAYS -> true
