@@ -48,6 +48,8 @@ import com.alphaomegos.annasagenda.support.metroBendPointAt
 import com.alphaomegos.annasagenda.support.metroBendPoints
 import com.alphaomegos.annasagenda.support.metroLabelledStations
 import com.alphaomegos.annasagenda.support.metroTrackAt
+import com.alphaomegos.annasagenda.support.metroAngleAnchors
+import com.alphaomegos.annasagenda.support.metroOctilinearSnap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import kotlin.math.floor
@@ -112,6 +114,7 @@ internal fun MetroMapView(
     val currentScheme by rememberUpdatedState(scheme)
     val currentBendMode by rememberUpdatedState(bendMode)
     val currentBend by rememberUpdatedState(onBend)
+    val currentMoveAlone by rememberUpdatedState(moveAlone)
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     val labelColor = MaterialTheme.colorScheme.onSurface
@@ -164,6 +167,8 @@ internal fun MetroMapView(
         val cy = (b[1] + b[3]) / 2
         fun toScreen(p: MetroPoint) = Offset((p.x - cx) * k + w / 2 + panX, (p.y - cy) * k + h / 2 + panY)
         val hitPx = with(density) { 22.dp.toPx() }
+        // How near a direction of 45° a dropped station is pulled onto it (08.10).
+        val angleTolPx = with(density) { 18.dp.toPx() }
 
         // Keyed on what does not change while a finger is down: zooming must
         // not restart the very gesture that zooms. The scale is read afresh.
@@ -244,7 +249,9 @@ internal fun MetroMapView(
                     }
                     dragBend = null
                 } else if (grabbed != null && travelled > slop) {
-                    val at = toMap(dragAt).let { p -> currentGrid?.let { metroSnapped(p, it) } ?: p }
+                    val s = currentScheme
+                    val moving = if (currentMoveAlone) setOf(grabbed) else metroStationsMovingWith(s, grabbed)
+                    val at = metroDropSnap(s, layout, grabbed, moving, toMap(dragAt), currentGrid, angleTolPx / (fit * zoom))
                     currentMove?.invoke(grabbed, at.x, at.y)
                 } else if (travelled <= slop && fingers == 1) {
                     metroStationAt(layout, start.x, start.y, hitRadius)?.let { currentTap(it) }
@@ -269,7 +276,8 @@ internal fun MetroMapView(
                 return gridStep?.let { metroSnapped(raw, it) } ?: raw
             }
             val shift = dragged?.let { from ->
-                val snapped = dragPoint()
+                val raw = MetroPoint((dragAt.x - w / 2 - panX) / k + cx, (dragAt.y - h / 2 - panY) / k + cy)
+                val snapped = metroDropSnap(scheme, layout, dragId!!, moving, raw, gridStep, angleTolPx / k)
                 val to = if (moveAlone) metroAloneDropPoint(scheme, layout, dragId!!, snapped) else snapped
                 MetroPoint(to.x - from.x, to.y - from.y)
             }
@@ -356,4 +364,25 @@ internal fun MetroMapView(
             }
         }
     }
+}
+
+/**
+ * Where a dragged station lands before glue (08.10): with the scheme's
+ * angles of 45°, on a direction square with its neighbours if one is
+ * within [tolerance]; else on the grid, if it is on; else where dropped.
+ */
+private fun metroDropSnap(
+    scheme: MetroScheme,
+    layout: Map<Long, MetroPoint>,
+    stationId: Long,
+    moving: Set<Long>,
+    raw: MetroPoint,
+    grid: Float?,
+    tolerance: Float,
+): MetroPoint {
+    if (scheme.snapAngles) {
+        val squared = metroOctilinearSnap(raw, metroAngleAnchors(scheme, layout, stationId, moving), tolerance)
+        if (squared !== raw) return squared
+    }
+    return grid?.let { metroSnapped(raw, it) } ?: raw
 }

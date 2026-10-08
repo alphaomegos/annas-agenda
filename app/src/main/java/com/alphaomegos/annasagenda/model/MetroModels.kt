@@ -42,6 +42,8 @@ data class MetroScheme(
     // the circle (0 is off). Settings.
     val labelsOncePerInterchange: Boolean = false,
     val glue: Int = 0,
+    // A dragged station pulled onto 0°/45°/90° from its neighbours (08.10).
+    val snapAngles: Boolean = false,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),

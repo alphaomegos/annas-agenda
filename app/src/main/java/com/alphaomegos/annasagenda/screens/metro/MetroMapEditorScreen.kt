@@ -154,7 +154,14 @@ fun MetroMapEditorScreen(
                     },
                 )
                 TickRow(
+                    { m ->
+                        MetroMapTick(stringResource(R.string.metro_snap_angles), scheme.snapAngles, m) { on ->
+                            vm.editMetroScheme(schemeId) { it.copy(snapAngles = on) }
+                        }
+                    },
                     { m -> MetroMapTick(stringResource(R.string.metro_bend_tracks), bending, m) { bending = it } },
+                )
+                TickRow(
                     { m ->
                         if (scheme.transfersTogether) {
                             MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, m) { moveWhole = it }
@@ -162,6 +169,7 @@ fun MetroMapEditorScreen(
                             Spacer(m)
                         }
                     },
+                    { m -> Spacer(m) },
                 )
                 if (bending) {
                     Text(

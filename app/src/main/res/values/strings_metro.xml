@@ -119,4 +119,5 @@
     <string name="metro_bend_hint">Tap a track for a corner, again for the other one, again for straight. Drag along a track to add a point; tap a point to remove it.</string>
     <string name="metro_undo">Undo</string>
     <string name="metro_redo">Redo</string>
+    <string name="metro_snap_angles">Angles of 45°</string>
 </resources>

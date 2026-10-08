@@ -840,4 +840,5 @@
     <string name="metro_bend_hint">Dodir na deonicu — ugao, još jedan — drugi ugao, još jedan — opet pravo. Prevucite po deonici — nova tačka; dodir na tačku — uklanja je.</string>
     <string name="metro_undo">Poništi</string>
     <string name="metro_redo">Ponovi</string>
+    <string name="metro_snap_angles">Uglovi od 45°</string>
 </resources>
