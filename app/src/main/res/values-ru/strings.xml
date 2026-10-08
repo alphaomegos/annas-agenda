@@ -909,6 +909,9 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_save_picture">Сохранить картинку</string>
+    <string name="metro_picture_saved">Картинка сохранена</string>
+    <string name="metro_picture_failed">Не удалось сохранить картинку</string>
     <string name="metro_turn_45">Повернуть на 45°</string>
     <string name="metro_mirror_across">Отразить ⇆</string>
     <string name="metro_mirror_updown">Отразить ⇅</string>

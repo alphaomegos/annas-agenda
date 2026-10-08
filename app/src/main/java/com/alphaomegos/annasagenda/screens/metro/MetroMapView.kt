@@ -19,6 +19,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -100,7 +103,8 @@ import androidx.compose.ui.graphics.luminance
  * [namingMode] every name shows, the hidden ones faintly, for the editor's
  * names tool. A drag of a station in [group] moves the whole group, with
  * the track bent between its stations (the editor's selection). A new
- * [fitKey] fits the whole picture to the view again.
+ * [fitKey] fits the whole picture to the view again. With [capture] the
+ * picture is recorded into that layer too, to be saved as an image.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -126,6 +130,7 @@ internal fun MetroMapView(
     namingMode: Boolean = false,
     group: Set<Long> = emptySet(),
     fitKey: Int = 0,
+    capture: GraphicsLayer? = null,
 ) {
     var zoom by rememberSaveable { mutableStateOf(1f) }
     var panX by rememberSaveable { mutableStateOf(0f) }
@@ -326,7 +331,15 @@ internal fun MetroMapView(
             }
         }
 
-        Canvas(modifier = Modifier.fillMaxSize().then(gestures)) {
+        // With [capture] (08.10) the picture is also recorded, on its background, for saving as a file.
+        val recorded = if (capture == null) Modifier else Modifier.drawWithContent {
+            capture.record {
+                drawRect(ringFill)
+                this@drawWithContent.drawContent()
+            }
+            drawLayer(capture)
+        }
+        Canvas(modifier = Modifier.fillMaxSize().then(recorded).then(gestures)) {
             // Glued rings touch in the picture's units, so then they scale with it, unclamped.
             val glued = scheme.glue > 0
             // The look's sizes (08.10) on top.

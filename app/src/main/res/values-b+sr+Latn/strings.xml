@@ -843,6 +843,9 @@
     <string name="metro_snap_angles">Uglovi od 45°</string>
     <string name="metro_look">Izgled</string>
     <string name="metro_transfer_links">Veze presedanja</string>
+    <string name="metro_save_picture">Sačuvaj sliku</string>
+    <string name="metro_picture_saved">Slika je sačuvana</string>
+    <string name="metro_picture_failed">Slika nije sačuvana</string>
     <string name="metro_turn_45">Okreni 45°</string>
     <string name="metro_mirror_across">Preslikaj ⇆</string>
     <string name="metro_mirror_updown">Preslikaj ⇅</string>

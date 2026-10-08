@@ -25,6 +25,17 @@ import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.FitScreen
+import androidx.compose.material.icons.filled.SaveAlt
+import android.graphics.Bitmap
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -87,6 +98,35 @@ fun MetroMapEditorScreen(
     onBack: () -> Unit,
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    // Saving the picture as a PNG (08.10): the view records itself into this
+    // layer; a file is asked for, and the layer written there.
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // Only while saving: a layer is made then, not on every visit (nor in tests).
+    var exporting by rememberSaveable { mutableStateOf(false) }
+    val pictureLayer = if (exporting) rememberGraphicsLayer() else null
+    val currentLayer by rememberUpdatedState(pictureLayer)
+    val savePicture = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")) { uri ->
+        if (uri == null) {
+            exporting = false
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            val saved = runCatching {
+                val layer = currentLayer ?: error("no picture recorded")
+                val bitmap = layer.toImageBitmap().asAndroidBitmap()
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } ?: false
+                }
+            }.getOrDefault(false)
+            exporting = false
+            Toast.makeText(
+                context,
+                context.getString(if (saved) R.string.metro_picture_saved else R.string.metro_picture_failed),
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
     val scheme = state.metroSchemes.firstOrNull { it.id == schemeId }
     val histories by vm.metroHistory.collectAsStateWithLifecycle()
     val history = histories[schemeId]
@@ -123,6 +163,15 @@ fun MetroMapEditorScreen(
                     }
                     IconButton(onClick = { vm.redoMetroScheme(schemeId) }, enabled = history?.canRedo == true) {
                         Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = stringResource(R.string.metro_redo))
+                    }
+                    // The whole picture, without the tools' marks, then where to save it.
+                    IconButton(onClick = {
+                        tool = TOOL_MOVE
+                        fitKey++
+                        exporting = true
+                        savePicture.launch("${scheme?.city ?: "metro"}.png")
+                    }) {
+                        Icon(Icons.Default.SaveAlt, contentDescription = stringResource(R.string.metro_save_picture))
                     }
                     IconButton(onClick = { fitKey++ }) {
                         Icon(Icons.Default.FitScreen, contentDescription = stringResource(R.string.metro_fit))
@@ -248,6 +297,7 @@ fun MetroMapEditorScreen(
                     marked = if (selecting) selection else emptySet(),
                     group = if (selecting) selection else emptySet(),
                     fitKey = fitKey,
+                    capture = pictureLayer,
                     gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
                     moveAlone = !(scheme.transfersTogether && moveWhole),
                     bendMode = bending,
