@@ -42,3 +42,47 @@ fun metroSelectionPlaced(scheme: MetroScheme, ids: Set<Long>, stationId: Long, x
     val from = metroLayout(scheme)[stationId] ?: return scheme
     return metroStationsShifted(scheme, ids + stationId, x - from.x, y - from.y)
 }
+
+/* ---------------- lining up (08.10) ---------------- */
+
+/** The stations of [ids] as placed now, the picture frozen; fewer than two placed, none. */
+private fun placedOf(scheme: MetroScheme, ids: Set<Long>): Pair<MetroScheme, Map<Long, MetroPoint>> {
+    val frozen = metroSchemeWithLayoutFrozen(scheme)
+    val at = frozen.stations.filter { it.id in ids && it.mapX != null && it.mapY != null }
+        .associate { it.id to MetroPoint(it.mapX!!, it.mapY!!) }
+    return frozen to at
+}
+
+private fun withPlaces(scheme: MetroScheme, places: Map<Long, MetroPoint>): MetroScheme =
+    scheme.copy(stations = scheme.stations.map { st -> places[st.id]?.let { st.copy(mapX = it.x, mapY = it.y) } ?: st })
+
+/**
+ * The selection put in a row ([across] true: one y for all) or a column
+ * (one x): the middle of where they stand, on the grid if [grid] is given.
+ */
+fun metroSelectionLinedUp(scheme: MetroScheme, ids: Set<Long>, across: Boolean, grid: Float? = null): MetroScheme {
+    val (frozen, at) = placedOf(scheme, ids)
+    if (at.size < 2) return scheme
+    val mid = at.values.map { if (across) it.y else it.x }.average().toFloat()
+    val v = grid?.takeIf { it > 0f }?.let { kotlin.math.round(mid / it) * it } ?: mid
+    return withPlaces(frozen, at.mapValues { (_, p) -> if (across) MetroPoint(p.x, v) else MetroPoint(v, p.y) })
+}
+
+/**
+ * The selection spaced evenly (08.10): ordered along the way they spread
+ * most, the first and the last stay, the rest go at equal steps on the
+ * straight line between them.
+ */
+fun metroSelectionSpaced(scheme: MetroScheme, ids: Set<Long>): MetroScheme {
+    val (frozen, at) = placedOf(scheme, ids)
+    if (at.size < 3) return scheme
+    val xs = at.values.map { it.x }; val ys = at.values.map { it.y }
+    val alongX = (xs.max() - xs.min()) >= (ys.max() - ys.min())
+    val order = at.entries.sortedWith(compareBy({ if (alongX) it.value.x else it.value.y }, { it.key }))
+    val first = order.first().value; val last = order.last().value
+    val n = order.size - 1
+    val places = order.mapIndexed { i, e ->
+        e.key to MetroPoint(first.x + (last.x - first.x) * i / n, first.y + (last.y - first.y) * i / n)
+    }.toMap()
+    return withPlaces(frozen, places)
+}

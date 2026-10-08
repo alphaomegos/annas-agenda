@@ -122,6 +122,9 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_align_row">In a row</string>
+    <string name="metro_align_column">In a column</string>
+    <string name="metro_align_spaced">Equal steps</string>
     <string name="metro_line_badges">Line numbers at the ends</string>
     <string name="metro_tick_stations">Stations as ticks (interchanges stay rings)</string>
     <string name="metro_fit">Fit to the screen</string>

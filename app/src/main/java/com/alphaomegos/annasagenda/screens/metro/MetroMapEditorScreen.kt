@@ -59,6 +59,8 @@ import com.alphaomegos.annasagenda.support.metroStationLabelCycled
 import com.alphaomegos.annasagenda.support.metroSelectionPlaced
 import com.alphaomegos.annasagenda.support.metroSelectionToggled
 import com.alphaomegos.annasagenda.support.metroSelectionWholeLines
+import com.alphaomegos.annasagenda.support.metroSelectionLinedUp
+import com.alphaomegos.annasagenda.support.metroSelectionSpaced
 import androidx.compose.foundation.horizontalScroll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -171,6 +173,24 @@ fun MetroMapEditorScreen(
                         TextButton(onClick = { selectedIds = longArrayOf() }, enabled = selection.isNotEmpty()) {
                             Text(stringResource(R.string.metro_select_none))
                         }
+                    }
+                    // Lining the selection up (08.10): a row, a column, equal steps.
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+                    ) {
+                        val grid = if (scheme.mapGrid) METRO_GRID_STEP else null
+                        TextButton(
+                            onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = true, grid = grid) } },
+                            enabled = selection.size >= 2,
+                        ) { Text(stringResource(R.string.metro_align_row)) }
+                        TextButton(
+                            onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = false, grid = grid) } },
+                            enabled = selection.size >= 2,
+                        ) { Text(stringResource(R.string.metro_align_column)) }
+                        TextButton(
+                            onClick = { vm.editMetroScheme(schemeId) { metroSelectionSpaced(it, selection) } },
+                            enabled = selection.size >= 3,
+                        ) { Text(stringResource(R.string.metro_align_spaced)) }
                     }
                 }
                 if (bending || naming || selecting) {
