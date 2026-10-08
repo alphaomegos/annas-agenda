@@ -55,6 +55,7 @@ import com.alphaomegos.annasagenda.support.metroBendPointMoved
 import com.alphaomegos.annasagenda.support.metroBendPointRemoved
 import com.alphaomegos.annasagenda.support.metroElbowCycled
 import com.alphaomegos.annasagenda.support.metroStationPlacedAlone
+import com.alphaomegos.annasagenda.support.metroStationLabelCycled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -88,6 +89,8 @@ fun MetroMapEditorScreen(
     // Tools of the editor (08.10), not settings: bending track, and moving an
     // interchange whole or one station of it.
     var bending by rememberSaveable { mutableStateOf(false) }
+    // The names tool (08.10): a tap on a station moves its name round it.
+    var naming by rememberSaveable { mutableStateOf(false) }
     var moveWhole by rememberSaveable { mutableStateOf(true) }
     // The look's panel open (08.10).
     var looking by rememberSaveable { mutableStateOf(false) }
@@ -125,16 +128,23 @@ fun MetroMapEditorScreen(
             if (scheme != null) {
                 // The tools stay at hand (08.10); how the picture looks is in "Look".
                 Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    MetroMapTick(stringResource(R.string.metro_bend_tracks), bending, Modifier.weight(1f)) { bending = it }
+                    MetroMapTick(stringResource(R.string.metro_bend_tracks), bending, Modifier.weight(1f)) {
+                        bending = it
+                        if (it) naming = false
+                    }
+                    MetroMapTick(stringResource(R.string.metro_names_tool), naming, Modifier.weight(1f)) {
+                        naming = it
+                        if (it) bending = false
+                    }
                     if (scheme.transfersTogether) {
                         MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, Modifier.weight(1f)) { moveWhole = it }
                     } else {
                         Spacer(Modifier.weight(1f))
                     }
                 }
-                if (bending) {
+                if (bending || naming) {
                     Text(
-                        stringResource(R.string.metro_bend_hint),
+                        stringResource(if (naming) R.string.metro_names_hint else R.string.metro_bend_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
@@ -149,11 +159,13 @@ fun MetroMapEditorScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     // A whole interchange moves when kept together and so chosen; else
                     // the station alone, glued to its interchange if rings are glued.
-                    onMoveStation = { id, x, y ->
+                    onMoveStation = if (naming) null else { id, x, y ->
                         vm.editMetroScheme(schemeId) {
                             if (it.transfersTogether && moveWhole) metroStationPlaced(it, id, x, y) else metroStationPlacedAlone(it, id, x, y)
                         }
                     },
+                    onTapStation = { id -> if (naming) vm.editMetroScheme(schemeId) { metroStationLabelCycled(it, id) } },
+                    namingMode = naming,
                     gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
                     moveAlone = !(scheme.transfersTogether && moveWhole),
                     bendMode = bending,

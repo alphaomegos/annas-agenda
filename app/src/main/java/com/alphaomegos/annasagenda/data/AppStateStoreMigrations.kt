@@ -60,6 +60,7 @@ internal fun migrateAppStateRawJson(
             8 -> migrateAppState8To9(cur)
             9 -> migrateAppState9To10(cur)
             10 -> migrateAppState10To11(cur)
+            11 -> migrateAppState11To12(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -198,6 +199,17 @@ private fun migrateAppState9To10(obj: JsonObject): JsonObject {
 private fun migrateAppState10To11(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(11)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp. Version 12 (08.10) adds where each station's name is written on
+ * the metro picture — set by hand, data nothing else holds. None is what
+ * every payload before it means: chosen by itself.
+ */
+private fun migrateAppState11To12(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(12)
     return JsonObject(m)
 }
 

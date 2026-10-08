@@ -275,7 +275,7 @@ class AppStateWholeRoundTripTest {
                 stations = listOf(
                     MetroStation(10L, 1L, "Красные ворота", mapX = 0.25f, mapY = 0.5f),
                     MetroStation(11L, 1L, "Чистые пруды", closure = MetroClosure(expectedOpening = day.plusDays(30))),
-                    MetroStation(12L, 1L, "Лубянка"),
+                    MetroStation(12L, 1L, "Лубянка", labelSide = 6),
                     MetroStation(13L, 1L, "Охотный ряд"),
                     MetroStation(20L, 5L, "Комсомольская"),
                     MetroStation(21L, 5L, "Курская"),
@@ -433,7 +433,7 @@ class AppStateWholeRoundTripTest {
             "metroSchemes", "metroSelection", "trunk", "branches", "fromStationId", "exitId", "toStationId",
             "closed", "expectedOpeningEpochDay",
             "travelCountries", "travelView", "countryId", "trips", "month", "cities", "continent",
-            "bends", "glue", "labelsOncePerInterchange",
+            "bends", "glue", "labelsOncePerInterchange", "labelSide",
             "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes",
             "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
         ).forEach { key ->

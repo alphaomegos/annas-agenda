@@ -611,6 +611,18 @@ class AppStateStoreMigrationTest {
         assertEquals(false, scheme.labelsOncePerInterchange)
     }
 
+    /** Schema 12 (08.10): a payload from before names placed by hand has them all chosen by themselves. */
+    @Test
+    fun version11_readsWithNamesPlacedByThemselves() {
+        val state = decoded(
+            """{ "v": 11, "metroSchemes": [ { "id": 1, "city": "Москва",
+                "stations": [ { "id": 5, "lineId": 1, "name": "A" }, { "id": 6, "lineId": 1, "name": "B", "labelSide": 42 } ] } ] }""",
+        )
+
+        val stations = state.metroSchemes.single().stations
+        assertTrue(stations.all { it.labelSide == null })
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

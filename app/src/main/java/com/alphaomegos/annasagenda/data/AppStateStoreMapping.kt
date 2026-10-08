@@ -679,6 +679,7 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
             it.id, it.lineId, it.name, it.mapX, it.mapY,
             closed = it.closure != null,
             expectedOpeningEpochDay = it.closure?.expectedOpening?.toEpochDay(),
+            labelSide = it.labelSide,
         )
     },
     transfers = transfers.map {
@@ -749,7 +750,11 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
             )
         },
         stations = stations.map {
-            MetroStation(it.id, it.lineId, it.name, it.mapX, it.mapY, metroClosureFromDto(it.closed, it.expectedOpeningEpochDay))
+            MetroStation(
+                it.id, it.lineId, it.name, it.mapX, it.mapY, metroClosureFromDto(it.closed, it.expectedOpeningEpochDay),
+                // A side the picture does not know is chosen by itself.
+                labelSide = it.labelSide?.takeIf { s -> s in 0..METRO_LABEL_HIDDEN },
+            )
         },
         transfers = transfers.map {
             MetroTransfer(

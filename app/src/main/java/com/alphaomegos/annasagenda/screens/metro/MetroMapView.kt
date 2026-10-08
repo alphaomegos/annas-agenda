@@ -42,6 +42,10 @@ import com.alphaomegos.annasagenda.support.metroSnapped
 import com.alphaomegos.annasagenda.support.metroStationAt
 import com.alphaomegos.annasagenda.support.metroStationsMovingWith
 import com.alphaomegos.annasagenda.support.METRO_CASING
+import com.alphaomegos.annasagenda.support.METRO_LABEL_HIDDEN
+import com.alphaomegos.annasagenda.support.METRO_LABEL_SIDES
+import com.alphaomegos.annasagenda.support.metroAutoLabelSide
+import com.alphaomegos.annasagenda.support.metroLabelTopLeft
 import com.alphaomegos.annasagenda.support.METRO_STATION_RADIUS
 import com.alphaomegos.annasagenda.support.MetroBendHit
 import com.alphaomegos.annasagenda.support.MetroTrack
@@ -80,6 +84,9 @@ import kotlin.math.floor
  * only the names [metroLabelledStations] picks are written. With the
  * scheme's casing each line is edged in the background colour; with its
  * capsules the links between interchange stations are drawn as passages.
+ * Each name goes on its station's side (support/MetroLabels.kt); with
+ * [namingMode] every name shows, the hidden ones faintly, for the editor's
+ * names tool.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -102,6 +109,7 @@ internal fun MetroMapView(
     moveAlone: Boolean = false,
     bendMode: Boolean = false,
     onBend: (MetroBendAction) -> Unit = {},
+    namingMode: Boolean = false,
 ) {
     var zoom by rememberSaveable { mutableStateOf(1f) }
     var panX by rememberSaveable { mutableStateOf(0f) }
@@ -133,6 +141,13 @@ internal fun MetroMapView(
     val lines = remember(scheme.lines) { scheme.lines.associateBy { it.id } }
     val lineOf = remember(scheme.stations) { scheme.stations.associate { it.id to it.lineId } }
     val labelled = remember(scheme, layout) { metroLabelledStations(scheme, layout) }
+    // Each name's side (08.10): set by hand, or chosen away from its track; hidden ones apart.
+    val labelSides = remember(scheme, layout) {
+        scheme.stations.associate { st ->
+            st.id to (st.labelSide?.takeIf { it in 0 until METRO_LABEL_SIDES } ?: metroAutoLabelSide(scheme, layout, st.id))
+        }
+    }
+    val hiddenLabels = remember(scheme.stations) { scheme.stations.filter { it.labelSide == METRO_LABEL_HIDDEN }.map { it.id }.toSet() }
     val edges = remember(scheme.lines) {
         scheme.lines.flatMap { line ->
             metroSidesOf(line).flatMap { (s, sides) -> sides.values.filter { s < it }.map { Triple(line.id, s, it) } }
@@ -392,13 +407,16 @@ internal fun MetroMapView(
                 drawCircle(if (st.closure != null) transferColor else ringFill, radius = radius, center = p, alpha = alpha)
                 drawCircle(color, radius = radius, center = p, style = Stroke(radius * 0.45f), alpha = alpha)
                 if (st.id in marked) drawCircle(markColor, radius = radius * 1.8f, center = p, style = Stroke(2.5f.dp.toPx()))
-                if ((st.id in labelled && (showLabels || (fade && lit))) || st.id in marked || st.id == dragId) {
+                val written = st.id in labelled && st.id !in hiddenLabels
+                if ((written && (showLabels || (fade && lit))) || st.id in marked || st.id == dragId || namingMode) {
                     val label = labels[st.id] ?: return@forEach
-                    drawText(
-                        label,
-                        topLeft = Offset(p.x + radius + 3.dp.toPx(), p.y - label.size.height / 2f),
-                        alpha = alpha,
+                    // With the names tool every name shows; one not written on the picture, faintly.
+                    val faint = namingMode && !written
+                    val corner = metroLabelTopLeft(
+                        p.x, p.y, radius + 3.dp.toPx(), labelSides[st.id] ?: 0,
+                        label.size.width.toFloat(), label.size.height.toFloat(),
                     )
+                    drawText(label, topLeft = Offset(corner.x, corner.y), alpha = if (faint) alpha * 0.35f else alpha)
                 }
             }
         }

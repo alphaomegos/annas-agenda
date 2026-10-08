@@ -252,6 +252,8 @@ internal data class MetroStationDto(
     val mapY: Float? = null,
     val closed: Boolean = false,
     val expectedOpeningEpochDay: Long? = null,
+    // Schema 12 (08.10): where the name is written; null is by itself.
+    val labelSide: Int? = null,
 )
 
 @Serializable

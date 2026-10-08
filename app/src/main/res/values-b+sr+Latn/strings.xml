@@ -843,6 +843,8 @@
     <string name="metro_snap_angles">Uglovi od 45°</string>
     <string name="metro_look">Izgled</string>
     <string name="metro_transfer_links">Veze presedanja</string>
+    <string name="metro_names_tool">Nazivi</string>
+    <string name="metro_names_hint">Dodirnite stanicu — naziv obilazi oko nje: desno, dole desno, dole… pa skriven, pa opet sam.</string>
     <string name="metro_transfer_capsules">Veze kao prolazi (kao u Moskvi)</string>
     <string name="metro_line_casing">Obrub linija (čista ukrštanja)</string>
     <string name="metro_labels_when">Nazivi stanica</string>

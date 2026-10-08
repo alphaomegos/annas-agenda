@@ -140,6 +140,10 @@ data class MetroStation(
     val mapX: Float? = null,
     val mapY: Float? = null,
     val closure: MetroClosure? = null,
+    // Where the name is written on the picture (08.10): one of eight sides
+    // (support/MetroLabels.kt), hidden, or null — chosen by itself. Data the
+    // user set: schema 12.
+    val labelSide: Int? = null,
 )
 
 /** A walk between two stations, either way. [minutes] null means the scheme's default. */

@@ -909,6 +909,8 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_names_tool">Подписи</string>
+    <string name="metro_names_hint">Нажмите на станцию — подпись обходит её по кругу: справа, справа снизу, снизу… потом скрыта, потом снова сама.</string>
     <string name="metro_transfer_capsules">Перемычки-капсулы (как в Москве)</string>
     <string name="metro_line_casing">Обводка линий (чистые пересечения)</string>
     <string name="metro_labels_when">Названия станций</string>
