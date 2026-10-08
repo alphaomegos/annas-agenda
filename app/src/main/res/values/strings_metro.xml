@@ -122,6 +122,10 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_nudge_left">←</string>
+    <string name="metro_nudge_up">↑</string>
+    <string name="metro_nudge_down">↓</string>
+    <string name="metro_nudge_right">→</string>
     <string name="metro_save_picture">Save the picture</string>
     <string name="metro_picture_saved">Picture saved</string>
     <string name="metro_picture_failed">Could not save the picture</string>

@@ -11,6 +11,9 @@ import com.alphaomegos.annasagenda.model.MetroScheme
  * station left behind keeps its points.
  */
 
+/** How far an arrow moves the selection without the grid (08.10): a tenth of a step. */
+const val METRO_NUDGE_STEP = 0.1f
+
 /** [ids] with [stationId] added, or taken away if it was there. */
 fun metroSelectionToggled(ids: Set<Long>, stationId: Long): Set<Long> =
     if (stationId in ids) ids - stationId else ids + stationId

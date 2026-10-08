@@ -74,6 +74,8 @@ import com.alphaomegos.annasagenda.support.metroSelectionLinedUp
 import com.alphaomegos.annasagenda.support.metroSelectionSpaced
 import com.alphaomegos.annasagenda.support.metroSelectionTurned
 import com.alphaomegos.annasagenda.support.MetroTurn
+import com.alphaomegos.annasagenda.support.METRO_NUDGE_STEP
+import com.alphaomegos.annasagenda.support.metroStationsShifted
 import androidx.compose.foundation.horizontalScroll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -242,6 +244,20 @@ fun MetroMapEditorScreen(
                             onClick = { vm.editMetroScheme(schemeId) { metroSelectionSpaced(it, selection) } },
                             enabled = selection.size >= 3,
                         ) { Text(stringResource(R.string.metro_align_spaced)) }
+                        // A nudge by one grid step, or a tenth of a step without the grid (08.10):
+                        // a finger is too thick for the last bit.
+                        val nudge = if (scheme.mapGrid) METRO_GRID_STEP else METRO_NUDGE_STEP
+                        listOf(
+                            Triple(-nudge, 0f, R.string.metro_nudge_left),
+                            Triple(0f, -nudge, R.string.metro_nudge_up),
+                            Triple(0f, nudge, R.string.metro_nudge_down),
+                            Triple(nudge, 0f, R.string.metro_nudge_right),
+                        ).forEach { (dx, dy, words) ->
+                            TextButton(
+                                onClick = { vm.editMetroScheme(schemeId) { metroStationsShifted(it, selection, dx, dy) } },
+                                enabled = selection.isNotEmpty(),
+                            ) { Text(stringResource(words)) }
+                        }
                         // Turned or mirrored about its middle (08.10).
                         listOf(
                             MetroTurn.CLOCKWISE_45 to R.string.metro_turn_45,
