@@ -104,7 +104,8 @@ import androidx.compose.ui.graphics.luminance
  * names tool. A drag of a station in [group] moves the whole group, with
  * the track bent between its stations (the editor's selection). A new
  * [fitKey] fits the whole picture to the view again. With [capture] the
- * picture is recorded into that layer too, to be saved as an image.
+ * picture is recorded into that layer too, to be saved as an image. With
+ * [focusLine] every other line fades.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -131,6 +132,7 @@ internal fun MetroMapView(
     group: Set<Long> = emptySet(),
     fitKey: Int = 0,
     capture: GraphicsLayer? = null,
+    focusLine: Long? = null,
 ) {
     var zoom by rememberSaveable { mutableStateOf(1f) }
     var panX by rememberSaveable { mutableStateOf(0f) }
@@ -403,7 +405,8 @@ internal fun MetroMapView(
             fun drawLinks() = scheme.transfers.forEach { t ->
                 val a = at(t.aStationId) ?: return@forEach
                 val c = at(t.bStationId) ?: return@forEach
-                val lit = !fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs
+                val lit = (!fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs) &&
+                    (focusLine == null || lineOf[t.aStationId] == focusLine || lineOf[t.bStationId] == focusLine)
                 val alpha = if (lit) 1f else 0.25f
                 if (capsules) {
                     // A passage as on the Moscow map (08.10): a band as wide as the
@@ -464,7 +467,7 @@ internal fun MetroMapView(
                 val color = Color(lines[lineId]?.color ?: 0xFF888888)
                 val drawn = ofLine.mapNotNull { (_, s, t) ->
                     val pts = trackPoints(s, t) ?: return@mapNotNull null
-                    val lit = !fade || (s to t) in routePairs
+                    val lit = (!fade || (s to t) in routePairs) && (focusLine == null || lineId == focusLine)
                     Triple(pts, lit, if (fade && lit) lineWidth * 1.5f else lineWidth)
                 }
                 if (scheme.lineCasing) drawn.forEach { (pts, lit, width) ->
@@ -484,7 +487,8 @@ internal fun MetroMapView(
             scheme.stations.forEach { st ->
                 val p = at(st.id) ?: return@forEach
                 val color = Color(lines[lineOf[st.id]]?.color ?: 0xFF888888)
-                val lit = !fade || st.id in routeStations
+                // One line in focus (08.10): the rest fade, as off a route.
+                val lit = (!fade || st.id in routeStations) && (focusLine == null || lineOf[st.id] == focusLine)
                 val alpha = if (lit) 1f else 0.3f
                 // Ticks (08.10): a station that is no interchange is a bar off its line, a
                 // terminus a bar across its end; a closed one grey. Interchanges stay rings.

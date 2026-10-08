@@ -35,6 +35,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -152,6 +157,8 @@ fun MetroMapEditorScreen(
     var looking by rememberSaveable { mutableStateOf(false) }
     // Bumped by "Fit to the screen" (08.10).
     var fitKey by rememberSaveable { mutableStateOf(0) }
+    // One line in focus (08.10), the rest faded; -1 is none.
+    var focusLineId by rememberSaveable { mutableStateOf(-1L) }
 
     Scaffold(
         topBar = {
@@ -169,6 +176,7 @@ fun MetroMapEditorScreen(
                     // The whole picture, without the tools' marks, then where to save it.
                     IconButton(onClick = {
                         tool = TOOL_MOVE
+                        focusLineId = -1L
                         fitKey++
                         exporting = true
                         savePicture.launch("${scheme?.city ?: "metro"}.png")
@@ -208,6 +216,22 @@ fun MetroMapEditorScreen(
                         TOOL_SELECT to R.string.metro_tool_select,
                     ).forEach { (t, words) ->
                         FilterChip(selected = tool == t, onClick = { tool = t }, label = { Text(stringResource(words)) })
+                    }
+                }
+                // The lines as chips (08.10): a tap brings one forward, another tap lets it go.
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    scheme.lines.forEach { line ->
+                        FilterChip(
+                            selected = focusLineId == line.id,
+                            onClick = { focusLineId = if (focusLineId == line.id) -1L else line.id },
+                            label = { Text(line.label.ifBlank { line.name }) },
+                            leadingIcon = {
+                                Box(Modifier.size(12.dp).background(Color(line.color), CircleShape))
+                            },
+                        )
                     }
                 }
                 if (tool == TOOL_MOVE && scheme.transfersTogether) {
@@ -314,6 +338,7 @@ fun MetroMapEditorScreen(
                     group = if (selecting) selection else emptySet(),
                     fitKey = fitKey,
                     capture = pictureLayer,
+                    focusLine = focusLineId.takeIf { id -> id >= 0 && scheme.lines.any { it.id == id } },
                     gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
                     moveAlone = !(scheme.transfersTogether && moveWhole),
                     bendMode = bending,
