@@ -42,6 +42,8 @@ import com.alphaomegos.annasagenda.support.metroSnapped
 import com.alphaomegos.annasagenda.support.metroStationAt
 import com.alphaomegos.annasagenda.support.metroStationsMovingWith
 import com.alphaomegos.annasagenda.support.METRO_CASING
+import com.alphaomegos.annasagenda.support.METRO_CORNER_RADIUS
+import com.alphaomegos.annasagenda.support.metroRoundedCorners
 import com.alphaomegos.annasagenda.support.METRO_LABEL_HIDDEN
 import com.alphaomegos.annasagenda.support.METRO_LABEL_SIDES
 import com.alphaomegos.annasagenda.support.metroAutoLabelSide
@@ -367,10 +369,23 @@ internal fun MetroMapView(
                 if (pts.size == 2) {
                     drawLine(paint, pts[0], pts[1], strokeWidth = width, cap = StrokeCap.Round)
                 } else {
-                    // Track drawn through its bends (08.10).
+                    // Track drawn through its bends (08.10), the corners rounded if so chosen.
                     val path = Path().apply {
                         moveTo(pts[0].x, pts[0].y)
-                        pts.drop(1).forEach { lineTo(it.x, it.y) }
+                        if (scheme.roundCorners) {
+                            metroRoundedCorners(pts.map { MetroPoint(it.x, it.y) }, METRO_CORNER_RADIUS * k).forEach { c ->
+                                lineTo(c.from.x, c.from.y)
+                                // The quadratic curve round the corner, as a cubic: 2/3 of the way to it from each end.
+                                cubicTo(
+                                    c.from.x + (c.corner.x - c.from.x) * 2 / 3, c.from.y + (c.corner.y - c.from.y) * 2 / 3,
+                                    c.to.x + (c.corner.x - c.to.x) * 2 / 3, c.to.y + (c.corner.y - c.to.y) * 2 / 3,
+                                    c.to.x, c.to.y,
+                                )
+                            }
+                            lineTo(pts.last().x, pts.last().y)
+                        } else {
+                            pts.drop(1).forEach { lineTo(it.x, it.y) }
+                        }
                     }
                     drawPath(path, paint, style = Stroke(width = width, cap = StrokeCap.Round, join = StrokeJoin.Round))
                 }

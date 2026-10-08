@@ -209,6 +209,7 @@ internal data class MetroSchemeDto(
     val showTransferLinks: Boolean = true,
     val lineCasing: Boolean = false,
     val transferCapsules: Boolean = false,
+    val roundCorners: Boolean = false,
     // Schema 11 (08.10): bent track.
     val bends: List<MetroBendDto> = emptyList(),
 )

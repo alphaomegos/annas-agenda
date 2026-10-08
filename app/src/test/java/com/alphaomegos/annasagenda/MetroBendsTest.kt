@@ -117,4 +117,18 @@ class MetroBendsTest {
         val m = metroStationPlacedAlone(big, 21, 2.9f, 1.05f).stations.first { it.id == 21L }
         assertEquals(2.4f + 2 * METRO_GLUE_GAP, m.mapX!!, 1e-4f)
     }
+
+    @Test
+    fun roundCorners_cutBackAlongBothSides_neverPastHalfOfEither() {
+        val pts = listOf(MetroPoint(0f, 0f), MetroPoint(2f, 0f), MetroPoint(2f, 0.4f), MetroPoint(2f, 3f))
+        val corners = metroRoundedCorners(pts, 0.35f)
+        // The middle point of the straight run down is no corner.
+        assertEquals(1, corners.size)
+        val c = corners.single()
+        assertEquals(MetroPoint(2f, 0f), c.corner)
+        assertEquals(1.8f, c.from.x, 1e-4f); assertEquals(0f, c.from.y, 1e-4f)
+        // Only 0.4 down to the next point: cut back by half of it.
+        assertEquals(2f, c.to.x, 1e-4f); assertEquals(0.2f, c.to.y, 1e-4f)
+        assertTrue(metroRoundedCorners(pts.take(2), 0.35f).isEmpty())
+    }
 }

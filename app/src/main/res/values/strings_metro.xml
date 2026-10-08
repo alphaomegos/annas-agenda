@@ -122,6 +122,7 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_round_corners">Round corners of bent track</string>
     <string name="metro_names_tool">Names</string>
     <string name="metro_names_hint">Tap a station: its name goes round it — right, down-right, down… then hidden, then by itself again.</string>
     <string name="metro_transfer_capsules">Links as passages (as in Moscow)</string>

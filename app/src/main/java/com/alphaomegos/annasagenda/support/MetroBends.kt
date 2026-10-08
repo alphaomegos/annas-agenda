@@ -124,6 +124,42 @@ fun metroBendPointRemoved(scheme: MetroScheme, hit: MetroBendHit): MetroScheme {
     return metroSchemeWithBend(scheme, hit.track, pts)
 }
 
+/* ---------------- round corners ---------------- */
+
+/** How far back from a corner the rounding starts, in the picture's units (08.10). */
+const val METRO_CORNER_RADIUS = 0.35f
+
+/** A corner rounded: the line runs straight to [from], curves round [corner] to [to]. */
+data class MetroCorner(val from: MetroPoint, val corner: MetroPoint, val to: MetroPoint)
+
+/**
+ * The corners of a drawn track [points] rounded by [radius] (08.10): each
+ * inner point cut back along both its sides, never past half of either, so
+ * two corners close together still meet smoothly. A corner where the track
+ * goes straight on, or doubles back on itself, is left out.
+ */
+fun metroRoundedCorners(points: List<MetroPoint>, radius: Float): List<MetroCorner> {
+    if (points.size < 3 || radius <= 0f) return emptyList()
+    val out = ArrayList<MetroCorner>()
+    for (i in 1 until points.size - 1) {
+        val p = points[i - 1]; val c = points[i]; val n = points[i + 1]
+        val inX = c.x - p.x; val inY = c.y - p.y
+        val outX = n.x - c.x; val outY = n.y - c.y
+        val inLen = kotlin.math.sqrt(inX * inX + inY * inY)
+        val outLen = kotlin.math.sqrt(outX * outX + outY * outY)
+        if (inLen == 0f || outLen == 0f) continue
+        val cross = inX * outY - inY * outX
+        if (kotlin.math.abs(cross) < 1e-6f * inLen * outLen) continue
+        val r = minOf(radius, inLen / 2, outLen / 2)
+        out += MetroCorner(
+            MetroPoint(c.x - inX / inLen * r, c.y - inY / inLen * r),
+            c,
+            MetroPoint(c.x + outX / outLen * r, c.y + outY / outLen * r),
+        )
+    }
+    return out
+}
+
 /* ---------------- glue ---------------- */
 
 /**
