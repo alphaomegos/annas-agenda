@@ -724,6 +724,7 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
     lineCasing = lineCasing,
     transferCapsules = transferCapsules,
     roundCorners = roundCorners,
+    tickStations = tickStations,
     bends = bends.map { b -> MetroBendDto(b.aStationId, b.bStationId, b.points.map { it.x }, b.points.map { it.y }) },
 )
 
@@ -789,6 +790,7 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
         lineCasing = lineCasing,
         transferCapsules = transferCapsules,
         roundCorners = roundCorners,
+        tickStations = tickStations,
         // Glue at 8 or 12 points; anything else is off.
         glue = glue.takeIf { it == 8 || it == 12 } ?: 0,
         // A bend's points come in pairs; one whose x and y do not pair up, or are not numbers, is dropped.

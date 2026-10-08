@@ -843,6 +843,7 @@
     <string name="metro_snap_angles">Uglovi od 45°</string>
     <string name="metro_look">Izgled</string>
     <string name="metro_transfer_links">Veze presedanja</string>
+    <string name="metro_tick_stations">Stanice kao crtice (presedanja ostaju krugovi)</string>
     <string name="metro_fit">Uklopi u ekran</string>
     <string name="metro_tool_move">Pomeranje</string>
     <string name="metro_tool_select">Izbor</string>

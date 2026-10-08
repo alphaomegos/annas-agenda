@@ -59,6 +59,8 @@ data class MetroScheme(
     val transferCapsules: Boolean = false,
     // Corners of bent track drawn round (08.10). A setting.
     val roundCorners: Boolean = false,
+    // Stations that are no interchange drawn as ticks off the line (08.10). A setting.
+    val tickStations: Boolean = false,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),

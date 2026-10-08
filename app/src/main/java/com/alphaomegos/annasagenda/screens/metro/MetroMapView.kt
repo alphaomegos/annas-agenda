@@ -62,6 +62,11 @@ import com.alphaomegos.annasagenda.support.metroOctilinearSnap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import kotlin.math.floor
+import kotlin.math.cos
+import kotlin.math.sin
+import com.alphaomegos.annasagenda.support.metroInterchangeStations
+import com.alphaomegos.annasagenda.support.metroTermini
+import com.alphaomegos.annasagenda.support.metroTickAngle
 
 /**
  * The picture of the metro map (05.10): lines in their colours, stations as
@@ -164,6 +169,13 @@ internal fun MetroMapView(
         scheme.stations.associate { st ->
             st.id to (st.labelSide?.takeIf { it in 0 until METRO_LABEL_SIDES } ?: metroAutoLabelSide(scheme, layout, st.id))
         }
+    }
+    // Ticks (08.10): which stations stay rings, which are ends, and which way each tick points.
+    val interchanges = remember(scheme.transfers) { metroInterchangeStations(scheme) }
+    val termini = remember(scheme.lines) { metroTermini(scheme) }
+    val tickAngles = remember(scheme, layout, labelSides) {
+        if (!scheme.tickStations) emptyMap()
+        else scheme.stations.mapNotNull { st -> metroTickAngle(scheme, layout, st.id, labelSides[st.id] ?: 0)?.let { st.id to it } }.toMap()
     }
     val hiddenLabels = remember(scheme.stations) { scheme.stations.filter { it.labelSide == METRO_LABEL_HIDDEN }.map { it.id }.toSet() }
     val edges = remember(scheme.lines) {
@@ -448,8 +460,19 @@ internal fun MetroMapView(
                 val color = Color(lines[lineOf[st.id]]?.color ?: 0xFF888888)
                 val lit = !fade || st.id in routeStations
                 val alpha = if (lit) 1f else 0.3f
-                drawCircle(if (st.closure != null) transferColor else ringFill, radius = radius, center = p, alpha = alpha)
-                drawCircle(color, radius = radius, center = p, style = Stroke(radius * 0.45f), alpha = alpha)
+                // Ticks (08.10): a station that is no interchange is a bar off its line, a
+                // terminus a bar across its end; a closed one grey. Interchanges stay rings.
+                val tick = if (scheme.tickStations && st.id !in interchanges) tickAngles[st.id] else null
+                val tickLen = lineWidth * 1.1f
+                if (tick != null) {
+                    val u = Offset(cos(tick).toFloat(), sin(tick).toFloat()) * tickLen
+                    val paint = if (st.closure != null) transferColor else color
+                    val from = if (st.id in termini) p - u else p
+                    drawLine(paint, from, p + u, strokeWidth = lineWidth * 0.75f, alpha = alpha)
+                } else {
+                    drawCircle(if (st.closure != null) transferColor else ringFill, radius = radius, center = p, alpha = alpha)
+                    drawCircle(color, radius = radius, center = p, style = Stroke(radius * 0.45f), alpha = alpha)
+                }
                 if (st.id in marked) drawCircle(markColor, radius = radius * 1.8f, center = p, style = Stroke(2.5f.dp.toPx()))
                 val written = st.id in labelled && st.id !in hiddenLabels
                 if ((written && (showLabels || (fade && lit))) || st.id in marked || st.id == dragId || namingMode) {
@@ -457,7 +480,7 @@ internal fun MetroMapView(
                     // With the names tool every name shows; one not written on the picture, faintly.
                     val faint = namingMode && !written
                     val corner = metroLabelTopLeft(
-                        p.x, p.y, radius + 3.dp.toPx(), labelSides[st.id] ?: 0,
+                        p.x, p.y, (if (tick != null) tickLen else radius) + 3.dp.toPx(), labelSides[st.id] ?: 0,
                         label.size.width.toFloat(), label.size.height.toFloat(),
                     )
                     drawText(label, topLeft = Offset(corner.x, corner.y), alpha = if (faint) alpha * 0.35f else alpha)

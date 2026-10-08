@@ -293,6 +293,9 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                         onEdit { it.copy(transferCapsules = on) }
                     }
                 }
+                MetroMapTick(stringResource(R.string.metro_tick_stations), scheme.tickStations, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(tickStations = on) }
+                }
                 MetroMapTick(stringResource(R.string.metro_round_corners), scheme.roundCorners, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(roundCorners = on) }
                 }
