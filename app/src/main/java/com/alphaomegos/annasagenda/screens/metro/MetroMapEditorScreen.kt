@@ -13,7 +13,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -56,6 +55,10 @@ import com.alphaomegos.annasagenda.support.metroBendPointRemoved
 import com.alphaomegos.annasagenda.support.metroElbowCycled
 import com.alphaomegos.annasagenda.support.metroStationPlacedAlone
 import com.alphaomegos.annasagenda.support.metroStationLabelCycled
+import com.alphaomegos.annasagenda.support.metroSelectionPlaced
+import com.alphaomegos.annasagenda.support.metroSelectionToggled
+import com.alphaomegos.annasagenda.support.metroSelectionWholeLines
+import androidx.compose.foundation.horizontalScroll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -88,9 +91,15 @@ fun MetroMapEditorScreen(
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     // Tools of the editor (08.10), not settings: bending track, and moving an
     // interchange whole or one station of it.
-    var bending by rememberSaveable { mutableStateOf(false) }
-    // The names tool (08.10): a tap on a station moves its name round it.
-    var naming by rememberSaveable { mutableStateOf(false) }
+    // One tool at a time (08.10): move stations, bend track, place names
+    // (a tap moves a station's name round it), or select stations to move
+    // together (a tap puts one in or out, a drag of one moves them all).
+    var tool by rememberSaveable { mutableStateOf(TOOL_MOVE) }
+    var selectedIds by rememberSaveable { mutableStateOf(longArrayOf()) }
+    val selection = selectedIds.toSet()
+    val bending = tool == TOOL_BEND
+    val naming = tool == TOOL_NAMES
+    val selecting = tool == TOOL_SELECT
     var moveWhole by rememberSaveable { mutableStateOf(true) }
     // The look's panel open (08.10).
     var looking by rememberSaveable { mutableStateOf(false) }
@@ -127,24 +136,46 @@ fun MetroMapEditorScreen(
             }
             if (scheme != null) {
                 // The tools stay at hand (08.10); how the picture looks is in "Look".
-                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    MetroMapTick(stringResource(R.string.metro_bend_tracks), bending, Modifier.weight(1f)) {
-                        bending = it
-                        if (it) naming = false
-                    }
-                    MetroMapTick(stringResource(R.string.metro_names_tool), naming, Modifier.weight(1f)) {
-                        naming = it
-                        if (it) bending = false
-                    }
-                    if (scheme.transfersTogether) {
-                        MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, Modifier.weight(1f)) { moveWhole = it }
-                    } else {
-                        Spacer(Modifier.weight(1f))
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    listOf(
+                        TOOL_MOVE to R.string.metro_tool_move,
+                        TOOL_BEND to R.string.metro_bend_tracks,
+                        TOOL_NAMES to R.string.metro_names_tool,
+                        TOOL_SELECT to R.string.metro_tool_select,
+                    ).forEach { (t, words) ->
+                        FilterChip(selected = tool == t, onClick = { tool = t }, label = { Text(stringResource(words)) })
                     }
                 }
-                if (bending || naming) {
+                if (tool == TOOL_MOVE && scheme.transfersTogether) {
+                    MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, Modifier.fillMaxWidth().padding(horizontal = 4.dp)) { moveWhole = it }
+                }
+                if (selecting) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.metro_selected_count, selection.size),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = { selectedIds = metroSelectionWholeLines(scheme, selection).toLongArray() }, enabled = selection.isNotEmpty()) {
+                            Text(stringResource(R.string.metro_select_lines))
+                        }
+                        TextButton(onClick = { selectedIds = longArrayOf() }, enabled = selection.isNotEmpty()) {
+                            Text(stringResource(R.string.metro_select_none))
+                        }
+                    }
+                }
+                if (bending || naming || selecting) {
                     Text(
-                        stringResource(if (naming) R.string.metro_names_hint else R.string.metro_bend_hint),
+                        stringResource(
+                            when {
+                                naming -> R.string.metro_names_hint
+                                selecting -> R.string.metro_select_hint
+                                else -> R.string.metro_bend_hint
+                            },
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
@@ -161,11 +192,22 @@ fun MetroMapEditorScreen(
                     // the station alone, glued to its interchange if rings are glued.
                     onMoveStation = if (naming) null else { id, x, y ->
                         vm.editMetroScheme(schemeId) {
-                            if (it.transfersTogether && moveWhole) metroStationPlaced(it, id, x, y) else metroStationPlacedAlone(it, id, x, y)
+                            when {
+                                selecting && id in selection -> metroSelectionPlaced(it, selection, id, x, y)
+                                it.transfersTogether && moveWhole -> metroStationPlaced(it, id, x, y)
+                                else -> metroStationPlacedAlone(it, id, x, y)
+                            }
                         }
                     },
-                    onTapStation = { id -> if (naming) vm.editMetroScheme(schemeId) { metroStationLabelCycled(it, id) } },
+                    onTapStation = { id ->
+                        when {
+                            naming -> vm.editMetroScheme(schemeId) { metroStationLabelCycled(it, id) }
+                            selecting -> { selectedIds = metroSelectionToggled(selection, id).toLongArray() }
+                        }
+                    },
                     namingMode = naming,
+                    marked = if (selecting) selection else emptySet(),
+                    group = if (selecting) selection else emptySet(),
                     gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
                     moveAlone = !(scheme.transfersTogether && moveWhole),
                     bendMode = bending,
@@ -315,3 +357,9 @@ private fun ScaleSlider(label: String, value: Float, onDone: (Float) -> Unit) {
         onValueChangeFinished = { onDone(v) },
     )
 }
+
+// The editor's tools (08.10).
+private const val TOOL_MOVE = 0
+private const val TOOL_BEND = 1
+private const val TOOL_NAMES = 2
+private const val TOOL_SELECT = 3

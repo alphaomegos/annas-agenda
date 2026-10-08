@@ -122,6 +122,12 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_tool_move">Move</string>
+    <string name="metro_tool_select">Select</string>
+    <string name="metro_selected_count">Selected: %1$d</string>
+    <string name="metro_select_lines">Whole lines</string>
+    <string name="metro_select_none">Clear</string>
+    <string name="metro_select_hint">Tap stations to select them; drag any of them to move them all, with the track bent between them.</string>
     <string name="metro_round_corners">Round corners of bent track</string>
     <string name="metro_names_tool">Names</string>
     <string name="metro_names_hint">Tap a station: its name goes round it — right, down-right, down… then hidden, then by itself again.</string>

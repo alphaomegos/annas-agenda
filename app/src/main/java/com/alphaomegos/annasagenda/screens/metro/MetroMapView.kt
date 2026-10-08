@@ -88,7 +88,8 @@ import kotlin.math.floor
  * capsules the links between interchange stations are drawn as passages.
  * Each name goes on its station's side (support/MetroLabels.kt); with
  * [namingMode] every name shows, the hidden ones faintly, for the editor's
- * names tool.
+ * names tool. A drag of a station in [group] moves the whole group, with
+ * the track bent between its stations (the editor's selection).
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -112,6 +113,7 @@ internal fun MetroMapView(
     bendMode: Boolean = false,
     onBend: (MetroBendAction) -> Unit = {},
     namingMode: Boolean = false,
+    group: Set<Long> = emptySet(),
 ) {
     var zoom by rememberSaveable { mutableStateOf(1f) }
     var panX by rememberSaveable { mutableStateOf(0f) }
@@ -129,6 +131,7 @@ internal fun MetroMapView(
     val currentBendMode by rememberUpdatedState(bendMode)
     val currentBend by rememberUpdatedState(onBend)
     val currentMoveAlone by rememberUpdatedState(moveAlone)
+    val currentGroup by rememberUpdatedState(group)
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     val labelColor = MaterialTheme.colorScheme.onSurface
@@ -271,7 +274,11 @@ internal fun MetroMapView(
                     dragBend = null
                 } else if (grabbed != null && travelled > slop) {
                     val s = currentScheme
-                    val moving = if (currentMoveAlone) setOf(grabbed) else metroStationsMovingWith(s, grabbed)
+                    val moving = when {
+                        grabbed in currentGroup -> currentGroup
+                        currentMoveAlone -> setOf(grabbed)
+                        else -> metroStationsMovingWith(s, grabbed)
+                    }
                     val at = metroDropSnap(s, layout, grabbed, moving, toMap(dragAt), currentGrid, angleTolPx / (fit * zoom))
                     currentMove?.invoke(grabbed, at.x, at.y)
                 } else if (travelled <= slop && fingers == 1) {
@@ -294,7 +301,14 @@ internal fun MetroMapView(
             // A drag in flight moves its station (snapped, with a grid) and,
             // with transfers kept together, the rest of its transfer as far.
             val dragged = dragId?.let { layout[it] }
-            val moving = dragId?.takeIf { dragged != null }?.let { if (moveAlone) setOf(it) else metroStationsMovingWith(scheme, it) } ?: emptySet()
+            val moving = dragId?.takeIf { dragged != null }?.let {
+                when {
+                    it in group -> group
+                    moveAlone -> setOf(it)
+                    else -> metroStationsMovingWith(scheme, it)
+                }
+            } ?: emptySet()
+            val inGroup = dragId != null && dragId in group
             fun dragPoint(): MetroPoint {
                 val raw = MetroPoint((dragAt.x - w / 2 - panX) / k + cx, (dragAt.y - h / 2 - panY) / k + cy)
                 return gridStep?.let { metroSnapped(raw, it) } ?: raw
@@ -302,7 +316,7 @@ internal fun MetroMapView(
             val shift = dragged?.let { from ->
                 val raw = MetroPoint((dragAt.x - w / 2 - panX) / k + cx, (dragAt.y - h / 2 - panY) / k + cy)
                 val snapped = metroDropSnap(scheme, layout, dragId!!, moving, raw, gridStep, angleTolPx / k)
-                val to = if (moveAlone) metroAloneDropPoint(scheme, layout, dragId!!, snapped) else snapped
+                val to = if (moveAlone && !inGroup) metroAloneDropPoint(scheme, layout, dragId!!, snapped) else snapped
                 MetroPoint(to.x - from.x, to.y - from.y)
             }
             fun at(id: Long): Offset? {
@@ -363,7 +377,9 @@ internal fun MetroMapView(
                     val i = bendDrag.first.index
                     if (bendDrag.second) bends.add(i.coerceIn(0, bends.size), p) else if (i in bends.indices) bends[i] = p
                 }
-                return listOf(a) + bends.map { toScreen(it) } + c
+                // Track bent between two stations moving moves with them (08.10).
+                val carried = shift != null && s in moving && t in moving
+                return listOf(a) + bends.map { if (carried) toScreen(MetroPoint(it.x + shift!!.x, it.y + shift.y)) else toScreen(it) } + c
             }
             fun drawTrack(pts: List<Offset>, paint: Color, width: Float) {
                 if (pts.size == 2) {

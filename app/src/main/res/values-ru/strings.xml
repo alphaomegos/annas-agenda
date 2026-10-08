@@ -909,6 +909,12 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_tool_move">Двигать</string>
+    <string name="metro_tool_select">Выделять</string>
+    <string name="metro_selected_count">Выделено: %1$d</string>
+    <string name="metro_select_lines">Линии целиком</string>
+    <string name="metro_select_none">Снять</string>
+    <string name="metro_select_hint">Нажимайте на станции, чтобы выделить; тащите любую из них — сдвинутся все, вместе с изгибами между ними.</string>
     <string name="metro_round_corners">Скруглять углы перегонов</string>
     <string name="metro_names_tool">Подписи</string>
     <string name="metro_names_hint">Нажмите на станцию — подпись обходит её по кругу: справа, справа снизу, снизу… потом скрыта, потом снова сама.</string>
