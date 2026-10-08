@@ -65,6 +65,8 @@ import com.alphaomegos.annasagenda.support.metroOctilinearSnap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import kotlin.math.floor
+import kotlin.math.abs
+import com.alphaomegos.annasagenda.support.metroGuided
 import kotlin.math.cos
 import kotlin.math.sin
 import com.alphaomegos.annasagenda.support.metroInterchangeStations
@@ -478,6 +480,22 @@ internal fun MetroMapView(
                     pts.subList(1, pts.size - 1).forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = it) }
                 }
             }
+            // Guides (08.10): where the station dragged stands level with, or under, one
+            // standing still, a line across the picture shows it.
+            val dropAt = shift?.let { s -> dragged?.let { MetroPoint(it.x + s.x, it.y + s.y) } }
+            if (scheme.alignGuides && dropAt != null) {
+                val still = layout.filterKeys { it !in moving }.values
+                val thin = 1.dp.toPx()
+                if (still.any { abs(it.x - dropAt.x) < 1e-4f }) {
+                    val sx = toScreen(dropAt).x
+                    drawLine(markColor, Offset(sx, 0f), Offset(sx, h), strokeWidth = thin)
+                }
+                if (still.any { abs(it.y - dropAt.y) < 1e-4f }) {
+                    val sy = toScreen(dropAt).y
+                    drawLine(markColor, Offset(0f, sy), Offset(w, sy), strokeWidth = thin)
+                }
+            }
+
             if (capsules) drawLinks()
             val showLabels = when (scheme.labelsMode) {
                 MetroLabelsMode.AUTO -> k * METRO_LAYOUT_STEP > 52.dp.toPx() * scheme.labelScale
@@ -541,7 +559,9 @@ internal fun MetroMapView(
 /**
  * Where a dragged station lands before glue (08.10): with the scheme's
  * angles of 45°, on a direction square with its neighbours if one is
- * within [tolerance]; else on the grid, if it is on; else where dropped.
+ * within [tolerance]; else, with guides, level with or under a station
+ * standing still within [tolerance], each way on its own; else on the grid,
+ * if it is on; else where dropped.
  */
 private fun metroDropSnap(
     scheme: MetroScheme,
@@ -556,5 +576,11 @@ private fun metroDropSnap(
         val squared = metroOctilinearSnap(raw, metroAngleAnchors(scheme, layout, stationId, moving), tolerance)
         if (squared !== raw) return squared
     }
-    return grid?.let { metroSnapped(raw, it) } ?: raw
+    val gridded = grid?.let { metroSnapped(raw, it) } ?: raw
+    if (scheme.alignGuides) {
+        // Level with, or under, a station standing still (08.10); the other way, the grid.
+        val g = metroGuided(raw, layout.filterKeys { it !in moving }.values, tolerance)
+        return MetroPoint(g.x ?: gridded.x, g.y ?: gridded.y)
+    }
+    return gridded
 }

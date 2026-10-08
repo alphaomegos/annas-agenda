@@ -909,6 +909,7 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_align_guides">Направляющие: вровень с другими станциями</string>
     <string name="metro_nudge_left">←</string>
     <string name="metro_nudge_up">↑</string>
     <string name="metro_nudge_down">↓</string>

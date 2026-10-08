@@ -122,6 +122,7 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_align_guides">Guides: level with other stations</string>
     <string name="metro_nudge_left">←</string>
     <string name="metro_nudge_up">↑</string>
     <string name="metro_nudge_down">↓</string>

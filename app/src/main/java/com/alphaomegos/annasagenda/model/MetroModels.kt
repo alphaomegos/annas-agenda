@@ -63,6 +63,8 @@ data class MetroScheme(
     val tickStations: Boolean = false,
     // Each line's number in a disc of its colour past its ends (08.10). A setting.
     val lineBadges: Boolean = false,
+    // A dragged station drawn level with, or under, a station near that way (08.10). A setting.
+    val alignGuides: Boolean = false,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),

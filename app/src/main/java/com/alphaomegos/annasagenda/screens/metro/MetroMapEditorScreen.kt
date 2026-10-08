@@ -406,6 +406,9 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                 MetroMapTick(stringResource(R.string.metro_snap_angles), scheme.snapAngles, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(snapAngles = on) }
                 }
+                MetroMapTick(stringResource(R.string.metro_align_guides), scheme.alignGuides, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(alignGuides = on) }
+                }
                 MetroMapTick(stringResource(R.string.metro_transfers_together), scheme.transfersTogether, Modifier.fillMaxWidth()) { on ->
                     onEdit { metroTransfersTogether(it, on) }
                 }
