@@ -904,4 +904,6 @@
     <string name="metro_bend_tracks">Гнуть перегоны</string>
     <string name="metro_move_whole">Двигать узел целиком</string>
     <string name="metro_bend_hint">Тап по перегону — угол, ещё тап — другой угол, ещё — снова прямо. Протяните по перегону — новая точка; тап по точке — убрать её.</string>
+    <string name="metro_undo">Отменить</string>
+    <string name="metro_redo">Повторить</string>
 </resources>

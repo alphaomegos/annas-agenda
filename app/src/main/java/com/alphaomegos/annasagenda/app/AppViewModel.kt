@@ -47,6 +47,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Airports, airlines and aircraft for the flight log (assets/flights/), read the first time they are asked for. */
     val flightBase: FlightBase by lazy { loadFlightBase(app.applicationContext) }
 
+    // Undo and redo of metro schemes (08.10), by scheme id: memory only.
+    private val _metroHistory = MutableStateFlow<Map<Long, MetroHistory>>(emptyMap())
+    val metroHistory: StateFlow<Map<Long, MetroHistory>> = _metroHistory.asStateFlow()
+
     // An App in the Air file read and waiting for "Import?" (06.10). Kept here,
     // not on the screen: a whole log is too big for the saved instance state,
     // and turning the phone must not lose it.
@@ -1867,6 +1871,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val edited = edit(scheme)
         if (edited === scheme || edited == scheme) return
         _state.value = cur.copy(metroSchemes = metroSchemesAfterSaving(cur.metroSchemes, edited.copy(id = schemeId)))
+        val history = _metroHistory.value
+        _metroHistory.value = history + (schemeId to (history[schemeId] ?: MetroHistory()).recorded(scheme))
+    }
+
+    /** The scheme as it was before its last edit (08.10); nothing when there is nothing to undo. */
+    fun undoMetroScheme(schemeId: Long) = stepMetroScheme(schemeId) { h, cur -> h.undone(cur) }
+
+    /** The edit undone last, done again. */
+    fun redoMetroScheme(schemeId: Long) = stepMetroScheme(schemeId) { h, cur -> h.redone(cur) }
+
+    private fun stepMetroScheme(schemeId: Long, step: (MetroHistory, MetroScheme) -> Pair<MetroScheme, MetroHistory>?) {
+        val cur = _state.value
+        val scheme = cur.metroSchemes.firstOrNull { it.id == schemeId } ?: return
+        val history = _metroHistory.value[schemeId] ?: return
+        val (shown, next) = step(history, scheme) ?: return
+        _state.value = cur.copy(metroSchemes = metroSchemesAfterSaving(cur.metroSchemes, shown.copy(id = schemeId)))
+        _metroHistory.value = _metroHistory.value + (schemeId to next)
     }
 
     /** A new, empty scheme for [city], chosen at once; its id, or null for a blank name. */

@@ -838,4 +838,6 @@
     <string name="metro_bend_tracks">Saviti deonice</string>
     <string name="metro_move_whole">Pomerati čvor u celini</string>
     <string name="metro_bend_hint">Dodir na deonicu — ugao, još jedan — drugi ugao, još jedan — opet pravo. Prevucite po deonici — nova tačka; dodir na tačku — uklanja je.</string>
+    <string name="metro_undo">Poništi</string>
+    <string name="metro_redo">Ponovi</string>
 </resources>

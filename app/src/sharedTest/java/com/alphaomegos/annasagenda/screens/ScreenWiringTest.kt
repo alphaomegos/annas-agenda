@@ -352,4 +352,21 @@ class ScreenWiringTest {
         composeRule.waitForIdle()
         assertEquals(false, vm.state.value.doneTasksLast)
     }
+
+    @Test
+    fun theMapEditorsUndoAndRedo_stepThroughTheEdits() {
+        val id = schemeWith("Alpha", "Beta")
+        vm.editMetroScheme(id) { it.copy(mapGrid = true) }
+        composeRule.setContent {
+            MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
+        }
+
+        composeRule.onNodeWithContentDescription(word(R.string.metro_undo)).performClick()
+        composeRule.waitForIdle()
+        assertEquals(false, scheme(id).mapGrid)
+
+        composeRule.onNodeWithContentDescription(word(R.string.metro_redo)).performClick()
+        composeRule.waitForIdle()
+        assertTrue("redo did not bring the grid back", scheme(id).mapGrid)
+    }
 }

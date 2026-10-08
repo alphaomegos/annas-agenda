@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Redo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -63,6 +68,8 @@ fun MetroMapEditorScreen(
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val scheme = state.metroSchemes.firstOrNull { it.id == schemeId }
+    val histories by vm.metroHistory.collectAsStateWithLifecycle()
+    val history = histories[schemeId]
     val layout by produceState<Map<Long, MetroPoint>?>(null, scheme) {
         value = scheme?.let { s -> withContext(Dispatchers.Default) { metroLayout(s) } }
     }
@@ -77,6 +84,15 @@ fun MetroMapEditorScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.metro_place_stations)) },
                 navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
+                actions = {
+                    // Undo and redo (08.10): every edit of the picture, back and forward.
+                    IconButton(onClick = { vm.undoMetroScheme(schemeId) }, enabled = history?.canUndo == true) {
+                        Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = stringResource(R.string.metro_undo))
+                    }
+                    IconButton(onClick = { vm.redoMetroScheme(schemeId) }, enabled = history?.canRedo == true) {
+                        Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = stringResource(R.string.metro_redo))
+                    }
+                },
             )
         },
     ) { inner ->
