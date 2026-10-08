@@ -841,4 +841,13 @@
     <string name="metro_undo">Poništi</string>
     <string name="metro_redo">Ponovi</string>
     <string name="metro_snap_angles">Uglovi od 45°</string>
+    <string name="metro_look">Izgled</string>
+    <string name="metro_transfer_links">Veze presedanja</string>
+    <string name="metro_labels_when">Nazivi stanica</string>
+    <string name="metro_labels_auto">Kad je čitljivo</string>
+    <string name="metro_labels_always">Uvek</string>
+    <string name="metro_labels_never">Nikad</string>
+    <string name="metro_size_labels">Nazivi</string>
+    <string name="metro_size_lines">Linije</string>
+    <string name="metro_size_stations">Krugovi</string>
 </resources>

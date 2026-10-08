@@ -205,6 +205,8 @@ class ScreenWiringTest {
             MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
         }
 
+        // The ticks live in the Look panel since 08.10.
+        composeRule.onNodeWithContentDescription(word(R.string.metro_look)).performClick()
         composeRule.onNodeWithText(word(R.string.metro_map_grid)).performClick()
         composeRule.onNodeWithText(word(R.string.metro_transfers_together)).performClick()
         composeRule.waitForIdle()

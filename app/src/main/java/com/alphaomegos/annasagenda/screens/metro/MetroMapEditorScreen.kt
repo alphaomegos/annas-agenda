@@ -1,6 +1,16 @@
 package com.alphaomegos.annasagenda.screens.metro
 
 import androidx.compose.foundation.clickable
+import com.alphaomegos.annasagenda.support.METRO_SCALE_MIN
+import com.alphaomegos.annasagenda.support.METRO_SCALE_MAX
+import com.alphaomegos.annasagenda.model.MetroScheme
+import com.alphaomegos.annasagenda.model.MetroLabelsMode
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.Slider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -78,6 +89,8 @@ fun MetroMapEditorScreen(
     // interchange whole or one station of it.
     var bending by rememberSaveable { mutableStateOf(false) }
     var moveWhole by rememberSaveable { mutableStateOf(true) }
+    // The look's panel open (08.10).
+    var looking by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -91,6 +104,9 @@ fun MetroMapEditorScreen(
                     }
                     IconButton(onClick = { vm.redoMetroScheme(schemeId) }, enabled = history?.canRedo == true) {
                         Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = stringResource(R.string.metro_redo))
+                    }
+                    IconButton(onClick = { looking = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.metro_look))
                     }
                 },
             )
@@ -107,70 +123,15 @@ fun MetroMapEditorScreen(
                 TextButton(onClick = { confirmReset = true }) { Text(stringResource(R.string.metro_layout_again)) }
             }
             if (scheme != null) {
-                // Two to a row (FlowRow breaks the tests, 0185).
-                val glueLabel = when (scheme.glue) {
-                    8 -> stringResource(R.string.metro_glue, "8")
-                    12 -> stringResource(R.string.metro_glue, "12")
-                    else -> stringResource(R.string.metro_glue, stringResource(R.string.metro_glue_off))
-                }
-                @Composable
-                fun TickRow(content: @Composable (Modifier) -> Unit, second: @Composable (Modifier) -> Unit) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        content(Modifier.weight(1f))
-                        second(Modifier.weight(1f))
+                // The tools stay at hand (08.10); how the picture looks is in "Look".
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    MetroMapTick(stringResource(R.string.metro_bend_tracks), bending, Modifier.weight(1f)) { bending = it }
+                    if (scheme.transfersTogether) {
+                        MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, Modifier.weight(1f)) { moveWhole = it }
+                    } else {
+                        Spacer(Modifier.weight(1f))
                     }
                 }
-                TickRow(
-                    { m ->
-                        MetroMapTick(stringResource(R.string.metro_map_grid), scheme.mapGrid, m) { on ->
-                            vm.editMetroScheme(schemeId) { it.copy(mapGrid = on) }
-                        }
-                    },
-                    { m ->
-                        MetroMapTick(stringResource(R.string.metro_transfers_together), scheme.transfersTogether, m) { on ->
-                            vm.editMetroScheme(schemeId) { metroTransfersTogether(it, on) }
-                        }
-                    },
-                )
-                TickRow(
-                    { m ->
-                        MetroMapTick(stringResource(R.string.metro_labels_once), scheme.labelsOncePerInterchange, m) { on ->
-                            vm.editMetroScheme(schemeId) { it.copy(labelsOncePerInterchange = on) }
-                        }
-                    },
-                    { m ->
-                        // Off → 8 → 12 → off; interchanges kept together close up to touching.
-                        TextButton(
-                            onClick = {
-                                val next = when (scheme.glue) { 0 -> 8; 8 -> 12; else -> 0 }
-                                vm.editMetroScheme(schemeId) {
-                                    // Kept together, the interchanges close up (or open out) to the new gap.
-                                    val g = it.copy(glue = next)
-                                    if (g.transfersTogether) metroTransfersTogether(g.copy(transfersTogether = false), true) else g
-                                }
-                            },
-                            modifier = m,
-                        ) { Text(glueLabel) }
-                    },
-                )
-                TickRow(
-                    { m ->
-                        MetroMapTick(stringResource(R.string.metro_snap_angles), scheme.snapAngles, m) { on ->
-                            vm.editMetroScheme(schemeId) { it.copy(snapAngles = on) }
-                        }
-                    },
-                    { m -> MetroMapTick(stringResource(R.string.metro_bend_tracks), bending, m) { bending = it } },
-                )
-                TickRow(
-                    { m ->
-                        if (scheme.transfersTogether) {
-                            MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, m) { moveWhole = it }
-                        } else {
-                            Spacer(m)
-                        }
-                    },
-                    { m -> Spacer(m) },
-                )
                 if (bending) {
                     Text(
                         stringResource(R.string.metro_bend_hint),
@@ -211,6 +172,10 @@ fun MetroMapEditorScreen(
         }
     }
 
+    if (looking && scheme != null) {
+        MetroLookDialog(scheme, onEdit = { edit -> vm.editMetroScheme(schemeId, edit) }, onDismiss = { looking = false })
+    }
+
     if (confirmReset) {
         ConfirmDialog(
             titleRes = R.string.metro_layout_again,
@@ -234,4 +199,96 @@ private fun MetroMapTick(text: String, checked: Boolean, modifier: Modifier, onC
         Checkbox(checked = checked, onCheckedChange = onChange)
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }
+}
+
+/**
+ * How the picture looks (08.10), all in one panel: the grid, interchanges
+ * kept together and glued, one name per interchange, angles of 45°, the
+ * links between interchange stations; when names are written; and the
+ * size of names, track and rings. A slider is written when let go, so
+ * undo takes it back in one step.
+ */
+@Composable
+private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> MetroScheme) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.metro_look)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                MetroMapTick(stringResource(R.string.metro_map_grid), scheme.mapGrid, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(mapGrid = on) }
+                }
+                MetroMapTick(stringResource(R.string.metro_snap_angles), scheme.snapAngles, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(snapAngles = on) }
+                }
+                MetroMapTick(stringResource(R.string.metro_transfers_together), scheme.transfersTogether, Modifier.fillMaxWidth()) { on ->
+                    onEdit { metroTransfersTogether(it, on) }
+                }
+                MetroMapTick(stringResource(R.string.metro_transfer_links), scheme.showTransferLinks, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(showTransferLinks = on) }
+                }
+                MetroMapTick(stringResource(R.string.metro_labels_once), scheme.labelsOncePerInterchange, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(labelsOncePerInterchange = on) }
+                }
+                // Off → 8 → 12 → off; interchanges kept together close up (or open out) to the new gap.
+                val glueLabel = when (scheme.glue) {
+                    8 -> stringResource(R.string.metro_glue, "8")
+                    12 -> stringResource(R.string.metro_glue, "12")
+                    else -> stringResource(R.string.metro_glue, stringResource(R.string.metro_glue_off))
+                }
+                TextButton(onClick = {
+                    val next = when (scheme.glue) { 0 -> 8; 8 -> 12; else -> 0 }
+                    onEdit {
+                        val g = it.copy(glue = next)
+                        if (g.transfersTogether) metroTransfersTogether(g.copy(transfersTogether = false), true) else g
+                    }
+                }) { Text(glueLabel) }
+
+                Text(stringResource(R.string.metro_labels_when), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MetroLabelsMode.entries.forEach { mode ->
+                        FilterChip(
+                            selected = scheme.labelsMode == mode,
+                            onClick = { onEdit { it.copy(labelsMode = mode) } },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        when (mode) {
+                                            MetroLabelsMode.AUTO -> R.string.metro_labels_auto
+                                            MetroLabelsMode.ALWAYS -> R.string.metro_labels_always
+                                            MetroLabelsMode.NEVER -> R.string.metro_labels_never
+                                        }
+                                    )
+                                )
+                            },
+                        )
+                    }
+                }
+
+                ScaleSlider(stringResource(R.string.metro_size_labels), scheme.labelScale) { v -> onEdit { it.copy(labelScale = v) } }
+                ScaleSlider(stringResource(R.string.metro_size_lines), scheme.lineScale) { v -> onEdit { it.copy(lineScale = v) } }
+                ScaleSlider(stringResource(R.string.metro_size_stations), scheme.stationScale) { v ->
+                    // Glued rings stay touching at their new size.
+                    onEdit {
+                        val g = it.copy(stationScale = v)
+                        if (g.glue > 0 && g.transfersTogether) metroTransfersTogether(g.copy(transfersTogether = false), true) else g
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
+    )
+}
+
+/** A size from half to two and a half times, written when the finger lets go. */
+@Composable
+private fun ScaleSlider(label: String, value: Float, onDone: (Float) -> Unit) {
+    var v by rememberSaveable(value) { mutableStateOf(value) }
+    Text(label + " · ×" + "%.1f".format(java.util.Locale.ROOT, v), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+    Slider(
+        value = v,
+        onValueChange = { v = it },
+        valueRange = METRO_SCALE_MIN..METRO_SCALE_MAX,
+        onValueChangeFinished = { onDone(v) },
+    )
 }

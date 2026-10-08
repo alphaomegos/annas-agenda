@@ -907,4 +907,13 @@
     <string name="metro_undo">Отменить</string>
     <string name="metro_redo">Повторить</string>
     <string name="metro_snap_angles">Углы 45°</string>
+    <string name="metro_look">Вид</string>
+    <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_labels_when">Названия станций</string>
+    <string name="metro_labels_auto">Когда читаемо</string>
+    <string name="metro_labels_always">Всегда</string>
+    <string name="metro_labels_never">Никогда</string>
+    <string name="metro_size_labels">Названия</string>
+    <string name="metro_size_lines">Линии</string>
+    <string name="metro_size_stations">Кружки</string>
 </resources>

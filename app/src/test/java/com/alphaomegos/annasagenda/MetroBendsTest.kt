@@ -109,4 +109,12 @@ class MetroBendsTest {
         assertEquals(METRO_TOGETHER_GAP, metroTogetherGap(placed))
         assertEquals(METRO_GLUE_GAP, metroTogetherGap(placed.copy(glue = 12)))
     }
+
+    @Test
+    fun biggerRings_standFurtherApartToTouch() {
+        val big = placed.copy(glue = 8, stationScale = 2f)
+        assertEquals(2 * METRO_GLUE_GAP, metroGlueGap(big), 1e-5f)
+        val m = metroStationPlacedAlone(big, 21, 2.9f, 1.05f).stations.first { it.id == 21L }
+        assertEquals(2.4f + 2 * METRO_GLUE_GAP, m.mapX!!, 1e-4f)
+    }
 }

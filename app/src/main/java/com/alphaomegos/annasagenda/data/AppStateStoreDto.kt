@@ -201,6 +201,12 @@ internal data class MetroSchemeDto(
     val labelsOncePerInterchange: Boolean = false,
     val glue: Int = 0,
     val snapAngles: Boolean = false,
+    val labelScale: Float = 1f,
+    val lineScale: Float = 1f,
+    val stationScale: Float = 1f,
+    // MetroLabelsMode by name.
+    val labelsMode: String = "AUTO",
+    val showTransferLinks: Boolean = true,
     // Schema 11 (08.10): bent track.
     val bends: List<MetroBendDto> = emptyList(),
 )

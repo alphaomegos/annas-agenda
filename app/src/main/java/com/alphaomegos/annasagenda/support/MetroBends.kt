@@ -135,19 +135,26 @@ const val METRO_STATION_RADIUS = 0.13f
 const val METRO_GLUE_GAP = 2 * METRO_STATION_RADIUS * 1.225f
 
 /** The gap interchange stations stand apart by when kept together: touching when glued. */
-fun metroTogetherGap(scheme: MetroScheme): Float = if (scheme.glue > 0) METRO_GLUE_GAP else METRO_TOGETHER_GAP
+fun metroTogetherGap(scheme: MetroScheme): Float = if (scheme.glue > 0) metroGlueGap(scheme) else METRO_TOGETHER_GAP
+
+/** The glue gap at the scheme's ring size (08.10): bigger rings stand further apart to touch. */
+fun metroGlueGap(scheme: MetroScheme): Float = METRO_GLUE_GAP * scheme.stationScale
+
+/** How much larger or smaller names, track and rings can be made (08.10). */
+const val METRO_SCALE_MIN = 0.5f
+const val METRO_SCALE_MAX = 2.5f
 
 /**
  * Where a ring dropped at [target] sits glued to the ring at [anchor]:
  * touching it, at the nearest of [points] places round it (8 or 12).
  */
-fun metroGluedPoint(target: MetroPoint, anchor: MetroPoint, points: Int): MetroPoint {
+fun metroGluedPoint(target: MetroPoint, anchor: MetroPoint, points: Int, gap: Float = METRO_GLUE_GAP): MetroPoint {
     val step = 2 * PI / points
     val angle = atan2((target.y - anchor.y).toDouble(), (target.x - anchor.x).toDouble())
     val snapped = round(angle / step) * step
     return MetroPoint(
-        anchor.x + (METRO_GLUE_GAP * cos(snapped)).toFloat() + 0f,
-        anchor.y + (METRO_GLUE_GAP * sin(snapped)).toFloat() + 0f,
+        anchor.x + (gap * cos(snapped)).toFloat() + 0f,
+        anchor.y + (gap * sin(snapped)).toFloat() + 0f,
     )
 }
 
@@ -160,8 +167,9 @@ fun metroAloneDropPoint(scheme: MetroScheme, positions: Map<Long, MetroPoint>, s
     if (scheme.glue <= 0) return p
     val group = metroTransferGroups(scheme).firstOrNull { stationId in it }.orEmpty() - stationId
     val anchor = group.mapNotNull { positions[it] }.minByOrNull { dist2(it.x - p.x, it.y - p.y) } ?: return p
-    val reach = 3 * METRO_GLUE_GAP
-    return if (dist2(anchor.x - p.x, anchor.y - p.y) <= reach * reach) metroGluedPoint(p, anchor, scheme.glue) else p
+    val gap = metroGlueGap(scheme)
+    val reach = 3 * gap
+    return if (dist2(anchor.x - p.x, anchor.y - p.y) <= reach * reach) metroGluedPoint(p, anchor, scheme.glue, gap) else p
 }
 
 /**

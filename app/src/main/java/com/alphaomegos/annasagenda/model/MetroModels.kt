@@ -44,6 +44,14 @@ data class MetroScheme(
     val glue: Int = 0,
     // A dragged station pulled onto 0°/45°/90° from its neighbours (08.10).
     val snapAngles: Boolean = false,
+    // How the picture looks (08.10): names, track and rings larger or
+    // smaller (1 is as before), when names are written, and whether the
+    // links between interchange stations are drawn.
+    val labelScale: Float = 1f,
+    val lineScale: Float = 1f,
+    val stationScale: Float = 1f,
+    val labelsMode: MetroLabelsMode = MetroLabelsMode.AUTO,
+    val showTransferLinks: Boolean = true,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),
@@ -191,3 +199,10 @@ sealed interface MetroHintTarget {
     data class Transfer(val toStationId: Long) : MetroHintTarget
     data class Exit(val exitId: Long) : MetroHintTarget
 }
+
+/**
+ * When the picture writes station names (08.10): when zoomed in enough to
+ * read them (as before), always, or never — the route's and the chosen
+ * stations' names are written whatever this says. Stored by name.
+ */
+enum class MetroLabelsMode { AUTO, ALWAYS, NEVER }

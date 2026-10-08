@@ -30,6 +30,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.alphaomegos.annasagenda.model.MetroLabelsMode
 import com.alphaomegos.annasagenda.model.MetroScheme
 import com.alphaomegos.annasagenda.support.METRO_LAYOUT_STEP
 import com.alphaomegos.annasagenda.support.MetroPoint
@@ -118,12 +119,12 @@ internal fun MetroMapView(
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     val labelColor = MaterialTheme.colorScheme.onSurface
-    val labelStyle = TextStyle(fontSize = 11.sp, color = labelColor)
+    val labelStyle = TextStyle(fontSize = 11.sp * scheme.labelScale, color = labelColor)
     val ringFill = MaterialTheme.colorScheme.surface
     val markColor = MaterialTheme.colorScheme.primary
     val transferColor = MaterialTheme.colorScheme.outline
     val gridColor = MaterialTheme.colorScheme.outlineVariant
-    val labels = remember(scheme.stations, measurer, labelColor) {
+    val labels = remember(scheme.stations, measurer, labelColor, scheme.labelScale) {
         scheme.stations.associate { it.id to measurer.measure(it.name, labelStyle) }
     }
     val lines = remember(scheme.lines) { scheme.lines.associateBy { it.id } }
@@ -263,8 +264,11 @@ internal fun MetroMapView(
         Canvas(modifier = Modifier.fillMaxSize().then(gestures)) {
             // Glued rings touch in the picture's units, so then they scale with it, unclamped.
             val glued = scheme.glue > 0
-            val lineWidth = if (glued) (0.16f * k).coerceAtMost(10.dp.toPx()) else (0.16f * k).coerceIn(3.dp.toPx(), 10.dp.toPx())
-            val radius = if (glued) METRO_STATION_RADIUS * k else (METRO_STATION_RADIUS * k).coerceIn(4.dp.toPx(), 9.dp.toPx())
+            // The look's sizes (08.10) on top.
+            val lineWidth = scheme.lineScale *
+                (if (glued) (0.16f * k).coerceAtMost(10.dp.toPx()) else (0.16f * k).coerceIn(3.dp.toPx(), 10.dp.toPx()))
+            val radius = scheme.stationScale *
+                (if (glued) METRO_STATION_RADIUS * k else (METRO_STATION_RADIUS * k).coerceIn(4.dp.toPx(), 9.dp.toPx()))
             val (routePairs, routeStations) = onRoute
             val fade = route != null
             // A drag in flight moves its station (snapped, with a grid) and,
@@ -310,7 +314,7 @@ internal fun MetroMapView(
                 }
             }
 
-            scheme.transfers.forEach { t ->
+            if (scheme.showTransferLinks) scheme.transfers.forEach { t ->
                 val a = at(t.aStationId) ?: return@forEach
                 val c = at(t.bStationId) ?: return@forEach
                 val lit = !fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs
@@ -344,7 +348,11 @@ internal fun MetroMapView(
                     if (bendMode) bends.forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = toScreen(it)) }
                 }
             }
-            val showLabels = k * METRO_LAYOUT_STEP > 52.dp.toPx()
+            val showLabels = when (scheme.labelsMode) {
+                MetroLabelsMode.AUTO -> k * METRO_LAYOUT_STEP > 52.dp.toPx() * scheme.labelScale
+                MetroLabelsMode.ALWAYS -> true
+                MetroLabelsMode.NEVER -> false
+            }
             scheme.stations.forEach { st ->
                 val p = at(st.id) ?: return@forEach
                 val color = Color(lines[lineOf[st.id]]?.color ?: 0xFF888888)

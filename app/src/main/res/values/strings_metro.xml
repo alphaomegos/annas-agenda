@@ -120,4 +120,13 @@
     <string name="metro_undo">Undo</string>
     <string name="metro_redo">Redo</string>
     <string name="metro_snap_angles">Angles of 45°</string>
+    <string name="metro_look">Look</string>
+    <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_labels_when">Station names</string>
+    <string name="metro_labels_auto">When readable</string>
+    <string name="metro_labels_always">Always</string>
+    <string name="metro_labels_never">Never</string>
+    <string name="metro_size_labels">Names</string>
+    <string name="metro_size_lines">Track</string>
+    <string name="metro_size_stations">Rings</string>
 </resources>

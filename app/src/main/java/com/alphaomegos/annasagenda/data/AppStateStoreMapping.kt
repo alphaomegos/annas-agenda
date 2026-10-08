@@ -715,6 +715,11 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
     labelsOncePerInterchange = labelsOncePerInterchange,
     glue = glue,
     snapAngles = snapAngles,
+    labelScale = labelScale,
+    lineScale = lineScale,
+    stationScale = stationScale,
+    labelsMode = labelsMode.name,
+    showTransferLinks = showTransferLinks,
     bends = bends.map { b -> MetroBendDto(b.aStationId, b.bStationId, b.points.map { it.x }, b.points.map { it.y }) },
 )
 
@@ -767,6 +772,12 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
         transfersTogether = transfersTogether,
         labelsOncePerInterchange = labelsOncePerInterchange,
         snapAngles = snapAngles,
+        // Sizes within what the panel offers; anything else is as before.
+        labelScale = labelScale.takeIf { it.isFinite() }?.coerceIn(METRO_SCALE_MIN, METRO_SCALE_MAX) ?: 1f,
+        lineScale = lineScale.takeIf { it.isFinite() }?.coerceIn(METRO_SCALE_MIN, METRO_SCALE_MAX) ?: 1f,
+        stationScale = stationScale.takeIf { it.isFinite() }?.coerceIn(METRO_SCALE_MIN, METRO_SCALE_MAX) ?: 1f,
+        labelsMode = MetroLabelsMode.entries.firstOrNull { it.name == labelsMode } ?: MetroLabelsMode.AUTO,
+        showTransferLinks = showTransferLinks,
         // Glue at 8 or 12 points; anything else is off.
         glue = glue.takeIf { it == 8 || it == 12 } ?: 0,
         // A bend's points come in pairs; one whose x and y do not pair up, or are not numbers, is dropped.
