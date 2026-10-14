@@ -131,4 +131,15 @@ class MetroBendsTest {
         assertEquals(2f, c.to.x, 1e-4f); assertEquals(0.2f, c.to.y, 1e-4f)
         assertTrue(metroRoundedCorners(pts.take(2), 0.35f).isEmpty())
     }
+
+    @Test
+    fun aBendPointIsSquaredWithThePointsEitherSideOfIt() {
+        // A (0,0) – B (2,1), bent through (2,0).
+        val s = metroSchemeWithBend(placed, t12, listOf(MetroPoint(2f, 0f)))
+        val l = metroLayout(s)
+        assertEquals(listOf(MetroPoint(0f, 0f), MetroPoint(2f, 1f)), metroBendNeighbours(s, l, MetroBendHit(t12, 0), inserting = false))
+        // A new point before the bend: between A and the bend; after it: between the bend and B.
+        assertEquals(listOf(MetroPoint(0f, 0f), MetroPoint(2f, 0f)), metroBendNeighbours(s, l, MetroBendHit(t12, 0), inserting = true))
+        assertEquals(listOf(MetroPoint(2f, 0f), MetroPoint(2f, 1f)), metroBendNeighbours(s, l, MetroBendHit(t12, 1), inserting = true))
+    }
 }

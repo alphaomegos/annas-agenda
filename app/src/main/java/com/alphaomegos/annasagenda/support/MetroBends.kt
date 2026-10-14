@@ -101,6 +101,22 @@ fun metroTrackAt(scheme: MetroScheme, layout: Map<Long, MetroPoint>, x: Float, y
     return best
 }
 
+/**
+ * The points either side of a bend point being dragged (14.10), along its
+ * track — a station or another bend point each way: what it is squared
+ * with at 45°. [inserting]: a new point going in at [hit]'s index, between
+ * the points there; else the point at that index, moved.
+ */
+fun metroBendNeighbours(scheme: MetroScheme, layout: Map<Long, MetroPoint>, hit: MetroBendHit, inserting: Boolean): List<MetroPoint> {
+    val line = metroTrackPolyline(scheme, layout, hit.track) ?: return emptyList()
+    return if (inserting) {
+        listOfNotNull(line.getOrNull(hit.index), line.getOrNull(hit.index + 1))
+    } else {
+        // The bend point at index i is line[i + 1]; its neighbours, line[i] and line[i + 2].
+        listOfNotNull(line.getOrNull(hit.index), line.getOrNull(hit.index + 2))
+    }
+}
+
 /** A point put into [hit]'s track at its index, at ([x], [y]). */
 fun metroBendPointInserted(scheme: MetroScheme, hit: MetroBendHit, x: Float, y: Float): MetroScheme {
     val pts = metroBendPoints(scheme, hit.track).toMutableList()

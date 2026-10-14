@@ -69,6 +69,7 @@ import com.alphaomegos.annasagenda.support.MetroTrack
 import com.alphaomegos.annasagenda.support.metroAloneDropPoint
 import com.alphaomegos.annasagenda.support.metroBendPointAt
 import com.alphaomegos.annasagenda.support.metroBendPoints
+import com.alphaomegos.annasagenda.support.metroBendNeighbours
 import com.alphaomegos.annasagenda.support.metroLabelledStations
 import com.alphaomegos.annasagenda.support.metroTrackAt
 import com.alphaomegos.annasagenda.support.metroAngleAnchors
@@ -339,7 +340,10 @@ internal fun MetroMapView(
                     } - fixedStations
                 }
                 fun landing(raw: MetroPoint): MetroPoint {
-                    if (grabbed == null || movingAtGrab == null) return currentGrid?.let { metroSnapped(raw, it) } ?: raw
+                    if (grabbed == null || movingAtGrab == null) {
+                        val bend = grabbedBend ?: return raw
+                        return metroBendLanding(currentScheme, layout, bend.first, bend.second, raw, currentGrid, angleTolPx / viewNow().k)
+                    }
                     val snapped = metroDropSnap(currentScheme, layout, grabbed, movingAtGrab, raw, currentGrid, angleTolPx / viewNow().k, hiddenStations)
                     return if (currentMoveAlone && grabbed !in currentGroup) metroAloneDropPoint(currentScheme, inSight, grabbed, snapped) else snapped
                 }
@@ -399,7 +403,7 @@ internal fun MetroMapView(
                 } else if (grabbedBend != null) {
                     val (hit, insert) = grabbedBend
                     if (travelled > slop) {
-                        val at = toMap(dragAt).let { p -> currentGrid?.let { metroSnapped(p, it) } ?: p }
+                        val at = metroBendLanding(currentScheme, layout, hit, insert, toMap(dragAt), currentGrid, angleTolPx / viewNow().k)
                         currentBend(if (insert) MetroBendAction.Insert(hit, at.x, at.y) else MetroBendAction.Move(hit, at.x, at.y))
                     } else if (fingers == 1) {
                         currentBend(if (insert) MetroBendAction.Cycle(hit.track) else MetroBendAction.Remove(hit))
@@ -463,7 +467,8 @@ internal fun MetroMapView(
             val inGroup = dragId != null && dragId in group
             fun dragPoint(): MetroPoint {
                 val raw = MetroPoint((dragAt.x - w / 2) / k + cx, (dragAt.y - h / 2) / k + cy)
-                return gridStep?.let { metroSnapped(raw, it) } ?: raw
+                val bend = dragBend ?: return gridStep?.let { metroSnapped(raw, it) } ?: raw
+                return metroBendLanding(scheme, layout, bend.first, bend.second, raw, gridStep, angleTolPx / k)
             }
             val shift = dragged?.let { from ->
                 val raw = MetroPoint((dragAt.x - w / 2) / k + cx, (dragAt.y - h / 2) / k + cy)
@@ -700,3 +705,24 @@ private fun metroDropSnap(
 
 /** How strongly a hidden line shows when its ghosts are shown (14.10). */
 private const val GHOST_ALPHA = 0.15f
+
+/**
+ * Where a dragged bend point lands (14.10): with the scheme's angles of 45°,
+ * square with the points either side of it along its track if near enough;
+ * else on the grid, if it is on; else where dropped.
+ */
+private fun metroBendLanding(
+    scheme: MetroScheme,
+    layout: Map<Long, MetroPoint>,
+    hit: MetroBendHit,
+    inserting: Boolean,
+    raw: MetroPoint,
+    grid: Float?,
+    tolerance: Float,
+): MetroPoint {
+    if (scheme.snapAngles) {
+        val squared = metroOctilinearSnap(raw, metroBendNeighbours(scheme, layout, hit, inserting), tolerance)
+        if (squared !== raw) return squared
+    }
+    return grid?.let { metroSnapped(raw, it) } ?: raw
+}
