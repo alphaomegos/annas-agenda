@@ -909,6 +909,8 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_keys">Клавиши</string>
+    <string name="metro_keys_text">Ctrl+Z — отменить; Ctrl+Shift+Z или Ctrl+Y — повторить\nV — двигать, B — гнуть, T — подписи, S — выделять\nCtrl+A — выделить все доступные станции; Esc — снять выделение\nСтрелки — сдвинуть выделенное (с Shift — в пять раз дальше)\nG — сетка; F или 0 — вписать в экран; L — слои</string>
     <string name="metro_more">Ещё</string>
     <string name="metro_tip_close">Закрыть подсказку</string>
     <string name="metro_layers">Слои</string>

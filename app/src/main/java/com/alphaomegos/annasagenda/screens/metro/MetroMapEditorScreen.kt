@@ -20,6 +20,19 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.focusable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenWith
@@ -210,6 +223,44 @@ fun MetroMapEditorScreen(
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     // The tool whose tip was closed; the tip comes back with another tool.
     var tipClosedFor by rememberSaveable { mutableStateOf(-1) }
+    var keysShown by rememberSaveable { mutableStateOf(false) }
+    // Keys (14.10), for a keyboard on the Fold or at the emulator, as in drawing programs.
+    val keys = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { keys.requestFocus() } }
+    fun onKey(e: KeyEvent): Boolean {
+        if (e.type != KeyEventType.KeyDown || scheme == null) return false
+        val ctrl = e.isCtrlPressed || e.isMetaPressed
+        val nudge = (if (scheme.mapGrid) METRO_GRID_STEP else METRO_NUDGE_STEP) * (if (e.isShiftPressed) 5f else 1f)
+        fun shift(dx: Float, dy: Float): Boolean {
+            if (!selecting || selection.isEmpty()) return false
+            vm.editMetroScheme(schemeId) { metroStationsShifted(it, selection, dx, dy) }
+            return true
+        }
+        return when {
+            ctrl && e.key == Key.Z && e.isShiftPressed -> { vm.redoMetroScheme(schemeId); true }
+            ctrl && e.key == Key.Z -> { vm.undoMetroScheme(schemeId); true }
+            ctrl && e.key == Key.Y -> { vm.redoMetroScheme(schemeId); true }
+            ctrl && e.key == Key.A -> {
+                tool = TOOL_SELECT
+                selectedIds = scheme.stations.map { it.id }.filter { it !in fixed }.toLongArray()
+                true
+            }
+            ctrl -> false
+            e.key == Key.Escape -> { selectedIds = longArrayOf(); true }
+            e.key == Key.DirectionLeft -> shift(-nudge, 0f)
+            e.key == Key.DirectionRight -> shift(nudge, 0f)
+            e.key == Key.DirectionUp -> shift(0f, -nudge)
+            e.key == Key.DirectionDown -> shift(0f, nudge)
+            e.key == Key.V || e.key == Key.M -> { tool = TOOL_MOVE; true }
+            e.key == Key.B -> { tool = TOOL_BEND; true }
+            e.key == Key.T -> { tool = TOOL_NAMES; true }
+            e.key == Key.S -> { tool = TOOL_SELECT; true }
+            e.key == Key.G -> { vm.setMetroView(schemeId) { it.copy(mapGrid = !it.mapGrid) }; true }
+            e.key == Key.L -> { layering = true; true }
+            e.key == Key.F || e.key == Key.Zero -> { fitKey++; true }
+            else -> false
+        }
+    }
     val startExport = {
         tool = TOOL_MOVE
         fitKey++
@@ -251,13 +302,24 @@ fun MetroMapEditorScreen(
                                 text = { Text(stringResource(R.string.metro_layout_again)) },
                                 onClick = { menuOpen = false; confirmReset = true },
                             )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.metro_keys)) },
+                                onClick = { menuOpen = false; keysShown = true },
+                            )
                         }
                     }
                 },
             )
         },
     ) { inner ->
-        Column(modifier = Modifier.fillMaxSize().padding(inner)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(inner)
+                .focusRequester(keys)
+                .focusable()
+                .onPreviewKeyEvent { onKey(it) },
+        ) {
             if (scheme != null) {
                 // One tool at a time (08.10), each with its picture (14.10).
                 Row(
@@ -467,6 +529,15 @@ fun MetroMapEditorScreen(
                 }
             }
         }
+    }
+
+    if (keysShown) {
+        AlertDialog(
+            onDismissRequest = { keysShown = false },
+            title = { Text(stringResource(R.string.metro_keys)) },
+            text = { Text(stringResource(R.string.metro_keys_text), style = MaterialTheme.typography.bodyMedium) },
+            confirmButton = { TextButton(onClick = { keysShown = false }) { Text(stringResource(R.string.ok)) } },
+        )
     }
 
     if (layering && scheme != null) {

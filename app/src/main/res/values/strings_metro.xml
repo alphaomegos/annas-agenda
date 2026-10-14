@@ -122,6 +122,8 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_keys">Keyboard shortcuts</string>
+    <string name="metro_keys_text">Ctrl+Z — undo; Ctrl+Shift+Z or Ctrl+Y — redo\nV — move, B — bend, T — names, S — select\nCtrl+A — select every station in reach; Esc — let go\nArrows — nudge the selection (with Shift, five times as far)\nG — the grid; F or 0 — fit to the screen; L — layers</string>
     <string name="metro_more">More</string>
     <string name="metro_tip_close">Close the tip</string>
     <string name="metro_layers">Layers</string>
