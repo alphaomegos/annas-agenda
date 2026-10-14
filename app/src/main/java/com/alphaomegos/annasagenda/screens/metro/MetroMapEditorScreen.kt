@@ -25,6 +25,30 @@ import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.FitScreen
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
+import com.alphaomegos.annasagenda.support.metroHiddenStations
+import com.alphaomegos.annasagenda.support.metroFixedStations
+import com.alphaomegos.annasagenda.support.metroLayerShownToggled
+import com.alphaomegos.annasagenda.support.metroLayerOnly
+import com.alphaomegos.annasagenda.support.metroLayersAllShown
+import com.alphaomegos.annasagenda.support.metroLayerLockToggled
 import androidx.compose.material.icons.filled.SaveAlt
 import android.graphics.Bitmap
 import android.widget.Toast
@@ -154,7 +178,11 @@ fun MetroMapEditorScreen(
     // together (a tap puts one in or out, a drag of one moves them all).
     var tool by rememberSaveable { mutableStateOf(TOOL_MOVE) }
     var selectedIds by rememberSaveable { mutableStateOf(longArrayOf()) }
-    val selection = selectedIds.toSet()
+    // Layers (14.10): stations of hidden lines are out of sight, those of hidden and
+    // locked lines out of reach — not selected, not carried along, not glued to.
+    val unseen = remember(scheme) { scheme?.let { metroHiddenStations(it) }.orEmpty() }
+    val fixed = remember(scheme) { scheme?.let { metroFixedStations(it) }.orEmpty() }
+    val selection = selectedIds.toSet() - fixed
     val bending = tool == TOOL_BEND
     val naming = tool == TOOL_NAMES
     val selecting = tool == TOOL_SELECT
@@ -163,8 +191,8 @@ fun MetroMapEditorScreen(
     var looking by rememberSaveable { mutableStateOf(false) }
     // Bumped by "Fit to the screen" (08.10).
     var fitKey by rememberSaveable { mutableStateOf(0) }
-    // One line in focus (08.10), the rest faded; -1 is none.
-    var focusLineId by rememberSaveable { mutableStateOf(-1L) }
+    // The layers' panel open (14.10).
+    var layering by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -182,7 +210,6 @@ fun MetroMapEditorScreen(
                     // The whole picture, without the tools' marks, then where to save it.
                     IconButton(onClick = {
                         tool = TOOL_MOVE
-                        focusLineId = -1L
                         fitKey++
                         exporting = true
                         savePicture.launch("${scheme?.city ?: "metro"}.png")
@@ -224,19 +251,24 @@ fun MetroMapEditorScreen(
                         FilterChip(selected = tool == t, onClick = { tool = t }, label = { Text(stringResource(words)) })
                     }
                 }
-                // The lines as chips (08.10): a tap brings one forward, another tap lets it go.
+                // The layers (14.10): the panel, then a chip a line — a tap shows or hides
+                // it, holding it shows that line only (and, again, every line).
                 Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(end = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    IconButton(onClick = { layering = true }) {
+                        Icon(Icons.Default.Layers, contentDescription = stringResource(R.string.metro_layers))
+                    }
                     scheme.lines.forEach { line ->
-                        FilterChip(
-                            selected = focusLineId == line.id,
-                            onClick = { focusLineId = if (focusLineId == line.id) -1L else line.id },
-                            label = { Text(line.label.ifBlank { line.name }) },
-                            leadingIcon = {
-                                Box(Modifier.size(12.dp).background(Color(line.color), CircleShape))
-                            },
+                        MetroLayerChip(
+                            label = line.label.ifBlank { line.name },
+                            color = Color(line.color),
+                            shown = line.id !in scheme.hiddenLines,
+                            locked = line.id in scheme.lockedLines,
+                            onToggle = { vm.setMetroLayers(schemeId) { metroLayerShownToggled(it, line.id) } },
+                            onOnly = { vm.setMetroLayers(schemeId) { metroLayerOnly(it, line.id) } },
                         )
                     }
                 }
@@ -250,7 +282,7 @@ fun MetroMapEditorScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                         )
-                        TextButton(onClick = { selectedIds = metroSelectionWholeLines(scheme, selection).toLongArray() }, enabled = selection.isNotEmpty()) {
+                        TextButton(onClick = { selectedIds = (metroSelectionWholeLines(scheme, selection) - fixed).toLongArray() }, enabled = selection.isNotEmpty()) {
                             Text(stringResource(R.string.metro_select_lines))
                         }
                         TextButton(onClick = { selectedIds = longArrayOf() }, enabled = selection.isNotEmpty()) {
@@ -328,8 +360,8 @@ fun MetroMapEditorScreen(
                         vm.editMetroScheme(schemeId) {
                             when {
                                 selecting && id in selection -> metroSelectionPlaced(it, selection, id, x, y)
-                                it.transfersTogether && moveWhole -> metroStationPlaced(it, id, x, y)
-                                else -> metroStationPlacedAlone(it, id, x, y)
+                                it.transfersTogether && moveWhole -> metroStationPlaced(it, id, x, y, keep = fixed)
+                                else -> metroStationPlacedAlone(it, id, x, y, unseen = unseen)
                             }
                         }
                     },
@@ -344,7 +376,9 @@ fun MetroMapEditorScreen(
                     group = if (selecting) selection else emptySet(),
                     fitKey = fitKey,
                     capture = pictureLayer,
-                    focusLine = focusLineId.takeIf { id -> id >= 0 && scheme.lines.any { it.id == id } },
+                    hiddenLines = scheme.hiddenLines.toSet(),
+                    lockedLines = scheme.lockedLines.toSet(),
+                    ghostHidden = scheme.ghostHidden,
                     gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
                     moveAlone = !(scheme.transfersTogether && moveWhole),
                     bendMode = bending,
@@ -361,6 +395,10 @@ fun MetroMapEditorScreen(
                 )
             }
         }
+    }
+
+    if (layering && scheme != null) {
+        MetroLayersDialog(scheme, onLayers = { edit -> vm.setMetroLayers(schemeId, edit) }, onDismiss = { layering = false })
     }
 
     if (looking && scheme != null) {
@@ -509,3 +547,109 @@ private const val TOOL_MOVE = 0
 private const val TOOL_BEND = 1
 private const val TOOL_NAMES = 2
 private const val TOOL_SELECT = 3
+
+/**
+ * A line as a layer (14.10): its colour and number, filled while shown. A
+ * tap shows or hides it; holding it shows it alone. A lock when locked.
+ */
+@Composable
+private fun MetroLayerChip(
+    label: String,
+    color: Color,
+    shown: Boolean,
+    locked: Boolean,
+    onToggle: () -> Unit,
+    onOnly: () -> Unit,
+) {
+    val toggle by rememberUpdatedState(onToggle)
+    val only by rememberUpdatedState(onOnly)
+    val shape = RoundedCornerShape(8.dp)
+    val state = stringResource(if (shown) R.string.metro_layer_shown else R.string.metro_layer_hidden)
+    val onlyWords = stringResource(R.string.metro_layer_only)
+    Row(
+        modifier = Modifier
+            .height(32.dp)
+            .clip(shape)
+            .background(if (shown) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
+            .pointerInput(Unit) { detectTapGestures(onTap = { toggle() }, onLongPress = { only() }) }
+            .semantics(mergeDescendants = true) {
+                role = Role.Switch
+                stateDescription = state
+                onClick { toggle(); true }
+                onLongClick(onlyWords) { only(); true }
+            }
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(Modifier.size(12.dp).background(if (shown) color else color.copy(alpha = 0.3f), CircleShape))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (shown) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (locked) {
+            Icon(Icons.Default.Lock, contentDescription = stringResource(R.string.metro_layer_locked), modifier = Modifier.size(14.dp))
+        }
+    }
+}
+
+/**
+ * The layers' panel (14.10): every line with its eye, its lock and "only
+ * this", every line shown again, and hidden lines shown faintly.
+ */
+@Composable
+private fun MetroLayersDialog(scheme: MetroScheme, onLayers: ((MetroScheme) -> MetroScheme) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.metro_layers)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    stringResource(R.string.metro_layers_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { onLayers { metroLayersAllShown(it) } }, enabled = scheme.hiddenLines.isNotEmpty()) {
+                        Text(stringResource(R.string.metro_layers_all))
+                    }
+                }
+                MetroMapTick(stringResource(R.string.metro_layers_ghost), scheme.ghostHidden, Modifier.fillMaxWidth()) { on ->
+                    onLayers { it.copy(ghostHidden = on) }
+                }
+                scheme.lines.forEach { line ->
+                    val shown = line.id !in scheme.hiddenLines
+                    val locked = line.id in scheme.lockedLines
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(14.dp).background(Color(line.color), CircleShape))
+                        Text(
+                            listOf(line.label, line.name).filter { it.isNotBlank() }.joinToString(" "),
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f).padding(start = 8.dp),
+                        )
+                        IconButton(onClick = { onLayers { metroLayerShownToggled(it, line.id) } }) {
+                            Icon(
+                                if (shown) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = stringResource(if (shown) R.string.metro_layer_hide else R.string.metro_layer_show),
+                            )
+                        }
+                        IconButton(onClick = { onLayers { metroLayerLockToggled(it, line.id) } }) {
+                            Icon(
+                                if (locked) Icons.Default.Lock else Icons.Default.LockOpen,
+                                contentDescription = stringResource(if (locked) R.string.metro_layer_unlock else R.string.metro_layer_lock),
+                            )
+                        }
+                        TextButton(onClick = { onLayers { metroLayerOnly(it, line.id) } }) {
+                            Text(stringResource(R.string.metro_layer_only))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
+    )
+}

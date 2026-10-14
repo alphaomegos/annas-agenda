@@ -1875,6 +1875,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _metroHistory.value = history + (schemeId to (history[schemeId] ?: MetroHistory()).recorded(scheme))
     }
 
+    /**
+     * The editor's layers of [schemeId] changed (14.10): saved like any edit,
+     * but no step of undo — what is looked at, not the picture.
+     */
+    fun setMetroLayers(schemeId: Long, edit: (MetroScheme) -> MetroScheme) {
+        val cur = _state.value
+        val scheme = cur.metroSchemes.firstOrNull { it.id == schemeId } ?: return
+        val edited = edit(scheme)
+        if (edited == scheme) return
+        _state.value = cur.copy(metroSchemes = metroSchemesAfterSaving(cur.metroSchemes, edited.copy(id = schemeId)))
+    }
+
     /** The scheme as it was before its last edit (08.10); nothing when there is nothing to undo. */
     fun undoMetroScheme(schemeId: Long) = stepMetroScheme(schemeId) { h, cur -> h.undone(cur) }
 
@@ -1885,7 +1897,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val cur = _state.value
         val scheme = cur.metroSchemes.firstOrNull { it.id == schemeId } ?: return
         val history = _metroHistory.value[schemeId] ?: return
-        val (shown, next) = step(history, scheme) ?: return
+        val (stepped, next) = step(history, scheme) ?: return
+        // Undo takes the picture back, not what is looked at (14.10): the layers stay.
+        val shown = metroLayersKept(stepped, scheme)
         _state.value = cur.copy(metroSchemes = metroSchemesAfterSaving(cur.metroSchemes, shown.copy(id = schemeId)))
         _metroHistory.value = _metroHistory.value + (schemeId to next)
     }

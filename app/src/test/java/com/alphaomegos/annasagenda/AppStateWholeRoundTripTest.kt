@@ -310,6 +310,9 @@ class AppStateWholeRoundTripTest {
                 tickStations = true,
                 lineBadges = true,
                 alignGuides = true,
+                hiddenLines = listOf(5L),
+                lockedLines = listOf(1L),
+                ghostHidden = true,
                 bends = listOf(MetroBend(10L, 11L, listOf(MetroMapPoint(1f, 0.5f), MetroMapPoint(1f, 2.5f)))),
             ),
         ),
@@ -437,7 +440,7 @@ class AppStateWholeRoundTripTest {
             "metroSchemes", "metroSelection", "trunk", "branches", "fromStationId", "exitId", "toStationId",
             "closed", "expectedOpeningEpochDay",
             "travelCountries", "travelView", "countryId", "trips", "month", "cities", "continent",
-            "bends", "glue", "labelsOncePerInterchange", "labelSide",
+            "bends", "glue", "labelsOncePerInterchange", "labelSide", "hiddenLines", "lockedLines",
             "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes",
             "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
         ).forEach { key ->

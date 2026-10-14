@@ -386,4 +386,27 @@ class ScreenWiringTest {
         composeRule.waitForIdle()
         assertEquals(before, scheme(id))
     }
+
+    @Test
+    fun theMapEditorsLayers_aTapHidesALine_andTheRestOfThePictureStays() {
+        val id = schemeWith("Alpha", "Beta")
+        val line = scheme(id).lines.single().id
+        composeRule.setContent {
+            MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
+        }
+
+        val steps = vm.metroHistory.value[id]?.undo?.size ?: 0
+        composeRule.onNodeWithText("1").performClick()
+        composeRule.waitForIdle()
+        assertEquals(listOf(line), scheme(id).hiddenLines)
+        // Not a step of undo: what is looked at, not the picture.
+        assertEquals(steps, vm.metroHistory.value[id]?.undo?.size ?: 0)
+
+        composeRule.onNodeWithText("1").performClick()
+        composeRule.waitForIdle()
+        assertEquals(emptyList<Long>(), scheme(id).hiddenLines)
+
+        composeRule.onNodeWithContentDescription(word(R.string.metro_layers)).performClick()
+        composeRule.onNodeWithText(word(R.string.metro_layers_ghost)).assertExists()
+    }
 }

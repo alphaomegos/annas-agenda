@@ -215,10 +215,11 @@ fun metroAloneDropPoint(scheme: MetroScheme, positions: Map<Long, MetroPoint>, s
  * One station moved alone (08.10), glued as [metroAloneDropPoint] says; the
  * rest of the picture frozen where it was.
  */
-fun metroStationPlacedAlone(scheme: MetroScheme, stationId: Long, x: Float, y: Float): MetroScheme {
+fun metroStationPlacedAlone(scheme: MetroScheme, stationId: Long, x: Float, y: Float, unseen: Set<Long> = emptySet()): MetroScheme {
     if (scheme.stations.none { it.id == stationId } || !x.isFinite() || !y.isFinite()) return scheme
     val frozen = metroSchemeWithLayoutFrozen(scheme)
-    val positions = frozen.stations.filter { it.mapX != null && it.mapY != null }.associate { it.id to MetroPoint(it.mapX!!, it.mapY!!) }
+    // Glued only to a station in sight (14.10): not to one of a hidden line.
+    val positions = frozen.stations.filter { it.mapX != null && it.mapY != null && it.id !in unseen }.associate { it.id to MetroPoint(it.mapX!!, it.mapY!!) }
     val at = metroAloneDropPoint(frozen, positions, stationId, MetroPoint(x, y))
     return frozen.copy(stations = frozen.stations.map { if (it.id == stationId) it.copy(mapX = at.x, mapY = at.y) else it })
 }

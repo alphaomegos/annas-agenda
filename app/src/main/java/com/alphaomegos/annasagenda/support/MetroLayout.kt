@@ -219,13 +219,14 @@ fun metroSchemeWithLayoutFrozen(scheme: MetroScheme): MetroScheme {
  * With transfers kept together, the other stations of its transfer come
  * along, moved just as far.
  */
-fun metroStationPlaced(scheme: MetroScheme, stationId: Long, x: Float, y: Float): MetroScheme {
+fun metroStationPlaced(scheme: MetroScheme, stationId: Long, x: Float, y: Float, keep: Set<Long> = emptySet()): MetroScheme {
     if (scheme.stations.none { it.id == stationId } || !x.isFinite() || !y.isFinite()) return scheme
     val frozen = metroSchemeWithLayoutFrozen(scheme)
     val from = frozen.stations.first { it.id == stationId }
     val dx = x - (from.mapX ?: x)
     val dy = y - (from.mapY ?: y)
-    val moving = metroStationsMovingWith(frozen, stationId)
+    // Stations of hidden or locked lines (14.10) stay, even of its own transfer.
+    val moving = metroStationsMovingWith(frozen, stationId) - keep
     return frozen.copy(stations = frozen.stations.map {
         when {
             it.id == stationId -> it.copy(mapX = x, mapY = y)

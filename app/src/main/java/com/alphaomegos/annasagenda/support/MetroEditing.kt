@@ -491,6 +491,9 @@ internal fun reconciled(before: MetroScheme, after: MetroScheme): MetroScheme {
         hints = hints,
         segmentTimes = segmentTimes,
         bends = bends,
+        // A line gone leaves the editor's layers too (14.10).
+        hiddenLines = after.hiddenLines.filter { it in lineIds },
+        lockedLines = after.lockedLines.filter { it in lineIds },
     )
 }
 

@@ -49,6 +49,7 @@ import com.alphaomegos.annasagenda.support.METRO_CORNER_RADIUS
 import com.alphaomegos.annasagenda.support.metroRoundedCorners
 import com.alphaomegos.annasagenda.support.METRO_LABEL_HIDDEN
 import com.alphaomegos.annasagenda.support.MetroViewport
+import com.alphaomegos.annasagenda.support.metroEditablePart
 import com.alphaomegos.annasagenda.support.metroFittedViewport
 import com.alphaomegos.annasagenda.support.metroPictureFacts
 import com.alphaomegos.annasagenda.support.metroLabelSides
@@ -107,8 +108,12 @@ import androidx.compose.ui.graphics.luminance
  * names tool. A drag of a station in [group] moves the whole group, with
  * the track bent between its stations (the editor's selection). A new
  * [fitKey] fits the whole picture to the view again. With [capture] the
- * picture is recorded into that layer too, to be saved as an image. With
- * [focusLine] every other line fades.
+ * picture is recorded into that layer too, to be saved as an image.
+ *
+ * Layers (14.10): [hiddenLines] are not drawn — or drawn faintly, with
+ * [ghostHidden] — and nothing of them can be touched; [lockedLines] are
+ * drawn but nothing of them moves. Glue and guides look only at what is in
+ * sight, and "fit" fits it.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -135,7 +140,9 @@ internal fun MetroMapView(
     group: Set<Long> = emptySet(),
     fitKey: Int = 0,
     capture: GraphicsLayer? = null,
-    focusLine: Long? = null,
+    hiddenLines: Set<Long> = emptySet(),
+    lockedLines: Set<Long> = emptySet(),
+    ghostHidden: Boolean = false,
 ) {
     // Where the picture is looked at (14.10), in its own units: pixels to a
     // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
@@ -168,6 +175,20 @@ internal fun MetroMapView(
     val currentBend by rememberUpdatedState(onBend)
     val currentMoveAlone by rememberUpdatedState(moveAlone)
     val currentGroup by rememberUpdatedState(group)
+    // Layers (14.10): what is out of sight, what may not move, and the part a finger may bend.
+    val hiddenStations = remember(scheme.stations, hiddenLines) {
+        if (hiddenLines.isEmpty()) emptySet() else scheme.stations.filter { it.lineId in hiddenLines }.map { it.id }.toSet()
+    }
+    val fixedStations = remember(scheme.stations, hiddenLines, lockedLines) {
+        val fixedLines = hiddenLines + lockedLines
+        if (fixedLines.isEmpty()) emptySet() else scheme.stations.filter { it.lineId in fixedLines }.map { it.id }.toSet()
+    }
+    val reachable = remember(layout, fixedStations) { if (fixedStations.isEmpty()) layout else layout.filterKeys { it !in fixedStations } }
+    val inSight = remember(layout, hiddenStations) { if (hiddenStations.isEmpty()) layout else layout.filterKeys { it !in hiddenStations } }
+    val editable = remember(scheme, hiddenLines, lockedLines) {
+        metroEditablePart(scheme.copy(hiddenLines = hiddenLines.toList(), lockedLines = lockedLines.toList()))
+    }
+    val currentEditable by rememberUpdatedState(editable)
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     val labelColor = MaterialTheme.colorScheme.onSurface
@@ -232,7 +253,7 @@ internal fun MetroMapView(
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
         if (w <= 0f || h <= 0f || layout.isEmpty()) return@BoxWithConstraints
-        val fitted = metroFittedViewport(layout.values, w, h)
+        val fitted = metroFittedViewport(inSight.values.ifEmpty { layout.values }, w, h)
         val view = if (viewK > 0f) MetroViewport(viewK, viewCx, viewCy) else fitted
         val k = view.k
         val cx = view.cx
@@ -244,7 +265,7 @@ internal fun MetroMapView(
 
         // Keyed on what does not change while a finger is down: zooming must
         // not restart the very gesture that zooms. The scale is read afresh.
-        val gestures = Modifier.pointerInput(layout, w, h, onMoveStation != null) {
+        val gestures = Modifier.pointerInput(layout, w, h, onMoveStation != null, fixedStations, hiddenStations) {
             fun viewNow(): MetroViewport = if (viewK > 0f) MetroViewport(viewK, viewCx, viewCy) else fitted
             fun setView(v: MetroViewport) { viewK = v.k; viewCx = v.cx; viewCy = v.cy }
             fun toMap(o: Offset): MetroPoint {
@@ -260,9 +281,9 @@ internal fun MetroMapView(
                 val start = toMap(down.position)
                 val hitRadius = hitPx / viewNow().k
                 val bending = currentBendMode
-                val bendPoint = if (bending) metroBendPointAt(currentScheme, start.x, start.y, hitRadius) else null
-                val onTrack = if (bending && bendPoint == null) metroTrackAt(currentScheme, layout, start.x, start.y, hitRadius * 0.7f) else null
-                val grabbed = if (currentMove != null && !bending) metroStationAt(layout, start.x, start.y, hitRadius) else null
+                val bendPoint = if (bending) metroBendPointAt(currentEditable, start.x, start.y, hitRadius) else null
+                val onTrack = if (bending && bendPoint == null) metroTrackAt(currentEditable, layout, start.x, start.y, hitRadius * 0.7f) else null
+                val grabbed = if (currentMove != null && !bending) metroStationAt(reachable, start.x, start.y, hitRadius) else null
                 var travelled = 0f
                 var fingers = 1
                 // A second finger during a drag calls the drag off (14.10): the picture
@@ -335,11 +356,11 @@ internal fun MetroMapView(
                         grabbed in currentGroup -> currentGroup
                         currentMoveAlone -> setOf(grabbed)
                         else -> metroStationsMovingWith(s, grabbed)
-                    }
-                    val at = metroDropSnap(s, layout, grabbed, moving, toMap(dragAt), currentGrid, angleTolPx / viewNow().k)
+                    } - fixedStations
+                    val at = metroDropSnap(s, layout, grabbed, moving, toMap(dragAt), currentGrid, angleTolPx / viewNow().k, hiddenStations)
                     currentMove?.invoke(grabbed, at.x, at.y)
                 } else if (travelled <= slop && fingers == 1) {
-                    metroStationAt(layout, start.x, start.y, hitRadius)?.let { currentTap(it) }
+                    metroStationAt(reachable, start.x, start.y, hitRadius)?.let { currentTap(it) }
                 }
                 dragId = null
             }
@@ -371,7 +392,7 @@ internal fun MetroMapView(
                     it in group -> group
                     moveAlone -> setOf(it)
                     else -> metroStationsMovingWith(scheme, it)
-                }
+                } - fixedStations
             } ?: emptySet()
             val inGroup = dragId != null && dragId in group
             fun dragPoint(): MetroPoint {
@@ -380,8 +401,8 @@ internal fun MetroMapView(
             }
             val shift = dragged?.let { from ->
                 val raw = MetroPoint((dragAt.x - w / 2) / k + cx, (dragAt.y - h / 2) / k + cy)
-                val snapped = metroDropSnap(scheme, layout, dragId!!, moving, raw, gridStep, angleTolPx / k)
-                val to = if (moveAlone && !inGroup) metroAloneDropPoint(scheme, layout, dragId!!, snapped) else snapped
+                val snapped = metroDropSnap(scheme, layout, dragId!!, moving, raw, gridStep, angleTolPx / k, hiddenStations)
+                val to = if (moveAlone && !inGroup) metroAloneDropPoint(scheme, inSight, dragId!!, snapped) else snapped
                 MetroPoint(to.x - from.x, to.y - from.y)
             }
             fun at(id: Long): Offset? {
@@ -415,11 +436,13 @@ internal fun MetroMapView(
 
             val capsules = scheme.showTransferLinks && scheme.transferCapsules
             fun drawLinks() = scheme.transfers.forEach { t ->
+                // A link to a hidden line goes with it, or is drawn faintly with it.
+                val ghost = t.aStationId in hiddenStations || t.bStationId in hiddenStations
+                if (ghost && !ghostHidden) return@forEach
                 val a = at(t.aStationId) ?: return@forEach
                 val c = at(t.bStationId) ?: return@forEach
-                val lit = (!fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs) &&
-                    (focusLine == null || lineOf[t.aStationId] == focusLine || lineOf[t.bStationId] == focusLine)
-                val alpha = if (lit) 1f else 0.25f
+                val lit = !fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs
+                val alpha = if (ghost) GHOST_ALPHA else if (lit) 1f else 0.25f
                 if (capsules) {
                     // A passage as on the Moscow map (08.10): a band as wide as the
                     // rings, edged dark, over the track; the rings sit on its ends.
@@ -476,17 +499,21 @@ internal fun MetroMapView(
             // its colour, so a line drawn later crosses an earlier one with a
             // gap of the background on each side, as on a printed map.
             edges.groupBy { it.first }.forEach { (lineId, ofLine) ->
+                // A hidden line (14.10): not drawn, or faintly with its ghosts shown.
+                val ghost = lineId in hiddenLines
+                if (ghost && !ghostHidden) return@forEach
                 val color = Color(lines[lineId]?.color ?: 0xFF888888)
                 val drawn = ofLine.mapNotNull { (_, s, t) ->
                     val pts = trackPoints(s, t) ?: return@mapNotNull null
-                    val lit = (!fade || (s to t) in routePairs) && (focusLine == null || lineId == focusLine)
+                    val lit = !fade || (s to t) in routePairs
                     Triple(pts, lit, if (fade && lit) lineWidth * 1.5f else lineWidth)
                 }
-                if (scheme.lineCasing) drawn.forEach { (pts, lit, width) ->
-                    drawTrack(pts, ringFill.copy(alpha = if (lit) 1f else 0.25f), width * (1f + 2 * METRO_CASING))
+                fun alphaOf(lit: Boolean) = if (ghost) GHOST_ALPHA else if (lit) 1f else 0.25f
+                if (scheme.lineCasing && !ghost) drawn.forEach { (pts, lit, width) ->
+                    drawTrack(pts, ringFill.copy(alpha = alphaOf(lit)), width * (1f + 2 * METRO_CASING))
                 }
-                drawn.forEach { (pts, lit, width) -> drawTrack(pts, color.copy(alpha = if (lit) 1f else 0.25f), width) }
-                if (bendMode) drawn.forEach { (pts, _, _) ->
+                drawn.forEach { (pts, lit, width) -> drawTrack(pts, color.copy(alpha = alphaOf(lit)), width) }
+                if (bendMode && !ghost && lineId !in lockedLines) drawn.forEach { (pts, _, _) ->
                     pts.subList(1, pts.size - 1).forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = it) }
                 }
             }
@@ -494,7 +521,7 @@ internal fun MetroMapView(
             // standing still, a line across the picture shows it.
             val dropAt = shift?.let { s -> dragged?.let { MetroPoint(it.x + s.x, it.y + s.y) } }
             if (scheme.alignGuides && dropAt != null) {
-                val still = layout.filterKeys { it !in moving }.values
+                val still = inSight.filterKeys { it !in moving }.values
                 val thin = 1.dp.toPx()
                 if (still.any { abs(it.x - dropAt.x) < 1e-4f }) {
                     val sx = toScreen(dropAt).x
@@ -514,10 +541,12 @@ internal fun MetroMapView(
             }
             scheme.stations.forEach { st ->
                 val p = at(st.id) ?: return@forEach
+                // A station of a hidden line (14.10): not drawn, or faintly and nameless.
+                val ghost = st.id in hiddenStations
+                if (ghost && !ghostHidden) return@forEach
                 val color = Color(lines[lineOf[st.id]]?.color ?: 0xFF888888)
-                // One line in focus (08.10): the rest fade, as off a route.
-                val lit = (!fade || st.id in routeStations) && (focusLine == null || lineOf[st.id] == focusLine)
-                val alpha = if (lit) 1f else 0.3f
+                val lit = !fade || st.id in routeStations
+                val alpha = if (ghost) GHOST_ALPHA else if (lit) 1f else 0.3f
                 // Ticks (08.10): a station that is no interchange is a bar off its line, a
                 // terminus a bar across its end; a closed one grey. Interchanges stay rings.
                 val tick = if (scheme.tickStations && st.id !in interchanges) tickAngles[st.id] else null
@@ -537,7 +566,7 @@ internal fun MetroMapView(
                 val markEnd = (if (tick != null) tickLen else radius) + 3.dp.toPx()
                 var badgeRoom = 0f
                 val badge = lineOf[st.id]?.let { badges[it] }
-                if (out != null && badge != null) {
+                if (out != null && badge != null && !ghost) {
                     val r = maxOf(badge.size.width, badge.size.height) / 2f + 2.dp.toPx()
                     val c = p + Offset(cos(out).toFloat(), sin(out).toFloat()) * (markEnd + r)
                     drawCircle(color, radius = r, center = c, alpha = alpha)
@@ -551,7 +580,7 @@ internal fun MetroMapView(
                     if (metroLabelFacesOutward(labelSides[st.id] ?: 0, out)) badgeRoom = 2 * r + 3.dp.toPx()
                 }
                 val written = st.id in labelled && st.id !in hiddenLabels
-                if ((written && (showLabels || (fade && lit))) || st.id in marked || st.id == dragId || namingMode) {
+                if (!ghost && ((written && (showLabels || (fade && lit))) || st.id in marked || st.id == dragId || namingMode)) {
                     val label = labels[st.id] ?: return@forEach
                     // With the names tool every name shows; one not written on the picture, faintly.
                     val faint = namingMode && !written
@@ -581,6 +610,7 @@ private fun metroDropSnap(
     raw: MetroPoint,
     grid: Float?,
     tolerance: Float,
+    unseen: Set<Long> = emptySet(),
 ): MetroPoint {
     if (scheme.snapAngles) {
         val squared = metroOctilinearSnap(raw, metroAngleAnchors(scheme, layout, stationId, moving), tolerance)
@@ -589,8 +619,11 @@ private fun metroDropSnap(
     val gridded = grid?.let { metroSnapped(raw, it) } ?: raw
     if (scheme.alignGuides) {
         // Level with, or under, a station standing still (08.10); the other way, the grid.
-        val g = metroGuided(raw, layout.filterKeys { it !in moving }.values, tolerance)
+        val g = metroGuided(raw, layout.filterKeys { it !in moving && it !in unseen }.values, tolerance)
         return MetroPoint(g.x ?: gridded.x, g.y ?: gridded.y)
     }
     return gridded
 }
+
+/** How strongly a hidden line shows when its ghosts are shown (14.10). */
+private const val GHOST_ALPHA = 0.15f

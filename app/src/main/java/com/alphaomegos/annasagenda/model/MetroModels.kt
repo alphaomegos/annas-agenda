@@ -65,6 +65,12 @@ data class MetroScheme(
     val lineBadges: Boolean = false,
     // A dragged station drawn level with, or under, a station near that way (08.10). A setting.
     val alignGuides: Boolean = false,
+    // The editor's layers (14.10): lines hidden from its picture, lines locked
+    // there (shown, not moved), and hidden lines shown faintly. The editor's
+    // view only — the metro screen draws every line. Settings.
+    val hiddenLines: List<Long> = emptyList(),
+    val lockedLines: List<Long> = emptyList(),
+    val ghostHidden: Boolean = false,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),
