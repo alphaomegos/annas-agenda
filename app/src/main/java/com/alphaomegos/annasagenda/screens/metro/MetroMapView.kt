@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -190,6 +192,9 @@ internal fun MetroMapView(
     val currentMoveAlone by rememberUpdatedState(moveAlone)
     val currentGroup by rememberUpdatedState(group)
     val currentMarquee by rememberUpdatedState(onMarquee)
+    // A tick under the finger each time a dragged thing clicks into a place (14.10).
+    val haptics = LocalHapticFeedback.current
+    val currentHaptics by rememberUpdatedState(haptics)
     val currentTapEmpty by rememberUpdatedState(onTapEmpty)
     // Layers (14.10): what is out of sight, what may not move, and the part a finger may bend.
     val hiddenStations = remember(scheme.stations, hiddenLines) {
@@ -325,6 +330,20 @@ internal fun MetroMapView(
                     dragBend = grabbedBend
                     dragAt = down.position + grabOffset
                 }
+                // Where the thing dragged would land now (14.10), to feel it click into a place.
+                val movingAtGrab = grabbed?.let { g ->
+                    when {
+                        g in currentGroup -> currentGroup
+                        currentMoveAlone -> setOf(g)
+                        else -> metroStationsMovingWith(currentScheme, g)
+                    } - fixedStations
+                }
+                fun landing(raw: MetroPoint): MetroPoint {
+                    if (grabbed == null || movingAtGrab == null) return currentGrid?.let { metroSnapped(raw, it) } ?: raw
+                    val snapped = metroDropSnap(currentScheme, layout, grabbed, movingAtGrab, raw, currentGrid, angleTolPx / viewNow().k, hiddenStations)
+                    return if (currentMoveAlone && grabbed !in currentGroup) metroAloneDropPoint(currentScheme, inSight, grabbed, snapped) else snapped
+                }
+                var clickedInto: MetroPoint? = null
                 // Off every station with the box on: one finger draws it.
                 val boxing = currentMarquee != null && grabbed == null && grabbedBend == null && !bending
                 if (boxing) marquee = down.position to down.position
@@ -348,6 +367,13 @@ internal fun MetroMapView(
                         travelled += change.positionChange().getDistance()
                         dragAt = change.position + grabOffset
                         change.consume()
+                        val raw = toMap(dragAt)
+                        val at = landing(raw)
+                        val snapped = at != raw
+                        if (snapped && at != clickedInto && travelled > viewConfiguration.touchSlop) {
+                            currentHaptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                        clickedInto = if (snapped) at else null
                     } else {
                         val zoomChange = event.calculateZoom()
                         val pan = event.calculatePan()
