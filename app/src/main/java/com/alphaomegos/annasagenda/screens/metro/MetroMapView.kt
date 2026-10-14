@@ -23,6 +23,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import com.alphaomegos.annasagenda.support.metroStationsInside
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -114,6 +116,10 @@ import androidx.compose.ui.graphics.luminance
  * [ghostHidden] — and nothing of them can be touched; [lockedLines] are
  * drawn but nothing of them moves. Glue and guides look only at what is in
  * sight, and "fit" fits it.
+ *
+ * With [onMarquee] (14.10) one finger off a station draws a box, and the
+ * stations in reach inside it are said when it is let go; two fingers pan
+ * and zoom as ever. [onTapEmpty] is a tap on no station.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -143,6 +149,8 @@ internal fun MetroMapView(
     hiddenLines: Set<Long> = emptySet(),
     lockedLines: Set<Long> = emptySet(),
     ghostHidden: Boolean = false,
+    onMarquee: ((Set<Long>) -> Unit)? = null,
+    onTapEmpty: (() -> Unit)? = null,
 ) {
     // Where the picture is looked at (14.10), in its own units: pixels to a
     // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
@@ -166,6 +174,8 @@ internal fun MetroMapView(
     var dragAt by remember { mutableStateOf(Offset.Zero) }
     // A bend point being dragged: which, and whether it is a new one put in.
     var dragBend by remember { mutableStateOf<Pair<MetroBendHit, Boolean>?>(null) }
+    // A box being drawn round stations (14.10): its two corners on the screen.
+    var marquee by remember { mutableStateOf<Pair<Offset, Offset>?>(null) }
 
     val currentTap by rememberUpdatedState(onTapStation)
     val currentMove by rememberUpdatedState(onMoveStation)
@@ -175,6 +185,8 @@ internal fun MetroMapView(
     val currentBend by rememberUpdatedState(onBend)
     val currentMoveAlone by rememberUpdatedState(moveAlone)
     val currentGroup by rememberUpdatedState(group)
+    val currentMarquee by rememberUpdatedState(onMarquee)
+    val currentTapEmpty by rememberUpdatedState(onTapEmpty)
     // Layers (14.10): what is out of sight, what may not move, and the part a finger may bend.
     val hiddenStations = remember(scheme.stations, hiddenLines) {
         if (hiddenLines.isEmpty()) emptySet() else scheme.stations.filter { it.lineId in hiddenLines }.map { it.id }.toSet()
@@ -309,16 +321,25 @@ internal fun MetroMapView(
                     dragBend = grabbedBend
                     dragAt = down.position + grabOffset
                 }
+                // Off every station with the box on: one finger draws it.
+                val boxing = currentMarquee != null && grabbed == null && grabbedBend == null && !bending
+                if (boxing) marquee = down.position to down.position
                 do {
                     val event = awaitPointerEvent()
                     val pressed = event.changes.filter { it.pressed }
                     fingers = maxOf(fingers, pressed.size)
-                    if ((grabbed != null || grabbedBend != null) && !cancelled && pressed.size > 1) {
+                    if ((grabbed != null || grabbedBend != null || boxing) && !cancelled && pressed.size > 1) {
                         cancelled = true
                         dragId = null
                         dragBend = null
+                        marquee = null
                     }
-                    if ((grabbed != null || grabbedBend != null) && !cancelled && pressed.size == 1) {
+                    if (boxing && !cancelled && pressed.size == 1) {
+                        val change = pressed[0]
+                        travelled += change.positionChange().getDistance()
+                        marquee = down.position to change.position
+                        change.consume()
+                    } else if ((grabbed != null || grabbedBend != null) && !cancelled && pressed.size == 1) {
                         val change = pressed[0]
                         travelled += change.positionChange().getDistance()
                         dragAt = change.position + grabOffset
@@ -339,8 +360,12 @@ internal fun MetroMapView(
                 } while (event.changes.any { it.pressed })
 
                 val slop = viewConfiguration.touchSlop
+                val box = marquee
+                marquee = null
                 if (cancelled) {
                     // Nothing dropped, nothing tapped.
+                } else if (boxing && box != null && travelled > slop) {
+                    currentMarquee?.invoke(metroStationsInside(reachable, toMap(box.first), toMap(box.second)))
                 } else if (grabbedBend != null) {
                     val (hit, insert) = grabbedBend
                     if (travelled > slop) {
@@ -360,7 +385,8 @@ internal fun MetroMapView(
                     val at = metroDropSnap(s, layout, grabbed, moving, toMap(dragAt), currentGrid, angleTolPx / viewNow().k, hiddenStations)
                     currentMove?.invoke(grabbed, at.x, at.y)
                 } else if (travelled <= slop && fingers == 1) {
-                    metroStationAt(reachable, start.x, start.y, hitRadius)?.let { currentTap(it) }
+                    val tapped = metroStationAt(reachable, start.x, start.y, hitRadius)
+                    if (tapped != null) currentTap(tapped) else currentTapEmpty?.invoke()
                 }
                 dragId = null
             }
@@ -590,6 +616,13 @@ internal fun MetroMapView(
                     )
                     drawText(label, topLeft = Offset(corner.x, corner.y), alpha = if (faint) alpha * 0.35f else alpha)
                 }
+            }
+            // The box being drawn (14.10), over everything.
+            marquee?.let { (a, c) ->
+                val topLeft = Offset(minOf(a.x, c.x), minOf(a.y, c.y))
+                val size = Size(abs(a.x - c.x), abs(a.y - c.y))
+                drawRect(markColor.copy(alpha = 0.12f), topLeft, size)
+                drawRect(markColor, topLeft, size, style = Stroke(1.5f.dp.toPx()))
             }
         }
     }

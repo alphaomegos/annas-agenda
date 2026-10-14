@@ -879,7 +879,7 @@
     <string name="metro_selected_count">Izabrano: %1$d</string>
     <string name="metro_select_lines">Cele linije</string>
     <string name="metro_select_none">Poništi</string>
-    <string name="metro_select_hint">Dodirujte stanice da ih izaberete; prevucite bilo koju — pomeriće se sve, zajedno sa krivinama između njih.</string>
+    <string name="metro_select_hint">Dodirujte stanice da ih izaberete ili ih jednim prstom uokvirite; dodir pored stanica poništava izbor. Prevucite bilo koju izabranu — pomeriće se sve. Šemu pomeraju dva prsta.</string>
     <string name="metro_round_corners">Zaobljeni uglovi pruge</string>
     <string name="metro_names_tool">Nazivi</string>
     <string name="metro_names_hint">Dodirnite stanicu — naziv obilazi oko nje: desno, dole desno, dole… pa skriven, pa opet sam.</string>

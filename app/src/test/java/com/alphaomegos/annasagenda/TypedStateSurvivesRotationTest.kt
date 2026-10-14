@@ -75,6 +75,7 @@ class TypedStateSurvivesRotationTest {
         "MetroMapView.kt:dragId" to "a station being dragged; a rotation ends the drag, the drop is what is kept",
         "MetroMapView.kt:dragAt" to "as dragId",
         "MetroMapView.kt:dragBend" to "a bend point being dragged (08.10); as dragId",
+        "MetroMapView.kt:marquee" to "a box being drawn round stations (14.10); a rotation ends it, as a drag",
         "ReadingSessionScreen.kt:errorText" to
             "a message about the last tap on Save, recomputed by the next one; the three " +
             "numbers typed in that dialog are saveable",

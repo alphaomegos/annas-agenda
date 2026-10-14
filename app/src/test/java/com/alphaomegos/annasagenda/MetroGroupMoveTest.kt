@@ -90,4 +90,12 @@ class MetroGroupMoveTest {
         repeat(2) { q = metroSelectionTurned(q, setOf(2L, 3L), MetroTurn.CLOCKWISE_45) }
         assertEquals(2f, q.at(2L).x, 1e-4f); assertEquals(0f, q.at(2L).y, 1e-4f)
     }
+
+    @Test
+    fun aBoxDrawnRoundStations_takesThoseInside_drawnEitherWay() {
+        val layout = metroLayout(scheme)
+        assertEquals(setOf(2L, 11L), metroStationsInside(layout, MetroPoint(0.5f, -0.5f), MetroPoint(1.5f, 1.2f)))
+        assertEquals(setOf(2L, 11L), metroStationsInside(layout, MetroPoint(1.5f, 1.2f), MetroPoint(0.5f, -0.5f)))
+        assertEquals(emptySet<Long>(), metroStationsInside(layout, MetroPoint(5f, 5f), MetroPoint(6f, 6f)))
+    }
 }

@@ -328,6 +328,9 @@ fun MetroMapEditorScreen(
                         group = if (selecting) selection else emptySet(),
                         fitKey = fitKey,
                         capture = pictureLayer,
+                        // Select (14.10): a box drawn round stations adds them; a tap on nothing lets go of all.
+                        onMarquee = if (selecting) { ids -> selectedIds = (selection + ids - fixed).toLongArray() } else null,
+                        onTapEmpty = if (selecting) { { selectedIds = longArrayOf() } } else null,
                         hiddenLines = scheme.hiddenLines.toSet(),
                         lockedLines = scheme.lockedLines.toSet(),
                         ghostHidden = scheme.ghostHidden,

@@ -18,6 +18,13 @@ const val METRO_NUDGE_STEP = 0.1f
 fun metroSelectionToggled(ids: Set<Long>, stationId: Long): Set<Long> =
     if (stationId in ids) ids - stationId else ids + stationId
 
+/** The stations of [layout] inside the box between two corners, either way round (14.10): what a box drawn round them takes. */
+fun metroStationsInside(layout: Map<Long, MetroPoint>, a: MetroPoint, b: MetroPoint): Set<Long> {
+    val l = minOf(a.x, b.x); val r = maxOf(a.x, b.x)
+    val t = minOf(a.y, b.y); val d = maxOf(a.y, b.y)
+    return layout.filterValues { it.x in l..r && it.y in t..d }.keys
+}
+
 /** [ids] grown to every station of each line one of them is on. */
 fun metroSelectionWholeLines(scheme: MetroScheme, ids: Set<Long>): Set<Long> {
     val lines = scheme.stations.filter { it.id in ids }.map { it.lineId }.toSet()
