@@ -136,7 +136,7 @@
     <string name="metro_layer_lock">Lock the line</string>
     <string name="metro_layer_unlock">Unlock the line</string>
     <string name="metro_layer_locked">Locked</string>
-    <string name="metro_align_guides">Guides: level with other stations</string>
+    <string name="metro_align_guides">Guides</string>
     <string name="metro_nudge_left">←</string>
     <string name="metro_nudge_up">↑</string>
     <string name="metro_nudge_down">↓</string>

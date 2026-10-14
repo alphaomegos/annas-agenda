@@ -923,7 +923,7 @@
     <string name="metro_layer_lock">Заблокировать линию</string>
     <string name="metro_layer_unlock">Разблокировать линию</string>
     <string name="metro_layer_locked">Заблокирована</string>
-    <string name="metro_align_guides">Направляющие: вровень с другими станциями</string>
+    <string name="metro_align_guides">Направляющие</string>
     <string name="metro_nudge_left">←</string>
     <string name="metro_nudge_up">↑</string>
     <string name="metro_nudge_down">↓</string>

@@ -1876,10 +1876,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * The editor's layers of [schemeId] changed (14.10): saved like any edit,
-     * but no step of undo — what is looked at, not the picture.
+     * The editor's view of [schemeId] changed (14.10) — its layers, its aids
+     * to drawing (grid, angles of 45°, guides): saved like any edit, but no
+     * step of undo — how the picture is looked at and drawn, not the picture.
      */
-    fun setMetroLayers(schemeId: Long, edit: (MetroScheme) -> MetroScheme) {
+    fun setMetroView(schemeId: Long, edit: (MetroScheme) -> MetroScheme) {
         val cur = _state.value
         val scheme = cur.metroSchemes.firstOrNull { it.id == schemeId } ?: return
         val edited = edit(scheme)
@@ -1898,8 +1899,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val scheme = cur.metroSchemes.firstOrNull { it.id == schemeId } ?: return
         val history = _metroHistory.value[schemeId] ?: return
         val (stepped, next) = step(history, scheme) ?: return
-        // Undo takes the picture back, not what is looked at (14.10): the layers stay.
-        val shown = metroLayersKept(stepped, scheme)
+        // Undo takes the picture back, not how it is looked at (14.10): layers and aids stay.
+        val shown = metroViewKept(stepped, scheme)
         _state.value = cur.copy(metroSchemes = metroSchemesAfterSaving(cur.metroSchemes, shown.copy(id = schemeId)))
         _metroHistory.value = _metroHistory.value + (schemeId to next)
     }

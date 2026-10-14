@@ -50,9 +50,11 @@ class MetroLayersTest {
     @Test
     fun undo_takesThePictureBack_notTheLayers() {
         val now = metroLayerOnly(scheme.copy(stations = scheme.stations.map { it.copy(mapX = (it.mapX ?: 0f) + 1f) }), 2)
-        val back = metroLayersKept(scheme, now)
+            .copy(mapGrid = true, snapAngles = true, alignGuides = true)
+        val back = metroViewKept(scheme, now)
         assertEquals(scheme.stations, back.stations)
         assertEquals(now.hiddenLines, back.hiddenLines)
+        assertTrue(back.mapGrid && back.snapAngles && back.alignGuides)
     }
 
     @Test

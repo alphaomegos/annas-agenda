@@ -205,17 +205,21 @@ class ScreenWiringTest {
             MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
         }
 
-        // The ticks live in the Look panel since 08.10.
-        composeRule.onNodeWithContentDescription(word(R.string.metro_look)).performClick()
-        composeRule.onNodeWithText(word(R.string.metro_map_grid)).performClick()
-        composeRule.onNodeWithText(word(R.string.metro_transfers_together)).performClick()
+        // The grid is an aid by the tools since 14.10, and no step of undo.
+        val steps = vm.metroHistory.value[id]?.undo?.size ?: 0
+        composeRule.onNodeWithText(word(R.string.metro_map_grid)).performScrollTo().performClick()
         composeRule.waitForIdle()
         assertTrue(scheme(id).mapGrid)
-        assertTrue(scheme(id).transfersTogether)
-
-        composeRule.onNodeWithText(word(R.string.metro_map_grid)).performClick()
+        assertEquals(steps, vm.metroHistory.value[id]?.undo?.size ?: 0)
+        composeRule.onNodeWithText(word(R.string.metro_map_grid)).performScrollTo().performClick()
         composeRule.waitForIdle()
         assertEquals(false, scheme(id).mapGrid)
+
+        // The other ticks live in the Look panel since 08.10.
+        composeRule.onNodeWithContentDescription(word(R.string.metro_look)).performClick()
+        composeRule.onNodeWithText(word(R.string.metro_transfers_together)).performClick()
+        composeRule.waitForIdle()
+        assertTrue(scheme(id).transfersTogether)
     }
 
     /* ---------------- travel ---------------- */
@@ -358,18 +362,19 @@ class ScreenWiringTest {
     @Test
     fun theMapEditorsUndoAndRedo_stepThroughTheEdits() {
         val id = schemeWith("Alpha", "Beta")
-        vm.editMetroScheme(id) { it.copy(mapGrid = true) }
+        // An edit of the picture (14.10: the grid is no step of undo any more).
+        vm.editMetroScheme(id) { it.copy(lineCasing = true) }
         composeRule.setContent {
             MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
         }
 
         composeRule.onNodeWithContentDescription(word(R.string.metro_undo)).performClick()
         composeRule.waitForIdle()
-        assertEquals(false, scheme(id).mapGrid)
+        assertEquals(false, scheme(id).lineCasing)
 
         composeRule.onNodeWithContentDescription(word(R.string.metro_redo)).performClick()
         composeRule.waitForIdle()
-        assertTrue("redo did not bring the grid back", scheme(id).mapGrid)
+        assertTrue("redo did not bring the edging back", scheme(id).lineCasing)
     }
 
     @Test

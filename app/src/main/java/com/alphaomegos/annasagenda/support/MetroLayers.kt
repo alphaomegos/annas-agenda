@@ -61,6 +61,18 @@ fun metroEditablePart(scheme: MetroScheme): MetroScheme {
     )
 }
 
-/** [shown] — a step of undo or redo — with the layers as they are now in [current]. */
-fun metroLayersKept(shown: MetroScheme, current: MetroScheme): MetroScheme =
-    shown.copy(hiddenLines = current.hiddenLines, lockedLines = current.lockedLines, ghostHidden = current.ghostHidden)
+/**
+ * [shown] — a step of undo or redo — with the editor's view as it is now in
+ * [current] (14.10): the layers, and the aids to drawing — the grid,
+ * angles of 45°, guides. Undo takes the picture back, not how it is looked
+ * at or drawn.
+ */
+fun metroViewKept(shown: MetroScheme, current: MetroScheme): MetroScheme =
+    shown.copy(
+        hiddenLines = current.hiddenLines,
+        lockedLines = current.lockedLines,
+        ghostHidden = current.ghostHidden,
+        mapGrid = current.mapGrid,
+        snapAngles = current.snapAngles,
+        alignGuides = current.alignGuides,
+    )

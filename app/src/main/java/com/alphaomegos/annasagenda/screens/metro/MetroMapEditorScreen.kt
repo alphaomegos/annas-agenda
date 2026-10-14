@@ -20,6 +20,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Surface
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.filled.Timeline
@@ -276,6 +277,20 @@ fun MetroMapEditorScreen(
                             leadingIcon = { Icon(picture, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         )
                     }
+                    // The aids to drawing (14.10), at hand by the tools, as the snapping
+                    // switches of drawing programs: no step of undo.
+                    VerticalDivider(modifier = Modifier.height(32.dp).align(Alignment.CenterVertically))
+                    listOf(
+                        Triple(R.string.metro_map_grid, scheme.mapGrid, { s: MetroScheme -> s.copy(mapGrid = !s.mapGrid) }),
+                        Triple(R.string.metro_snap_angles, scheme.snapAngles, { s: MetroScheme -> s.copy(snapAngles = !s.snapAngles) }),
+                        Triple(R.string.metro_align_guides, scheme.alignGuides, { s: MetroScheme -> s.copy(alignGuides = !s.alignGuides) }),
+                    ).forEach { (words, on, flip) ->
+                        FilterChip(
+                            selected = on,
+                            onClick = { vm.setMetroView(schemeId, flip) },
+                            label = { Text(stringResource(words)) },
+                        )
+                    }
                 }
                 // The layers (14.10): the panel, then a chip a line — a tap shows or hides
                 // it, holding it shows that line only (and, again, every line).
@@ -293,8 +308,8 @@ fun MetroMapEditorScreen(
                             color = Color(line.color),
                             shown = line.id !in scheme.hiddenLines,
                             locked = line.id in scheme.lockedLines,
-                            onToggle = { vm.setMetroLayers(schemeId) { metroLayerShownToggled(it, line.id) } },
-                            onOnly = { vm.setMetroLayers(schemeId) { metroLayerOnly(it, line.id) } },
+                            onToggle = { vm.setMetroView(schemeId) { metroLayerShownToggled(it, line.id) } },
+                            onOnly = { vm.setMetroView(schemeId) { metroLayerOnly(it, line.id) } },
                         )
                     }
                 }
@@ -455,7 +470,7 @@ fun MetroMapEditorScreen(
     }
 
     if (layering && scheme != null) {
-        MetroLayersDialog(scheme, onLayers = { edit -> vm.setMetroLayers(schemeId, edit) }, onDismiss = { layering = false })
+        MetroLayersDialog(scheme, onLayers = { edit -> vm.setMetroView(schemeId, edit) }, onDismiss = { layering = false })
     }
 
     if (looking && scheme != null) {
@@ -501,15 +516,6 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
         title = { Text(stringResource(R.string.metro_look)) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                MetroMapTick(stringResource(R.string.metro_map_grid), scheme.mapGrid, Modifier.fillMaxWidth()) { on ->
-                    onEdit { it.copy(mapGrid = on) }
-                }
-                MetroMapTick(stringResource(R.string.metro_snap_angles), scheme.snapAngles, Modifier.fillMaxWidth()) { on ->
-                    onEdit { it.copy(snapAngles = on) }
-                }
-                MetroMapTick(stringResource(R.string.metro_align_guides), scheme.alignGuides, Modifier.fillMaxWidth()) { on ->
-                    onEdit { it.copy(alignGuides = on) }
-                }
                 MetroMapTick(stringResource(R.string.metro_transfers_together), scheme.transfersTogether, Modifier.fillMaxWidth()) { on ->
                     onEdit { metroTransfersTogether(it, on) }
                 }

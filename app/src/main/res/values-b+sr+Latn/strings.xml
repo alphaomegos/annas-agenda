@@ -857,7 +857,7 @@
     <string name="metro_layer_lock">Zaključaj liniju</string>
     <string name="metro_layer_unlock">Otključaj liniju</string>
     <string name="metro_layer_locked">Zaključana</string>
-    <string name="metro_align_guides">Vodilje: u ravni sa drugim stanicama</string>
+    <string name="metro_align_guides">Vodilje</string>
     <string name="metro_nudge_left">←</string>
     <string name="metro_nudge_up">↑</string>
     <string name="metro_nudge_down">↓</string>
