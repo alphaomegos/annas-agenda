@@ -909,6 +909,8 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_more">Ещё</string>
+    <string name="metro_tip_close">Закрыть подсказку</string>
     <string name="metro_layers">Слои</string>
     <string name="metro_layers_hint">Нажатие на линию над схемой — показать или скрыть её; удержание — только она, ещё раз — все линии. Заблокированная линия видна, но ничего в ней не сдвигается.</string>
     <string name="metro_layers_all">Показать все линии</string>

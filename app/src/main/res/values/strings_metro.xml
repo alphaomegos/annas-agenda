@@ -122,6 +122,8 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_more">More</string>
+    <string name="metro_tip_close">Close the tip</string>
     <string name="metro_layers">Layers</string>
     <string name="metro_layers_hint">Tap a line above the picture to show or hide it; hold it to show that line only, and again for every line. A locked line is shown, but nothing of it moves.</string>
     <string name="metro_layers_all">Show every line</string>

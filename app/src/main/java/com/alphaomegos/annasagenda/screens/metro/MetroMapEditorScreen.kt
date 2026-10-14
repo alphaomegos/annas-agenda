@@ -16,7 +16,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Surface
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.OpenWith
+import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -194,10 +203,23 @@ fun MetroMapEditorScreen(
     // The layers' panel open (14.10).
     var layering by rememberSaveable { mutableStateOf(false) }
 
+    // The editor's frame (14.10): tools and layers over the picture, the picture
+    // the whole rest of the screen; the tool's tip and the selection's actions
+    // float over it. What is seldom done is in the menu.
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
+    // The tool whose tip was closed; the tip comes back with another tool.
+    var tipClosedFor by rememberSaveable { mutableStateOf(-1) }
+    val startExport = {
+        tool = TOOL_MOVE
+        fitKey++
+        exporting = true
+        savePicture.launch("${scheme?.city ?: "metro"}.png")
+    }
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.metro_place_stations)) },
+            TopAppBar(
+                title = { Text(stringResource(R.string.metro_place_stations), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
                 actions = {
                     // Undo and redo (08.10): every edit of the picture, back and forward.
@@ -207,48 +229,52 @@ fun MetroMapEditorScreen(
                     IconButton(onClick = { vm.redoMetroScheme(schemeId) }, enabled = history?.canRedo == true) {
                         Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = stringResource(R.string.metro_redo))
                     }
-                    // The whole picture, without the tools' marks, then where to save it.
-                    IconButton(onClick = {
-                        tool = TOOL_MOVE
-                        fitKey++
-                        exporting = true
-                        savePicture.launch("${scheme?.city ?: "metro"}.png")
-                    }) {
-                        Icon(Icons.Default.SaveAlt, contentDescription = stringResource(R.string.metro_save_picture))
-                    }
                     IconButton(onClick = { fitKey++ }) {
                         Icon(Icons.Default.FitScreen, contentDescription = stringResource(R.string.metro_fit))
                     }
                     IconButton(onClick = { looking = true }) {
                         Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.metro_look))
                     }
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.metro_more))
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            // The whole picture, without the tools' marks, then where to save it.
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.metro_save_picture)) },
+                                leadingIcon = { Icon(Icons.Default.SaveAlt, contentDescription = null) },
+                                onClick = { menuOpen = false; startExport() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.metro_layout_again)) },
+                                onClick = { menuOpen = false; confirmReset = true },
+                            )
+                        }
+                    }
                 },
             )
         },
     ) { inner ->
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                Text(
-                    stringResource(R.string.metro_place_stations_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(onClick = { confirmReset = true }) { Text(stringResource(R.string.metro_layout_again)) }
-            }
             if (scheme != null) {
-                // The tools stay at hand (08.10); how the picture looks is in "Look".
+                // One tool at a time (08.10), each with its picture (14.10).
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     listOf(
-                        TOOL_MOVE to R.string.metro_tool_move,
-                        TOOL_BEND to R.string.metro_bend_tracks,
-                        TOOL_NAMES to R.string.metro_names_tool,
-                        TOOL_SELECT to R.string.metro_tool_select,
-                    ).forEach { (t, words) ->
-                        FilterChip(selected = tool == t, onClick = { tool = t }, label = { Text(stringResource(words)) })
+                        Triple(TOOL_MOVE, R.string.metro_tool_move, Icons.Default.OpenWith),
+                        Triple(TOOL_BEND, R.string.metro_bend_tracks, Icons.Default.Timeline),
+                        Triple(TOOL_NAMES, R.string.metro_names_tool, Icons.Default.TextFields),
+                        Triple(TOOL_SELECT, R.string.metro_tool_select, Icons.Default.SelectAll),
+                    ).forEach { (t, words, picture) ->
+                        FilterChip(
+                            selected = tool == t,
+                            onClick = { tool = t },
+                            label = { Text(stringResource(words)) },
+                            leadingIcon = { Icon(picture, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        )
                     }
                 }
                 // The layers (14.10): the panel, then a chip a line — a tap shows or hides
@@ -272,127 +298,155 @@ fun MetroMapEditorScreen(
                         )
                     }
                 }
-                if (tool == TOOL_MOVE && scheme.transfersTogether) {
-                    MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, Modifier.fillMaxWidth().padding(horizontal = 4.dp)) { moveWhole = it }
-                }
-                if (selecting) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.metro_selected_count, selection.size),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = { selectedIds = (metroSelectionWholeLines(scheme, selection) - fixed).toLongArray() }, enabled = selection.isNotEmpty()) {
-                            Text(stringResource(R.string.metro_select_lines))
-                        }
-                        TextButton(onClick = { selectedIds = longArrayOf() }, enabled = selection.isNotEmpty()) {
-                            Text(stringResource(R.string.metro_select_none))
-                        }
-                    }
-                    // Lining the selection up (08.10): a row, a column, equal steps.
-                    Row(
-                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
-                    ) {
-                        val grid = if (scheme.mapGrid) METRO_GRID_STEP else null
-                        TextButton(
-                            onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = true, grid = grid) } },
-                            enabled = selection.size >= 2,
-                        ) { Text(stringResource(R.string.metro_align_row)) }
-                        TextButton(
-                            onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = false, grid = grid) } },
-                            enabled = selection.size >= 2,
-                        ) { Text(stringResource(R.string.metro_align_column)) }
-                        TextButton(
-                            onClick = { vm.editMetroScheme(schemeId) { metroSelectionSpaced(it, selection) } },
-                            enabled = selection.size >= 3,
-                        ) { Text(stringResource(R.string.metro_align_spaced)) }
-                        // A nudge by one grid step, or a tenth of a step without the grid (08.10):
-                        // a finger is too thick for the last bit.
-                        val nudge = if (scheme.mapGrid) METRO_GRID_STEP else METRO_NUDGE_STEP
-                        listOf(
-                            Triple(-nudge, 0f, R.string.metro_nudge_left),
-                            Triple(0f, -nudge, R.string.metro_nudge_up),
-                            Triple(0f, nudge, R.string.metro_nudge_down),
-                            Triple(nudge, 0f, R.string.metro_nudge_right),
-                        ).forEach { (dx, dy, words) ->
-                            TextButton(
-                                onClick = { vm.editMetroScheme(schemeId) { metroStationsShifted(it, selection, dx, dy) } },
-                                enabled = selection.isNotEmpty(),
-                            ) { Text(stringResource(words)) }
-                        }
-                        // Turned or mirrored about its middle (08.10).
-                        listOf(
-                            MetroTurn.CLOCKWISE_45 to R.string.metro_turn_45,
-                            MetroTurn.MIRROR_ACROSS to R.string.metro_mirror_across,
-                            MetroTurn.MIRROR_UPDOWN to R.string.metro_mirror_updown,
-                        ).forEach { (turn, words) ->
-                            TextButton(
-                                onClick = { vm.editMetroScheme(schemeId) { metroSelectionTurned(it, selection, turn) } },
-                                enabled = selection.size >= 2,
-                            ) { Text(stringResource(words)) }
-                        }
-                    }
-                }
-                if (bending || naming || selecting) {
-                    Text(
-                        stringResource(
-                            when {
-                                naming -> R.string.metro_names_hint
-                                selecting -> R.string.metro_select_hint
-                                else -> R.string.metro_bend_hint
-                            },
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-                    )
-                }
             }
             val l = layout
-            if (scheme != null && l != null) {
-                MetroMapView(
-                    scheme = scheme,
-                    layout = l,
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    // A whole interchange moves when kept together and so chosen; else
-                    // the station alone, glued to its interchange if rings are glued.
-                    onMoveStation = if (naming) null else { id, x, y ->
-                        vm.editMetroScheme(schemeId) {
+            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                if (scheme != null && l != null) {
+                    MetroMapView(
+                        scheme = scheme,
+                        layout = l,
+                        modifier = Modifier.fillMaxSize(),
+                        // A whole interchange moves when kept together and so chosen; else
+                        // the station alone, glued to its interchange if rings are glued.
+                        onMoveStation = if (naming) null else { id, x, y ->
+                            vm.editMetroScheme(schemeId) {
+                                when {
+                                    selecting && id in selection -> metroSelectionPlaced(it, selection, id, x, y)
+                                    it.transfersTogether && moveWhole -> metroStationPlaced(it, id, x, y, keep = fixed)
+                                    else -> metroStationPlacedAlone(it, id, x, y, unseen = unseen)
+                                }
+                            }
+                        },
+                        onTapStation = { id ->
                             when {
-                                selecting && id in selection -> metroSelectionPlaced(it, selection, id, x, y)
-                                it.transfersTogether && moveWhole -> metroStationPlaced(it, id, x, y, keep = fixed)
-                                else -> metroStationPlacedAlone(it, id, x, y, unseen = unseen)
+                                naming -> vm.editMetroScheme(schemeId) { metroStationLabelCycled(it, id) }
+                                selecting -> { selectedIds = metroSelectionToggled(selection, id).toLongArray() }
+                            }
+                        },
+                        namingMode = naming,
+                        marked = if (selecting) selection else emptySet(),
+                        group = if (selecting) selection else emptySet(),
+                        fitKey = fitKey,
+                        capture = pictureLayer,
+                        hiddenLines = scheme.hiddenLines.toSet(),
+                        lockedLines = scheme.lockedLines.toSet(),
+                        ghostHidden = scheme.ghostHidden,
+                        gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
+                        moveAlone = !(scheme.transfersTogether && moveWhole),
+                        bendMode = bending,
+                        onBend = { action ->
+                            vm.editMetroScheme(schemeId) { s ->
+                                when (action) {
+                                    is MetroBendAction.Cycle -> metroElbowCycled(s, metroLayout(s), action.track)
+                                    is MetroBendAction.Insert -> metroBendPointInserted(s, action.hit, action.x, action.y)
+                                    is MetroBendAction.Move -> metroBendPointMoved(s, action.hit, action.x, action.y)
+                                    is MetroBendAction.Remove -> metroBendPointRemoved(s, action.hit)
+                                }
+                            }
+                        },
+                    )
+                }
+                // The tool's tip (14.10), over the top of the picture until closed.
+                if (scheme != null && tipClosedFor != tool) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopCenter).padding(8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.94f),
+                        tonalElevation = 2.dp,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
+                            Text(
+                                stringResource(
+                                    when (tool) {
+                                        TOOL_BEND -> R.string.metro_bend_hint
+                                        TOOL_NAMES -> R.string.metro_names_hint
+                                        TOOL_SELECT -> R.string.metro_select_hint
+                                        else -> R.string.metro_place_stations_hint
+                                    },
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            IconButton(onClick = { tipClosedFor = tool }) {
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.metro_tip_close))
                             }
                         }
-                    },
-                    onTapStation = { id ->
-                        when {
-                            naming -> vm.editMetroScheme(schemeId) { metroStationLabelCycled(it, id) }
-                            selecting -> { selectedIds = metroSelectionToggled(selection, id).toLongArray() }
-                        }
-                    },
-                    namingMode = naming,
-                    marked = if (selecting) selection else emptySet(),
-                    group = if (selecting) selection else emptySet(),
-                    fitKey = fitKey,
-                    capture = pictureLayer,
-                    hiddenLines = scheme.hiddenLines.toSet(),
-                    lockedLines = scheme.lockedLines.toSet(),
-                    ghostHidden = scheme.ghostHidden,
-                    gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
-                    moveAlone = !(scheme.transfersTogether && moveWhole),
-                    bendMode = bending,
-                    onBend = { action ->
-                        vm.editMetroScheme(schemeId) { s ->
-                            when (action) {
-                                is MetroBendAction.Cycle -> metroElbowCycled(s, metroLayout(s), action.track)
-                                is MetroBendAction.Insert -> metroBendPointInserted(s, action.hit, action.x, action.y)
-                                is MetroBendAction.Move -> metroBendPointMoved(s, action.hit, action.x, action.y)
-                                is MetroBendAction.Remove -> metroBendPointRemoved(s, action.hit)
+                    }
+                }
+                // What goes with the tool (14.10), along the bottom of the picture.
+                if (scheme != null && (selecting || (tool == TOOL_MOVE && scheme.transfersTogether))) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        tonalElevation = 3.dp,
+                        shadowElevation = 3.dp,
+                    ) {
+                        Column(modifier = Modifier.padding(vertical = 2.dp)) {
+                            if (selecting) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        stringResource(R.string.metro_selected_count, selection.size),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    TextButton(onClick = { selectedIds = (metroSelectionWholeLines(scheme, selection) - fixed).toLongArray() }, enabled = selection.isNotEmpty()) {
+                                        Text(stringResource(R.string.metro_select_lines))
+                                    }
+                                    TextButton(onClick = { selectedIds = longArrayOf() }, enabled = selection.isNotEmpty()) {
+                                        Text(stringResource(R.string.metro_select_none))
+                                    }
+                                }
+                                // Lining the selection up (08.10): a row, a column, equal steps.
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
+                                ) {
+                                    val grid = if (scheme.mapGrid) METRO_GRID_STEP else null
+                                    TextButton(
+                                        onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = true, grid = grid) } },
+                                        enabled = selection.size >= 2,
+                                    ) { Text(stringResource(R.string.metro_align_row)) }
+                                    TextButton(
+                                        onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = false, grid = grid) } },
+                                        enabled = selection.size >= 2,
+                                    ) { Text(stringResource(R.string.metro_align_column)) }
+                                    TextButton(
+                                        onClick = { vm.editMetroScheme(schemeId) { metroSelectionSpaced(it, selection) } },
+                                        enabled = selection.size >= 3,
+                                    ) { Text(stringResource(R.string.metro_align_spaced)) }
+                                    // A nudge by one grid step, or a tenth of a step without the grid (08.10):
+                                    // a finger is too thick for the last bit.
+                                    val nudge = if (scheme.mapGrid) METRO_GRID_STEP else METRO_NUDGE_STEP
+                                    listOf(
+                                        Triple(-nudge, 0f, R.string.metro_nudge_left),
+                                        Triple(0f, -nudge, R.string.metro_nudge_up),
+                                        Triple(0f, nudge, R.string.metro_nudge_down),
+                                        Triple(nudge, 0f, R.string.metro_nudge_right),
+                                    ).forEach { (dx, dy, words) ->
+                                        TextButton(
+                                            onClick = { vm.editMetroScheme(schemeId) { metroStationsShifted(it, selection, dx, dy) } },
+                                            enabled = selection.isNotEmpty(),
+                                        ) { Text(stringResource(words)) }
+                                    }
+                                    // Turned or mirrored about its middle (08.10).
+                                    listOf(
+                                        MetroTurn.CLOCKWISE_45 to R.string.metro_turn_45,
+                                        MetroTurn.MIRROR_ACROSS to R.string.metro_mirror_across,
+                                        MetroTurn.MIRROR_UPDOWN to R.string.metro_mirror_updown,
+                                    ).forEach { (turn, words) ->
+                                        TextButton(
+                                            onClick = { vm.editMetroScheme(schemeId) { metroSelectionTurned(it, selection, turn) } },
+                                            enabled = selection.size >= 2,
+                                        ) { Text(stringResource(words)) }
+                                    }
+                                }
+                            } else {
+                                MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, Modifier.padding(end = 12.dp)) { moveWhole = it }
                             }
                         }
-                    },
-                )
+                    }
+                }
             }
         }
     }
