@@ -50,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,6 +64,7 @@ import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.support.METRO_GRID_STEP
 import com.alphaomegos.annasagenda.support.MetroPoint
 import com.alphaomegos.annasagenda.support.metroLayout
+import com.alphaomegos.annasagenda.support.metroIsPlaced
 import com.alphaomegos.annasagenda.support.metroLayoutCleared
 import com.alphaomegos.annasagenda.support.metroStationPlaced
 import com.alphaomegos.annasagenda.support.metroTransfersTogether
@@ -137,9 +139,13 @@ fun MetroMapEditorScreen(
     val scheme = state.metroSchemes.firstOrNull { it.id == schemeId }
     val histories by vm.metroHistory.collectAsStateWithLifecycle()
     val history = histories[schemeId]
-    val layout by produceState<Map<Long, MetroPoint>?>(null, scheme) {
+    val laidOut by produceState<Map<Long, MetroPoint>?>(null, scheme) {
         value = scheme?.let { s -> withContext(Dispatchers.Default) { metroLayout(s) } }
     }
+    // A picture placed all by hand is read straight off the scheme (14.10): laid out
+    // in the background, a dropped station first jumped back for a frame or two.
+    val placed = remember(scheme) { scheme?.takeIf { metroIsPlaced(it) }?.let { metroLayout(it) } }
+    val layout = placed ?: laidOut
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     // Tools of the editor (08.10), not settings: bending track, and moving an
     // interchange whole or one station of it.

@@ -40,7 +40,6 @@ import com.alphaomegos.annasagenda.support.METRO_LAYOUT_STEP
 import com.alphaomegos.annasagenda.support.MetroPoint
 import com.alphaomegos.annasagenda.support.MetroRoute
 import com.alphaomegos.annasagenda.support.MetroRouteStep
-import com.alphaomegos.annasagenda.support.metroLayoutBounds
 import com.alphaomegos.annasagenda.support.metroSidesOf
 import com.alphaomegos.annasagenda.support.metroSnapped
 import com.alphaomegos.annasagenda.support.metroStationAt
@@ -49,8 +48,12 @@ import com.alphaomegos.annasagenda.support.METRO_CASING
 import com.alphaomegos.annasagenda.support.METRO_CORNER_RADIUS
 import com.alphaomegos.annasagenda.support.metroRoundedCorners
 import com.alphaomegos.annasagenda.support.METRO_LABEL_HIDDEN
-import com.alphaomegos.annasagenda.support.METRO_LABEL_SIDES
-import com.alphaomegos.annasagenda.support.metroAutoLabelSide
+import com.alphaomegos.annasagenda.support.MetroViewport
+import com.alphaomegos.annasagenda.support.metroFittedViewport
+import com.alphaomegos.annasagenda.support.metroPictureFacts
+import com.alphaomegos.annasagenda.support.metroLabelSides
+import com.alphaomegos.annasagenda.support.metroTickAngles
+import com.alphaomegos.annasagenda.support.metroTerminusOutwards
 import com.alphaomegos.annasagenda.support.metroLabelTopLeft
 import com.alphaomegos.annasagenda.support.METRO_STATION_RADIUS
 import com.alphaomegos.annasagenda.support.MetroBendHit
@@ -71,8 +74,6 @@ import kotlin.math.cos
 import kotlin.math.sin
 import com.alphaomegos.annasagenda.support.metroInterchangeStations
 import com.alphaomegos.annasagenda.support.metroTermini
-import com.alphaomegos.annasagenda.support.metroTickAngle
-import com.alphaomegos.annasagenda.support.metroTerminusOutward
 import com.alphaomegos.annasagenda.support.metroLabelFacesOutward
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.luminance
@@ -136,16 +137,20 @@ internal fun MetroMapView(
     capture: GraphicsLayer? = null,
     focusLine: Long? = null,
 ) {
-    var zoom by rememberSaveable { mutableStateOf(1f) }
-    var panX by rememberSaveable { mutableStateOf(0f) }
-    var panY by rememberSaveable { mutableStateOf(0f) }
+    // Where the picture is looked at (14.10), in its own units: pixels to a
+    // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
+    // Kept so, dropping a station past the edge of the rest no longer
+    // rescales and shifts the whole picture.
+    var viewK by rememberSaveable { mutableStateOf(-1f) }
+    var viewCx by rememberSaveable { mutableStateOf(0f) }
+    var viewCy by rememberSaveable { mutableStateOf(0f) }
     // "Fit to the screen" (08.10): each new [fitKey] brings the whole picture
     // back into view. The one last acted on is kept, so turning the phone
     // does not undo the zoom.
     var fitDone by rememberSaveable { mutableStateOf(fitKey) }
     LaunchedEffect(fitKey) {
         if (fitKey != fitDone) {
-            zoom = 1f; panX = 0f; panY = 0f
+            viewK = -1f
             fitDone = fitKey
         }
     }
@@ -171,29 +176,27 @@ internal fun MetroMapView(
     val markColor = MaterialTheme.colorScheme.primary
     val transferColor = MaterialTheme.colorScheme.outline
     val gridColor = MaterialTheme.colorScheme.outlineVariant
-    val labels = remember(scheme.stations, measurer, labelColor, scheme.labelScale) {
-        scheme.stations.associate { it.id to measurer.measure(it.name, labelStyle) }
+    // Measured again only when a name or the text changes (14.10), not on every move.
+    val names = remember(scheme.stations) { scheme.stations.map { it.id to it.name } }
+    val labels = remember(names, measurer, labelColor, scheme.labelScale) {
+        names.associate { (id, name) -> id to measurer.measure(name, labelStyle) }
     }
     val lines = remember(scheme.lines) { scheme.lines.associateBy { it.id } }
     val lineOf = remember(scheme.stations) { scheme.stations.associate { it.id to it.lineId } }
     val labelled = remember(scheme, layout) { metroLabelledStations(scheme, layout) }
     // Each name's side (08.10): set by hand, or chosen away from its track; hidden ones apart.
-    val labelSides = remember(scheme, layout) {
-        scheme.stations.associate { st ->
-            st.id to (st.labelSide?.takeIf { it in 0 until METRO_LABEL_SIDES } ?: metroAutoLabelSide(scheme, layout, st.id))
-        }
-    }
+    // All in one pass (14.10): asked station by station, each went through the whole scheme.
+    val facts = remember(scheme, layout) { metroPictureFacts(scheme, layout) }
+    val labelSides = remember(facts) { metroLabelSides(scheme, layout, facts) }
     // Ticks (08.10): which stations stay rings, which are ends, and which way each tick points.
     val interchanges = remember(scheme.transfers) { metroInterchangeStations(scheme) }
     val termini = remember(scheme.lines) { metroTermini(scheme) }
-    val tickAngles = remember(scheme, layout, labelSides) {
-        if (!scheme.tickStations) emptyMap()
-        else scheme.stations.mapNotNull { st -> metroTickAngle(scheme, layout, st.id, labelSides[st.id] ?: 0)?.let { st.id to it } }.toMap()
+    val tickAngles = remember(facts, labelSides, scheme.tickStations) {
+        if (!scheme.tickStations) emptyMap() else metroTickAngles(scheme, labelSides, facts)
     }
     // Line numbers past the ends of lines (08.10): which way out at each end, and the numbers measured.
-    val outwards = remember(scheme, layout) {
-        if (!scheme.lineBadges) emptyMap()
-        else termini.mapNotNull { id -> metroTerminusOutward(scheme, layout, id)?.let { id to it } }.toMap()
+    val outwards = remember(facts, scheme.lineBadges) {
+        if (!scheme.lineBadges) emptyMap() else metroTerminusOutwards(facts)
     }
     val badgeStyle = TextStyle(fontSize = 10.sp * scheme.labelScale, color = Color.White, fontWeight = FontWeight.Bold)
     val badges = remember(scheme.lines, measurer, scheme.labelScale) {
@@ -229,39 +232,43 @@ internal fun MetroMapView(
         val w = constraints.maxWidth.toFloat()
         val h = constraints.maxHeight.toFloat()
         if (w <= 0f || h <= 0f || layout.isEmpty()) return@BoxWithConstraints
-        val b = metroLayoutBounds(layout.values)
-        val bw = (b[2] - b[0]) + 2 * METRO_LAYOUT_STEP
-        val bh = (b[3] - b[1]) + 2 * METRO_LAYOUT_STEP
-        val fit = minOf(w / bw, h / bh)
-        val k = fit * zoom
-        val cx = (b[0] + b[2]) / 2
-        val cy = (b[1] + b[3]) / 2
-        fun toScreen(p: MetroPoint) = Offset((p.x - cx) * k + w / 2 + panX, (p.y - cy) * k + h / 2 + panY)
+        val fitted = metroFittedViewport(layout.values, w, h)
+        val view = if (viewK > 0f) MetroViewport(viewK, viewCx, viewCy) else fitted
+        val k = view.k
+        val cx = view.cx
+        val cy = view.cy
+        fun toScreen(p: MetroPoint) = Offset((p.x - cx) * k + w / 2, (p.y - cy) * k + h / 2)
         val hitPx = with(density) { 22.dp.toPx() }
         // How near a direction of 45° a dropped station is pulled onto it (08.10).
         val angleTolPx = with(density) { 18.dp.toPx() }
 
         // Keyed on what does not change while a finger is down: zooming must
         // not restart the very gesture that zooms. The scale is read afresh.
-        val gestures = Modifier.pointerInput(layout, fit, w, h, onMoveStation != null) {
+        val gestures = Modifier.pointerInput(layout, w, h, onMoveStation != null) {
+            fun viewNow(): MetroViewport = if (viewK > 0f) MetroViewport(viewK, viewCx, viewCy) else fitted
+            fun setView(v: MetroViewport) { viewK = v.k; viewCx = v.cx; viewCy = v.cy }
             fun toMap(o: Offset): MetroPoint {
-                val kk = fit * zoom
-                return MetroPoint((o.x - w / 2 - panX) / kk + cx, (o.y - h / 2 - panY) / kk + cy)
+                val v = viewNow()
+                return MetroPoint(v.toMapX(o.x, w), v.toMapY(o.y, h))
             }
             fun toScreenNow(p: MetroPoint): Offset {
-                val kk = fit * zoom
-                return Offset((p.x - cx) * kk + w / 2 + panX, (p.y - cy) * kk + h / 2 + panY)
+                val v = viewNow()
+                return Offset(v.toScreenX(p.x, w), v.toScreenY(p.y, h))
             }
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val start = toMap(down.position)
-                val hitRadius = hitPx / (fit * zoom)
+                val hitRadius = hitPx / viewNow().k
                 val bending = currentBendMode
                 val bendPoint = if (bending) metroBendPointAt(currentScheme, start.x, start.y, hitRadius) else null
                 val onTrack = if (bending && bendPoint == null) metroTrackAt(currentScheme, layout, start.x, start.y, hitRadius * 0.7f) else null
                 val grabbed = if (currentMove != null && !bending) metroStationAt(layout, start.x, start.y, hitRadius) else null
                 var travelled = 0f
                 var fingers = 1
+                // A second finger during a drag calls the drag off (14.10): the picture
+                // zooms instead, and the station stays where it was — before, it was
+                // dropped where the first finger had been, on a picture since moved.
+                var cancelled = false
                 // The station keeps where it sits under the finger, rather than jumping to it.
                 val grabOffset = when {
                     grabbed != null -> toScreenNow(layout.getValue(grabbed)) - down.position
@@ -285,7 +292,12 @@ internal fun MetroMapView(
                     val event = awaitPointerEvent()
                     val pressed = event.changes.filter { it.pressed }
                     fingers = maxOf(fingers, pressed.size)
-                    if ((grabbed != null || grabbedBend != null) && pressed.size == 1) {
+                    if ((grabbed != null || grabbedBend != null) && !cancelled && pressed.size > 1) {
+                        cancelled = true
+                        dragId = null
+                        dragBend = null
+                    }
+                    if ((grabbed != null || grabbedBend != null) && !cancelled && pressed.size == 1) {
                         val change = pressed[0]
                         travelled += change.positionChange().getDistance()
                         dragAt = change.position + grabOffset
@@ -294,23 +306,21 @@ internal fun MetroMapView(
                         val zoomChange = event.calculateZoom()
                         val pan = event.calculatePan()
                         travelled += pan.getDistance()
+                        var v = viewNow()
                         if (zoomChange != 1f) {
+                            // The point under the fingers stays under them; from half the fitted scale to twelve times it.
                             val c = event.calculateCentroid()
-                            val newZoom = (zoom * zoomChange).coerceIn(0.5f, 12f)
-                            // The point under the fingers stays under them.
-                            val f = newZoom / zoom
-                            panX = (c.x - w / 2) - ((c.x - w / 2) - panX) * f
-                            panY = (c.y - h / 2) - ((c.y - h / 2) - panY) * f
-                            zoom = newZoom
+                            v = v.zoomed(zoomChange, c.x, c.y, w, h, fitted.k * 0.5f, fitted.k * 12f)
                         }
-                        panX += pan.x
-                        panY += pan.y
+                        if (zoomChange != 1f || pan != Offset.Zero) setView(v.panned(pan.x, pan.y))
                         event.changes.forEach { it.consume() }
                     }
                 } while (event.changes.any { it.pressed })
 
                 val slop = viewConfiguration.touchSlop
-                if (grabbedBend != null) {
+                if (cancelled) {
+                    // Nothing dropped, nothing tapped.
+                } else if (grabbedBend != null) {
                     val (hit, insert) = grabbedBend
                     if (travelled > slop) {
                         val at = toMap(dragAt).let { p -> currentGrid?.let { metroSnapped(p, it) } ?: p }
@@ -326,7 +336,7 @@ internal fun MetroMapView(
                         currentMoveAlone -> setOf(grabbed)
                         else -> metroStationsMovingWith(s, grabbed)
                     }
-                    val at = metroDropSnap(s, layout, grabbed, moving, toMap(dragAt), currentGrid, angleTolPx / (fit * zoom))
+                    val at = metroDropSnap(s, layout, grabbed, moving, toMap(dragAt), currentGrid, angleTolPx / viewNow().k)
                     currentMove?.invoke(grabbed, at.x, at.y)
                 } else if (travelled <= slop && fingers == 1) {
                     metroStationAt(layout, start.x, start.y, hitRadius)?.let { currentTap(it) }
@@ -365,11 +375,11 @@ internal fun MetroMapView(
             } ?: emptySet()
             val inGroup = dragId != null && dragId in group
             fun dragPoint(): MetroPoint {
-                val raw = MetroPoint((dragAt.x - w / 2 - panX) / k + cx, (dragAt.y - h / 2 - panY) / k + cy)
+                val raw = MetroPoint((dragAt.x - w / 2) / k + cx, (dragAt.y - h / 2) / k + cy)
                 return gridStep?.let { metroSnapped(raw, it) } ?: raw
             }
             val shift = dragged?.let { from ->
-                val raw = MetroPoint((dragAt.x - w / 2 - panX) / k + cx, (dragAt.y - h / 2 - panY) / k + cy)
+                val raw = MetroPoint((dragAt.x - w / 2) / k + cx, (dragAt.y - h / 2) / k + cy)
                 val snapped = metroDropSnap(scheme, layout, dragId!!, moving, raw, gridStep, angleTolPx / k)
                 val to = if (moveAlone && !inGroup) metroAloneDropPoint(scheme, layout, dragId!!, snapped) else snapped
                 MetroPoint(to.x - from.x, to.y - from.y)
@@ -385,19 +395,19 @@ internal fun MetroMapView(
                 var step = gridStep
                 while (step * k < 8.dp.toPx()) step *= 2
                 val thin = 1.dp.toPx()
-                val left = (-w / 2 - panX) / k + cx
-                val right = (w / 2 - panX) / k + cx
-                val top = (-h / 2 - panY) / k + cy
-                val bottom = (h / 2 - panY) / k + cy
+                val left = (-w / 2) / k + cx
+                val right = (w / 2) / k + cx
+                val top = (-h / 2) / k + cy
+                val bottom = (h / 2) / k + cy
                 var gx = floor(left / step) * step
                 while (gx <= right) {
-                    val sx = (gx - cx) * k + w / 2 + panX
+                    val sx = (gx - cx) * k + w / 2
                     drawLine(gridColor, Offset(sx, 0f), Offset(sx, h), strokeWidth = thin)
                     gx += step
                 }
                 var gy = floor(top / step) * step
                 while (gy <= bottom) {
-                    val sy = (gy - cy) * k + h / 2 + panY
+                    val sy = (gy - cy) * k + h / 2
                     drawLine(gridColor, Offset(0f, sy), Offset(w, sy), strokeWidth = thin)
                     gy += step
                 }

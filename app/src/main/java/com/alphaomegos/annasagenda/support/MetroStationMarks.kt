@@ -27,34 +27,25 @@ fun metroTermini(scheme: MetroScheme): Set<Long> {
     return count.filterValues { it == 1 }.keys
 }
 
-/** The directions, in radians on the screen, in which [stationId]'s own track leaves it (to the first bend). */
-private fun trackDirections(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): List<Double> {
-    val p = layout[stationId] ?: return emptyList()
-    return metroTracks(scheme).mapNotNull { t ->
-        if (t.a != stationId && t.b != stationId) return@mapNotNull null
-        val line = metroTrackPolyline(scheme, layout, t) ?: return@mapNotNull null
-        val q = if (t.a == stationId) line[1] else line[line.size - 2]
-        if (q.x == p.x && q.y == p.y) null else atan2((q.y - p.y).toDouble(), (q.x - p.x).toDouble())
-    }
-}
-
 /**
  * Which way [stationId]'s tick points (08.10): square to its line — to the
  * line through it, bisecting a bend at the station — on the side nearer its
  * name ([labelSide], as in MetroLabels.kt). Null for a station off any track.
  */
-fun metroTickAngle(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long, labelSide: Int): Double? {
-    val dirs = trackDirections(scheme, layout, stationId)
+fun metroTickAngle(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long, labelSide: Int): Double? =
+    metroTickAngleOf(metroPictureFacts(scheme, layout).trackDirections[stationId].orEmpty(), labelSide)
+
+/** The rule itself (14.10), for a station whose own track leaves it along [dirs]. */
+internal fun metroTickAngleOf(dirs: List<Double>, labelSide: Int): Double? {
     if (dirs.isEmpty()) return null
     // The line's axis through the station: from the second track's way out to the first's.
     val axis = if (dirs.size >= 2) {
         atan2(sin(dirs[0]) - sin(dirs[1]), cos(dirs[0]) - cos(dirs[1]))
     } else dirs[0]
     val label = metroLabelAngle(labelSide.coerceIn(0, METRO_LABEL_SIDES - 1))
-    fun gap(a: Double): Double { val d = abs(a - label) % (2 * PI); return minOf(d, 2 * PI - d) }
     val left = axis - PI / 2
     val right = axis + PI / 2
-    return if (gap(right) < gap(left) - 1e-9) right else left
+    return if (metroAngleGap(right, label) < metroAngleGap(left, label) - 1e-9) right else left
 }
 
 /**
@@ -63,7 +54,7 @@ fun metroTickAngle(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId
  * station that is no terminus.
  */
 fun metroTerminusOutward(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): Double? {
-    val dirs = trackDirections(scheme, layout, stationId)
+    val dirs = metroPictureFacts(scheme, layout).trackDirections[stationId].orEmpty()
     if (dirs.size != 1) return null
     return dirs[0] + PI
 }

@@ -82,4 +82,20 @@ class MetroLabelsTest {
         // And those on the second, over it.
         assertEquals(6, metroAutoLabelSide(two, l, 12))
     }
+
+    /** In one pass (14.10), as station by station: the same sides, the same ticks, the same ends. */
+    @Test
+    fun allAtOnce_sameAsOneByOne() {
+        val withBend = scheme.copy(bends = listOf(MetroBend(12, 11, listOf(MetroMapPoint(2f, 1f)))))
+        listOf(scheme, withBend).forEach { s ->
+            val l = metroLayout(s)
+            val facts = metroPictureFacts(s, l)
+            val sides = metroLabelSides(s, l, facts)
+            s.stations.forEach { st ->
+                assertEquals(metroLabelSide(s, l, st.id), sides[st.id])
+                assertEquals(metroTickAngle(s, l, st.id, sides.getValue(st.id)), metroTickAngles(s, sides, facts)[st.id])
+                assertEquals(metroTerminusOutward(s, l, st.id), metroTerminusOutwards(facts)[st.id])
+            }
+        }
+    }
 }

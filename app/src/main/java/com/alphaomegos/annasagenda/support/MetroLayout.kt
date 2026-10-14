@@ -189,6 +189,9 @@ fun metroLayout(scheme: MetroScheme, rounds: Int = 300): Map<Long, MetroPoint> {
     return ids.indices.associate { ids[it] to MetroPoint(x[it], y[it]) }
 }
 
+/** Whether every station has its place by hand (14.10): then the layout is read off, with nothing to work out. */
+fun metroIsPlaced(scheme: MetroScheme): Boolean = scheme.stations.all { it.mapX != null && it.mapY != null }
+
 /** The smallest box around [points], as left, top, right, bottom; a unit box around nothing. */
 fun metroLayoutBounds(points: Collection<MetroPoint>): FloatArray {
     if (points.isEmpty()) return floatArrayOf(-1f, -1f, 1f, 1f)

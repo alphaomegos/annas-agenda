@@ -30,20 +30,8 @@ fun metroStationLabelCycled(scheme: MetroScheme, stationId: Long): MetroScheme =
     })
 
 /** The directions, in radians on the screen, of what leaves [stationId]: its track (to the first bend) and links. */
-fun metroStationDirections(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): List<Double> {
-    val p = layout[stationId] ?: return emptyList()
-    val towards = ArrayList<MetroPoint>()
-    metroTracks(scheme).forEach { t ->
-        if (t.a != stationId && t.b != stationId) return@forEach
-        val line = metroTrackPolyline(scheme, layout, t) ?: return@forEach
-        towards += if (t.a == stationId) line[1] else line[line.size - 2]
-    }
-    scheme.transfers.forEach { tr ->
-        val other = when (stationId) { tr.aStationId -> tr.bStationId; tr.bStationId -> tr.aStationId; else -> null }
-        other?.let { layout[it] }?.let { towards += it }
-    }
-    return towards.filter { it.x != p.x || it.y != p.y }.map { atan2((it.y - p.y).toDouble(), (it.x - p.x).toDouble()) }
-}
+fun metroStationDirections(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): List<Double> =
+    metroPictureFacts(scheme, layout).directions(stationId)
 
 /** The angle of a side, in radians on the screen. */
 fun metroLabelAngle(side: Int): Double = side * PI / 4
@@ -63,19 +51,27 @@ const val METRO_LABEL_CROWD_REACH = 2f
  * alongside.
  */
 fun metroAutoLabelSide(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): Int {
-    val dirs = metroStationDirections(scheme, layout, stationId)
+    val p = layout[stationId]
+    return metroAutoSideOf(metroStationDirections(scheme, layout, stationId)) {
+        if (p == null) emptyList()
+        else layout.filter { (id, q) -> id != stationId && metroNear(p, q, METRO_LABEL_CROWD_REACH) }
+            .values.map { atan2((it.y - p.y).toDouble(), (it.x - p.x).toDouble()) }
+    }
+}
+
+/**
+ * The rule itself (14.10), for a station whose track and links leave it
+ * along [dirs]; [near] gives the ways to the stations close by, asked only
+ * when two sides are equally clear.
+ */
+internal fun metroAutoSideOf(dirs: List<Double>, near: () -> List<Double>): Int {
     if (dirs.isEmpty()) return 0
-    fun gap(a: Double, b: Double): Double { val d = abs(a - b) % (2 * PI); return minOf(d, 2 * PI - d) }
-    fun clearance(side: Int): Double = dirs.minOf { d -> gap(metroLabelAngle(side), d) }
+    fun clearance(side: Int): Double = dirs.minOf { d -> metroAngleGap(metroLabelAngle(side), d) }
     val best = PREFERENCE.maxOf { clearance(it) }
     val clear = PREFERENCE.filter { clearance(it) >= best - 1e-6 }
     if (clear.size == 1) return clear[0]
-    val p = layout[stationId] ?: return clear[0]
-    val near = layout.filter { (id, q) ->
-        id != stationId && (q.x - p.x) * (q.x - p.x) + (q.y - p.y) * (q.y - p.y) <= METRO_LABEL_CROWD_REACH * METRO_LABEL_CROWD_REACH &&
-            (q.x != p.x || q.y != p.y)
-    }.values.map { atan2((it.y - p.y).toDouble(), (it.x - p.x).toDouble()) }
-    fun crowd(side: Int): Int = near.count { gap(metroLabelAngle(side), it) <= PI / 6 + 1e-6 }
+    val others = near()
+    fun crowd(side: Int): Int = others.count { metroAngleGap(metroLabelAngle(side), it) <= PI / 6 + 1e-6 }
     // Stable: fewest crowding first, then the order of preference.
     return clear.minByOrNull { crowd(it) } ?: clear[0]
 }
