@@ -1,6 +1,9 @@
 package com.alphaomegos.annasagenda.screens.metro
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.magnifier
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateCentroid
@@ -129,6 +132,7 @@ internal sealed interface MetroBendAction {
 }
 
 /** See [MetroMapView]. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun MetroMapView(
     scheme: MetroScheme,
@@ -400,7 +404,17 @@ internal fun MetroMapView(
             }
             drawLayer(capture)
         }
-        Canvas(modifier = Modifier.fillMaxSize().then(recorded).then(gestures)) {
+        // A loupe while dragging (14.10), as over text: the finger hides what it moves,
+        // so what is under it shows, twice as big, above it. From Android 9 on; before, nothing.
+        val loupeLift = with(density) { 96.dp.toPx() }
+        val loupe = Modifier.magnifier(
+            sourceCenter = { if (dragId != null || dragBend != null) dragAt else Offset.Unspecified },
+            magnifierCenter = { if (dragId != null || dragBend != null) dragAt - Offset(0f, loupeLift) else Offset.Unspecified },
+            zoom = 2f,
+            size = DpSize(112.dp, 112.dp),
+            cornerRadius = 56.dp,
+        )
+        Canvas(modifier = Modifier.fillMaxSize().then(recorded).then(gestures).then(loupe)) {
             // Glued rings touch in the picture's units, so then they scale with it, unclamped.
             val glued = scheme.glue > 0
             // The look's sizes (08.10) on top.
