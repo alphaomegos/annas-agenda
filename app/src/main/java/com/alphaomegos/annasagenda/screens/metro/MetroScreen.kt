@@ -21,6 +21,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -164,6 +169,8 @@ fun MetroScreen(
     var litLines by rememberSaveable { mutableStateOf(listOf<Long>()) }
     // The station whose card is open over the map (15.10).
     var cardFor by rememberSaveable { mutableStateOf<Long?>(null) }
+    // The "to" field, for the keyboard's "next" in "from" (16.10).
+    val toFocus = remember { FocusRequester() }
 
     val today = remember { LocalDate.now() }
 
@@ -373,6 +380,16 @@ fun MetroScreen(
                             fromPick = null
                             typingIn = "from"
                         },
+                        onClear = {
+                            fromText = ""
+                            fromPick = null
+                            typingIn = null
+                        },
+                        // The keyboard's key goes on to "to", the list of names folded first.
+                        onNext = {
+                            typingIn = null
+                            runCatching { toFocus.requestFocus() }
+                        },
                     )
                     if (typingIn == "from") {
                         Suggestions(scheme, fromText) {
@@ -389,6 +406,13 @@ fun MetroScreen(
                             toPick = null
                             typingIn = "to"
                         },
+                        onClear = {
+                            toText = ""
+                            toPick = null
+                            typingIn = null
+                        },
+                        last = true,
+                        requester = toFocus,
                     )
                     if (typingIn == "to") {
                         Suggestions(scheme, toText) {
@@ -502,16 +526,46 @@ private fun closableKey(target: MetroClosable): String = when (target) {
     is MetroClosable.Exit -> "e${target.id}"
 }
 
+/**
+ * A "from" or "to" field (16.10): a cross to empty it once something is
+ * typed; the keyboard's key goes on to the next field, or, in the [last],
+ * puts the keyboard away.
+ */
 @Composable
-private fun StationField(label: String, value: String, onValueChange: (String) -> Unit) {
+private fun StationField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    onClear: () -> Unit = { onValueChange("") },
+    last: Boolean = false,
+    onNext: () -> Unit = {},
+    requester: FocusRequester? = null,
+) {
+    val focus = LocalFocusManager.current
     OutlinedTextField(
         colors = metroFieldColors(),
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-        modifier = Modifier.fillMaxWidth(),
+        trailingIcon = if (value.isEmpty()) null else {
+            {
+                IconButton(onClick = onClear) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.metro_clear_field, label))
+                }
+            }
+        },
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+            imeAction = if (last) ImeAction.Done else ImeAction.Next,
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { onNext() },
+            onDone = { focus.clearFocus() },
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (requester == null) Modifier else Modifier.focusRequester(requester)),
     )
 }
 
