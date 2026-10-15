@@ -139,4 +139,10 @@ internal fun MetroViewerPrefsTicks(prefs: MetroPrefs, onPrefs: ((MetroPrefs) -> 
     MetroMapTick(stringResource(R.string.metro_pref_recent), prefs.recentRoutes, Modifier.fillMaxWidth()) { on ->
         onPrefs { it.copy(recentRoutes = on) }
     }
+    MetroMapTick(stringResource(R.string.metro_pref_timeline), prefs.routeTimeline, Modifier.fillMaxWidth()) { on ->
+        onPrefs { it.copy(routeTimeline = on) }
+    }
+    MetroMapTick(stringResource(R.string.metro_pref_arrival), prefs.arrivalTime, Modifier.fillMaxWidth()) { on ->
+        onPrefs { it.copy(arrivalTime = on) }
+    }
 }

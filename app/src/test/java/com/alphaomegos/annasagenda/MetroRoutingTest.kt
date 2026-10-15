@@ -253,4 +253,11 @@ class MetroRoutingTest {
         assertEquals(setOf(1L, 2L, 3L, 12L), metroRouteStations(route(1, 12)!!))
         assertEquals(setOf(13L, 14L, 21L, 22L), metroRouteStations(route(13, 22)!!))
     }
+
+    /** When one would arrive (15.10): to the minute, and past midnight the next day's time. */
+    @Test
+    fun arrival_isTheMinutesLaterToTheMinute() {
+        assertEquals(java.time.LocalTime.of(14, 52), metroArrival(java.time.LocalTime.of(14, 29, 41), 23))
+        assertEquals(java.time.LocalTime.of(0, 10), metroArrival(java.time.LocalTime.of(23, 50), 20))
+    }
 }

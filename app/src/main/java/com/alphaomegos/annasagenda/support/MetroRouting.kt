@@ -61,6 +61,10 @@ sealed interface MetroRouteStep {
     ) : MetroRouteStep
 }
 
+/** When one leaving at [now] would get there, [minutes] later (15.10); past midnight, the next day's time. */
+fun metroArrival(now: java.time.LocalTime, minutes: Int): java.time.LocalTime =
+    now.withSecond(0).withNano(0).plusMinutes(minutes.toLong().coerceAtLeast(0))
+
 /**
  * Every station [route] passes or changes at (15.10): what the picture
  * frames when the route is found.

@@ -374,7 +374,7 @@ class AppStateWholeRoundTripTest {
         flightCityNames = mapOf("BEG" to "Белград"),
         flightAirlineNames = mapOf("WAZ" to "Виззэйр"),
         flightHomes = setOf("RS:belgrade"),
-        metroPrefs = MetroPrefs(style = MetroStyle.DOS, styleDetails = false, eraColors = true, loupe = false, haptics = false, boxSelect = false, tips = false, zoomButtons = false, doubleTapZoom = false, frameRoute = false, legend = false, stationCard = true, minimap = false, recentRoutes = false),
+        metroPrefs = MetroPrefs(style = MetroStyle.DOS, styleDetails = false, eraColors = true, loupe = false, haptics = false, boxSelect = false, tips = false, zoomButtons = false, doubleTapZoom = false, frameRoute = false, legend = false, stationCard = true, minimap = false, recentRoutes = false, routeTimeline = false, arrivalTime = false),
         // Schema 14 — a route of each kind.
         metroRecent = listOf(
             MetroRecentRoute("user:3", 1L, 2L, 1_760_000_000_000L, pinned = true),

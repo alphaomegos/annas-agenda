@@ -996,6 +996,10 @@
     <string name="metro_find">Найти станцию</string>
     <string name="metro_find_name">Название</string>
     <string name="metro_find_none">Станции с таким названием нет.</string>
+    <!-- The route as a ribbon, the arrival (0241) -->
+    <string name="metro_pref_timeline">Маршрут лентой: каждая поездка на полосе цвета линии</string>
+    <string name="metro_pref_arrival">Время прибытия, если выйти сейчас</string>
+    <string name="metro_arrive_at">на месте в %1$s</string>
     <string name="metro_select_hint_no_box">Нажимайте на станции, чтобы выделить; нажатие мимо станций снимает выделение. Тащите любую выделенную — сдвинутся все.</string>
     <string name="metro_keys">Клавиши</string>
     <string name="metro_keys_text">Ctrl+Z — отменить; Ctrl+Shift+Z или Ctrl+Y — повторить\nV — двигать, B — гнуть, T — подписи, S — выделять\nCtrl+A — выделить все доступные станции; Esc — снять выделение\nСтрелки — сдвинуть выделенное (с Shift — в пять раз дальше)\nG — сетка; F или 0 — вписать в экран; L — слои\nCtrl+F — найти станцию</string>

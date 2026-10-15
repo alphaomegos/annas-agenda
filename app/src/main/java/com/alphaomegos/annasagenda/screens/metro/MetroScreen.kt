@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +35,10 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import com.alphaomegos.annasagenda.model.MetroRecentRoute
+import com.alphaomegos.annasagenda.model.MetroPrefs
+import com.alphaomegos.annasagenda.support.formatTaskTime
+import com.alphaomegos.annasagenda.support.metroArrival
+import java.time.LocalTime
 import com.alphaomegos.annasagenda.support.METRO_RECENT_SETTLE_MILLIS
 import com.alphaomegos.annasagenda.support.metroRecentKey
 import com.alphaomegos.annasagenda.support.metroRecentOf
@@ -412,7 +419,7 @@ fun MetroScreen(
 
             if (fromText.isNotBlank() && toText.isNotBlank()) {
                 HorizontalDivider()
-                RouteOrWhyNot(scheme, fromText, toText, fromIds, toIds)
+                RouteOrWhyNot(scheme, fromText, toText, fromIds, toIds, state.metroPrefs)
             }
         }
         }
@@ -768,7 +775,14 @@ private fun BigMapSummary(
 
 /** The route, or the reason there is none. */
 @Composable
-private fun RouteOrWhyNot(scheme: MetroScheme, fromText: String, toText: String, fromIds: Set<Long>, toIds: Set<Long>) {
+private fun RouteOrWhyNot(
+    scheme: MetroScheme,
+    fromText: String,
+    toText: String,
+    fromIds: Set<Long>,
+    toIds: Set<Long>,
+    prefs: MetroPrefs,
+) {
     val locale = appLocale()
 
     @Composable
@@ -794,20 +808,34 @@ private fun RouteOrWhyNot(scheme: MetroScheme, fromText: String, toText: String,
     when {
         route == null -> Text(stringResource(R.string.metro_no_route), color = MaterialTheme.colorScheme.error)
         route.steps.isEmpty() -> Text(stringResource(R.string.metro_same_station))
-        else -> RouteSteps(scheme, route)
+        else -> RouteSteps(scheme, route, timeline = prefs.routeTimeline, arrival = prefs.arrivalTime)
     }
 }
 
+/**
+ * The route, step by step. With [timeline] (15.10) each ride lies on a bar
+ * of its line's colour and each walk on a thin grey one, as on the metro's
+ * own apps; with [arrival], the time one would get there leaving now, kept
+ * up to the minute.
+ */
 @Composable
-private fun RouteSteps(scheme: MetroScheme, route: MetroRoute) {
+private fun RouteSteps(scheme: MetroScheme, route: MetroRoute, timeline: Boolean, arrival: Boolean) {
     val stations = remember(scheme) { scheme.stations.associateBy { it.id } }
     val lines = remember(scheme) { scheme.lines.associateBy { it.id } }
     fun nameOf(id: Long) = stations[id]?.name.orEmpty()
 
     val transfers = if (route.transfers == 0) stringResource(R.string.metro_no_transfers)
     else pluralStringResource(R.plurals.metro_transfers, route.transfers, route.transfers)
+    // The clock read again every half minute, so the arrival does not stand still.
+    val now by produceState(LocalTime.now()) {
+        while (true) {
+            delay(30_000)
+            value = LocalTime.now()
+        }
+    }
+    val arrives = if (arrival) " · " + stringResource(R.string.metro_arrive_at, formatTaskTime(metroArrival(now, route.minutes))) else ""
     Text(
-        stringResource(R.string.metro_minutes, route.minutes) + " · " + transfers,
+        stringResource(R.string.metro_minutes, route.minutes) + " · " + transfers + arrives,
         style = MaterialTheme.typography.titleMedium,
     )
 
@@ -815,7 +843,21 @@ private fun RouteSteps(scheme: MetroScheme, route: MetroRoute) {
         when (step) {
             is MetroRouteStep.Ride -> {
                 val line = lines[step.lineId] ?: return@forEach
-                RideStep(scheme, line, step, ::nameOf)
+                if (timeline) {
+                    // A bar of the line's colour down the whole ride (15.10).
+                    Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 9.dp, end = 12.dp, top = 4.dp, bottom = 4.dp)
+                                .width(6.dp)
+                                .fillMaxHeight()
+                                .background(metroLineColor(line.color), RoundedCornerShape(3.dp)),
+                        )
+                        RideStep(scheme, line, step, ::nameOf)
+                    }
+                } else {
+                    RideStep(scheme, line, step, ::nameOf)
+                }
             }
             is MetroRouteStep.Change -> {
                 val fork = step.fromStationId == step.toStationId
@@ -825,14 +867,30 @@ private fun RouteSteps(scheme: MetroScheme, route: MetroRoute) {
                     stringResource(R.string.metro_change_to, nameOf(step.toStationId))
                 }
                 val toLine = stations[step.toStationId]?.lineId?.let { lines[it] }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text + " · " + stringResource(R.string.metro_minutes, step.minutes),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (!fork && toLine != null) LineDot(toLine, size = 20)
+                // A walk on a thin grey bar (15.10), between the rides' coloured ones.
+                Row(modifier = Modifier.height(IntrinsicSize.Min), verticalAlignment = Alignment.CenterVertically) {
+                    if (timeline) {
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 11.dp, end = 14.dp)
+                                .width(2.dp)
+                                .fillMaxHeight()
+                                .background(MaterialTheme.colorScheme.outline),
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.padding(vertical = if (timeline) 6.dp else 0.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text + " · " + stringResource(R.string.metro_minutes, step.minutes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (!fork && toLine != null) LineDot(toLine, size = 20)
+                    }
                 }
             }
         }

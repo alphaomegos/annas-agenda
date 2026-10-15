@@ -281,6 +281,10 @@ data class MetroPrefs(
     // The routes looked up lately listed under the empty fields (15.10);
     // off, none is written down and the list is not shown.
     val recentRoutes: Boolean = true,
+    // The route drawn as a ribbon (15.10): each ride on a bar of its line's
+    // colour, each walk on a thin one; and when one would arrive, by the clock.
+    val routeTimeline: Boolean = true,
+    val arrivalTime: Boolean = true,
 )
 
 /**
