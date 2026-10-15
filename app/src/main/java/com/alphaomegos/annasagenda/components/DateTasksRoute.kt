@@ -29,6 +29,7 @@ import com.alphaomegos.annasagenda.support.canMoveTask
 import com.alphaomegos.annasagenda.support.canShiftSeries
 import com.alphaomegos.annasagenda.support.isSuppressedTemplateTaskOnItsDate
 import com.alphaomegos.annasagenda.support.taskDisplayOrder
+import com.alphaomegos.annasagenda.support.subtaskDisplayOrder
 import java.time.LocalDate
 import java.time.LocalTime
 import com.alphaomegos.annasagenda.model.ManualCounter
@@ -93,10 +94,11 @@ internal fun DateTasksBlock(
 
     val taskIds = remember(tasks) { tasks.map { it.id }.toHashSet() }
 
-    val subtasksByTaskId: Map<Long, List<Subtask>> = remember(state.subtasks, taskIds) {
+    // Done subtasks at the bottom of their task, when the settings say so (16.10).
+    val subtasksByTaskId: Map<Long, List<Subtask>> = remember(state.subtasks, taskIds, state.doneSubtasksLast) {
         state.subtasks
             .filter { it.taskId in taskIds }
-            .sortedWith(compareBy({ it.order }, { it.id }))
+            .sortedWith(subtaskDisplayOrder(state.doneSubtasksLast))
             .groupBy { it.taskId }
     }
 

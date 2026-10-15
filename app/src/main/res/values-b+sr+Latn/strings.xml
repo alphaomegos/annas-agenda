@@ -789,6 +789,7 @@
     <string name="flights_progress">%1$s / %2$s</string>
     <string name="flights_show_on_travel_map">Letovi na mapi</string>
     <string name="settings_done_tasks_last">Urađeni zadaci — na dno liste</string>
+    <string name="settings_done_subtasks_last">Urađeni podzadaci — na dno svog zadatka</string>
     <string name="ach_first_flight">Prvi let</string>
     <string name="ach_first_flight_text">Odleteti svoj prvi let</string>
     <string name="ach_first_flight_joke">Čestitamo: više se ne plašite letenja. Naslonjači za ruke se, doduše, još sećaju.</string>

@@ -855,6 +855,7 @@
     <string name="flights_progress">%1$s / %2$s</string>
     <string name="flights_show_on_travel_map">Полёты на карте</string>
     <string name="settings_done_tasks_last">Сделанные задачи — вниз списка</string>
+    <string name="settings_done_subtasks_last">Сделанные подзадачи — вниз своей задачи</string>
     <string name="ach_first_flight">Первый полёт</string>
     <string name="ach_first_flight_text">Совершить свой первый полёт</string>
     <string name="ach_first_flight_joke">Поздравляем: вы больше не боитесь летать. Подлокотники, правда, до сих пор помнят.</string>

@@ -52,19 +52,40 @@ fun moveTaskWithinDate(
     }
 }
 
+/** The order a task's subtasks are read in: as the user arranged them, then by id. */
+val subtaskOrder: Comparator<Subtask> = compareBy({ it.order }, { it.id })
+
+/**
+ * The order a task's subtasks are shown in (16.10): [subtaskOrder], and with
+ * [doneLast] — a setting — the done ones after the rest, each part in that
+ * same order.
+ */
+fun subtaskDisplayOrder(doneLast: Boolean): Comparator<Subtask> =
+    if (doneLast) compareBy<Subtask> { it.isDone }.then(subtaskOrder) else subtaskOrder
+
+/**
+ * [subtaskId] moved by [step] among its task's subtasks.
+ *
+ * With done subtasks at the bottom (16.10) the swap is with the neighbour as
+ * shown — among the subtasks done or not done like this one — and the
+ * others keep their places in the task's numbering, as tasks do in a day.
+ */
 fun moveSubtaskWithinTask(
     subtasks: List<Subtask>,
     subtaskId: Long,
     step: Int,
+    doneLast: Boolean = false,
 ): List<Subtask> {
     val victim = subtasks.firstOrNull { it.id == subtaskId } ?: return subtasks
     val siblings = subtasks
         .filter { it.taskId == victim.taskId }
-        .sortedWith(compareBy({ it.order }, { it.id }))
+        .sortedWith(subtaskOrder)
 
-    val idx = siblings.indexOfFirst { it.id == subtaskId }
-    val targetIdx = idx + step
-    if (idx < 0 || targetIdx !in siblings.indices) return subtasks
+    val slots = siblings.indices.filter { !doneLast || siblings[it].isDone == victim.isDone }
+    val pos = slots.indexOfFirst { siblings[it].id == subtaskId }
+    if (pos < 0 || (pos + step) !in slots.indices) return subtasks
+    val idx = slots[pos]
+    val targetIdx = slots[pos + step]
 
     val reordered = siblings.toMutableList()
     val tmp = reordered[targetIdx]

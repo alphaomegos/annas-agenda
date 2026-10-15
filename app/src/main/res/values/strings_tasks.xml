@@ -137,4 +137,5 @@
     <string name="new_task_counter_attached">Counter: %1$s</string>
     <string name="new_task_add_subtask_short">+ Add</string>
     <string name="settings_done_tasks_last">Done tasks to the bottom of the list</string>
+    <string name="settings_done_subtasks_last">Done subtasks to the bottom of their task</string>
 </resources>

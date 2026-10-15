@@ -21,6 +21,9 @@ interface DateTasksData {
 
     /** Done tasks go to the bottom of their day (06.10, a setting). */
     val doneTasksLast: Boolean get() = false
+
+    /** Done subtasks go to the bottom of their task (16.10, a setting of its own). */
+    val doneSubtasksLast: Boolean get() = false
 }
 
 data class AppState(
@@ -67,6 +70,9 @@ data class AppState(
     // Done tasks at the bottom of their day (06.10). A setting with a
     // default, so no schema step.
     override val doneTasksLast: Boolean = false,
+    // Done subtasks at the bottom of their task (16.10). A setting of its
+    // own, with a default, so no schema step.
+    override val doneSubtasksLast: Boolean = false,
 
     // How many days back the "Undone" screen and the lamp look for debts.
     // UNDONE_HORIZON_UNLIMITED means no limit.

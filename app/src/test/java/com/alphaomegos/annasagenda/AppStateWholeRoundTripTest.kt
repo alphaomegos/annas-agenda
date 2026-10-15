@@ -147,6 +147,7 @@ class AppStateWholeRoundTripTest {
         idHighWater = 900L,
         undoneLampMuted = true,
         doneTasksLast = true,
+        doneSubtasksLast = true,
         undoneHorizonDays = 90,
         readingBooks = listOf(
             ReadingBook(

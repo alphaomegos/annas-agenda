@@ -213,4 +213,39 @@ class TaskOrderingSupportTest {
         repeatRule = null,
         originSubtaskId = null,
     )
+
+    /* ---------------- done subtasks at the bottom (16.10) ---------------- */
+
+    @Test
+    fun subtaskDisplayOrder_putsTheDoneOnesLastEachPartInItsOwnOrder() {
+        val subs = listOf(
+            subtask(id = 1, order = 0, taskId = 100).copy(isDone = true),
+            subtask(id = 2, order = 1, taskId = 100),
+            subtask(id = 3, order = 2, taskId = 100).copy(isDone = true),
+            subtask(id = 4, order = 3, taskId = 100),
+        )
+
+        assertEquals(listOf(2L, 4L, 1L, 3L), subs.sortedWith(subtaskDisplayOrder(true)).map { it.id })
+        assertEquals(listOf(1L, 2L, 3L, 4L), subs.sortedWith(subtaskDisplayOrder(false)).map { it.id })
+    }
+
+    /** With the done ones at the bottom, a subtask swaps with its neighbour as shown. */
+    @Test
+    fun moveSubtaskWithinTask_withDoneLast_swapsWithTheNeighbourAsShown() {
+        val subs = listOf(
+            subtask(id = 1, order = 0, taskId = 100),
+            subtask(id = 2, order = 1, taskId = 100).copy(isDone = true),
+            subtask(id = 3, order = 2, taskId = 100),
+        )
+
+        val moved = moveSubtaskWithinTask(subs, subtaskId = 3L, step = -1, doneLast = true)
+        val byId = moved.associateBy { it.id }
+
+        // 3 and 1 swap; the done one keeps its number.
+        assertEquals(2, byId.getValue(1L).order)
+        assertEquals(1, byId.getValue(2L).order)
+        assertEquals(0, byId.getValue(3L).order)
+        // The last of the undone ones does not go down among the done.
+        assertEquals(subs, moveSubtaskWithinTask(subs, subtaskId = 3L, step = 1, doneLast = true))
+    }
 }

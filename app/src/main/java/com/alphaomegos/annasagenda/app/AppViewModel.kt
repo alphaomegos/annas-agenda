@@ -543,6 +543,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (cur.doneTasksLast != value) _state.value = cur.copy(doneTasksLast = value)
     }
 
+    /** Done subtasks at the bottom of their task (16.10). */
+    fun setDoneSubtasksLast(value: Boolean) {
+        val cur = _state.value
+        if (cur.doneSubtasksLast != value) _state.value = cur.copy(doneSubtasksLast = value)
+    }
+
     fun setUndoneLampMuted(value: Boolean) {
         val cur = _state.value
         if (cur.undoneLampMuted == value) return
@@ -1633,7 +1639,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun moveSubtaskUp(subtaskId: Long) {
         val cur = _state.value
-        val after = stateAfterReorderingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId, step = -1)
+        val after = stateAfterReorderingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId, step = -1, doneLast = cur.doneSubtasksLast)
 
         _state.value = cur.copy(
             tasks = after.tasks,
@@ -1644,7 +1650,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun moveSubtaskDown(subtaskId: Long) {
         val cur = _state.value
-        val after = stateAfterReorderingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId, step = 1)
+        val after = stateAfterReorderingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId, step = 1, doneLast = cur.doneSubtasksLast)
 
         _state.value = cur.copy(
             tasks = after.tasks,

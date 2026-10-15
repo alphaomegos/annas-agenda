@@ -339,8 +339,9 @@ fun stateAfterReorderingSubtask(
     counters: List<Counter>,
     subtaskId: Long,
     step: Int,
+    doneLast: Boolean = false,
 ): DoneChange {
-    val reordered = moveSubtaskWithinTask(subtasks, subtaskId, step)
+    val reordered = moveSubtaskWithinTask(subtasks, subtaskId, step, doneLast)
     if (reordered == subtasks) return DoneChange(tasks, subtasks, counters)
 
     return doneChangeAfterSubtasksMoved(tasks, reordered, counters)

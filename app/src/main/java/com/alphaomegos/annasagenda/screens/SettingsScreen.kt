@@ -107,6 +107,13 @@ fun SettingsScreen(
                     stringResource(if (state.doneTasksLast) R.string.settings_on else R.string.settings_off),
                 ) { vm.setDoneTasksLast(!state.doneTasksLast) }
             }
+            // Done subtasks at the bottom of their task (16.10), a setting of its own.
+            item {
+                SettingsRow(
+                    stringResource(R.string.settings_done_subtasks_last),
+                    stringResource(if (state.doneSubtasksLast) R.string.settings_on else R.string.settings_off),
+                ) { vm.setDoneSubtasksLast(!state.doneSubtasksLast) }
+            }
             item {
                 SettingsRow(
                     stringResource(R.string.widget_style_menu),
