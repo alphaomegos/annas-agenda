@@ -1921,6 +1921,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (prefs != cur.metroPrefs) _state.value = cur.copy(metroPrefs = prefs)
     }
 
+    /**
+     * [from] → [to] looked up on the scheme kept under [schemeKey] (15.10):
+     * written down, unless the user turned recent routes off.
+     */
+    fun rememberMetroRoute(schemeKey: String, from: Long, to: Long) {
+        val cur = _state.value
+        if (!cur.metroPrefs.recentRoutes) return
+        val next = metroRecentRemembered(cur.metroRecent, schemeKey, from, to, System.currentTimeMillis())
+        if (next != cur.metroRecent) _state.value = cur.copy(metroRecent = next)
+    }
+
+    /** A recent route pinned to the top, or let go of (15.10). */
+    fun pinMetroRoute(schemeKey: String, from: Long, to: Long, pinned: Boolean) {
+        val cur = _state.value
+        val next = metroRecentPinned(cur.metroRecent, schemeKey, from, to, pinned)
+        if (next != cur.metroRecent) _state.value = cur.copy(metroRecent = next)
+    }
+
+    /** The recent routes of a scheme cleared, the pinned ones kept (15.10). */
+    fun clearMetroRecent(schemeKey: String) {
+        val cur = _state.value
+        val next = metroRecentCleared(cur.metroRecent, schemeKey)
+        if (next != cur.metroRecent) _state.value = cur.copy(metroRecent = next)
+    }
+
     /** A new, empty scheme for [city], chosen at once; its id, or null for a blank name. */
     fun createMetroScheme(city: String): Long? {
         val cur = _state.value
@@ -1940,6 +1965,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = cur.copy(
             metroSchemes = cur.metroSchemes.filterNot { it.id == schemeId },
             metroSelection = metroSelectionAfterRemoving(cur.metroSelection, schemeId),
+            // Its routes go with it (15.10).
+            metroRecent = metroRecentWithout(cur.metroRecent, metroSelectionText(MetroSelection.User(schemeId))),
         )
     }
 

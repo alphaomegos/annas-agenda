@@ -637,6 +637,20 @@ class AppStateStoreMigrationTest {
         assertEquals(ReadingShelf.PLANS, state.readingBooks.single().shelf)
     }
 
+    /** Version 14 (15.10): a payload from before it has looked up no routes, and keeps all else. */
+    @Test
+    fun version13_readsWithNoRecentRoutes() {
+        val state = decoded(
+            """{ "v": 13,
+                "metroSelection": "library:moscow",
+                "metroPrefs": { "style": "DOS" } }""",
+        )
+        assertTrue(state.metroRecent.isEmpty())
+        assertEquals("library:moscow", state.metroSelection)
+        assertEquals(MetroStyle.DOS, state.metroPrefs.style)
+        assertTrue(state.metroPrefs.recentRoutes)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

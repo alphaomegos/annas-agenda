@@ -168,4 +168,6 @@ data class AppState(
     val flightHomes: Set<String> = emptySet(),
     // The metro section's own settings (15.10): how its editor behaves. Settings.
     val metroPrefs: MetroPrefs = MetroPrefs(),
+    // The routes looked up lately, of every scheme (15.10): schema 14.
+    val metroRecent: List<MetroRecentRoute> = emptyList(),
 ) : DateTasksData

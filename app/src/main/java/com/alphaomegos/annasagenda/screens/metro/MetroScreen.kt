@@ -27,6 +27,15 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import com.alphaomegos.annasagenda.model.MetroRecentRoute
+import com.alphaomegos.annasagenda.support.METRO_RECENT_SETTLE_MILLIS
+import com.alphaomegos.annasagenda.support.metroRecentKey
+import com.alphaomegos.annasagenda.support.metroRecentOf
+import com.alphaomegos.annasagenda.support.metroRouteEnds
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Surface
 import com.alphaomegos.annasagenda.support.MetroStationFacts
@@ -156,6 +165,15 @@ fun MetroScreen(
     val toIds = remember(scheme, toText, toPick) { scheme?.let { metroStationsForField(it, toText, toPick) }.orEmpty() }
     val shownRoute = remember(scheme, fromIds, toIds) {
         if (scheme == null || fromIds.isEmpty() || toIds.isEmpty()) null else metroRoute(scheme, fromIds, toIds)
+    }
+    // A route that stays found is written down (15.10): a name half typed is not looked up yet.
+    val recentKey = shown?.let { metroRecentKey(it) }
+    val routeEnds = remember(shownRoute) { shownRoute?.let { metroRouteEnds(it) } }
+    LaunchedEffect(routeEnds, recentKey) {
+        if (routeEnds != null && recentKey != null) {
+            delay(METRO_RECENT_SETTLE_MILLIS)
+            vm.rememberMetroRoute(recentKey, routeEnds.first, routeEnds.second)
+        }
     }
     // What the picture frames when a route is found (15.10), if the settings say so.
     val framed = remember(shownRoute, state.metroPrefs.frameRoute) {
@@ -375,6 +393,23 @@ fun MetroScreen(
                 }
             }
 
+            // The routes looked up lately (15.10), while both fields are empty.
+            if (fromText.isBlank() && toText.isBlank() && state.metroPrefs.recentRoutes && recentKey != null) {
+                RecentRoutes(
+                    scheme = scheme,
+                    routes = metroRecentOf(state.metroRecent, recentKey),
+                    onPick = { r ->
+                        fromText = scheme.stations.firstOrNull { it.id == r.fromStationId }?.name.orEmpty()
+                        fromPick = r.fromStationId
+                        toText = scheme.stations.firstOrNull { it.id == r.toStationId }?.name.orEmpty()
+                        toPick = r.toStationId
+                        typingIn = null
+                    },
+                    onPin = { r, on -> vm.pinMetroRoute(recentKey, r.fromStationId, r.toStationId, on) },
+                    onClear = { vm.clearMetroRecent(recentKey) },
+                )
+            }
+
             if (fromText.isNotBlank() && toText.isNotBlank()) {
                 HorizontalDivider()
                 RouteOrWhyNot(scheme, fromText, toText, fromIds, toIds)
@@ -513,6 +548,59 @@ internal fun LineDot(line: MetroLine, size: Int = 22) {
             fontWeight = FontWeight.Bold,
             maxLines = 1,
         )
+    }
+}
+
+/**
+ * The routes looked up lately on this scheme (15.10): the pinned first, then
+ * the newest; a tap fills both fields, the star pins or lets go. A route
+ * whose station has since gone is left out. Clearing keeps the pinned.
+ */
+@Composable
+private fun RecentRoutes(
+    scheme: MetroScheme,
+    routes: List<MetroRecentRoute>,
+    onPick: (MetroRecentRoute) -> Unit,
+    onPin: (MetroRecentRoute, Boolean) -> Unit,
+    onClear: () -> Unit,
+) {
+    val stations = remember(scheme) { scheme.stations.associateBy { it.id } }
+    val lines = remember(scheme) { scheme.lines.associateBy { it.id } }
+    val listed = routes.filter { it.fromStationId in stations && it.toStationId in stations }
+    if (listed.isEmpty()) return
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            stringResource(R.string.metro_recent),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.weight(1f),
+        )
+        if (listed.any { !it.pinned }) {
+            TextButton(onClick = onClear) { Text(stringResource(R.string.metro_recent_clear)) }
+        }
+    }
+    listed.forEach { r ->
+        val a = stations.getValue(r.fromStationId)
+        val b = stations.getValue(r.toStationId)
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { onPick(r) },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            lines[a.lineId]?.let { LineDot(it, size = 18) }
+            Text(
+                a.name + " → " + b.name,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+            )
+            lines[b.lineId]?.let { LineDot(it, size = 18) }
+            IconButton(onClick = { onPin(r, !r.pinned) }) {
+                Icon(
+                    if (r.pinned) Icons.Default.Star else Icons.Default.StarBorder,
+                    contentDescription = stringResource(if (r.pinned) R.string.metro_recent_unpin else R.string.metro_recent_pin),
+                )
+            }
+        }
     }
 }
 

@@ -121,6 +121,8 @@ internal data class AppStateDto(
     val flightHomes: List<String> = emptyList(),
     // The metro section's settings (15.10).
     val metroPrefs: MetroPrefsDto = MetroPrefsDto(),
+    // Schema 14 (15.10): the routes looked up lately.
+    val metroRecent: List<MetroRecentRouteDto> = emptyList(),
 )
 
 /** A flight; times are the airports' local clocks as "2024-02-24T14:05". */
@@ -162,6 +164,17 @@ internal data class MetroPrefsDto(
     val legend: Boolean = true,
     val stationCard: Boolean = false,
     val minimap: Boolean = true,
+    val recentRoutes: Boolean = true,
+)
+
+@Serializable
+internal data class MetroRecentRouteDto(
+    // MetroSelection as text: "user:12", "library:moscow".
+    val schemeKey: String,
+    val fromStationId: Long,
+    val toStationId: Long,
+    val atEpochMillis: Long,
+    val pinned: Boolean = false,
 )
 
 @Serializable

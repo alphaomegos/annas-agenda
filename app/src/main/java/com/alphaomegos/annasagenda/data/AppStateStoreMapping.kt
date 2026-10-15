@@ -86,7 +86,8 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     flightCityNames = flightCityNames,
     flightAirlineNames = flightAirlineNames,
     flightHomes = flightHomes.sorted(),
-    metroPrefs = MetroPrefsDto(metroPrefs.style.name, metroPrefs.styleDetails, metroPrefs.eraColors, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips, metroPrefs.zoomButtons, metroPrefs.doubleTapZoom, metroPrefs.frameRoute, metroPrefs.legend, metroPrefs.stationCard, metroPrefs.minimap),
+    metroPrefs = MetroPrefsDto(metroPrefs.style.name, metroPrefs.styleDetails, metroPrefs.eraColors, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips, metroPrefs.zoomButtons, metroPrefs.doubleTapZoom, metroPrefs.frameRoute, metroPrefs.legend, metroPrefs.stationCard, metroPrefs.minimap, metroPrefs.recentRoutes),
+    metroRecent = metroRecent.map { MetroRecentRouteDto(it.schemeKey, it.fromStationId, it.toStationId, it.atEpochMillis, it.pinned) },
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -193,7 +194,11 @@ internal fun AppStateDto.toDomain(): AppState {
         flightCityNames = flightCityNames.filter { it.key.isNotBlank() && it.value.isNotBlank() },
         flightAirlineNames = flightAirlineNames.filter { it.key.isNotBlank() && it.value.isNotBlank() },
         flightHomes = flightHomes.filter { it.isNotBlank() }.toSet(),
-        metroPrefs = MetroPrefs(parseMetroStyle(metroPrefs.style), metroPrefs.styleDetails, metroPrefs.eraColors, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips, metroPrefs.zoomButtons, metroPrefs.doubleTapZoom, metroPrefs.frameRoute, metroPrefs.legend, metroPrefs.stationCard, metroPrefs.minimap),
+        metroPrefs = MetroPrefs(parseMetroStyle(metroPrefs.style), metroPrefs.styleDetails, metroPrefs.eraColors, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips, metroPrefs.zoomButtons, metroPrefs.doubleTapZoom, metroPrefs.frameRoute, metroPrefs.legend, metroPrefs.stationCard, metroPrefs.minimap, metroPrefs.recentRoutes),
+        // A route without a scheme to look it up on is no route.
+        metroRecent = metroRecent
+            .filter { it.schemeKey.isNotBlank() }
+            .map { MetroRecentRoute(it.schemeKey, it.fromStationId, it.toStationId, it.atEpochMillis, it.pinned) },
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)

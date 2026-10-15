@@ -62,6 +62,7 @@ internal fun migrateAppStateRawJson(
             10 -> migrateAppState10To11(cur)
             11 -> migrateAppState11To12(cur)
             12 -> migrateAppState12To13(cur)
+            13 -> migrateAppState13To14(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -222,6 +223,17 @@ private fun migrateAppState11To12(obj: JsonObject): JsonObject {
 private fun migrateAppState12To13(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(13)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp. Version 14 (15.10) adds the metro routes looked up lately, some
+ * pinned — data nothing else holds. None looked up is what every payload
+ * before it means.
+ */
+private fun migrateAppState13To14(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(14)
     return JsonObject(m)
 }
 

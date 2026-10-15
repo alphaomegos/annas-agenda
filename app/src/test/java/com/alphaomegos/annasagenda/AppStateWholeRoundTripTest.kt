@@ -372,7 +372,12 @@ class AppStateWholeRoundTripTest {
         flightCityNames = mapOf("BEG" to "Белград"),
         flightAirlineNames = mapOf("WAZ" to "Виззэйр"),
         flightHomes = setOf("RS:belgrade"),
-        metroPrefs = MetroPrefs(style = MetroStyle.DOS, styleDetails = false, eraColors = true, loupe = false, haptics = false, boxSelect = false, tips = false, zoomButtons = false, doubleTapZoom = false, frameRoute = false, legend = false, stationCard = true, minimap = false),
+        metroPrefs = MetroPrefs(style = MetroStyle.DOS, styleDetails = false, eraColors = true, loupe = false, haptics = false, boxSelect = false, tips = false, zoomButtons = false, doubleTapZoom = false, frameRoute = false, legend = false, stationCard = true, minimap = false, recentRoutes = false),
+        // Schema 14 — a route of each kind.
+        metroRecent = listOf(
+            MetroRecentRoute("user:3", 1L, 2L, 1_760_000_000_000L, pinned = true),
+            MetroRecentRoute("library:moscow", 7L, 9L, 1_760_000_100_000L),
+        ),
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -456,6 +461,7 @@ class AppStateWholeRoundTripTest {
             "bends", "glue", "labelsOncePerInterchange", "labelSide", "hiddenLines", "lockedLines",
             "nextSeasonEpochDay", "remindNextSeason", "readingWaitingPrefs",
             "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes", "metroPrefs",
+            "metroRecent", "schemeKey", "atEpochMillis", "pinned",
             "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))

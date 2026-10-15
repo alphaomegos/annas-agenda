@@ -272,6 +272,23 @@ data class MetroPrefs(
     val stationCard: Boolean = false,
     // The whole scheme small in the corner while zoomed in (15.10).
     val minimap: Boolean = true,
+    // The routes looked up lately listed under the empty fields (15.10);
+    // off, none is written down and the list is not shown.
+    val recentRoutes: Boolean = true,
+)
+
+/**
+ * A route looked up (15.10): on which scheme — its selection text, "user:12"
+ * or "library:moscow" — from and to which station, and when; [pinned] ones
+ * stay at the top and are never pushed out by newer ones. Data the user
+ * made: schema 14.
+ */
+data class MetroRecentRoute(
+    val schemeKey: String,
+    val fromStationId: Long,
+    val toStationId: Long,
+    val atEpochMillis: Long,
+    val pinned: Boolean = false,
 )
 
 /**
