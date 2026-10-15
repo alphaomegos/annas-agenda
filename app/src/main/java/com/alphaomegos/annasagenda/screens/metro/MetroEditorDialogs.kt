@@ -63,7 +63,7 @@ internal fun MetroTextDialog(
     onSave: (String) -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf(initial) }
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -100,7 +100,7 @@ internal fun MetroMinutesDialog(
     var text by rememberSaveable { mutableStateOf(initial?.toString().orEmpty()) }
     val value = text.trim().toIntOrNull()
     val ok = value != null && value >= (if (allowZero) 0 else 1) && value <= 240
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -136,7 +136,7 @@ internal fun MetroDefaultsDialog(
     var transferText by rememberSaveable { mutableStateOf(transfer.toString()) }
     val s = segmentText.toIntOrNull()?.takeIf { it in 1..60 }
     val t = transferText.toIntOrNull()?.takeIf { it in 1..60 }
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_defaults)) },
         text = {
@@ -185,7 +185,7 @@ internal fun MetroLineDialog(
     val doorCount = doors.toIntOrNull()?.takeIf { it in 1..8 }
     val ok = label.isNotBlank() && carCount != null && doorCount != null
 
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (line == null) R.string.metro_add_line else R.string.metro_edit_line)) },
         text = {
@@ -277,7 +277,7 @@ internal fun MetroTransferDialog(
             scheme.stations.filter { it.name.equals(typed.trim(), ignoreCase = true) }.map { it.name }
         scheme.stations.filter { it.name in names && it.lineId != ownLine && it.id != fromStationId }
     }
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_add_transfer)) },
         text = {
@@ -342,7 +342,7 @@ internal fun MetroHintDialog(
     val target = targets.getOrNull(targetIndex)
     val ok = from != null && target != null && carValue != null && doorValue != null
 
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_add_hint)) },
         text = {
@@ -416,7 +416,7 @@ internal fun MetroCloseDialog(
     onPickDate: () -> Unit,
     onNoDate: () -> Unit,
 ) {
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_close)) },
         text = { Text(stringResource(R.string.metro_close_when)) },
@@ -446,7 +446,7 @@ internal fun MetroAddStationDialog(
     var text by rememberSaveable { mutableStateOf("") }
     // The place the new station takes: 0 is the start, the track's length the end.
     var at by rememberSaveable { mutableStateOf(trackNames.size) }
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_add_station)) },
         text = {
@@ -501,7 +501,7 @@ internal fun MetroFindDialog(scheme: MetroScheme, onPick: (Long) -> Unit, onDism
     var typed by rememberSaveable { mutableStateOf("") }
     val found = remember(scheme, typed) { metroStationsMatching(scheme, typed) }
     val lines = remember(scheme) { scheme.lines.associateBy { it.id } }
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_find)) },
         text = {

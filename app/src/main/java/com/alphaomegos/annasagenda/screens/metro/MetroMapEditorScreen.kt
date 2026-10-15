@@ -621,7 +621,7 @@ fun MetroMapEditorScreen(
     }
 
     if (figuring && scheme != null) {
-        AlertDialog(
+        MetroDialog(
             onDismissRequest = { figuring = false },
             title = { Text(stringResource(R.string.metro_figure)) },
             text = {
@@ -677,7 +677,7 @@ fun MetroMapEditorScreen(
     }
 
     if (prefsShown) {
-        AlertDialog(
+        MetroDialog(
             onDismissRequest = { prefsShown = false },
             title = { Text(stringResource(R.string.metro_editor_prefs)) },
             text = {
@@ -720,7 +720,7 @@ fun MetroMapEditorScreen(
     }
 
     if (keysShown) {
-        AlertDialog(
+        MetroDialog(
             onDismissRequest = { keysShown = false },
             title = { Text(stringResource(R.string.metro_keys)) },
             text = { Text(stringResource(R.string.metro_keys_text), style = MaterialTheme.typography.bodyMedium) },
@@ -758,7 +758,7 @@ fun MetroMapEditorScreen(
  */
 @Composable
 private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> MetroScheme) -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_look)) },
         text = {
@@ -947,7 +947,7 @@ private fun MetroLayerChip(
  */
 @Composable
 private fun MetroLayersDialog(scheme: MetroScheme, onLayers: ((MetroScheme) -> MetroScheme) -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_layers)) },
         text = {

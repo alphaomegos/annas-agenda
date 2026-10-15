@@ -182,7 +182,7 @@ private fun EditorRow(
 /** A short list of things to do with one item. */
 @Composable
 private fun ActionsDialog(title: String, actions: List<Pair<String, () -> Unit>>, onDismiss: () -> Unit) {
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {

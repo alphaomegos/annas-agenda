@@ -1,6 +1,8 @@
 package com.alphaomegos.annasagenda.screens.metro
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.defaultMinSize
@@ -271,8 +273,7 @@ internal fun MetroKeyBar(keys: List<MetroKey>) {
 
 /** Windows' close box: a grey bevelled square with a cross, which goes back. */
 @Composable
-private fun Win95CloseBox(onBack: () -> Unit) {
-    val words = stringResource(R.string.back)
+private fun Win95CloseBox(onBack: () -> Unit, words: String = stringResource(R.string.back)) {
     Box(
         modifier = Modifier
             .padding(horizontal = 8.dp)
@@ -479,7 +480,7 @@ internal fun MetroStyleDialog(
     onEraColors: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_style)) },
         text = {
@@ -600,6 +601,111 @@ internal fun MetroTextButton(
             if (style != MetroStyle.WIN95) Text("[ ")
             content()
             if (style != MetroStyle.WIN95) Text(" ]")
+        }
+    }
+}
+
+/**
+ * A dialog in the section's style (15.10), as AlertDialog is called: today's
+ * as before; with the style's details, the old program's own window —
+ * Windows' grey one under a navy title bar with its close box, a blue DOS
+ * box framed twice with the title in yellow, the terminal's black one with
+ * a prompt for a title — the words in between, the buttons along the bottom.
+ */
+@Composable
+internal fun MetroDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: (@Composable () -> Unit)? = null,
+    title: (@Composable () -> Unit)? = null,
+    text: (@Composable () -> Unit)? = null,
+) {
+    val style = LocalMetroStyle.current
+    val details = LocalMetroStyleDetails.current
+    if (style == MetroStyle.MODERN || !details) {
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            confirmButton = confirmButton,
+            modifier = modifier,
+            dismissButton = dismissButton,
+            title = title,
+            text = text,
+        )
+        return
+    }
+    val ink = MaterialTheme.colorScheme.onSurface
+    Dialog(onDismissRequest = onDismissRequest) {
+        Column(
+            modifier = modifier
+                .widthIn(min = 280.dp, max = 560.dp)
+                .background(MaterialTheme.colorScheme.surface)
+                .metroFrame(style, details = true)
+                .padding(metroFrameInset(style, details = true)),
+        ) {
+            if (title != null) {
+                when (style) {
+                    MetroStyle.WIN95 -> Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(2.dp)
+                            .background(Brush.horizontalGradient(listOf(Win95Navy, Color(0xFF1084D0))))
+                            .padding(start = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(modifier = Modifier.weight(1f).padding(vertical = 4.dp)) {
+                            CompositionLocalProvider(
+                                LocalContentColor provides Color.White,
+                                LocalTextStyle provides MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            ) { title() }
+                        }
+                        Win95CloseBox(onDismissRequest, stringResource(R.string.metro_dialog_close))
+                    }
+                    MetroStyle.DOS -> Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, start = 12.dp, end = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CompositionLocalProvider(
+                            LocalContentColor provides DosYellow,
+                            LocalTextStyle provides MaterialTheme.typography.titleMedium,
+                        ) {
+                            Text("═ ")
+                            title()
+                            Text(" ═")
+                        }
+                    }
+                    else -> Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, start = 12.dp, end = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CompositionLocalProvider(
+                            LocalContentColor provides TermGreen,
+                            LocalTextStyle provides MaterialTheme.typography.titleMedium,
+                        ) {
+                            Text("> ")
+                            title()
+                            Text("_")
+                        }
+                    }
+                }
+            }
+            if (text != null) {
+                Box(modifier = Modifier.weight(1f, fill = false).padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    CompositionLocalProvider(
+                        LocalContentColor provides ink,
+                        LocalTextStyle provides MaterialTheme.typography.bodyMedium,
+                    ) { text() }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                dismissButton?.invoke()
+                confirmButton()
+            }
         }
     }
 }

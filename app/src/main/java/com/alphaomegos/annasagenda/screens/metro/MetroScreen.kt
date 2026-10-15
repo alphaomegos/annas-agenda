@@ -441,7 +441,7 @@ fun MetroScreen(
     }
 
     if (mapPrefsShown) {
-        AlertDialog(
+        MetroDialog(
             onDismissRequest = { mapPrefsShown = false },
             title = { Text(stringResource(R.string.metro_map_prefs)) },
             text = {
@@ -1047,7 +1047,7 @@ private fun carDoor(line: MetroLine, hint: MetroHint): String =
 @Composable
 private fun CreateSchemeDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
     var city by rememberSaveable { mutableStateOf("") }
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_create_scheme)) },
         text = {
@@ -1090,7 +1090,7 @@ private fun ReopenDialog(
             stringResource(R.string.metro_reopen_exit, exit?.name.orEmpty(), station(exit?.stationId ?: -1), day)
         }
     }
-    AlertDialog(
+    MetroDialog(
         onDismissRequest = onLater,
         title = { Text(stringResource(R.string.metro_reopen_title)) },
         text = { Text(text) },
