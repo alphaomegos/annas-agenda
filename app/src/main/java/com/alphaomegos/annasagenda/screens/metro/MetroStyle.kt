@@ -1,6 +1,11 @@
 package com.alphaomegos.annasagenda.screens.metro
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.runtime.produceState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.graphics.Path
@@ -202,15 +207,20 @@ internal fun MetroTopBar(
         MetroStyle.DOS -> SolidColor(DosDarkCyan)
         else -> SolidColor(TermBlack)
     }
-    val shownTitle = if (style == MetroStyle.TERMINAL && details) "> ${title.uppercase()}_" else title
+    val shownTitle = if (style == MetroStyle.TERMINAL && details) "> ${title.uppercase()}" else title
     TopAppBar(
         title = {
-            Text(
-                shownTitle,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = if (style == MetroStyle.WIN95) FontWeight.Bold else null,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    shownTitle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = if (style == MetroStyle.WIN95) FontWeight.Bold else null,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                // The terminal's cursor blinks after the prompt (16.10).
+                if (style == MetroStyle.TERMINAL && details) BlinkingCursor()
+            }
         },
         navigationIcon = {
             TextButton(onClick = onBack, colors = ButtonDefaults.textButtonColors(contentColor = ink)) {
@@ -219,6 +229,8 @@ internal fun MetroTopBar(
         },
         actions = {
             actions()
+            // Norton's clock in the corner of its line (16.10).
+            if (style == MetroStyle.DOS && details) DosClock()
             if (style == MetroStyle.WIN95 && details) Win95CloseBox(onBack)
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -842,4 +854,41 @@ internal fun MetroRadio(selected: Boolean, onClick: (() -> Unit)?, enabled: Bool
             )
         }
     }
+}
+
+/** The terminal's cursor (16.10): an underscore on for half a second, off for half. */
+@Composable
+private fun BlinkingCursor() {
+    val blink = rememberInfiniteTransition(label = "cursor")
+    val shown by blink.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1000
+                1f at 0
+                1f at 499
+                0f at 500
+                0f at 999
+            },
+        ),
+        label = "cursor",
+    )
+    Text("_", modifier = Modifier.alpha(shown).clearAndSetSemantics { })
+}
+
+/** Norton Commander's clock (16.10): the hours and minutes, read again every few seconds. */
+@Composable
+private fun DosClock() {
+    val now by produceState(java.time.LocalTime.now()) {
+        while (true) {
+            kotlinx.coroutines.delay(5_000)
+            value = java.time.LocalTime.now()
+        }
+    }
+    Text(
+        "%02d:%02d".format(now.hour, now.minute),
+        color = Color.Black,
+        modifier = Modifier.padding(horizontal = 8.dp),
+    )
 }
