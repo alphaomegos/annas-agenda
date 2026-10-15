@@ -62,6 +62,22 @@ sealed interface MetroRouteStep {
 }
 
 /**
+ * Every station [route] passes or changes at (15.10): what the picture
+ * frames when the route is found.
+ */
+fun metroRouteStations(route: MetroRoute): Set<Long> = buildSet {
+    route.steps.forEach { step ->
+        when (step) {
+            is MetroRouteStep.Ride -> addAll(step.stationIds)
+            is MetroRouteStep.Change -> {
+                add(step.fromStationId)
+                add(step.toStationId)
+            }
+        }
+    }
+}
+
+/**
  * The best route from any of [from] to any of [to], or null when the scheme
  * has no way between them.
  *

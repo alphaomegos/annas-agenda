@@ -372,7 +372,7 @@ class AppStateWholeRoundTripTest {
         flightCityNames = mapOf("BEG" to "Белград"),
         flightAirlineNames = mapOf("WAZ" to "Виззэйр"),
         flightHomes = setOf("RS:belgrade"),
-        metroPrefs = MetroPrefs(style = MetroStyle.DOS, styleDetails = false, eraColors = true, loupe = false, haptics = false, boxSelect = false, tips = false, zoomButtons = false, doubleTapZoom = false),
+        metroPrefs = MetroPrefs(style = MetroStyle.DOS, styleDetails = false, eraColors = true, loupe = false, haptics = false, boxSelect = false, tips = false, zoomButtons = false, doubleTapZoom = false, frameRoute = false),
     )
 
     private fun roundTrip(state: AppState): AppState =

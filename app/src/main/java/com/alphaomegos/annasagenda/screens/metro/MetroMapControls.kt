@@ -60,7 +60,7 @@ internal fun MetroZoomButtons(
  * green-edged square on the terminal's black.
  */
 @Composable
-internal fun MetroMapButton(icon: ImageVector, label: String, onClick: () -> Unit) {
+internal fun MetroMapButton(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val style = LocalMetroStyle.current
     val details = LocalMetroStyleDetails.current
     val shape = if (style == MetroStyle.MODERN) CircleShape else RectangleShape
@@ -81,7 +81,7 @@ internal fun MetroMapButton(icon: ImageVector, label: String, onClick: () -> Uni
         else -> Modifier
     }
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(40.dp)
             .shadow(if (style == MetroStyle.MODERN) 3.dp else 0.dp, shape)
             .background(ground, shape)
@@ -117,5 +117,13 @@ internal fun MetroMapPrefsTicks(prefs: MetroPrefs, onPrefs: ((MetroPrefs) -> Met
     }
     MetroMapTick(stringResource(R.string.metro_pref_double_tap), prefs.doubleTapZoom, Modifier.fillMaxWidth()) { on ->
         onPrefs { it.copy(doubleTapZoom = on) }
+    }
+}
+
+/** What only the scheme's picture does, not the editor's (15.10): a route found, framed. */
+@Composable
+internal fun MetroViewerPrefsTicks(prefs: MetroPrefs, onPrefs: ((MetroPrefs) -> MetroPrefs) -> Unit) {
+    MetroMapTick(stringResource(R.string.metro_pref_frame_route), prefs.frameRoute, Modifier.fillMaxWidth()) { on ->
+        onPrefs { it.copy(frameRoute = on) }
     }
 }

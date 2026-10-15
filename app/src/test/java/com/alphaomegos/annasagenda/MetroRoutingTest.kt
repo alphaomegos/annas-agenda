@@ -246,4 +246,11 @@ class MetroRoutingTest {
         )
         assertEquals(9, route(1, 4, broken)!!.minutes)
     }
+
+    /** What the picture frames (15.10): every station ridden through or changed at, and no other. */
+    @Test
+    fun routeStations_areTheRidesAndTheChanges() {
+        assertEquals(setOf(1L, 2L, 3L, 12L), metroRouteStations(route(1, 12)!!))
+        assertEquals(setOf(13L, 14L, 21L, 22L), metroRouteStations(route(13, 22)!!))
+    }
 }

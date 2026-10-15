@@ -263,6 +263,8 @@ data class MetroPrefs(
     // zoom in (two fingers tapped zoom out) — as on any map, each to turn off.
     val zoomButtons: Boolean = true,
     val doubleTapZoom: Boolean = true,
+    // A route found is framed on the picture (15.10); off, the view stays put.
+    val frameRoute: Boolean = true,
 )
 
 /**

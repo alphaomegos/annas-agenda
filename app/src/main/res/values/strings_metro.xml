@@ -159,6 +159,11 @@
     <string name="metro_zoom_out">Zoom out</string>
     <string name="metro_map_prefs">Map settings</string>
     <string name="metro_key_setup">Setup</string>
+    <!-- The route framed, the big map (0232) -->
+    <string name="metro_pref_frame_route">Show the whole route on the map once it is found</string>
+    <string name="metro_map_bigger">Map on the whole screen</string>
+    <string name="metro_map_smaller">The fields back under the map</string>
+    <string name="metro_tap_two_stations">Tap two stations: where from, then where to</string>
     <string name="metro_select_hint_no_box">Tap stations to select them; a tap on nothing lets go of all. Drag any selected station to move them all.</string>
     <string name="metro_keys">Keyboard shortcuts</string>
     <string name="metro_keys_text">Ctrl+Z — undo; Ctrl+Shift+Z or Ctrl+Y — redo\nV — move, B — bend, T — names, S — select\nCtrl+A — select every station in reach; Esc — let go\nArrows — nudge the selection (with Shift, five times as far)\nG — the grid; F or 0 — fit to the screen; L — layers</string>

@@ -898,6 +898,11 @@
     <string name="metro_zoom_out">Udalji</string>
     <string name="metro_map_prefs">Podešavanja mape</string>
     <string name="metro_key_setup">Podeš</string>
+    <!-- The route framed, the big map (0232) -->
+    <string name="metro_pref_frame_route">Prikaži ceo pronađeni put na mapi</string>
+    <string name="metro_map_bigger">Mapa preko celog ekrana</string>
+    <string name="metro_map_smaller">Vrati polja ispod mape</string>
+    <string name="metro_tap_two_stations">Dodirnite dve stanice: odakle, pa kuda</string>
     <string name="metro_select_hint_no_box">Dodirujte stanice da ih izaberete; dodir pored stanica poništava izbor. Prevucite bilo koju izabranu — pomeriće se sve.</string>
     <string name="metro_keys">Prečice</string>
     <string name="metro_keys_text">Ctrl+Z — poništi; Ctrl+Shift+Z ili Ctrl+Y — ponovi\nV — pomeranje, B — krivljenje, T — nazivi, S — izbor\nCtrl+A — izaberi sve dostupne stanice; Esc — poništi izbor\nStrelice — pomeri izabrano (sa Shift — pet puta dalje)\nG — mreža; F ili 0 — uklopi u ekran; L — slojevi</string>

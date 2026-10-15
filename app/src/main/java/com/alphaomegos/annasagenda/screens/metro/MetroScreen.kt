@@ -27,6 +27,10 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
+import androidx.compose.ui.text.style.TextOverflow
+import com.alphaomegos.annasagenda.support.metroRouteStations
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -129,6 +133,8 @@ fun MetroScreen(
     var styling by rememberSaveable { mutableStateOf(false) }
     // How the picture is worked (15.10): its settings open.
     var mapPrefsShown by rememberSaveable { mutableStateOf(false) }
+    // The map over the whole screen (15.10), the fields folded into one line under it.
+    var bigMap by rememberSaveable { mutableStateOf(false) }
 
     val today = remember { LocalDate.now() }
 
@@ -140,6 +146,10 @@ fun MetroScreen(
     val toIds = remember(scheme, toText, toPick) { scheme?.let { metroStationsForField(it, toText, toPick) }.orEmpty() }
     val shownRoute = remember(scheme, fromIds, toIds) {
         if (scheme == null || fromIds.isEmpty() || toIds.isEmpty()) null else metroRoute(scheme, fromIds, toIds)
+    }
+    // What the picture frames when a route is found (15.10), if the settings say so.
+    val framed = remember(shownRoute, state.metroPrefs.frameRoute) {
+        if (!state.metroPrefs.frameRoute) emptySet() else shownRoute?.let { metroRouteStations(it) }.orEmpty()
     }
 
     // "From" and "to" the other way round.
@@ -211,8 +221,15 @@ fun MetroScreen(
                 .imePadding(),
         ) {
         val pictured = layout
-        if (scheme != null && showMap && pictured != null && scheme.stations.isNotEmpty()) {
+        val mapShown = scheme != null && showMap && pictured != null && scheme.stations.isNotEmpty()
+        if (scheme != null && mapShown && pictured != null) {
             // Outside the scrolling part: a finger on the picture pans the picture.
+            // Big (15.10), it takes all the room the fields leave.
+            Box(
+                modifier = (if (bigMap) Modifier.weight(1f) else Modifier.height(300.dp))
+                    .fillMaxWidth()
+                    .metroMapField(),
+            ) {
             MetroMapView(
                 scheme = scheme,
                 layout = pictured,
@@ -233,12 +250,29 @@ fun MetroScreen(
                     }
                     typingIn = null
                 },
-                modifier = Modifier.fillMaxWidth().height(300.dp).metroMapField(),
+                modifier = Modifier.fillMaxSize(),
                 zoomButtons = state.metroPrefs.zoomButtons,
                 doubleTapZoom = state.metroPrefs.doubleTapZoom,
+                focus = framed,
             )
+            MetroMapButton(
+                icon = if (bigMap) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                label = stringResource(if (bigMap) R.string.metro_map_smaller else R.string.metro_map_bigger),
+                onClick = { bigMap = !bigMap },
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+            )
+            }
         }
-        Column(
+        if (mapShown && bigMap) {
+            // The fields folded (15.10): where from, where to, and the route in a word.
+            BigMapSummary(
+                fromText = fromText,
+                toText = toText,
+                route = shownRoute,
+                onSwap = swap,
+                onUnfold = { bigMap = false },
+            )
+        } else Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -319,6 +353,7 @@ fun MetroScreen(
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     MetroMapPrefsTicks(state.metroPrefs) { edit -> vm.setMetroPrefs(edit) }
+                    MetroViewerPrefsTicks(state.metroPrefs) { edit -> vm.setMetroPrefs(edit) }
                 }
             },
             confirmButton = { TextButton(onClick = { mapPrefsShown = false }) { Text(stringResource(R.string.ok)) } },
@@ -429,6 +464,52 @@ internal fun LineDot(line: MetroLine, size: Int = 22) {
             fontWeight = FontWeight.Bold,
             maxLines = 1,
         )
+    }
+}
+
+/**
+ * Under the big map (15.10): from and to in one line, the route's minutes
+ * and changes, and a tap to have the fields back.
+ */
+@Composable
+private fun BigMapSummary(
+    fromText: String,
+    toText: String,
+    route: MetroRoute?,
+    onSwap: () -> Unit,
+    onUnfold: () -> Unit,
+) {
+    val unfold = stringResource(R.string.metro_map_smaller)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClickLabel = unfold) { onUnfold() }
+            .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            val ends = listOf(fromText.trim(), toText.trim()).filter { it.isNotEmpty() }
+            Text(
+                if (ends.isEmpty()) stringResource(R.string.metro_tap_two_stations) else ends.joinToString(" → "),
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (route != null && route.steps.isNotEmpty()) {
+                val transfers = if (route.transfers == 0) stringResource(R.string.metro_no_transfers)
+                else pluralStringResource(R.plurals.metro_transfers, route.transfers, route.transfers)
+                Text(
+                    stringResource(R.string.metro_minutes, route.minutes) + " · " + transfers,
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+        }
+        IconButton(onClick = onSwap) {
+            Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.metro_swap))
+        }
+        IconButton(onClick = onUnfold) {
+            Icon(Icons.Default.ExpandLess, contentDescription = unfold)
+        }
     }
 }
 

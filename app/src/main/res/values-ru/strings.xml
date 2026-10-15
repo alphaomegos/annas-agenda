@@ -964,6 +964,11 @@
     <string name="metro_zoom_out">Дальше</string>
     <string name="metro_map_prefs">Настройки схемы</string>
     <string name="metro_key_setup">Настр</string>
+    <!-- The route framed, the big map (0232) -->
+    <string name="metro_pref_frame_route">Показывать найденный маршрут на схеме целиком</string>
+    <string name="metro_map_bigger">Схема на весь экран</string>
+    <string name="metro_map_smaller">Вернуть поля под схему</string>
+    <string name="metro_tap_two_stations">Нажмите две станции: откуда, потом куда</string>
     <string name="metro_select_hint_no_box">Нажимайте на станции, чтобы выделить; нажатие мимо станций снимает выделение. Тащите любую выделенную — сдвинутся все.</string>
     <string name="metro_keys">Клавиши</string>
     <string name="metro_keys_text">Ctrl+Z — отменить; Ctrl+Shift+Z или Ctrl+Y — повторить\nV — двигать, B — гнуть, T — подписи, S — выделять\nCtrl+A — выделить все доступные станции; Esc — снять выделение\nСтрелки — сдвинуть выделенное (с Shift — в пять раз дальше)\nG — сетка; F или 0 — вписать в экран; L — слои</string>

@@ -150,6 +150,8 @@ import com.alphaomegos.annasagenda.support.metroViewportBetween
  * with [doubleTapZoom] a double tap off the stations zooms in about the
  * finger and a tap of two fingers zooms out, as on any map. Each glides
  * rather than jumps, and a finger put down stops the glide where it is.
+ * Each new [focus] (15.10) — a route found — glides the view to show all
+ * of those stations.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -187,6 +189,7 @@ internal fun MetroMapView(
     zoomButtons: Boolean = false,
     fitButton: Boolean = true,
     doubleTapZoom: Boolean = false,
+    focus: Set<Long> = emptySet(),
 ) {
     // Where the picture is looked at (14.10), in its own units: pixels to a
     // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
@@ -788,6 +791,16 @@ internal fun MetroMapView(
                 val size = Size(abs(a.x - c.x), abs(a.y - c.y))
                 drawRect(markColor.copy(alpha = 0.12f), topLeft, size)
                 drawRect(markColor, topLeft, size, style = Stroke(1.5f.dp.toPx()))
+            }
+        }
+
+        // A route found, framed (15.10): no nearer than a pinch may come.
+        // Framed again when the picture's room changes — the map made big, the phone turned.
+        LaunchedEffect(focus, w, h) {
+            val points = focus.mapNotNull { layout[it] }
+            if (points.isNotEmpty()) {
+                val framed = metroFittedViewport(points, w, h)
+                glideTo(framed.copy(k = framed.k.coerceIn(minK, maxK)))
             }
         }
 
