@@ -253,6 +253,7 @@ internal data class MetroSchemeDto(
     val labelsAuto: Boolean = true,
     val labelsAvoidCrowd: Boolean = true,
     val bundleTracks: Boolean = false,
+    val gridDivisions: Int = 2,
     // Schema 11 (08.10): bent track.
     val bends: List<MetroBendDto> = emptyList(),
 )

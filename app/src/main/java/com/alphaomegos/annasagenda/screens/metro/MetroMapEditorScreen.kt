@@ -108,7 +108,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.components.ConfirmDialog
-import com.alphaomegos.annasagenda.support.METRO_GRID_STEP
+import com.alphaomegos.annasagenda.support.metroGridStep
+import com.alphaomegos.annasagenda.support.METRO_GRID_DIVISIONS
 import com.alphaomegos.annasagenda.support.MetroPoint
 import com.alphaomegos.annasagenda.support.metroLayout
 import com.alphaomegos.annasagenda.support.metroIsPlaced
@@ -245,7 +246,7 @@ fun MetroMapEditorScreen(
     fun onKey(e: KeyEvent): Boolean {
         if (e.type != KeyEventType.KeyDown || scheme == null) return false
         val ctrl = e.isCtrlPressed || e.isMetaPressed
-        val nudge = (if (scheme.mapGrid) METRO_GRID_STEP else METRO_NUDGE_STEP) * (if (e.isShiftPressed) 5f else 1f)
+        val nudge = (if (scheme.mapGrid) metroGridStep(scheme) else METRO_NUDGE_STEP) * (if (e.isShiftPressed) 5f else 1f)
         fun shift(dx: Float, dy: Float): Boolean {
             if (!selecting || selection.isEmpty()) return false
             vm.editMetroScheme(schemeId) { metroStationsShifted(it, selection, dx, dy) }
@@ -469,7 +470,7 @@ fun MetroMapEditorScreen(
                         hiddenLines = scheme.hiddenLines.toSet(),
                         lockedLines = scheme.lockedLines.toSet(),
                         ghostHidden = scheme.ghostHidden,
-                        gridStep = if (scheme.mapGrid) METRO_GRID_STEP else null,
+                        gridStep = if (scheme.mapGrid) metroGridStep(scheme) else null,
                         moveAlone = !(scheme.transfersTogether && moveWhole),
                         bendMode = bending,
                         onBend = { action ->
@@ -549,7 +550,7 @@ fun MetroMapEditorScreen(
                                 Row(
                                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
                                 ) {
-                                    val grid = if (scheme.mapGrid) METRO_GRID_STEP else null
+                                    val grid = if (scheme.mapGrid) metroGridStep(scheme) else null
                                     TextButton(
                                         onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = true, grid = grid) } },
                                         enabled = selection.size >= 2,
@@ -564,7 +565,7 @@ fun MetroMapEditorScreen(
                                     ) { Text(stringResource(R.string.metro_align_spaced)) }
                                     // A nudge by one grid step, or a tenth of a step without the grid (08.10):
                                     // a finger is too thick for the last bit.
-                                    val nudge = if (scheme.mapGrid) METRO_GRID_STEP else METRO_NUDGE_STEP
+                                    val nudge = if (scheme.mapGrid) metroGridStep(scheme) else METRO_NUDGE_STEP
                                     listOf(
                                         Triple(-nudge, 0f, R.string.metro_nudge_left),
                                         Triple(0f, -nudge, R.string.metro_nudge_up),
@@ -780,6 +781,25 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                         if (g.transfersTogether) metroTransfersTogether(g.copy(transfersTogether = false), true) else g
                     }
                 }) { Text(glueLabel) }
+
+                // The grid's step (15.10): how many nodes to a step between stations.
+                Text(stringResource(R.string.metro_grid_step), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    METRO_GRID_DIVISIONS.forEach { d ->
+                        FilterChip(
+                            selected = scheme.gridDivisions == d,
+                            onClick = { onEdit { it.copy(gridDivisions = d) } },
+                            label = {
+                                Text(
+                                    when (d) {
+                                        1 -> stringResource(R.string.metro_grid_step_whole)
+                                        else -> stringResource(R.string.metro_grid_step_part, d)
+                                    }
+                                )
+                            },
+                        )
+                    }
+                }
 
                 Text(stringResource(R.string.metro_labels_when), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

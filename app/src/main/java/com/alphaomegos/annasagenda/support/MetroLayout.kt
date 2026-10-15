@@ -33,6 +33,13 @@ const val METRO_LAYOUT_STEP = 1f
 /** The grid of the picture's editor (06.10): two nodes to a step. */
 const val METRO_GRID_STEP = 0.5f
 
+/** How many grid nodes to a step the editor offers (15.10): one, two — as it was — or four. */
+val METRO_GRID_DIVISIONS = listOf(1, 2, 4)
+
+/** The grid step of [scheme] (15.10), in the picture's units; one it does not offer is read as two to a step. */
+fun metroGridStep(scheme: MetroScheme): Float =
+    METRO_LAYOUT_STEP / (scheme.gridDivisions.takeIf { it in METRO_GRID_DIVISIONS } ?: 2)
+
 /** How far apart the stations of a transfer kept together stand: one grid node, so they all land on nodes. */
 const val METRO_TOGETHER_GAP = METRO_GRID_STEP
 

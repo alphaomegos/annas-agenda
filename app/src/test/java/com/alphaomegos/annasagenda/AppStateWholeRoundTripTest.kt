@@ -304,6 +304,7 @@ class AppStateWholeRoundTripTest {
                 defaultTransferMinutes = 5,
                 librarySource = "moscow",
                 mapGrid = true,
+                gridDivisions = 4,
                 transfersTogether = true,
                 labelsOncePerInterchange = true,
                 glue = 12,
