@@ -75,6 +75,9 @@ data class MetroScheme(
     // right, as before — and off lines running alongside (0207). Settings.
     val labelsAuto: Boolean = true,
     val labelsAvoidCrowd: Boolean = true,
+    // Two lines between the same two interchanges run together (15.10): one
+    // bends, the other follows side by side. A setting.
+    val bundleTracks: Boolean = false,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),

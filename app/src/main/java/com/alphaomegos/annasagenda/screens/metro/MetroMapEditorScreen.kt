@@ -119,6 +119,9 @@ import com.alphaomegos.annasagenda.support.metroBendPointInserted
 import com.alphaomegos.annasagenda.support.metroBendPointMoved
 import com.alphaomegos.annasagenda.support.metroBendPointRemoved
 import com.alphaomegos.annasagenda.support.metroElbowCycled
+import com.alphaomegos.annasagenda.support.metroTrackBundles
+import com.alphaomegos.annasagenda.support.metroBendPoints
+import com.alphaomegos.annasagenda.support.MetroBendHit
 import com.alphaomegos.annasagenda.support.metroStationPlacedAlone
 import com.alphaomegos.annasagenda.support.metroStationLabelCycled
 import com.alphaomegos.annasagenda.support.metroSelectionPlaced
@@ -456,9 +459,18 @@ fun MetroMapEditorScreen(
                         bendMode = bending,
                         onBend = { action ->
                             vm.editMetroScheme(schemeId) { s ->
+                                // Track run together (15.10): bending a follower bends its leader.
+                                val led = if (s.bundleTracks) metroTrackBundles(s) else emptyMap()
                                 when (action) {
-                                    is MetroBendAction.Cycle -> metroElbowCycled(s, metroLayout(s), action.track)
-                                    is MetroBendAction.Insert -> metroBendPointInserted(s, action.hit, action.x, action.y)
+                                    is MetroBendAction.Cycle -> metroElbowCycled(s, metroLayout(s), led[action.track]?.leader ?: action.track)
+                                    is MetroBendAction.Insert -> {
+                                        val follows = led[action.hit.track]
+                                        val hit = if (follows == null) action.hit else {
+                                            val n = metroBendPoints(s, follows.leader).size
+                                            MetroBendHit(follows.leader, if (follows.sameWay) action.hit.index.coerceIn(0, n) else (n - action.hit.index).coerceIn(0, n))
+                                        }
+                                        metroBendPointInserted(s, hit, action.x, action.y)
+                                    }
                                     is MetroBendAction.Move -> metroBendPointMoved(s, action.hit, action.x, action.y)
                                     is MetroBendAction.Remove -> metroBendPointRemoved(s, action.hit)
                                 }
@@ -686,6 +698,10 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                 }
                 MetroMapTick(stringResource(R.string.metro_line_casing), scheme.lineCasing, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(lineCasing = on) }
+                }
+                // Two lines between the same interchanges run together (15.10).
+                MetroMapTick(stringResource(R.string.metro_bundle_tracks), scheme.bundleTracks, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(bundleTracks = on) }
                 }
                 // Names placing themselves (15.10): the user's to turn off.
                 MetroMapTick(stringResource(R.string.metro_names_auto), scheme.labelsAuto, Modifier.fillMaxWidth()) { on ->

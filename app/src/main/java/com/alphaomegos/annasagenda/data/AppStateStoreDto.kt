@@ -232,6 +232,7 @@ internal data class MetroSchemeDto(
     val ghostHidden: Boolean = false,
     val labelsAuto: Boolean = true,
     val labelsAvoidCrowd: Boolean = true,
+    val bundleTracks: Boolean = false,
     // Schema 11 (08.10): bent track.
     val bends: List<MetroBendDto> = emptyList(),
 )

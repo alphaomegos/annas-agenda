@@ -79,6 +79,9 @@ import androidx.compose.ui.graphics.StrokeJoin
 import kotlin.math.floor
 import kotlin.math.abs
 import com.alphaomegos.annasagenda.support.metroGuided
+import com.alphaomegos.annasagenda.support.metroTrackBundles
+import com.alphaomegos.annasagenda.support.metroSideOffset
+import com.alphaomegos.annasagenda.support.metroOffsetPolyline
 import com.alphaomegos.annasagenda.support.metroEraColor
 import kotlin.math.cos
 import kotlin.math.sin
@@ -218,7 +221,6 @@ internal fun MetroMapView(
     val editable = remember(scheme, hiddenLines, lockedLines) {
         metroEditablePart(scheme.copy(hiddenLines = hiddenLines.toList(), lockedLines = lockedLines.toList()))
     }
-    val currentEditable by rememberUpdatedState(editable)
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
     val labelColor = MaterialTheme.colorScheme.onSurface
@@ -260,6 +262,16 @@ internal fun MetroMapView(
         scheme.lines.associate { it.id to measurer.measure(it.label, badgeStyle) }
     }
     val hiddenLabels = remember(scheme.stations) { scheme.stations.filter { it.labelSide == METRO_LABEL_HIDDEN }.map { it.id }.toSet() }
+    // Track run together (15.10), when the scheme says so: each follower and its leader.
+    val bundles = remember(scheme.lines, scheme.transfers, scheme.bundleTracks) {
+        if (scheme.bundleTracks) metroTrackBundles(scheme) else emptyMap()
+    }
+    // What a finger may bend (15.10): a follower's own bends are not drawn, so not touched either.
+    val bendable = remember(editable, bundles) {
+        if (bundles.isEmpty()) editable
+        else editable.copy(bends = editable.bends.filter { b -> MetroTrack(minOf(b.aStationId, b.bStationId), maxOf(b.aStationId, b.bStationId)) !in bundles })
+    }
+    val currentEditable by rememberUpdatedState(bendable)
     val edges = remember(scheme.lines) {
         scheme.lines.flatMap { line ->
             metroSidesOf(line).flatMap { (s, sides) -> sides.values.filter { s < it }.map { Triple(line.id, s, it) } }
@@ -541,19 +553,46 @@ internal fun MetroMapView(
             if (scheme.showTransferLinks && !capsules) drawLinks()
             val bendDrag = dragBend
             // Each track as drawn: its ends, its bends (the one being dragged where the finger is).
-            fun trackPoints(s: Long, t: Long): List<Offset>? {
-                val a = at(s) ?: return null
-                val c = at(t) ?: return null
-                val track = MetroTrack(s, t)
+            // A station where it is drawn now, in the picture's units: moved with a drag in flight.
+            fun mapAt(id: Long): MetroPoint? {
+                val p = layout[id] ?: return null
+                return if (shift != null && id in moving) MetroPoint(p.x + shift.x, p.y + shift.y) else p
+            }
+            // A track's bends as drawn now, in the picture's units: the point being dragged
+            // where the finger is, carried with its two stations when both move (08.10).
+            fun bendsNow(track: MetroTrack): List<MetroPoint> {
                 val bends = metroBendPoints(scheme, track).toMutableList()
                 if (bendDrag != null && bendDrag.first.track == track) {
                     val p = dragPoint()
                     val i = bendDrag.first.index
                     if (bendDrag.second) bends.add(i.coerceIn(0, bends.size), p) else if (i in bends.indices) bends[i] = p
                 }
-                // Track bent between two stations moving moves with them (08.10).
-                val carried = shift != null && s in moving && t in moving
-                return listOf(a) + bends.map { if (carried) toScreen(MetroPoint(it.x + shift!!.x, it.y + shift.y)) else toScreen(it) } + c
+                val carried = shift != null && track.a in moving && track.b in moving
+                return if (carried) bends.map { MetroPoint(it.x + shift!!.x, it.y + shift.y) } else bends
+            }
+            fun trackPoints(s: Long, t: Long): List<Offset>? {
+                val a = at(s) ?: return null
+                val c = at(t) ?: return null
+                val track = MetroTrack(s, t)
+                // Run together (15.10): a follower takes its leader's bends, as far to the side
+                // as its stations stand from the leader's.
+                val follows = bundles[track]
+                if (follows != null) {
+                    val leader = follows.leader
+                    val lb = bendsNow(leader)
+                    val la = mapAt(leader.a)
+                    val lz = mapAt(leader.b)
+                    val fa = mapAt(s)
+                    val fz = mapAt(t)
+                    if (lb.isNotEmpty() && la != null && lz != null && fa != null && fz != null) {
+                        val (near, far) = if (follows.sameWay) fa to fz else fz to fa
+                        val d = (metroSideOffset(la, lz, near) + metroSideOffset(la, lz, far)) / 2
+                        val inner = metroOffsetPolyline(listOf(la) + lb + lz, d).drop(1).dropLast(1)
+                        val ours = if (follows.sameWay) inner else inner.reversed()
+                        return listOf(a) + ours.map { toScreen(it) } + c
+                    }
+                }
+                return listOf(a) + bendsNow(track).map { toScreen(it) } + c
             }
             fun drawTrack(pts: List<Offset>, paint: Color, width: Float) {
                 if (pts.size == 2) {
@@ -593,12 +632,14 @@ internal fun MetroMapView(
                     val lit = !fade || (s to t) in routePairs
                     Triple(pts, lit, if (fade && lit) lineWidth * 1.5f else lineWidth)
                 }
+                // A follower's bends are its leader's (15.10): marked on the leader only.
+                val markable = ofLine.mapNotNull { (_, s, t) -> if (MetroTrack(s, t) in bundles) null else trackPoints(s, t) }
                 fun alphaOf(lit: Boolean) = if (ghost) GHOST_ALPHA else if (lit) 1f else 0.25f
                 if (scheme.lineCasing && !ghost) drawn.forEach { (pts, lit, width) ->
                     drawTrack(pts, ringFill.copy(alpha = alphaOf(lit)), width * (1f + 2 * METRO_CASING))
                 }
                 drawn.forEach { (pts, lit, width) -> drawTrack(pts, color.copy(alpha = alphaOf(lit)), width) }
-                if (bendMode && !ghost && lineId !in lockedLines) drawn.forEach { (pts, _, _) ->
+                if (bendMode && !ghost && lineId !in lockedLines) markable.forEach { pts ->
                     pts.subList(1, pts.size - 1).forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = it) }
                 }
             }
