@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.metro
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -100,7 +101,41 @@ fun MetroThemed(style: MetroStyle, details: Boolean = true, content: @Composable
         typography = metroStyleTypography(style),
         shapes = SquareShapes,
     ) {
-        CompositionLocalProvider(LocalMetroStyle provides style, LocalMetroStyleDetails provides details, content = content)
+        CompositionLocalProvider(LocalMetroStyle provides style, LocalMetroStyleDetails provides details) {
+            if (style == MetroStyle.TERMINAL && details) {
+                Box {
+                    content()
+                    CrtGlass(Modifier.matchParentSize())
+                }
+            } else {
+                content()
+            }
+        }
+    }
+}
+
+/**
+ * The glass of an old monitor over the terminal (15.10): dark scan lines
+ * every three dots and the corners falling into shadow. Drawn only — a
+ * finger goes through it to what is under it.
+ */
+@Composable
+private fun CrtGlass(modifier: Modifier) {
+    Canvas(modifier = modifier) {
+        val pitch = 3.dp.toPx()
+        val line = Color.Black.copy(alpha = 0.22f)
+        var y = 0f
+        while (y < size.height) {
+            drawLine(line, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx() * 0.6f)
+            y += pitch
+        }
+        drawRect(
+            Brush.radialGradient(
+                colors = listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.45f)),
+                center = Offset(size.width / 2, size.height / 2),
+                radius = maxOf(size.width, size.height) * 0.75f,
+            ),
+        )
     }
 }
 
