@@ -100,6 +100,16 @@ import com.alphaomegos.annasagenda.support.METRO_MAX_ZOOM
 import com.alphaomegos.annasagenda.support.METRO_MIN_ZOOM
 import com.alphaomegos.annasagenda.support.METRO_ZOOM_STEP
 import com.alphaomegos.annasagenda.support.metroViewportBetween
+import com.alphaomegos.annasagenda.support.metroMinimap
+import com.alphaomegos.annasagenda.support.METRO_MINIMAP_FROM
+import com.alphaomegos.annasagenda.R
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 /**
  * The picture of the metro map (05.10): lines in their colours, stations as
@@ -153,6 +163,8 @@ import com.alphaomegos.annasagenda.support.metroViewportBetween
  * Each new [focus] (15.10) — a route found — glides the view to show all
  * of those stations. [highlightLines] (15.10) stand out as a route does,
  * their names written, the rest faded; with a route too, both stand out.
+ * With [minimap] (15.10), zoomed in, the whole scheme shows small above the
+ * buttons, a box round what the view shows; a finger on it takes the view there.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -192,6 +204,7 @@ internal fun MetroMapView(
     doubleTapZoom: Boolean = false,
     focus: Set<Long> = emptySet(),
     highlightLines: Set<Long> = emptySet(),
+    minimap: Boolean = false,
 ) {
     // Where the picture is looked at (14.10), in its own units: pixels to a
     // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
@@ -303,6 +316,15 @@ internal fun MetroMapView(
     val edges = remember(scheme.lines) {
         scheme.lines.flatMap { line ->
             metroSidesOf(line).flatMap { (s, sides) -> sides.values.filter { s < it }.map { Triple(line.id, s, it) } }
+        }
+    }
+    // The small picture's track (15.10): each stretch straight, the hidden lines left out.
+    val miniTracks = remember(edges, layout, lineColors, hiddenLines) {
+        edges.mapNotNull { (lineId, a, b) ->
+            if (lineId in hiddenLines) return@mapNotNull null
+            val pa = layout[a] ?: return@mapNotNull null
+            val pb = layout[b] ?: return@mapNotNull null
+            Triple(lineColors[lineId] ?: Color(0xFF888888), pa, pb)
         }
     }
     val onRoute = remember(route) {
@@ -808,14 +830,104 @@ internal fun MetroMapView(
             }
         }
 
-        // Closer, farther and the whole picture, in the corner (15.10).
-        if (zoomButtons) {
-            MetroZoomButtons(
-                onZoomIn = { glideTo(currentView().zoomed(METRO_ZOOM_STEP, w / 2, h / 2, w, h, minK, maxK)) },
-                onZoomOut = { glideTo(currentView().zoomed(1f / METRO_ZOOM_STEP, w / 2, h / 2, w, h, minK, maxK)) },
-                onFit = if (fitButton) ({ glideTo(fitted, fit = true) }) else null,
-                modifier = Modifier.align(Alignment.BottomEnd),
+        // The corner (15.10): the small picture while zoomed in; closer, farther, the whole picture.
+        val showMini = minimap && currentView().k > fitted.k * METRO_MINIMAP_FROM
+        if (zoomButtons || showMini) {
+            Column(
+                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (showMini) {
+                    val v = currentView()
+                    MetroMinimapView(
+                        tracks = miniTracks,
+                        points = inSight.values.ifEmpty { layout.values },
+                        seen = floatArrayOf(v.toMapX(0f, w), v.toMapY(0f, h), v.toMapX(w, w), v.toMapY(h, h)),
+                        onJump = { p ->
+                            glide.job?.cancel()
+                            val now = currentView()
+                            viewK = now.k
+                            viewCx = p.x
+                            viewCy = p.y
+                        },
+                    )
+                }
+                if (zoomButtons) {
+                    MetroZoomButtons(
+                        onZoomIn = { glideTo(currentView().zoomed(METRO_ZOOM_STEP, w / 2, h / 2, w, h, minK, maxK)) },
+                        onZoomOut = { glideTo(currentView().zoomed(1f / METRO_ZOOM_STEP, w / 2, h / 2, w, h, minK, maxK)) },
+                        onFit = if (fitButton) ({ glideTo(fitted, fit = true) }) else null,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The small picture of the whole scheme (15.10), with a box round what the
+ * view shows; a finger on it takes the view there and drags it along.
+ */
+@Composable
+private fun MetroMinimapView(
+    tracks: List<Triple<Color, MetroPoint, MetroPoint>>,
+    points: Collection<MetroPoint>,
+    seen: FloatArray,
+    onJump: (MetroPoint) -> Unit,
+) {
+    val density = LocalDensity.current
+    val mini = remember(points, density) {
+        with(density) { metroMinimap(points, 112.dp.toPx(), 6.dp.toPx()) }
+    }
+    val ground = metroPaper()
+    val edge = MaterialTheme.colorScheme.outline
+    val mark = MaterialTheme.colorScheme.primary
+    val words = stringResource(R.string.metro_minimap)
+    val jump by rememberUpdatedState(onJump)
+    val miniW = with(density) { mini.width.toDp() }
+    val miniH = with(density) { mini.height.toDp() }
+    Canvas(
+        modifier = Modifier
+            .size(miniW, miniH)
+            .semantics { contentDescription = words }
+            .pointerInput(mini) {
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    down.consume()
+                    jump(MetroPoint(mini.toMapX(down.position.x), mini.toMapY(down.position.y)))
+                    do {
+                        val event = awaitPointerEvent()
+                        event.changes.forEach { c ->
+                            if (c.pressed) {
+                                jump(MetroPoint(mini.toMapX(c.position.x), mini.toMapY(c.position.y)))
+                                c.consume()
+                            }
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
+            },
+    ) {
+        drawRect(ground.copy(alpha = 0.92f))
+        drawRect(edge, style = Stroke(1.dp.toPx()))
+        val stroke = 1.5f.dp.toPx()
+        tracks.forEach { (color, a, b) ->
+            drawLine(
+                color,
+                Offset(mini.toMiniX(a.x), mini.toMiniY(a.y)),
+                Offset(mini.toMiniX(b.x), mini.toMiniY(b.y)),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
             )
+        }
+        // What the view shows, kept inside the small picture's edges.
+        val l = mini.toMiniX(seen[0]).coerceIn(0f, size.width)
+        val t = mini.toMiniY(seen[1]).coerceIn(0f, size.height)
+        val r = mini.toMiniX(seen[2]).coerceIn(0f, size.width)
+        val b = mini.toMiniY(seen[3]).coerceIn(0f, size.height)
+        if (r > l && b > t) {
+            drawRect(mark.copy(alpha = 0.15f), Offset(l, t), Size(r - l, b - t))
+            drawRect(mark, Offset(l, t), Size(r - l, b - t), style = Stroke(1.5f.dp.toPx()))
         }
     }
 }

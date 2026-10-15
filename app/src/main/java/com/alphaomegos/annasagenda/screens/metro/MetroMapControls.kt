@@ -47,7 +47,7 @@ internal fun MetroZoomButtons(
     onFit: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         MetroMapButton(Icons.Default.Add, stringResource(R.string.metro_zoom_in), onZoomIn)
         MetroMapButton(Icons.Default.Remove, stringResource(R.string.metro_zoom_out), onZoomOut)
         if (onFit != null) MetroMapButton(Icons.Default.FitScreen, stringResource(R.string.metro_fit), onFit)
@@ -108,7 +108,8 @@ internal fun MetroMapTick(text: String, checked: Boolean, modifier: Modifier, on
 
 /**
  * How a finger and the corner work the picture (15.10), the same in the
- * scheme and in its editor: the zoom buttons, and the double tap.
+ * scheme and in its editor: the zoom buttons, the double tap, the small
+ * picture of the whole.
  */
 @Composable
 internal fun MetroMapPrefsTicks(prefs: MetroPrefs, onPrefs: ((MetroPrefs) -> MetroPrefs) -> Unit) {
@@ -117,6 +118,9 @@ internal fun MetroMapPrefsTicks(prefs: MetroPrefs, onPrefs: ((MetroPrefs) -> Met
     }
     MetroMapTick(stringResource(R.string.metro_pref_double_tap), prefs.doubleTapZoom, Modifier.fillMaxWidth()) { on ->
         onPrefs { it.copy(doubleTapZoom = on) }
+    }
+    MetroMapTick(stringResource(R.string.metro_pref_minimap), prefs.minimap, Modifier.fillMaxWidth()) { on ->
+        onPrefs { it.copy(minimap = on) }
     }
 }
 

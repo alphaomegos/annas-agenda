@@ -270,6 +270,7 @@ fun MetroScreen(
                 doubleTapZoom = state.metroPrefs.doubleTapZoom,
                 focus = framed,
                 highlightLines = litLines.toSet(),
+                minimap = state.metroPrefs.minimap,
                 onTapEmpty = { cardFor = null },
             )
             val facts = cardFor?.let { metroStationFacts(scheme, it) }

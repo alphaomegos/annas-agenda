@@ -978,6 +978,9 @@
     <string name="metro_card_line_off">Снять линию</string>
     <string name="metro_card_walks">Пересадки:</string>
     <string name="metro_card_close">Закрыть карточку</string>
+    <!-- The small picture (0235) -->
+    <string name="metro_pref_minimap">Вся схема в уголке, пока она приближена</string>
+    <string name="metro_minimap">Вся схема; палец на ней двигает вид</string>
     <string name="metro_select_hint_no_box">Нажимайте на станции, чтобы выделить; нажатие мимо станций снимает выделение. Тащите любую выделенную — сдвинутся все.</string>
     <string name="metro_keys">Клавиши</string>
     <string name="metro_keys_text">Ctrl+Z — отменить; Ctrl+Shift+Z или Ctrl+Y — повторить\nV — двигать, B — гнуть, T — подписи, S — выделять\nCtrl+A — выделить все доступные станции; Esc — снять выделение\nСтрелки — сдвинуть выделенное (с Shift — в пять раз дальше)\nG — сетка; F или 0 — вписать в экран; L — слои</string>

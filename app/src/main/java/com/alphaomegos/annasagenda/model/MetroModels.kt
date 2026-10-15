@@ -270,6 +270,8 @@ data class MetroPrefs(
     // A tap on a station opens its card (15.10) — from here, to here, its
     // line — rather than taking "from", then "to", in turn.
     val stationCard: Boolean = false,
+    // The whole scheme small in the corner while zoomed in (15.10).
+    val minimap: Boolean = true,
 )
 
 /**

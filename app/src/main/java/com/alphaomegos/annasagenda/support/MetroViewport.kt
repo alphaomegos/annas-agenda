@@ -73,3 +73,45 @@ const val METRO_ZOOM_STEP = 2f
 /** The scales a view may take, as multiples of the fitted one: from half of it to twelve times. */
 const val METRO_MIN_ZOOM = 0.5f
 const val METRO_MAX_ZOOM = 12f
+
+/**
+ * The small picture of the whole scheme in the corner (15.10): [scale]
+ * pixels to a unit of the picture, whose point ([left], [top]) lies [pad]
+ * pixels in from the small picture's corner; [width] × [height] pixels in all.
+ */
+data class MetroMinimap(
+    val scale: Float,
+    val left: Float,
+    val top: Float,
+    val width: Float,
+    val height: Float,
+    val pad: Float,
+) {
+    fun toMiniX(x: Float) = (x - left) * scale + pad
+    fun toMiniY(y: Float) = (y - top) * scale + pad
+    fun toMapX(mx: Float) = (mx - pad) / scale + left
+    fun toMapY(my: Float) = (my - pad) / scale + top
+}
+
+/**
+ * The small picture for [points] (15.10): its longer side [maxSide] pixels,
+ * the shorter one in proportion but no less than a third of it — a scheme of
+ * one straight line is not a hair — with the picture centred in it.
+ */
+fun metroMinimap(points: Collection<MetroPoint>, maxSide: Float, pad: Float): MetroMinimap {
+    val b = metroLayoutBounds(points)
+    val bw = maxOf(b[2] - b[0], 1e-3f)
+    val bh = maxOf(b[3] - b[1], 1e-3f)
+    val inner = maxSide - 2 * pad
+    val scale = inner / maxOf(bw, bh)
+    val minInner = maxSide / 3f - 2 * pad
+    val w = maxOf(bw * scale, minInner)
+    val h = maxOf(bh * scale, minInner)
+    // Centred where the shorter side was made longer.
+    val left = b[0] - (w - bw * scale) / 2 / scale
+    val top = b[1] - (h - bh * scale) / 2 / scale
+    return MetroMinimap(scale, left, top, w + 2 * pad, h + 2 * pad, pad)
+}
+
+/** From how far in, as a multiple of the fitted scale, the small picture shows (15.10). */
+const val METRO_MINIMAP_FROM = 1.5f

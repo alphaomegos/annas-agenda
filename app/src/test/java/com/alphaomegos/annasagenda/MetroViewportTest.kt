@@ -78,4 +78,26 @@ class MetroViewportTest {
         assertEquals(-1f, half.cy, 1e-4f)
         assertEquals(100f, half.k, 1e-4f)
     }
+
+    /** The small picture (15.10): the longer side as asked, the shape kept, the corners where they belong. */
+    @Test
+    fun minimap_keepsTheShapeAndMapsBothWays() {
+        val m = metroMinimap(listOf(MetroPoint(0f, 0f), MetroPoint(10f, 5f)), 110f, 5f)
+        assertEquals(110f, m.width, 1e-3f)
+        // 100 inner pixels for 10 units: 10 a unit, 50 high, and the margin each side.
+        assertEquals(60f, m.height, 1e-3f)
+        assertEquals(5f, m.toMiniX(0f), 1e-3f)
+        assertEquals(105f, m.toMiniX(10f), 1e-3f)
+        assertEquals(55f, m.toMiniY(5f), 1e-3f)
+        assertEquals(7f, m.toMapX(m.toMiniX(7f)), 1e-3f)
+        assertEquals(3f, m.toMapY(m.toMiniY(3f)), 1e-3f)
+    }
+
+    /** One straight line is not a hair: the short side grows to a third, the line in its middle. */
+    @Test
+    fun minimap_ofAFlatSchemeIsAThirdHighWithTheLineInTheMiddle() {
+        val m = metroMinimap(listOf(MetroPoint(0f, 2f), MetroPoint(10f, 2f)), 120f, 0f)
+        assertEquals(40f, m.height, 1e-3f)
+        assertEquals(20f, m.toMiniY(2f), 0.05f)
+    }
 }

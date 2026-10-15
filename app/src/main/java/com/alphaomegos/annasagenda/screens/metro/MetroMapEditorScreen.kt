@@ -465,6 +465,7 @@ fun MetroMapEditorScreen(
                         zoomButtons = prefs.zoomButtons,
                         fitButton = false,
                         doubleTapZoom = prefs.doubleTapZoom,
+                        minimap = prefs.minimap,
                         hiddenLines = scheme.hiddenLines.toSet(),
                         lockedLines = scheme.lockedLines.toSet(),
                         ghostHidden = scheme.ghostHidden,

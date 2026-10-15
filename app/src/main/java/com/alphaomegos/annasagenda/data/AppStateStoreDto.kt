@@ -161,6 +161,7 @@ internal data class MetroPrefsDto(
     val frameRoute: Boolean = true,
     val legend: Boolean = true,
     val stationCard: Boolean = false,
+    val minimap: Boolean = true,
 )
 
 @Serializable
