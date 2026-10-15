@@ -165,6 +165,14 @@
     <string name="metro_map_smaller">The fields back under the map</string>
     <string name="metro_tap_two_stations">Tap two stations: where from, then where to</string>
     <string name="metro_pref_legend">The lines in a row under the map, a tap lights one up</string>
+    <!-- A station card (0234) -->
+    <string name="metro_pref_station_card">A tap on a station opens its card: from here, to here, its line (else a tap takes from, then to)</string>
+    <string name="metro_card_from">From here</string>
+    <string name="metro_card_to">To here</string>
+    <string name="metro_card_line_on">Its line</string>
+    <string name="metro_card_line_off">Line off</string>
+    <string name="metro_card_walks">Walks to:</string>
+    <string name="metro_card_close">Close the card</string>
     <string name="metro_select_hint_no_box">Tap stations to select them; a tap on nothing lets go of all. Drag any selected station to move them all.</string>
     <string name="metro_keys">Keyboard shortcuts</string>
     <string name="metro_keys_text">Ctrl+Z — undo; Ctrl+Shift+Z or Ctrl+Y — redo\nV — move, B — bend, T — names, S — select\nCtrl+A — select every station in reach; Esc — let go\nArrows — nudge the selection (with Shift, five times as far)\nG — the grid; F or 0 — fit to the screen; L — layers</string>

@@ -267,6 +267,9 @@ data class MetroPrefs(
     val frameRoute: Boolean = true,
     // The lines in a row under the map (15.10), each to light up on the picture.
     val legend: Boolean = true,
+    // A tap on a station opens its card (15.10) — from here, to here, its
+    // line — rather than taking "from", then "to", in turn.
+    val stationCard: Boolean = false,
 )
 
 /**

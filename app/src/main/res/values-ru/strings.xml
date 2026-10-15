@@ -970,6 +970,14 @@
     <string name="metro_map_smaller">Вернуть поля под схему</string>
     <string name="metro_tap_two_stations">Нажмите две станции: откуда, потом куда</string>
     <string name="metro_pref_legend">Линии рядом под схемой, тап подсвечивает линию</string>
+    <!-- A station card (0234) -->
+    <string name="metro_pref_station_card">Тап по станции открывает её карточку: отсюда, сюда, её линия (иначе тап выбирает «откуда», потом «куда»)</string>
+    <string name="metro_card_from">Отсюда</string>
+    <string name="metro_card_to">Сюда</string>
+    <string name="metro_card_line_on">Её линия</string>
+    <string name="metro_card_line_off">Снять линию</string>
+    <string name="metro_card_walks">Пересадки:</string>
+    <string name="metro_card_close">Закрыть карточку</string>
     <string name="metro_select_hint_no_box">Нажимайте на станции, чтобы выделить; нажатие мимо станций снимает выделение. Тащите любую выделенную — сдвинутся все.</string>
     <string name="metro_keys">Клавиши</string>
     <string name="metro_keys_text">Ctrl+Z — отменить; Ctrl+Shift+Z или Ctrl+Y — повторить\nV — двигать, B — гнуть, T — подписи, S — выделять\nCtrl+A — выделить все доступные станции; Esc — снять выделение\nСтрелки — сдвинуть выделенное (с Shift — в пять раз дальше)\nG — сетка; F или 0 — вписать в экран; L — слои</string>

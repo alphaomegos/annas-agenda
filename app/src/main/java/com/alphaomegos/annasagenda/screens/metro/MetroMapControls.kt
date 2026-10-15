@@ -129,4 +129,7 @@ internal fun MetroViewerPrefsTicks(prefs: MetroPrefs, onPrefs: ((MetroPrefs) -> 
     MetroMapTick(stringResource(R.string.metro_pref_legend), prefs.legend, Modifier.fillMaxWidth()) { on ->
         onPrefs { it.copy(legend = on) }
     }
+    MetroMapTick(stringResource(R.string.metro_pref_station_card), prefs.stationCard, Modifier.fillMaxWidth()) { on ->
+        onPrefs { it.copy(stationCard = on) }
+    }
 }

@@ -160,6 +160,7 @@ internal data class MetroPrefsDto(
     val doubleTapZoom: Boolean = true,
     val frameRoute: Boolean = true,
     val legend: Boolean = true,
+    val stationCard: Boolean = false,
 )
 
 @Serializable

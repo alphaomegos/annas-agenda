@@ -27,6 +27,10 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Surface
+import com.alphaomegos.annasagenda.support.MetroStationFacts
+import com.alphaomegos.annasagenda.support.metroStationFacts
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.ui.text.style.TextOverflow
@@ -139,6 +143,8 @@ fun MetroScreen(
     var bigMap by rememberSaveable { mutableStateOf(false) }
     // The lines lit up from the legend (15.10).
     var litLines by rememberSaveable { mutableStateOf(listOf<Long>()) }
+    // The station whose card is open over the map (15.10).
+    var cardFor by rememberSaveable { mutableStateOf<Long?>(null) }
 
     val today = remember { LocalDate.now() }
 
@@ -241,6 +247,11 @@ fun MetroScreen(
                 route = shownRoute?.takeIf { it.steps.isNotEmpty() },
                 marked = fromIds + toIds,
                 onTapStation = { id ->
+                    // With cards on (15.10), a tap opens the station's card instead.
+                    if (state.metroPrefs.stationCard) {
+                        cardFor = id
+                        return@MetroMapView
+                    }
                     val name = scheme.stations.firstOrNull { it.id == id }?.name ?: return@MetroMapView
                     // The first tap is "from", the second "to"; a third starts again.
                     if (fromText.isBlank() || toText.isNotBlank()) {
@@ -259,7 +270,34 @@ fun MetroScreen(
                 doubleTapZoom = state.metroPrefs.doubleTapZoom,
                 focus = framed,
                 highlightLines = litLines.toSet(),
+                onTapEmpty = { cardFor = null },
             )
+            val facts = cardFor?.let { metroStationFacts(scheme, it) }
+            if (facts != null) {
+                val lineId = facts.station.lineId
+                MetroStationCard(
+                    facts = facts,
+                    lineLit = lineId in litLines,
+                    onFrom = {
+                        fromText = facts.station.name
+                        fromPick = facts.station.id
+                        typingIn = null
+                        cardFor = null
+                    },
+                    onTo = {
+                        toText = facts.station.name
+                        toPick = facts.station.id
+                        typingIn = null
+                        cardFor = null
+                    },
+                    onLine = { litLines = if (lineId in litLines) litLines - lineId else litLines + lineId },
+                    onWalk = { cardFor = it },
+                    onClose = { cardFor = null },
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 8.dp, bottom = 8.dp, end = if (state.metroPrefs.zoomButtons) 64.dp else 8.dp),
+                )
+            }
             MetroMapButton(
                 icon = if (bigMap) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
                 label = stringResource(if (bigMap) R.string.metro_map_smaller else R.string.metro_map_bigger),
@@ -474,6 +512,96 @@ internal fun LineDot(line: MetroLine, size: Int = 22) {
             fontWeight = FontWeight.Bold,
             maxLines = 1,
         )
+    }
+}
+
+/**
+ * A station's card over the map (15.10): its name and line, the lines a
+ * walk away — each a tap to that station's card, a closed walk faint — and
+ * what to do with it: from here, to here, its line lit up or put out.
+ */
+@Composable
+private fun MetroStationCard(
+    facts: MetroStationFacts,
+    lineLit: Boolean,
+    onFrom: () -> Unit,
+    onTo: () -> Unit,
+    onLine: () -> Unit,
+    onWalk: (Long) -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val style = LocalMetroStyle.current
+    val details = LocalMetroStyleDetails.current
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        tonalElevation = 3.dp,
+        shadowElevation = 4.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .metroFrame(style, details)
+                .padding(metroFrameInset(style, details))
+                .padding(start = 12.dp, top = 4.dp, end = 4.dp, bottom = 2.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                facts.line?.let { LineDot(it, size = 20) }
+                Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
+                    Text(
+                        facts.station.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    facts.line?.let {
+                        Text(
+                            it.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.metro_card_close))
+                }
+            }
+            facts.station.closure?.let { closure ->
+                val day = closure.expectedOpening
+                Text(
+                    if (day == null) stringResource(R.string.metro_station_closed, facts.station.name)
+                    else stringResource(R.string.metro_station_closed_until, facts.station.name, formatShortDate(day, appLocale())),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            if (facts.walks.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(stringResource(R.string.metro_card_walks), style = MaterialTheme.typography.bodySmall)
+                    facts.walks.forEach { walk ->
+                        val line = walk.line ?: return@forEach
+                        Box(
+                            modifier = Modifier
+                                .alpha(if (walk.closed) 0.4f else 1f)
+                                .clickable(onClickLabel = walk.station.name) { onWalk(walk.station.id) },
+                        ) { LineDot(line, size = 18) }
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                TextButton(onClick = onFrom) { Text(stringResource(R.string.metro_card_from)) }
+                TextButton(onClick = onTo) { Text(stringResource(R.string.metro_card_to)) }
+                TextButton(onClick = onLine) {
+                    Text(stringResource(if (lineLit) R.string.metro_card_line_off else R.string.metro_card_line_on))
+                }
+            }
+        }
     }
 }
 
