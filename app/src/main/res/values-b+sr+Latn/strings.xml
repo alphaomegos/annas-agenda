@@ -934,6 +934,7 @@
     <string name="metro_pref_timeline">Ruta kao traka: svaka vožnja na traci boje linije</string>
     <string name="metro_pref_arrival">Vreme dolaska ako se krene sada</string>
     <string name="metro_arrive_at">stiže se u %1$s</string>
+    <string name="metro_share_route">Podeli rutu</string>
     <string name="metro_select_hint_no_box">Dodirujte stanice da ih izaberete; dodir pored stanica poništava izbor. Prevucite bilo koju izabranu — pomeriće se sve.</string>
     <string name="metro_keys">Prečice</string>
     <string name="metro_keys_text">Ctrl+Z — poništi; Ctrl+Shift+Z ili Ctrl+Y — ponovi\nV — pomeranje, B — krivljenje, T — nazivi, S — izbor\nCtrl+A — izaberi sve dostupne stanice; Esc — poništi izbor\nStrelice — pomeri izabrano (sa Shift — pet puta dalje)\nG — mreža; F ili 0 — uklopi u ekran; L — slojevi\nCtrl+F — nađi stanicu</string>

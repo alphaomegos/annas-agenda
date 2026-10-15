@@ -30,6 +30,9 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Share
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.runtime.LaunchedEffect
@@ -813,6 +816,42 @@ private fun RouteOrWhyNot(
 }
 
 /**
+ * The route as plain text to share (15.10): the scheme's city and the two
+ * ends, [summary] — minutes and changes — and each step on a line of its
+ * own, as the screen says it.
+ */
+@Composable
+private fun routeShareText(scheme: MetroScheme, route: MetroRoute, summary: String): String {
+    val stations = remember(scheme) { scheme.stations.associateBy { it.id } }
+    val lines = remember(scheme) { scheme.lines.associateBy { it.id } }
+    fun nameOf(id: Long) = stations[id]?.name.orEmpty()
+    val ends = metroRouteEnds(route)
+    val head = buildString {
+        append(scheme.city)
+        if (ends != null) append(": ").append(nameOf(ends.first)).append(" → ").append(nameOf(ends.second))
+    }
+    val steps = route.steps.map { step ->
+        when (step) {
+            is MetroRouteStep.Ride -> {
+                val line = lines[step.lineId]
+                val name = listOfNotNull(line?.label, line?.name?.takeIf { it.isNotBlank() }).joinToString(" ")
+                "• " + name + ": " + nameOf(step.stationIds.first()) + " → " + nameOf(step.stationIds.last()) +
+                    " · " + stringResource(R.string.metro_minutes, step.minutes)
+            }
+            is MetroRouteStep.Change -> {
+                val words = if (step.fromStationId == step.toStationId) {
+                    stringResource(R.string.metro_change_fork, nameOf(step.toStationId))
+                } else {
+                    stringResource(R.string.metro_change_to, nameOf(step.toStationId))
+                }
+                "• " + words + " · " + stringResource(R.string.metro_minutes, step.minutes)
+            }
+        }
+    }
+    return (listOf(head, summary) + steps).joinToString("\n")
+}
+
+/**
  * The route, step by step. With [timeline] (15.10) each ride lies on a bar
  * of its line's colour and each walk on a thin grey one, as on the metro's
  * own apps; with [arrival], the time one would get there leaving now, kept
@@ -834,10 +873,27 @@ private fun RouteSteps(scheme: MetroScheme, route: MetroRoute, timeline: Boolean
         }
     }
     val arrives = if (arrival) " · " + stringResource(R.string.metro_arrive_at, formatTaskTime(metroArrival(now, route.minutes))) else ""
-    Text(
-        stringResource(R.string.metro_minutes, route.minutes) + " · " + transfers + arrives,
-        style = MaterialTheme.typography.titleMedium,
-    )
+    val summary = stringResource(R.string.metro_minutes, route.minutes) + " · " + transfers
+    // Shared as plain text (15.10): to send someone the way, or keep it in a note.
+    val context = LocalContext.current
+    val shareText = routeShareText(scheme, route, summary)
+    val shareTitle = stringResource(R.string.metro_share_route)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            summary + arrives,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = {
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareText)
+            }
+            runCatching { context.startActivity(Intent.createChooser(send, shareTitle)) }
+        }) {
+            Icon(Icons.Default.Share, contentDescription = shareTitle)
+        }
+    }
 
     route.steps.forEach { step ->
         when (step) {
