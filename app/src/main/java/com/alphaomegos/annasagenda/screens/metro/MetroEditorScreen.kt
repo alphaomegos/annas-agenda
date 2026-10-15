@@ -188,12 +188,12 @@ private fun ActionsDialog(title: String, actions: List<Pair<String, () -> Unit>>
         text = {
             Column {
                 actions.forEach { (label, action) ->
-                    TextButton(onClick = action, modifier = Modifier.fillMaxWidth()) { Text(label) }
+                    MetroTextButton(onClick = action, modifier = Modifier.fillMaxWidth()) { Text(label) }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -254,7 +254,7 @@ fun MetroSchemeEditorScreen(
         }
 
         HorizontalDivider(modifier = Modifier.padding(top = 24.dp))
-        TextButton(onClick = { dialog = "delete" }) {
+        MetroTextButton(onClick = { dialog = "delete" }) {
             Text(stringResource(R.string.metro_delete_scheme), color = MaterialTheme.colorScheme.error)
         }
     }
@@ -331,7 +331,7 @@ fun MetroLineEditorScreen(
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             LineDot(line, size = 26)
-            TextButton(onClick = { dialog = "edit" }) { Text(stringResource(R.string.metro_edit_line)) }
+            MetroTextButton(onClick = { dialog = "edit" }) { Text(stringResource(R.string.metro_edit_line)) }
         }
 
         SectionTitle(stringResource(R.string.metro_stations), stringResource(R.string.metro_add_station)) {
@@ -354,7 +354,7 @@ fun MetroLineEditorScreen(
         }
 
         HorizontalDivider(modifier = Modifier.padding(top = 24.dp))
-        TextButton(onClick = { dialog = "delete" }) {
+        MetroTextButton(onClick = { dialog = "delete" }) {
             Text(stringResource(R.string.metro_delete_line), color = MaterialTheme.colorScheme.error)
         }
     }
@@ -544,7 +544,7 @@ fun MetroStationEditorScreen(
             EditorRow(stringResource(R.string.metro_change_date)) { dialog = "date:s$stationId" }
         }
         EditorRow(stringResource(R.string.metro_add_branch)) { dialog = "branch" }
-        TextButton(onClick = { dialog = "delete" }) {
+        MetroTextButton(onClick = { dialog = "delete" }) {
             Text(stringResource(R.string.metro_delete_station), color = MaterialTheme.colorScheme.error)
         }
     }

@@ -1,6 +1,13 @@
 package com.alphaomegos.annasagenda.screens.metro
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -514,7 +521,7 @@ internal fun MetroStyleDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
+        confirmButton = { MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
     )
 }
 
@@ -541,5 +548,58 @@ private fun MetroStyleSample(style: MetroStyle) {
             },
             style = MaterialTheme.typography.labelLarge,
         )
+    }
+}
+
+/**
+ * A text button in the section's style (15.10): today's flat one; Windows'
+ * grey box, raised and pressed in while held; "[ OK ]" in DOS and on the
+ * terminal, lit up as a selection bar while held. Without the style's
+ * details, today's.
+ */
+@Composable
+internal fun MetroTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val style = LocalMetroStyle.current
+    val details = LocalMetroStyleDetails.current
+    if (style == MetroStyle.MODERN || !details) {
+        TextButton(onClick = onClick, modifier = modifier, enabled = enabled, content = content)
+        return
+    }
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val ground = when {
+        style == MetroStyle.WIN95 -> Win95Grey
+        pressed && style == MetroStyle.DOS -> DosDarkCyan
+        pressed -> TermGreen
+        else -> Color.Transparent
+    }
+    val ink = when {
+        style == MetroStyle.WIN95 -> Color.Black
+        pressed -> Color.Black
+        style == MetroStyle.DOS -> Color.White
+        else -> TermGreen
+    }
+    Row(
+        modifier = modifier
+            .padding(horizontal = 2.dp, vertical = 4.dp)
+            .defaultMinSize(minWidth = 64.dp, minHeight = 40.dp)
+            .alpha(if (enabled) 1f else 0.45f)
+            .background(ground)
+            .then(if (style == MetroStyle.WIN95) Modifier.metroFrame(style, details = true, sunken = pressed) else Modifier)
+            .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CompositionLocalProvider(LocalContentColor provides ink, LocalTextStyle provides MaterialTheme.typography.labelLarge) {
+            if (style != MetroStyle.WIN95) Text("[ ")
+            content()
+            if (style != MetroStyle.WIN95) Text(" ]")
+        }
     }
 }

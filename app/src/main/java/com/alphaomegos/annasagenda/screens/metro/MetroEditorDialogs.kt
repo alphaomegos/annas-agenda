@@ -76,10 +76,10 @@ internal fun MetroTextDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.save)) }
+            MetroTextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -112,12 +112,12 @@ internal fun MetroMinutesDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onSave(value) }, enabled = ok) { Text(stringResource(R.string.save)) }
+            MetroTextButton(onClick = { onSave(value) }, enabled = ok) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = { onSave(null) }) { Text(stringResource(R.string.metro_use_default)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+                MetroTextButton(onClick = { onSave(null) }) { Text(stringResource(R.string.metro_use_default)) }
+                MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         },
     )
@@ -157,12 +157,12 @@ internal fun MetroDefaultsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { if (s != null && t != null) onSave(s, t) }, enabled = s != null && t != null) {
+            MetroTextButton(onClick = { if (s != null && t != null) onSave(s, t) }, enabled = s != null && t != null) {
                 Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -246,13 +246,13 @@ internal fun MetroLineDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            MetroTextButton(
                 onClick = { if (ok) onSave(label, name, color, ring, carCount!!, doorCount!!) },
                 enabled = ok,
             ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -307,7 +307,7 @@ internal fun MetroTransferDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -397,13 +397,13 @@ internal fun MetroHintDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            MetroTextButton(
                 onClick = { if (ok) onSave(from!!, target!!.target, carValue!!, doorValue!!) },
                 enabled = ok,
             ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -420,12 +420,12 @@ internal fun MetroCloseDialog(
         title = { Text(stringResource(R.string.metro_close)) },
         text = { Text(stringResource(R.string.metro_close_when)) },
         confirmButton = {
-            TextButton(onClick = onPickDate) { Text(stringResource(R.string.metro_close_pick_date)) }
+            MetroTextButton(onClick = onPickDate) { Text(stringResource(R.string.metro_close_pick_date)) }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = onNoDate) { Text(stringResource(R.string.metro_close_no_date)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+                MetroTextButton(onClick = onNoDate) { Text(stringResource(R.string.metro_close_no_date)) }
+                MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         },
     )
@@ -482,10 +482,10 @@ internal fun MetroAddStationDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(text, at) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.save)) }
+            MetroTextButton(onClick = { onSave(text, at) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }

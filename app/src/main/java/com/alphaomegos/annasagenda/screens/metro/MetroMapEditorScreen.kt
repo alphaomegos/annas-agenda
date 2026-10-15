@@ -539,10 +539,10 @@ fun MetroMapEditorScreen(
                                         style = MaterialTheme.typography.bodyMedium,
                                         modifier = Modifier.weight(1f),
                                     )
-                                    TextButton(onClick = { selectedIds = (metroSelectionWholeLines(scheme, selection) - fixed).toLongArray() }, enabled = selection.isNotEmpty()) {
+                                    MetroTextButton(onClick = { selectedIds = (metroSelectionWholeLines(scheme, selection) - fixed).toLongArray() }, enabled = selection.isNotEmpty()) {
                                         Text(stringResource(R.string.metro_select_lines))
                                     }
-                                    TextButton(onClick = { selectedIds = longArrayOf() }, enabled = selection.isNotEmpty()) {
+                                    MetroTextButton(onClick = { selectedIds = longArrayOf() }, enabled = selection.isNotEmpty()) {
                                         Text(stringResource(R.string.metro_select_none))
                                     }
                                 }
@@ -551,15 +551,15 @@ fun MetroMapEditorScreen(
                                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp),
                                 ) {
                                     val grid = if (scheme.mapGrid) metroGridStep(scheme) else null
-                                    TextButton(
+                                    MetroTextButton(
                                         onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = true, grid = grid) } },
                                         enabled = selection.size >= 2,
                                     ) { Text(stringResource(R.string.metro_align_row)) }
-                                    TextButton(
+                                    MetroTextButton(
                                         onClick = { vm.editMetroScheme(schemeId) { metroSelectionLinedUp(it, selection, across = false, grid = grid) } },
                                         enabled = selection.size >= 2,
                                     ) { Text(stringResource(R.string.metro_align_column)) }
-                                    TextButton(
+                                    MetroTextButton(
                                         onClick = { vm.editMetroScheme(schemeId) { metroSelectionSpaced(it, selection) } },
                                         enabled = selection.size >= 3,
                                     ) { Text(stringResource(R.string.metro_align_spaced)) }
@@ -572,13 +572,13 @@ fun MetroMapEditorScreen(
                                         Triple(0f, nudge, R.string.metro_nudge_down),
                                         Triple(nudge, 0f, R.string.metro_nudge_right),
                                     ).forEach { (dx, dy, words) ->
-                                        TextButton(
+                                        MetroTextButton(
                                             onClick = { vm.editMetroScheme(schemeId) { metroStationsShifted(it, selection, dx, dy) } },
                                             enabled = selection.isNotEmpty(),
                                         ) { Text(stringResource(words)) }
                                     }
                                     // A figure of the selection (15.10): a row, a column, a regular polygon.
-                                    TextButton(onClick = { figuring = true }, enabled = selection.size >= 2) {
+                                    MetroTextButton(onClick = { figuring = true }, enabled = selection.size >= 2) {
                                         Text(stringResource(R.string.metro_figure))
                                     }
                                     // Turned or mirrored about its middle (08.10).
@@ -587,7 +587,7 @@ fun MetroMapEditorScreen(
                                         MetroTurn.MIRROR_ACROSS to R.string.metro_mirror_across,
                                         MetroTurn.MIRROR_UPDOWN to R.string.metro_mirror_updown,
                                     ).forEach { (turn, words) ->
-                                        TextButton(
+                                        MetroTextButton(
                                             onClick = { vm.editMetroScheme(schemeId) { metroSelectionTurned(it, selection, turn) } },
                                             enabled = selection.size >= 2,
                                         ) { Text(stringResource(words)) }
@@ -631,7 +631,7 @@ fun MetroMapEditorScreen(
                         MetroFigure.POLYGON to R.string.metro_figure_polygon,
                         MetroFigure.AROUND_ONE to R.string.metro_figure_around,
                     ).forEach { (figure, words) ->
-                        TextButton(
+                        MetroTextButton(
                             onClick = {
                                 vm.editMetroScheme(schemeId) {
                                     val gap = if (figureTouching) metroGlueGap(it) else METRO_TOGETHER_GAP
@@ -643,7 +643,7 @@ fun MetroMapEditorScreen(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { figuring = false }) { Text(stringResource(R.string.ok)) } },
+            confirmButton = { MetroTextButton(onClick = { figuring = false }) { Text(stringResource(R.string.ok)) } },
         )
     }
 
@@ -681,7 +681,7 @@ fun MetroMapEditorScreen(
                     MetroMapPrefsTicks(prefs) { edit -> vm.setMetroPrefs(edit) }
                 }
             },
-            confirmButton = { TextButton(onClick = { prefsShown = false }) { Text(stringResource(R.string.ok)) } },
+            confirmButton = { MetroTextButton(onClick = { prefsShown = false }) { Text(stringResource(R.string.ok)) } },
         )
     }
 
@@ -690,7 +690,7 @@ fun MetroMapEditorScreen(
             onDismissRequest = { keysShown = false },
             title = { Text(stringResource(R.string.metro_keys)) },
             text = { Text(stringResource(R.string.metro_keys_text), style = MaterialTheme.typography.bodyMedium) },
-            confirmButton = { TextButton(onClick = { keysShown = false }) { Text(stringResource(R.string.ok)) } },
+            confirmButton = { MetroTextButton(onClick = { keysShown = false }) { Text(stringResource(R.string.ok)) } },
         )
     }
 
@@ -774,7 +774,7 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                     12 -> stringResource(R.string.metro_glue, "12")
                     else -> stringResource(R.string.metro_glue, stringResource(R.string.metro_glue_off))
                 }
-                TextButton(onClick = {
+                MetroTextButton(onClick = {
                     val next = when (scheme.glue) { 0 -> 8; 8 -> 12; else -> 0 }
                     onEdit {
                         val g = it.copy(glue = next)
@@ -833,7 +833,7 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
+        confirmButton = { MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
     )
 }
 
@@ -920,7 +920,7 @@ private fun MetroLayersDialog(scheme: MetroScheme, onLayers: ((MetroScheme) -> M
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { onLayers { metroLayersAllShown(it) } }, enabled = scheme.hiddenLines.isNotEmpty()) {
+                    MetroTextButton(onClick = { onLayers { metroLayersAllShown(it) } }, enabled = scheme.hiddenLines.isNotEmpty()) {
                         Text(stringResource(R.string.metro_layers_all))
                     }
                 }
@@ -951,13 +951,13 @@ private fun MetroLayersDialog(scheme: MetroScheme, onLayers: ((MetroScheme) -> M
                                 contentDescription = stringResource(if (locked) R.string.metro_layer_unlock else R.string.metro_layer_lock),
                             )
                         }
-                        TextButton(onClick = { onLayers { metroLayerOnly(it, line.id) } }) {
+                        MetroTextButton(onClick = { onLayers { metroLayerOnly(it, line.id) } }) {
                             Text(stringResource(R.string.metro_layer_only))
                         }
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
+        confirmButton = { MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
     )
 }

@@ -440,7 +440,7 @@ fun MetroScreen(
                     MetroViewerPrefsTicks(state.metroPrefs) { edit -> vm.setMetroPrefs(edit) }
                 }
             },
-            confirmButton = { TextButton(onClick = { mapPrefsShown = false }) { Text(stringResource(R.string.ok)) } },
+            confirmButton = { MetroTextButton(onClick = { mapPrefsShown = false }) { Text(stringResource(R.string.ok)) } },
         )
     }
 
@@ -575,7 +575,7 @@ private fun RecentRoutes(
             modifier = Modifier.weight(1f),
         )
         if (listed.any { !it.pinned }) {
-            TextButton(onClick = onClear) { Text(stringResource(R.string.metro_recent_clear)) }
+            MetroTextButton(onClick = onClear) { Text(stringResource(R.string.metro_recent_clear)) }
         }
     }
     listed.forEach { r ->
@@ -684,9 +684,9 @@ private fun MetroStationCard(
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                TextButton(onClick = onFrom) { Text(stringResource(R.string.metro_card_from)) }
-                TextButton(onClick = onTo) { Text(stringResource(R.string.metro_card_to)) }
-                TextButton(onClick = onLine) {
+                MetroTextButton(onClick = onFrom) { Text(stringResource(R.string.metro_card_from)) }
+                MetroTextButton(onClick = onTo) { Text(stringResource(R.string.metro_card_to)) }
+                MetroTextButton(onClick = onLine) {
                     Text(stringResource(if (lineLit) R.string.metro_card_line_off else R.string.metro_card_line_on))
                 }
             }
@@ -946,10 +946,10 @@ private fun CreateSchemeDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit
             )
         },
         confirmButton = {
-            TextButton(onClick = { onCreate(city) }, enabled = city.isNotBlank()) { Text(stringResource(R.string.save)) }
+            MetroTextButton(onClick = { onCreate(city) }, enabled = city.isNotBlank()) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+            MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -981,12 +981,12 @@ private fun ReopenDialog(
         title = { Text(stringResource(R.string.metro_reopen_title)) },
         text = { Text(text) },
         confirmButton = {
-            TextButton(onClick = onOpened) { Text(stringResource(R.string.metro_reopen_yes)) }
+            MetroTextButton(onClick = onOpened) { Text(stringResource(R.string.metro_reopen_yes)) }
         },
         dismissButton = {
             Row {
-                TextButton(onClick = onLater) { Text(stringResource(R.string.metro_reopen_later)) }
-                TextButton(onClick = onMoveDate) { Text(stringResource(R.string.metro_reopen_move)) }
+                MetroTextButton(onClick = onLater) { Text(stringResource(R.string.metro_reopen_later)) }
+                MetroTextButton(onClick = onMoveDate) { Text(stringResource(R.string.metro_reopen_move)) }
             }
         },
     )
