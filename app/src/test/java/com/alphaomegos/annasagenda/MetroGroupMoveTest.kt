@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.alphaomegos.annasagenda.model.*
 import com.alphaomegos.annasagenda.support.*
@@ -97,5 +98,55 @@ class MetroGroupMoveTest {
         assertEquals(setOf(2L, 11L), metroStationsInside(layout, MetroPoint(0.5f, -0.5f), MetroPoint(1.5f, 1.2f)))
         assertEquals(setOf(2L, 11L), metroStationsInside(layout, MetroPoint(1.5f, 1.2f), MetroPoint(0.5f, -0.5f)))
         assertEquals(emptySet<Long>(), metroStationsInside(layout, MetroPoint(5f, 5f), MetroPoint(6f, 6f)))
+    }
+
+    private fun hexScheme() = MetroScheme(
+        id = 9, city = "Тест",
+        lines = (1L..6L).map { MetroLine(it, "$it", "L$it", 0, trunk = listOf(it * 10)) },
+        stations = (1L..6L).map { MetroStation(it * 10, it, "Узел", it * 0.1f, (it % 3) * 0.1f) },
+    )
+
+    private fun dist(a: MetroPoint, b: MetroPoint) = kotlin.math.hypot((a.x - b.x).toDouble(), (a.y - b.y).toDouble()).toFloat()
+
+    @Test
+    fun sixRings_makeARegularHexagon_neighboursTouching() {
+        val s = metroSelectionFigured(hexScheme(), (1L..6L).map { it * 10 }.toSet(), MetroFigure.POLYGON, gap = 0.3f)
+        val pts = (1L..6L).map { s.at(it * 10) }
+        val cx = pts.map { it.x }.average().toFloat(); val cy = pts.map { it.y }.average().toFloat()
+        val middle = MetroPoint(cx, cy)
+        // Every ring as far from the middle — for a hexagon, the side itself.
+        pts.forEach { assertEquals(0.3f, dist(it, middle), 1e-4f) }
+        // Round the middle, each touches the next.
+        val round = pts.sortedBy { kotlin.math.atan2((it.y - cy).toDouble(), (it.x - cx).toDouble()) }
+        round.indices.forEach { assertEquals(0.3f, dist(round[it], round[(it + 1) % 6]), 1e-4f) }
+        // A flat side on top: the two highest at one height.
+        val top = pts.sortedBy { it.y }.take(2)
+        assertEquals(top[0].y, top[1].y, 1e-4f)
+    }
+
+    @Test
+    fun fiveRings_makeARegularPentagon_andFiveRoundOne_aCrossOfFour() {
+        val ids = (1L..5L).map { it * 10 }.toSet()
+        val pent = metroSelectionFigured(hexScheme(), ids, MetroFigure.POLYGON, gap = 0.3f)
+        val pts = ids.map { pent.at(it) }
+        val sides = pts.flatMap { a -> pts.map { b -> dist(a, b) } }.filter { it > 1e-3f }
+        // A regular pentagon has two lengths only: its side and its diagonal.
+        assertEquals(0.3f, sides.minOrNull()!!, 1e-4f)
+        assertTrue(sides.all { kotlin.math.abs(it - 0.3f) < 1e-3f || kotlin.math.abs(it - 0.3f * 1.618034f) < 1e-3f })
+        val around = metroSelectionFigured(hexScheme(), ids, MetroFigure.AROUND_ONE, gap = 0.3f)
+        val all = ids.map { around.at(it) }
+        val mid = MetroPoint(all.map { it.x }.average().toFloat(), all.map { it.y }.average().toFloat())
+        // One in the middle, four touching it.
+        assertEquals(1, all.count { dist(it, mid) < 1e-4f })
+        assertEquals(4, all.count { kotlin.math.abs(dist(it, mid) - 0.3f) < 1e-4f })
+    }
+
+    @Test
+    fun aRowOfThree_keepsItsOrder_touching() {
+        val ids = setOf(10L, 20L, 30L)
+        val s = metroSelectionFigured(hexScheme(), ids, MetroFigure.ROW, gap = 0.3f)
+        assertEquals(s.at(10L).y, s.at(30L).y, 1e-5f)
+        assertTrue(s.at(10L).x < s.at(20L).x && s.at(20L).x < s.at(30L).x)
+        assertEquals(0.3f, s.at(20L).x - s.at(10L).x, 1e-4f)
     }
 }

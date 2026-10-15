@@ -127,3 +127,63 @@ fun metroSelectionTurned(scheme: MetroScheme, ids: Set<Long>, turn: MetroTurn): 
         } else b
     })
 }
+
+/* ---------------- figures (15.10) ---------------- */
+
+/**
+ * The figures stations can be put in (15.10, Eduard: "five or six stations
+ * of one interchange — build a regular pentagon or hexagon of their rings,
+ * not glue them at random"): in a row, in a column, round a regular
+ * polygon, or round one in the middle.
+ */
+enum class MetroFigure { ROW, COLUMN, POLYGON, AROUND_ONE }
+
+/**
+ * The selection put in [figure] (15.10), [gap] between neighbouring centres
+ * — touching rings when it is the glue gap — about the middle of where they
+ * stand, turned [turnDegrees] clockwise on the screen. Each keeps its place
+ * in the order: along x for a row, along y for a column, round the middle
+ * for the polygons (the one nearest the middle in the middle of AROUND_ONE).
+ * A polygon lies with a flat side on top, as one would draw it.
+ */
+fun metroSelectionFigured(scheme: MetroScheme, ids: Set<Long>, figure: MetroFigure, gap: Float, turnDegrees: Float = 0f): MetroScheme {
+    val (frozen, at) = placedOf(scheme, ids)
+    if (at.size < 2 || gap <= 0f) return scheme
+    val cx = at.values.map { it.x }.average().toFloat()
+    val cy = at.values.map { it.y }.average().toFloat()
+    fun angleOf(p: MetroPoint) = kotlin.math.atan2((p.y - cy).toDouble(), (p.x - cx).toDouble())
+    val turn = Math.toRadians(turnDegrees.toDouble())
+    fun turned(dx: Double, dy: Double): MetroPoint {
+        val c = kotlin.math.cos(turn); val s = kotlin.math.sin(turn)
+        return MetroPoint((cx + dx * c - dy * s).toFloat(), (cy + dx * s + dy * c).toFloat())
+    }
+    val places = HashMap<Long, MetroPoint>()
+    when (figure) {
+        MetroFigure.ROW, MetroFigure.COLUMN -> {
+            val order = at.entries.sortedWith(compareBy({ if (figure == MetroFigure.ROW) it.value.x else it.value.y }, { it.key }))
+            val n = order.size
+            order.forEachIndexed { i, e ->
+                val along = (i - (n - 1) / 2.0) * gap
+                places[e.key] = if (figure == MetroFigure.ROW) turned(along, 0.0) else turned(0.0, along)
+            }
+        }
+        MetroFigure.POLYGON, MetroFigure.AROUND_ONE -> {
+            val middle = if (figure == MetroFigure.AROUND_ONE && at.size >= 3) {
+                at.entries.minWithOrNull(compareBy({ (it.value.x - cx) * (it.value.x - cx) + (it.value.y - cy) * (it.value.y - cy) }, { it.key }))?.key
+            } else null
+            val ring = at.entries.filter { it.key != middle }.sortedWith(compareBy({ angleOf(it.value) }, { it.key }))
+            val n = ring.size
+            // Round a centre: neighbours [gap] apart on a regular polygon; round one
+            // in the middle: each [gap] from it.
+            val radius = if (middle != null) gap.toDouble() else gap / (2 * kotlin.math.sin(Math.PI / n))
+            // A flat side on top: the first corner half a side round from straight up.
+            val start = -Math.PI / 2 + Math.PI / n
+            if (middle != null) places[middle] = turned(0.0, 0.0)
+            ring.forEachIndexed { i, e ->
+                val a = start + 2 * Math.PI * i / n
+                places[e.key] = turned(radius * kotlin.math.cos(a), radius * kotlin.math.sin(a))
+            }
+        }
+    }
+    return withPlaces(frozen, places)
+}

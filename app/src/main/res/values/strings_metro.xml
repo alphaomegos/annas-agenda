@@ -122,6 +122,14 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_figure">Figure…</string>
+    <string name="metro_figure_hint">The stations selected — say, the five or six of one interchange — put in a figure about where they stand, each keeping its place in the order.</string>
+    <string name="metro_figure_touching">Rings touching</string>
+    <string name="metro_figure_step">A grid step apart</string>
+    <string name="metro_figure_row">In a row</string>
+    <string name="metro_figure_column">In a column</string>
+    <string name="metro_figure_polygon">A regular polygon</string>
+    <string name="metro_figure_around">Round one in the middle</string>
     <string name="metro_bundle_tracks">Lines between the same interchanges run together</string>
     <string name="metro_style_era_colors">Lines in the colours of the era</string>
     <string name="metro_key_map">Map</string>

@@ -131,6 +131,10 @@ import com.alphaomegos.annasagenda.support.metroSelectionLinedUp
 import com.alphaomegos.annasagenda.support.metroSelectionSpaced
 import com.alphaomegos.annasagenda.support.metroSelectionTurned
 import com.alphaomegos.annasagenda.support.MetroTurn
+import com.alphaomegos.annasagenda.support.MetroFigure
+import com.alphaomegos.annasagenda.support.metroSelectionFigured
+import com.alphaomegos.annasagenda.support.metroGlueGap
+import com.alphaomegos.annasagenda.support.METRO_TOGETHER_GAP
 import com.alphaomegos.annasagenda.support.METRO_NUDGE_STEP
 import com.alphaomegos.annasagenda.support.metroStationsShifted
 import androidx.compose.foundation.horizontalScroll
@@ -191,6 +195,10 @@ fun MetroMapEditorScreen(
     val prefs = state.metroPrefs
     var prefsShown by rememberSaveable { mutableStateOf(false) }
     var styling by rememberSaveable { mutableStateOf(false) }
+    // The figures' panel (15.10), and how its figures are drawn.
+    var figuring by rememberSaveable { mutableStateOf(false) }
+    var figureTurn by rememberSaveable { mutableStateOf(0f) }
+    var figureTouching by rememberSaveable { mutableStateOf(true) }
     val histories by vm.metroHistory.collectAsStateWithLifecycle()
     val history = histories[schemeId]
     val laidOut by produceState<Map<Long, MetroPoint>?>(null, scheme) {
@@ -561,6 +569,10 @@ fun MetroMapEditorScreen(
                                             enabled = selection.isNotEmpty(),
                                         ) { Text(stringResource(words)) }
                                     }
+                                    // A figure of the selection (15.10): a row, a column, a regular polygon.
+                                    TextButton(onClick = { figuring = true }, enabled = selection.size >= 2) {
+                                        Text(stringResource(R.string.metro_figure))
+                                    }
                                     // Turned or mirrored about its middle (08.10).
                                     listOf(
                                         MetroTurn.CLOCKWISE_45 to R.string.metro_turn_45,
@@ -581,6 +593,50 @@ fun MetroMapEditorScreen(
                 }
             }
         }
+    }
+
+    if (figuring && scheme != null) {
+        AlertDialog(
+            onDismissRequest = { figuring = false },
+            title = { Text(stringResource(R.string.metro_figure)) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.metro_figure_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    // How far apart: rings touching, or a grid step.
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterChip(selected = figureTouching, onClick = { figureTouching = true }, label = { Text(stringResource(R.string.metro_figure_touching)) })
+                        FilterChip(selected = !figureTouching, onClick = { figureTouching = false }, label = { Text(stringResource(R.string.metro_figure_step)) })
+                    }
+                    // Turned by.
+                    Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(0f, 15f, 30f, 45f, 90f).forEach { deg ->
+                            FilterChip(selected = figureTurn == deg, onClick = { figureTurn = deg }, label = { Text("${deg.toInt()}°") })
+                        }
+                    }
+                    listOf(
+                        MetroFigure.ROW to R.string.metro_figure_row,
+                        MetroFigure.COLUMN to R.string.metro_figure_column,
+                        MetroFigure.POLYGON to R.string.metro_figure_polygon,
+                        MetroFigure.AROUND_ONE to R.string.metro_figure_around,
+                    ).forEach { (figure, words) ->
+                        TextButton(
+                            onClick = {
+                                vm.editMetroScheme(schemeId) {
+                                    val gap = if (figureTouching) metroGlueGap(it) else METRO_TOGETHER_GAP
+                                    metroSelectionFigured(it, selection, figure, gap, figureTurn)
+                                }
+                            },
+                            enabled = selection.size >= (if (figure == MetroFigure.AROUND_ONE) 3 else 2),
+                        ) { Text(stringResource(words)) }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { figuring = false }) { Text(stringResource(R.string.ok)) } },
+        )
     }
 
     if (styling) {

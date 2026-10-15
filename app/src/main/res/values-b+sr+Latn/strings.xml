@@ -843,6 +843,14 @@
     <string name="metro_snap_angles">Uglovi od 45°</string>
     <string name="metro_look">Izgled</string>
     <string name="metro_transfer_links">Veze presedanja</string>
+    <string name="metro_figure">Figura…</string>
+    <string name="metro_figure_hint">Izabrane stanice — recimo, pet-šest stanica jednog čvora — postavljaju se u figuru oko mesta gde stoje, svaka zadržava svoj redosled.</string>
+    <string name="metro_figure_touching">Krugovi se dodiruju</string>
+    <string name="metro_figure_step">Korak mreže</string>
+    <string name="metro_figure_row">U red</string>
+    <string name="metro_figure_column">U kolonu</string>
+    <string name="metro_figure_polygon">Pravilan mnogougao</string>
+    <string name="metro_figure_around">Oko jedne u sredini</string>
     <string name="metro_bundle_tracks">Spoji paralelne deonice između istih presedanja</string>
     <string name="metro_style_era_colors">Boje linija iz palete epohe</string>
     <string name="metro_key_map">Šema</string>

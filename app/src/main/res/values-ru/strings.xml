@@ -909,6 +909,14 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_figure">Фигура…</string>
+    <string name="metro_figure_hint">Выделенные станции — например, пять-шесть станций одного узла — встают фигурой вокруг того места, где стоят, каждая сохраняет свой порядок.</string>
+    <string name="metro_figure_touching">Кружки вплотную</string>
+    <string name="metro_figure_step">Шаг сетки</string>
+    <string name="metro_figure_row">В ряд</string>
+    <string name="metro_figure_column">В столбец</string>
+    <string name="metro_figure_polygon">Правильный многоугольник</string>
+    <string name="metro_figure_around">Вокруг одной в центре</string>
     <string name="metro_bundle_tracks">Совмещать параллельные перегоны между одними пересадками</string>
     <string name="metro_style_era_colors">Цвета линий из палитры эпохи</string>
     <string name="metro_key_map">Схема</string>
