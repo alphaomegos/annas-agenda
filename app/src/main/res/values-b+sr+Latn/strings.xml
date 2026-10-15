@@ -235,6 +235,8 @@
     <string name="reading_next_season_out">Nova sezona je izašla!</string>
     <string name="reading_remind_next_season">Podseti me tog dana</string>
     <string name="reading_remind_next_season_hint">Tog dana aplikacija će podsetiti — ako su joj obaveštenja uključena.</string>
+    <string name="reading_remind_notifications_off">Obaveštenja aplikacije su isključena: podsetnik neće stići dok se ne dozvole.</string>
+    <string name="reading_remind_needs_day">Izaberite dan — bez njega nema na šta da se podseti.</string>
     <string name="reading_menu_move_to_abandoned">Premesti u ostavljene</string>
     <string name="reading_media_field_year_abandoned">Godina napuštanja</string>
     <string name="reading_search_label">Pretraga po naslovu, autoru ili godini</string>
@@ -417,6 +419,12 @@
     <string name="notif_reminder_off">Isključeno</string>
     <string name="notif_reminder_at_time">U zakazano vreme</string>
     <string name="notif_reminder_before">%1$d min ranije</string>
+    <!-- New seasons (0229) -->
+    <string name="notif_channel_seasons">Nove sezone</string>
+    <string name="notif_season_out">Danas izlazi nova sezona</string>
+    <string name="notif_seasons_section">Nove sezone</string>
+    <string name="notif_seasons_at">Na dan izlaska, u</string>
+    <string name="notif_seasons_hint">Za serije na polici „Čekam“ sa označenim „Podseti me tog dana“.</string>
     <!-- Widget (0145) -->
     <string name="widget_description">Današnji zadaci, štikliraju se sa početnog ekrana</string>
     <string name="widget_today_title">Zadaci za %1$s</string>

@@ -38,6 +38,7 @@ import com.alphaomegos.annasagenda.app.*
 
 internal const val CHANNEL_SUMMARY = "daily_summary"
 internal const val CHANNEL_REMINDERS = "task_reminders"
+internal const val CHANNEL_SEASONS = "new_seasons"
 
 private const val EXTRA_AT_MINUTE = "com.alphaomegos.annasagenda.AT_MINUTE"
 private const val ALARM_REQUEST_CODE = 4100
@@ -69,6 +70,13 @@ internal fun ensureNotificationChannels(context: Context) {
             NotificationManager.IMPORTANCE_HIGH,
         )
     )
+    nm.createNotificationChannel(
+        NotificationChannel(
+            CHANNEL_SEASONS,
+            context.getString(R.string.notif_channel_seasons),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        )
+    )
 }
 
 /** Android 13 asks the user before an app may post anything; older phones do not. */
@@ -91,7 +99,8 @@ private fun alarmIntent(context: Context, at: LocalDateTime?): PendingIntent {
 
 /**
  * The one alarm, set for the next minute something is due after [after], or
- * cancelled when the settings ask for nothing.
+ * cancelled when nothing is asked for — no summaries, no reminders, no
+ * season waited for.
  *
  * With something switched on but nothing due in the days looked at — the
  * next timed task is a week away — the alarm is set a day ahead anyway, with
@@ -104,9 +113,8 @@ internal fun scheduleNextNotification(
     catchUp: Boolean = true,
 ) {
     val am = context.getSystemService(AlarmManager::class.java) ?: return
-    val settings = state.notifications
-    val anythingOn = settings.summaryMinutes.isNotEmpty() || settings.reminderLeadMinutes != null
-    if (!anythingOn) {
+    // A season waited for keeps the alarm set even with everything else off (15.10).
+    if (!notificationsWanted(state, after)) {
         am.cancel(alarmIntent(context, null))
         writeArmedMinute(context, null)
         return
@@ -236,6 +244,20 @@ private fun postReminder(context: Context, event: ReminderEvent) {
     NotificationManagerCompat.from(context).notify(event.taskKey.hashCode(), n)
 }
 
+@SuppressLint("MissingPermission") // checked by canPostNotifications
+private fun postSeason(context: Context, event: SeasonEvent) {
+    if (!canPostNotifications(context)) return
+    val n = NotificationCompat.Builder(context, CHANNEL_SEASONS)
+        .setSmallIcon(R.drawable.ic_notification)
+        .setContentTitle(event.title)
+        .setContentText(context.getString(R.string.notif_season_out))
+        .setCategory(NotificationCompat.CATEGORY_REMINDER)
+        .setContentIntent(openAppIntent(context))
+        .setAutoCancel(true)
+        .build()
+    NotificationManagerCompat.from(context).notify("season@${event.seriesId}".hashCode(), n)
+}
+
 /**
  * The alarm went off: post what falls between the minute it was set for and
  * now — a phone in deep sleep may deliver it a few minutes late — and set
@@ -267,6 +289,7 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                     due.filterIsInstance<ReminderEvent>()
                         .filter { reminderStillDue(state, it, weekStart) }
                         .forEach { postReminder(words, it) }
+                    due.filterIsInstance<SeasonEvent>().forEach { postSeason(words, it) }
                     after = maxOf(now, at)
                 }
                 // Everything up to here was just posted: no catching up.

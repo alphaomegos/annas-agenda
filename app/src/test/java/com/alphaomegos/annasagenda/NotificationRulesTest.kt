@@ -265,3 +265,91 @@ class NotificationCatchUpTest {
         assertEquals(armed, nextNotificationAt(state, notificationScheduleAfter(now, armed), DayOfWeek.MONDAY))
     }
 }
+
+/**
+ * Waiting for the next season (15.10): told of on the day it is expected,
+ * at the minute the settings give, only for a series that asked.
+ */
+class SeasonNotificationTest {
+
+    private val weekStart = DayOfWeek.MONDAY
+    private val today = LocalDate.of(2026, 10, 7)
+    private val morning = today.atTime(7, 30)
+
+    private fun at(h: Int, m: Int = 0, day: LocalDate = today): LocalDateTime = day.atTime(h, m)
+
+    private fun settings(minutes: List<Int> = emptyList()) = NotificationSettings(summaryMinutes = minutes)
+
+    private fun waiting(
+        id: Long,
+        day: LocalDate?,
+        remind: Boolean = true,
+        shelf: ReadingShelf = ReadingShelf.WAITING,
+    ) = ReadingSeries(id = id, shelf = shelf, title = "Сериал $id", nextSeasonDate = day, remindNextSeason = remind)
+
+    @Test
+    fun aSeasonIsToldOfOnItsDayAtTheChosenMinute() {
+        val state = AppState(
+            readingSeries = listOf(waiting(5, today.plusDays(1))),
+            notifications = settings().copy(seasonMinute = 9 * 60 + 15),
+        )
+
+        val events = upcomingNotificationEvents(state, morning, weekStart)
+
+        assertEquals(listOf(SeasonEvent(at(9, 15, today.plusDays(1)), 5L, "Сериал 5")), events)
+    }
+
+    @Test
+    fun onlyTickedWaitingSeriesWithADayRemind() {
+        val series = listOf(
+            waiting(1, today, remind = false),
+            waiting(2, null),
+            waiting(3, today, shelf = ReadingShelf.NOW),
+            waiting(4, today),
+        )
+
+        assertEquals(listOf(4L), seasonEventsAfter(series, morning, DEFAULT_SEASON_MINUTE).map { it.seriesId })
+    }
+
+    /** A day already gone by says nothing: the shelf itself shows the season as out. */
+    @Test
+    fun aDayGoneByIsNotToldOfLate() {
+        val series = listOf(waiting(1, today.minusDays(3)), waiting(2, today))
+
+        assertTrue(seasonEventsAfter(series, at(10), DEFAULT_SEASON_MINUTE).isEmpty())
+        assertEquals(listOf(2L), seasonEventsAfter(series, at(9, 59), DEFAULT_SEASON_MINUTE).map { it.seriesId })
+    }
+
+    @Test
+    fun aMinuteOutsideTheDayFallsBackToTheDefault() {
+        val events = seasonEventsAfter(listOf(waiting(1, today)), morning, 24 * 60 + 5)
+
+        assertEquals(at(10), events.single().at)
+    }
+
+    /** With summaries and reminders off, a season far ahead still keeps the alarm wanted. */
+    @Test
+    fun aSeasonAheadKeepsTheAlarmWantedWithEverythingElseOff() {
+        val far = AppState(readingSeries = listOf(waiting(1, today.plusDays(40))))
+        val past = AppState(readingSeries = listOf(waiting(1, today.minusDays(1))))
+
+        assertTrue(notificationsWanted(far, morning))
+        // Past the lookahead: nothing to post yet, but the alarm looks again a day later.
+        assertNull(nextNotificationAt(far, morning, weekStart))
+        assertFalse(notificationsWanted(past, morning))
+        assertFalse(notificationsWanted(AppState(), morning))
+    }
+
+    @Test
+    fun onTheSameMinuteASeasonComesAfterTheSummary() {
+        val state = AppState(
+            readingSeries = listOf(waiting(1, today)),
+            notifications = settings(minutes = listOf(10 * 60)),
+        )
+
+        val events = notificationEventsAt(state, at(10), weekStart)
+
+        assertTrue(events[0] is SummaryEvent)
+        assertTrue(events[1] is SeasonEvent)
+    }
+}

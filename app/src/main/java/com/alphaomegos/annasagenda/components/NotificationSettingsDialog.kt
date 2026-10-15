@@ -49,7 +49,8 @@ private const val LEAD_OFF = -1
  *
  * Summaries: any number of times a day, and what they list — today's tasks
  * (all, only those not done, or none) and, separately, the debts. Reminders:
- * one lead for every timed task. Nothing is set until OK, and everything
+ * one lead for every timed task. New seasons: the time of day a waited-for
+ * season is told of, on its day (15.10). Nothing is set until OK, and everything
  * picked survives turning the phone.
  *
  * On OK with something switched on and notifications not allowed, the
@@ -73,12 +74,15 @@ internal fun NotificationSettingsDialog(
     var debts by rememberSaveable { mutableStateOf(initial.summaryDebts) }
     var lead by rememberSaveable { mutableIntStateOf(initial.reminderLeadMinutes ?: LEAD_OFF) }
     var pickingTime by rememberSaveable { mutableStateOf(false) }
+    var seasonMinute by rememberSaveable { mutableIntStateOf(initial.seasonMinute) }
+    var pickingSeasonTime by rememberSaveable { mutableStateOf(false) }
 
     fun result() = NotificationSettings(
         summaryMinutes = minutes,
         summaryToday = today,
         summaryDebts = debts,
         reminderLeadMinutes = lead.takeIf { it != LEAD_OFF },
+        seasonMinute = seasonMinute,
     )
 
     AlertDialog(
@@ -164,6 +168,26 @@ internal fun NotificationSettingsDialog(
                         }
                     }
                 }
+
+                HorizontalDivider()
+
+                // New seasons (15.10): only the time here — each series ticks its own reminder.
+                Text(stringResource(R.string.notif_seasons_section), style = MaterialTheme.typography.titleSmall)
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.notif_seasons_at),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    TextButton(onClick = { pickingSeasonTime = true }) {
+                        Text(timeFromMinuteOfDay(seasonMinute)?.let { formatTaskTime(it) }.orEmpty())
+                    }
+                }
+                Text(
+                    stringResource(R.string.notif_seasons_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         },
         confirmButton = {
@@ -186,6 +210,14 @@ internal fun NotificationSettingsDialog(
             onPicked = { picked ->
                 minutesText = (minutes + minuteOfDay(picked)).distinct().sorted().joinToString(",")
             },
+        )
+    }
+
+    if (pickingSeasonTime) {
+        PickTimeDialog(
+            initialTime = timeFromMinuteOfDay(seasonMinute),
+            onDismiss = { pickingSeasonTime = false },
+            onPicked = { picked -> seasonMinute = minuteOfDay(picked) },
         )
     }
 }

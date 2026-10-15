@@ -18,6 +18,8 @@
     <string name="reading_next_season_out">The next season is out!</string>
     <string name="reading_remind_next_season">Remind me on the day</string>
     <string name="reading_remind_next_season_hint">On the day the app will say so — if its notifications are on.</string>
+    <string name="reading_remind_notifications_off">Notifications are off for the app: the reminder will not come until they are allowed.</string>
+    <string name="reading_remind_needs_day">Pick a day, or there is nothing to remind on.</string>
     <string name="reading_media_book">Book</string>
     <string name="reading_media_movie">Movie</string>
     <string name="reading_media_series">Series</string>

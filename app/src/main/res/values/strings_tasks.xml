@@ -110,6 +110,12 @@
     <string name="notif_reminder_off">Off</string>
     <string name="notif_reminder_at_time">At the time</string>
     <string name="notif_reminder_before">%1$d min before</string>
+    <!-- New seasons (0229) -->
+    <string name="notif_channel_seasons">New seasons</string>
+    <string name="notif_season_out">A new season is out today</string>
+    <string name="notif_seasons_section">New seasons</string>
+    <string name="notif_seasons_at">On the day, at</string>
+    <string name="notif_seasons_hint">For series on the shelf “Waiting” with “Remind me on the day” ticked.</string>
     <!-- Widget (0145) -->
     <string name="widget_description">Today\'s tasks, ticked from the home screen</string>
     <string name="widget_today_title">Tasks for %1$s</string>

@@ -347,6 +347,8 @@ internal data class NotificationSettingsDto(
     val summaryDebts: Boolean = true,
     // Null: no reminders.
     val reminderLeadMinutes: Int? = null,
+    // Minutes since midnight; when a waited-for season is told of (15.10).
+    val seasonMinute: Int = DEFAULT_SEASON_MINUTE,
 )
 
 @Serializable

@@ -386,6 +386,7 @@ internal fun NotificationSettings.toDto(): NotificationSettingsDto = Notificatio
     summaryToday = summaryToday.name,
     summaryDebts = summaryDebts,
     reminderLeadMinutes = reminderLeadMinutes,
+    seasonMinute = seasonMinute,
 )
 
 /**
@@ -398,6 +399,7 @@ internal fun NotificationSettingsDto.toDomain(): NotificationSettings = Notifica
     summaryToday = SummaryToday.entries.firstOrNull { it.name == summaryToday } ?: SummaryToday.UNDONE,
     summaryDebts = summaryDebts,
     reminderLeadMinutes = reminderLeadMinutes?.takeIf { it in REMINDER_LEAD_CHOICES },
+    seasonMinute = seasonMinute.takeIf { it in 0 until 24 * 60 } ?: DEFAULT_SEASON_MINUTE,
 )
 
 internal fun runningModeFromName(name: String): RunningMode =

@@ -40,6 +40,17 @@ data class ReminderEvent(
     val time: LocalTime,
 ) : NotificationEvent
 
+/**
+ * A season waited for is due today (15.10): a series on the shelf "Waiting",
+ * its day given and its "remind me" ticked. Told of once, on that day, at the
+ * minute the settings give.
+ */
+data class SeasonEvent(
+    override val at: LocalDateTime,
+    val seriesId: Long,
+    val title: String,
+) : NotificationEvent
+
 /** How far ahead the next alarm is looked for. Past that, a reschedule is due anyway. */
 const val NOTIFICATION_LOOKAHEAD_DAYS = 2L
 
@@ -106,9 +117,43 @@ fun reminderEventsAfter(tasks: List<Task>, after: LocalDateTime, leadMinutes: In
     }
 }
 
+/** The series that asked to be told of their next season: waiting, a day given, the box ticked. */
+fun seriesRemindingOfSeasons(series: List<ReadingSeries>): List<ReadingSeries> =
+    series.filter { it.shelf == ReadingShelf.WAITING && it.remindNextSeason && it.nextSeasonDate != null }
+
 /**
- * Everything due strictly after [after], earliest first; a summary before a
- * reminder that falls on the same minute.
+ * The seasons to be told of strictly after [after], each on its own day at
+ * [minute]; a minute outside the day is read as the default.
+ *
+ * A day that has already gone by tells of nothing: the shelf itself shows
+ * the season as out, and a reminder a week late is not one.
+ */
+fun seasonEventsAfter(series: List<ReadingSeries>, after: LocalDateTime, minute: Int): List<SeasonEvent> {
+    val m = minute.takeIf { it in 0 until 24 * 60 } ?: DEFAULT_SEASON_MINUTE
+    return seriesRemindingOfSeasons(series).mapNotNull { s ->
+        val day = s.nextSeasonDate ?: return@mapNotNull null
+        val at = day.atTime(m / 60, m % 60)
+        if (at.isAfter(after)) SeasonEvent(at, s.id, s.title) else null
+    }
+}
+
+/**
+ * Whether a season is still to be told of after [after], however far ahead:
+ * the alarm has to stay set for it even with summaries and reminders off.
+ */
+fun seasonRemindersAhead(state: AppState, after: LocalDateTime): Boolean =
+    seasonEventsAfter(state.readingSeries, after, state.notifications.seasonMinute).isNotEmpty()
+
+/** Whether the alarm is wanted at all after [after]: something switched on, or a season ahead. */
+fun notificationsWanted(state: AppState, after: LocalDateTime): Boolean {
+    val settings = state.notifications
+    return settings.summaryMinutes.isNotEmpty() || settings.reminderLeadMinutes != null ||
+        seasonRemindersAhead(state, after)
+}
+
+/**
+ * Everything due strictly after [after], earliest first; on the same minute
+ * a summary, then reminders, then seasons.
  */
 fun upcomingNotificationEvents(
     state: AppState,
@@ -125,10 +170,17 @@ fun upcomingNotificationEvents(
         val to = from.plusDays(NOTIFICATION_LOOKAHEAD_DAYS + 1)
         reminderEventsAfter(tasksForNotifications(state, from, to, weekStart), after, settings.reminderLeadMinutes)
     }
+    val seasons = seasonEventsAfter(state.readingSeries, after, settings.seasonMinute)
     val horizon = after.plusDays(NOTIFICATION_LOOKAHEAD_DAYS)
-    return (summaries + reminders)
+    return (summaries + reminders + seasons)
         .filter { !it.at.isAfter(horizon) }
-        .sortedWith(compareBy<NotificationEvent> { it.at }.thenBy { if (it is SummaryEvent) 0 else 1 })
+        .sortedWith(compareBy<NotificationEvent> { it.at }.thenBy { notificationRank(it) })
+}
+
+private fun notificationRank(event: NotificationEvent): Int = when (event) {
+    is SummaryEvent -> 0
+    is ReminderEvent -> 1
+    is SeasonEvent -> 2
 }
 
 /** What falls exactly on [at] — the minute an alarm was set for. */

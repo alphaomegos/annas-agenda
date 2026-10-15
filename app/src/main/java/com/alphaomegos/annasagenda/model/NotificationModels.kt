@@ -26,13 +26,21 @@ enum class SummaryToday {
  * [summaryMinutes] are minutes since midnight, kept sorted and without
  * repeats. [reminderLeadMinutes] is how long before a timed task's time to
  * remind of it: null for never, 0 for at the time itself.
+ *
+ * [seasonMinute] is when, on the day a waited-for season is due, the app
+ * says so (15.10). It is only a time: whether to be told at all is each
+ * series' own tick, so the default stays silence.
  */
 data class NotificationSettings(
     val summaryMinutes: List<Int> = emptyList(),
     val summaryToday: SummaryToday = SummaryToday.UNDONE,
     val summaryDebts: Boolean = true,
     val reminderLeadMinutes: Int? = null,
+    val seasonMinute: Int = DEFAULT_SEASON_MINUTE,
 )
+
+/** When, on its day, a new season is told of unless the settings say otherwise: 10:00. */
+const val DEFAULT_SEASON_MINUTE = 10 * 60
 
 /** The choices the settings offer for a reminder; null is "off". */
 val REMINDER_LEAD_CHOICES: List<Int?> = listOf(null, 0, 5, 15, 30, 60)

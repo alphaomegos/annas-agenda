@@ -262,6 +262,8 @@ class AppStateWholeRoundTripTest {
             summaryToday = SummaryToday.ALL,
             summaryDebts = false,
             reminderLeadMinutes = 15,
+            // 15.10, no schema step: when a waited-for season is told of.
+            seasonMinute = 9 * 60 + 30,
         ),
         // 03.10, no schema step — still every field.
         widgetStyle = WidgetStyle(backgroundPercent = 35, textColor = WidgetTextColor.WHITE, checkColorArgb = 0xFF43A047L),

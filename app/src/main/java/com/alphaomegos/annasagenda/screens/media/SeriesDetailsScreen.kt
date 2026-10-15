@@ -32,6 +32,9 @@ import com.alphaomegos.annasagenda.components.PickDateDialog
 import com.alphaomegos.annasagenda.model.ReadingShelf
 import com.alphaomegos.annasagenda.support.formatShortDate
 import com.alphaomegos.annasagenda.util.appLocale
+import android.os.Build
+import androidx.compose.ui.platform.LocalContext
+import com.alphaomegos.annasagenda.canPostNotifications
 
 @Composable
 fun SeriesDetailsScreen(
@@ -70,6 +73,17 @@ fun SeriesDetailsScreen(
     var nextSeasonDay by rememberSaveable(seriesId) { mutableStateOf(series.nextSeasonDate?.toEpochDay() ?: -1L) }
     var remind by rememberSaveable(seriesId) { mutableStateOf(series.remindNextSeason) }
     var pickingDay by rememberSaveable(seriesId) { mutableStateOf(false) }
+    val context = LocalContext.current
+    // Ticking the reminder on a phone that may not post asks, as the settings do (Android 13+).
+    val askNotificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    val setRemind: (Boolean) -> Unit = { on ->
+        remind = on
+        if (on && !canPostNotifications(context) && Build.VERSION.SDK_INT >= 33) {
+            askNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     val pickCover = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -176,10 +190,10 @@ fun SeriesDetailsScreen(
                 }
             }
             Row(
-                modifier = Modifier.fillMaxWidth().clickable { remind = !remind },
+                modifier = Modifier.fillMaxWidth().clickable { setRemind(!remind) },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Checkbox(checked = remind, onCheckedChange = { remind = it })
+                Checkbox(checked = remind, onCheckedChange = { setRemind(it) })
                 Text(stringResource(R.string.reading_remind_next_season), style = MaterialTheme.typography.bodyLarge)
             }
             Text(
@@ -187,6 +201,20 @@ fun SeriesDetailsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (remind && !canPostNotifications(context)) {
+                Text(
+                    stringResource(R.string.reading_remind_notifications_off),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            if (remind && day == null) {
+                Text(
+                    stringResource(R.string.reading_remind_needs_day),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
 

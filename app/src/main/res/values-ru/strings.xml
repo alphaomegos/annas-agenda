@@ -248,6 +248,8 @@
     <string name="reading_next_season_out">Новый сезон вышел!</string>
     <string name="reading_remind_next_season">Напомнить в день выхода</string>
     <string name="reading_remind_next_season_hint">В этот день приложение напомнит — если его оповещения включены.</string>
+    <string name="reading_remind_notifications_off">Оповещения приложения выключены: напоминание не придёт, пока их не разрешить.</string>
+    <string name="reading_remind_needs_day">Выберите день — без него напоминать не о чем.</string>
     <string name="reading_media_book">Книга</string>
     <string name="reading_media_movie">Фильм</string>
     <string name="reading_media_series">Сериал</string>
@@ -558,6 +560,12 @@
     <string name="notif_reminder_off">Не напоминать</string>
     <string name="notif_reminder_at_time">В момент начала</string>
     <string name="notif_reminder_before">За %1$d мин</string>
+    <!-- New seasons (0229) -->
+    <string name="notif_channel_seasons">Новые сезоны</string>
+    <string name="notif_season_out">Сегодня выходит новый сезон</string>
+    <string name="notif_seasons_section">Новые сезоны</string>
+    <string name="notif_seasons_at">В день выхода, в</string>
+    <string name="notif_seasons_hint">Для сериалов на полке «Жду» с галочкой «Напомнить в день выхода».</string>
     <!-- Widget (0145) -->
     <string name="widget_description">Задачи на сегодня с галочками прямо на главном экране</string>
     <string name="widget_today_title">Задачи на %1$s</string>

@@ -280,8 +280,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * Keeps the one notification alarm, and the home-screen widget, in step
-     * with what they depend on: the tasks, the tombstones, the settings and
-     * the horizon. Only from here —
+     * with what they depend on: the tasks, the tombstones, the settings, the
+     * horizon and the seasons waited for. Only from here —
      * after the state is loaded and autosave runs — so an alarm is never
      * set from the empty default a moment before the real state arrives.
      */
@@ -295,7 +295,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.Default) {
             _state
                 .map { s ->
-                    listOf(s.tasks, s.subtasks, s.suppressedRecurrences, s.notifications, s.undoneHorizonDays, s.widgetStyle)
+                    // Of the series, only what a season reminder is made of (15.10):
+                    // an episode ticked off does not move the alarm.
+                    val seasons = seriesRemindingOfSeasons(s.readingSeries).map { Triple(it.id, it.title, it.nextSeasonDate) }
+                    listOf(s.tasks, s.subtasks, s.suppressedRecurrences, s.notifications, s.undoneHorizonDays, s.widgetStyle, seasons)
                 }
                 .distinctUntilChanged()
                 .debounce(1000)
