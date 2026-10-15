@@ -85,7 +85,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     flightCityNames = flightCityNames,
     flightAirlineNames = flightAirlineNames,
     flightHomes = flightHomes.sorted(),
-    metroPrefs = MetroPrefsDto(metroPrefs.style.name, metroPrefs.styleDetails, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips),
+    metroPrefs = MetroPrefsDto(metroPrefs.style.name, metroPrefs.styleDetails, metroPrefs.eraColors, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips),
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -191,7 +191,7 @@ internal fun AppStateDto.toDomain(): AppState {
         flightCityNames = flightCityNames.filter { it.key.isNotBlank() && it.value.isNotBlank() },
         flightAirlineNames = flightAirlineNames.filter { it.key.isNotBlank() && it.value.isNotBlank() },
         flightHomes = flightHomes.filter { it.isNotBlank() }.toSet(),
-        metroPrefs = MetroPrefs(parseMetroStyle(metroPrefs.style), metroPrefs.styleDetails, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips),
+        metroPrefs = MetroPrefs(parseMetroStyle(metroPrefs.style), metroPrefs.styleDetails, metroPrefs.eraColors, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips),
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)

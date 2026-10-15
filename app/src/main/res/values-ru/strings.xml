@@ -909,6 +909,7 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_style_era_colors">Цвета линий из палитры эпохи</string>
     <string name="metro_key_map">Схема</string>
     <string name="metro_key_swap">Обмен</string>
     <string name="metro_key_style">Стиль</string>

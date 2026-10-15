@@ -297,6 +297,8 @@ fun MetroScreen(
             details = state.metroPrefs.styleDetails,
             onPick = { style -> vm.setMetroPrefs { it.copy(style = style) } },
             onDetails = { on -> vm.setMetroPrefs { it.copy(styleDetails = on) } },
+            eraColors = state.metroPrefs.eraColors,
+            onEraColors = { on -> vm.setMetroPrefs { it.copy(eraColors = on) } },
             onDismiss = { styling = false },
         )
     }
@@ -390,7 +392,7 @@ private fun Suggestions(scheme: MetroScheme, typed: String, onPick: (MetroNameCh
  */
 @Composable
 internal fun LineDot(line: MetroLine, size: Int = 22) {
-    val background = Color(line.color)
+    val background = metroLineColor(line.color)
     Box(
         modifier = Modifier
             .defaultMinSize(minWidth = size.dp, minHeight = size.dp)
@@ -542,7 +544,7 @@ private fun RideStep(scheme: MetroScheme, line: MetroLine, ride: MetroRouteStep.
  */
 @Composable
 private fun RideStations(line: MetroLine, ride: MetroRouteStep.Ride, nameOf: (Long) -> String) {
-    val color = Color(line.color)
+    val color = metroLineColor(line.color)
     val passed = ride.passedClosedStationIds.toSet()
     Column(modifier = Modifier.padding(start = 8.dp)) {
         ride.stationIds.forEachIndexed { i, id ->

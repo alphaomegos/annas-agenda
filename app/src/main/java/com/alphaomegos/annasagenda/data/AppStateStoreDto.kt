@@ -150,6 +150,7 @@ internal data class MetroPrefsDto(
     // MetroStyle by name.
     val style: String = "MODERN",
     val styleDetails: Boolean = true,
+    val eraColors: Boolean = false,
     val loupe: Boolean = true,
     val haptics: Boolean = true,
     val boxSelect: Boolean = true,

@@ -250,6 +250,8 @@ data class MetroPrefs(
     // The style's own details (15.10): Windows' bevels and its close box, DOS'
     // double frames and keys, the terminal's prompt and scan lines.
     val styleDetails: Boolean = true,
+    // Line colours brought to the old machine's palette (15.10); off, each line its own.
+    val eraColors: Boolean = false,
     val loupe: Boolean = true,
     val haptics: Boolean = true,
     val boxSelect: Boolean = true,

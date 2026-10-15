@@ -405,7 +405,7 @@ fun MetroMapEditorScreen(
                     scheme.lines.forEach { line ->
                         MetroLayerChip(
                             label = line.label.ifBlank { line.name },
-                            color = Color(line.color),
+                            color = metroLineColor(line.color),
                             shown = line.id !in scheme.hiddenLines,
                             locked = line.id in scheme.lockedLines,
                             onToggle = { vm.setMetroView(schemeId) { metroLayerShownToggled(it, line.id) } },
@@ -577,6 +577,8 @@ fun MetroMapEditorScreen(
             details = prefs.styleDetails,
             onPick = { style -> vm.setMetroPrefs { it.copy(style = style) } },
             onDetails = { on -> vm.setMetroPrefs { it.copy(styleDetails = on) } },
+            eraColors = prefs.eraColors,
+            onEraColors = { on -> vm.setMetroPrefs { it.copy(eraColors = on) } },
             onDismiss = { styling = false },
         )
     }
@@ -841,7 +843,7 @@ private fun MetroLayersDialog(scheme: MetroScheme, onLayers: ((MetroScheme) -> M
                     val shown = line.id !in scheme.hiddenLines
                     val locked = line.id in scheme.lockedLines
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(14.dp).background(Color(line.color), CircleShape))
+                        Box(Modifier.size(14.dp).background(metroLineColor(line.color), CircleShape))
                         Text(
                             listOf(line.label, line.name).filter { it.isNotBlank() }.joinToString(" "),
                             style = MaterialTheme.typography.bodyMedium,

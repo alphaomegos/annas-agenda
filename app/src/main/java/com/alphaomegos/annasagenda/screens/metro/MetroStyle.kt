@@ -45,6 +45,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import com.alphaomegos.annasagenda.support.metroEraColor
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -82,11 +84,22 @@ val LocalMetroStyle = staticCompositionLocalOf { MetroStyle.MODERN }
 /** Whether the style's own details are drawn (15.10): frames, close box, prompt, scan lines. */
 val LocalMetroStyleDetails = staticCompositionLocalOf { true }
 
+/** Whether lines take the colours of the style's era (15.10). */
+val LocalMetroEraColors = staticCompositionLocalOf { false }
+
+/** A line's colour as the section draws it: its own, or the era's (support/MetroEraColors.kt). */
+@Composable
+@ReadOnlyComposable
+internal fun metroLineColor(argb: Long): Color =
+    Color(if (LocalMetroEraColors.current) metroEraColor(LocalMetroStyle.current, argb) else argb)
+
 /** The metro section's screens in the user's style. */
 @Composable
 fun MetroThemed(vm: AppViewModel, content: @Composable () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
-    MetroThemed(state.metroPrefs.style, state.metroPrefs.styleDetails, content)
+    CompositionLocalProvider(LocalMetroEraColors provides state.metroPrefs.eraColors) {
+        MetroThemed(state.metroPrefs.style, state.metroPrefs.styleDetails, content)
+    }
 }
 
 /** [content] in [style], with its [details] or without. */
@@ -450,8 +463,10 @@ internal fun metroStyleName(style: MetroStyle): String = stringResource(
 internal fun MetroStyleDialog(
     current: MetroStyle,
     details: Boolean,
+    eraColors: Boolean,
     onPick: (MetroStyle) -> Unit,
     onDetails: (Boolean) -> Unit,
+    onEraColors: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -482,6 +497,17 @@ internal fun MetroStyleDialog(
                 ) {
                     Checkbox(checked = details, onCheckedChange = onDetails, enabled = current != MetroStyle.MODERN)
                     Text(stringResource(R.string.metro_style_details), style = MaterialTheme.typography.bodyMedium)
+                }
+                // The era's colours for the lines, or each line its own.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = current != MetroStyle.MODERN, role = Role.Checkbox) { onEraColors(!eraColors) }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = eraColors, onCheckedChange = onEraColors, enabled = current != MetroStyle.MODERN)
+                    Text(stringResource(R.string.metro_style_era_colors), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },

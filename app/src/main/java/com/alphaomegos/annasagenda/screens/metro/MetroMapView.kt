@@ -79,6 +79,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import kotlin.math.floor
 import kotlin.math.abs
 import com.alphaomegos.annasagenda.support.metroGuided
+import com.alphaomegos.annasagenda.support.metroEraColor
 import kotlin.math.cos
 import kotlin.math.sin
 import com.alphaomegos.annasagenda.support.metroInterchangeStations
@@ -232,7 +233,12 @@ internal fun MetroMapView(
     val labels = remember(names, measurer, labelColor, scheme.labelScale) {
         names.associate { (id, name) -> id to measurer.measure(name, labelStyle) }
     }
-    val lines = remember(scheme.lines) { scheme.lines.associateBy { it.id } }
+    // Each line's colour as drawn: its own, or the style's era's (15.10).
+    val era = LocalMetroEraColors.current
+    val style = LocalMetroStyle.current
+    val lineColors = remember(scheme.lines, era, style) {
+        scheme.lines.associate { it.id to Color(if (era) metroEraColor(style, it.color) else it.color) }
+    }
     val lineOf = remember(scheme.stations) { scheme.stations.associate { it.id to it.lineId } }
     val labelled = remember(scheme, layout) { metroLabelledStations(scheme, layout) }
     // Each name's side (08.10): set by hand, or chosen away from its track; hidden ones apart.
@@ -581,7 +587,7 @@ internal fun MetroMapView(
                 // A hidden line (14.10): not drawn, or faintly with its ghosts shown.
                 val ghost = lineId in hiddenLines
                 if (ghost && !ghostHidden) return@forEach
-                val color = Color(lines[lineId]?.color ?: 0xFF888888)
+                val color = lineColors[lineId] ?: Color(0xFF888888)
                 val drawn = ofLine.mapNotNull { (_, s, t) ->
                     val pts = trackPoints(s, t) ?: return@mapNotNull null
                     val lit = !fade || (s to t) in routePairs
@@ -623,7 +629,7 @@ internal fun MetroMapView(
                 // A station of a hidden line (14.10): not drawn, or faintly and nameless.
                 val ghost = st.id in hiddenStations
                 if (ghost && !ghostHidden) return@forEach
-                val color = Color(lines[lineOf[st.id]]?.color ?: 0xFF888888)
+                val color = lineOf[st.id]?.let { lineColors[it] } ?: Color(0xFF888888)
                 val lit = !fade || st.id in routeStations
                 val alpha = if (ghost) GHOST_ALPHA else if (lit) 1f else 0.3f
                 // Ticks (08.10): a station that is no interchange is a bar off its line, a
