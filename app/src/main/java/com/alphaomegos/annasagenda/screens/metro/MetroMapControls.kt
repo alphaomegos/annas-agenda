@@ -126,4 +126,7 @@ internal fun MetroViewerPrefsTicks(prefs: MetroPrefs, onPrefs: ((MetroPrefs) -> 
     MetroMapTick(stringResource(R.string.metro_pref_frame_route), prefs.frameRoute, Modifier.fillMaxWidth()) { on ->
         onPrefs { it.copy(frameRoute = on) }
     }
+    MetroMapTick(stringResource(R.string.metro_pref_legend), prefs.legend, Modifier.fillMaxWidth()) { on ->
+        onPrefs { it.copy(legend = on) }
+    }
 }

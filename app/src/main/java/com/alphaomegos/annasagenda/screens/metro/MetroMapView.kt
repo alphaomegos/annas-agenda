@@ -151,7 +151,8 @@ import com.alphaomegos.annasagenda.support.metroViewportBetween
  * finger and a tap of two fingers zooms out, as on any map. Each glides
  * rather than jumps, and a finger put down stops the glide where it is.
  * Each new [focus] (15.10) — a route found — glides the view to show all
- * of those stations.
+ * of those stations. [highlightLines] (15.10) stand out as a route does,
+ * their names written, the rest faded; with a route too, both stand out.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -190,6 +191,7 @@ internal fun MetroMapView(
     fitButton: Boolean = true,
     doubleTapZoom: Boolean = false,
     focus: Set<Long> = emptySet(),
+    highlightLines: Set<Long> = emptySet(),
 ) {
     // Where the picture is looked at (14.10), in its own units: pixels to a
     // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
@@ -547,7 +549,8 @@ internal fun MetroMapView(
             val radius = scheme.stationScale *
                 (if (glued) METRO_STATION_RADIUS * k else (METRO_STATION_RADIUS * k).coerceIn(4.dp.toPx(), 9.dp.toPx()))
             val (routePairs, routeStations) = onRoute
-            val fade = route != null
+            val fade = route != null || highlightLines.isNotEmpty()
+            fun litLine(stationId: Long) = highlightLines.isNotEmpty() && lineOf[stationId] in highlightLines
             // A drag in flight moves its station (snapped, with a grid) and,
             // with transfers kept together, the rest of its transfer as far.
             val dragged = dragId?.let { layout[it] }
@@ -606,7 +609,8 @@ internal fun MetroMapView(
                 if (ghost && !ghostHidden) return@forEach
                 val a = at(t.aStationId) ?: return@forEach
                 val c = at(t.bStationId) ?: return@forEach
-                val lit = !fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs
+                val lit = !fade || (minOf(t.aStationId, t.bStationId) to maxOf(t.aStationId, t.bStationId)) in routePairs ||
+                    litLine(t.aStationId) || litLine(t.bStationId)
                 val alpha = if (ghost) GHOST_ALPHA else if (lit) 1f else 0.25f
                 if (capsules) {
                     // A passage as on the Moscow map (08.10): a band as wide as the
@@ -697,7 +701,7 @@ internal fun MetroMapView(
                 val color = lineColors[lineId] ?: Color(0xFF888888)
                 val drawn = ofLine.mapNotNull { (_, s, t) ->
                     val pts = trackPoints(s, t) ?: return@mapNotNull null
-                    val lit = !fade || (s to t) in routePairs
+                    val lit = !fade || (s to t) in routePairs || lineId in highlightLines
                     Triple(pts, lit, if (fade && lit) lineWidth * 1.5f else lineWidth)
                 }
                 // A follower's bends are its leader's (15.10): marked on the leader only.
@@ -739,7 +743,7 @@ internal fun MetroMapView(
                 val ghost = st.id in hiddenStations
                 if (ghost && !ghostHidden) return@forEach
                 val color = lineOf[st.id]?.let { lineColors[it] } ?: Color(0xFF888888)
-                val lit = !fade || st.id in routeStations
+                val lit = !fade || st.id in routeStations || litLine(st.id)
                 val alpha = if (ghost) GHOST_ALPHA else if (lit) 1f else 0.3f
                 // Ticks (08.10): a station that is no interchange is a bar off its line, a
                 // terminus a bar across its end; a closed one grey. Interchanges stay rings.

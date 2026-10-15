@@ -35,6 +35,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -135,6 +137,8 @@ fun MetroScreen(
     var mapPrefsShown by rememberSaveable { mutableStateOf(false) }
     // The map over the whole screen (15.10), the fields folded into one line under it.
     var bigMap by rememberSaveable { mutableStateOf(false) }
+    // The lines lit up from the legend (15.10).
+    var litLines by rememberSaveable { mutableStateOf(listOf<Long>()) }
 
     val today = remember { LocalDate.now() }
 
@@ -254,6 +258,7 @@ fun MetroScreen(
                 zoomButtons = state.metroPrefs.zoomButtons,
                 doubleTapZoom = state.metroPrefs.doubleTapZoom,
                 focus = framed,
+                highlightLines = litLines.toSet(),
             )
             MetroMapButton(
                 icon = if (bigMap) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
@@ -261,6 +266,11 @@ fun MetroScreen(
                 onClick = { bigMap = !bigMap },
                 modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
             )
+            }
+        }
+        if (scheme != null && mapShown && state.metroPrefs.legend && scheme.lines.size > 1) {
+            MetroLegend(scheme.lines, litLines.toSet()) { id ->
+                litLines = if (id in litLines) litLines - id else litLines + id
             }
         }
         if (mapShown && bigMap) {
@@ -464,6 +474,32 @@ internal fun LineDot(line: MetroLine, size: Int = 22) {
             fontWeight = FontWeight.Bold,
             maxLines = 1,
         )
+    }
+}
+
+/**
+ * The scheme's lines in a row under the map (15.10): each its number and
+ * name; a tap lights that line up on the picture — its names written, the
+ * rest faded — and another puts it out. Several may be lit at once.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MetroLegend(lines: List<MetroLine>, lit: Set<Long>, onToggle: (Long) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        lines.forEach { line ->
+            FilterChip(
+                selected = line.id in lit,
+                onClick = { onToggle(line.id) },
+                label = { Text(line.name.ifBlank { line.label }, maxLines = 1) },
+                leadingIcon = { LineDot(line, size = 18) },
+            )
+        }
     }
 }
 

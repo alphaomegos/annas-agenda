@@ -265,6 +265,8 @@ data class MetroPrefs(
     val doubleTapZoom: Boolean = true,
     // A route found is framed on the picture (15.10); off, the view stays put.
     val frameRoute: Boolean = true,
+    // The lines in a row under the map (15.10), each to light up on the picture.
+    val legend: Boolean = true,
 )
 
 /**
