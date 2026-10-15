@@ -326,6 +326,7 @@ class AppStateWholeRoundTripTest {
                 labelsAuto = false,
                 labelsAvoidCrowd = false,
                 bundleTracks = true,
+                labelsWrap = true,
                 bends = listOf(MetroBend(10L, 11L, listOf(MetroMapPoint(1f, 0.5f), MetroMapPoint(1f, 2.5f)))),
             ),
         ),

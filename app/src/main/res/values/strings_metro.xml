@@ -186,6 +186,7 @@
     <string name="metro_grid_step">Grid step, of the step between stations</string>
     <string name="metro_grid_step_whole">Whole</string>
     <string name="metro_grid_step_part">1/%1$d</string>
+    <string name="metro_labels_wrap">Long names in two lines</string>
     <string name="metro_select_hint_no_box">Tap stations to select them; a tap on nothing lets go of all. Drag any selected station to move them all.</string>
     <string name="metro_keys">Keyboard shortcuts</string>
     <string name="metro_keys_text">Ctrl+Z — undo; Ctrl+Shift+Z or Ctrl+Y — redo\nV — move, B — bend, T — names, S — select\nCtrl+A — select every station in reach; Esc — let go\nArrows — nudge the selection (with Shift, five times as far)\nG — the grid; F or 0 — fit to the screen; L — layers</string>

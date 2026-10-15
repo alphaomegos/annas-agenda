@@ -81,6 +81,9 @@ data class MetroScheme(
     // The editor's grid (15.10): nodes to a step between stations — one, two
     // (as before) or four. A setting.
     val gridDivisions: Int = 2,
+    // A long name written in two lines (15.10), broken at the space nearest
+    // its middle. A setting.
+    val labelsWrap: Boolean = false,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),

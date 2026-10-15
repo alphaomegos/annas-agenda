@@ -101,6 +101,8 @@ import com.alphaomegos.annasagenda.support.METRO_MIN_ZOOM
 import com.alphaomegos.annasagenda.support.METRO_ZOOM_STEP
 import com.alphaomegos.annasagenda.support.metroViewportBetween
 import com.alphaomegos.annasagenda.support.metroMinimap
+import com.alphaomegos.annasagenda.support.metroLabelWrapped
+import androidx.compose.ui.text.style.TextAlign
 import com.alphaomegos.annasagenda.support.METRO_MINIMAP_FROM
 import com.alphaomegos.annasagenda.R
 import androidx.compose.foundation.layout.Arrangement
@@ -273,8 +275,13 @@ internal fun MetroMapView(
     val gridColor = MaterialTheme.colorScheme.outlineVariant
     // Measured again only when a name or the text changes (14.10), not on every move.
     val names = remember(scheme.stations) { scheme.stations.map { it.id to it.name } }
-    val labels = remember(names, measurer, labelColor, scheme.labelScale) {
-        names.associate { (id, name) -> id to measurer.measure(name, labelStyle) }
+    // Long names in two lines, centred, when the scheme says so (15.10).
+    val labels = remember(names, measurer, labelColor, scheme.labelScale, scheme.labelsWrap) {
+        val wrapStyle = labelStyle.copy(textAlign = TextAlign.Center)
+        names.associate { (id, name) ->
+            val text = if (scheme.labelsWrap) metroLabelWrapped(name) else name
+            id to measurer.measure(text, if ('\n' in text) wrapStyle else labelStyle)
+        }
     }
     // Each line's colour as drawn: its own, or the style's era's (15.10).
     val era = LocalMetroEraColors.current

@@ -33,6 +33,26 @@ fun metroStationLabelCycled(scheme: MetroScheme, stationId: Long): MetroScheme =
 fun metroStationDirections(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): List<Double> =
     metroPictureFacts(scheme, layout).directions(stationId)
 
+/** From how many letters a name is broken in two (15.10), when the scheme says so. */
+const val METRO_LABEL_WRAP_FROM = 14
+
+/**
+ * [name] as written with long names in two lines (15.10): broken at the space
+ * nearest its middle, neither half shorter than three letters; a short name,
+ * or one with nowhere to break, as it is. A hyphenated name may break after
+ * its hyphen.
+ */
+fun metroLabelWrapped(name: String, from: Int = METRO_LABEL_WRAP_FROM): String {
+    val text = name.trim()
+    if (text.length < from) return text
+    val middle = text.length / 2.0
+    val breaks = text.indices.filter { i -> text[i] == ' ' || text[i] == '-' }
+        .filter { i -> i >= 3 && text.length - i > 3 }
+    val at = breaks.minByOrNull { abs(it + 0.5 - middle) } ?: return text
+    return if (text[at] == ' ') text.substring(0, at) + "\n" + text.substring(at + 1)
+    else text.substring(0, at + 1) + "\n" + text.substring(at + 1)
+}
+
 /** The angle of a side, in radians on the screen. */
 fun metroLabelAngle(side: Int): Double = side * PI / 4
 

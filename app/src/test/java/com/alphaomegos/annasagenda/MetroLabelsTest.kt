@@ -121,4 +121,25 @@ class MetroLabelsTest {
         assertEquals(6, metroAutoLabelSide(two, metroLayout(two), 2))
         assertEquals(6, metroLabelSides(two, metroLayout(two))[2L])
     }
+
+    /** Long names in two lines (15.10): at the space nearest the middle. */
+    @Test
+    fun aLongNameBreaksAtTheSpaceNearestItsMiddle() {
+        // 12 letters and 8 are nearer even than 7 and 13.
+        assertEquals("Площадь трёх\nвокзалов", metroLabelWrapped("Площадь трёх вокзалов"))
+        assertEquals("Охотный\nряд", metroLabelWrapped("Охотный ряд", from = 5))
+    }
+
+    @Test
+    fun aShortNameOrOneWithNowhereToBreakStaysWhole() {
+        assertEquals("Курская", metroLabelWrapped("Курская"))
+        assertEquals("Новокосинская", metroLabelWrapped("Новокосинская", from = 5))
+        // A break that would leave two letters alone is no break.
+        assertEquals("Ул Академика", metroLabelWrapped("Ул Академика", from = 5))
+    }
+
+    @Test
+    fun aHyphenatedNameBreaksAfterItsHyphen() {
+        assertEquals("Петровско-\nРазумовская", metroLabelWrapped("Петровско-Разумовская"))
+    }
 }

@@ -768,6 +768,10 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                 MetroMapTick(stringResource(R.string.metro_labels_once), scheme.labelsOncePerInterchange, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(labelsOncePerInterchange = on) }
                 }
+                // Long names in two lines (15.10).
+                MetroMapTick(stringResource(R.string.metro_labels_wrap), scheme.labelsWrap, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(labelsWrap = on) }
+                }
                 // Off → 8 → 12 → off; interchanges kept together close up (or open out) to the new gap.
                 val glueLabel = when (scheme.glue) {
                     8 -> stringResource(R.string.metro_glue, "8")
