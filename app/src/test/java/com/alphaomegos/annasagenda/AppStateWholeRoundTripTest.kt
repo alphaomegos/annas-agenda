@@ -360,6 +360,7 @@ class AppStateWholeRoundTripTest {
         flightCityNames = mapOf("BEG" to "Белград"),
         flightAirlineNames = mapOf("WAZ" to "Виззэйр"),
         flightHomes = setOf("RS:belgrade"),
+        metroPrefs = MetroPrefs(loupe = false, haptics = false, boxSelect = false, tips = false),
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -441,7 +442,7 @@ class AppStateWholeRoundTripTest {
             "closed", "expectedOpeningEpochDay",
             "travelCountries", "travelView", "countryId", "trips", "month", "cities", "continent",
             "bends", "glue", "labelsOncePerInterchange", "labelSide", "hiddenLines", "lockedLines",
-            "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes",
+            "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes", "metroPrefs",
             "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))

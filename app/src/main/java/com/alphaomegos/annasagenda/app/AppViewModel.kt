@@ -1905,6 +1905,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _metroHistory.value = _metroHistory.value + (schemeId to next)
     }
 
+    /** The metro section's own settings (15.10). */
+    fun setMetroPrefs(edit: (MetroPrefs) -> MetroPrefs) {
+        val cur = _state.value
+        val prefs = edit(cur.metroPrefs)
+        if (prefs != cur.metroPrefs) _state.value = cur.copy(metroPrefs = prefs)
+    }
+
     /** A new, empty scheme for [city], chosen at once; its id, or null for a blank name. */
     fun createMetroScheme(city: String): Long? {
         val cur = _state.value

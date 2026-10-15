@@ -843,6 +843,12 @@
     <string name="metro_snap_angles">Uglovi od 45°</string>
     <string name="metro_look">Izgled</string>
     <string name="metro_transfer_links">Veze presedanja</string>
+    <string name="metro_editor_prefs">Podešavanja uređivača</string>
+    <string name="metro_pref_loupe">Lupa iznad prsta pri prevlačenju</string>
+    <string name="metro_pref_haptics">Vibracija pri prianjanju</string>
+    <string name="metro_pref_box">Izbor: jedan prst crta okvir (inače pomera šemu)</string>
+    <string name="metro_pref_tips">Saveti preko šeme</string>
+    <string name="metro_select_hint_no_box">Dodirujte stanice da ih izaberete; dodir pored stanica poništava izbor. Prevucite bilo koju izabranu — pomeriće se sve.</string>
     <string name="metro_keys">Prečice</string>
     <string name="metro_keys_text">Ctrl+Z — poništi; Ctrl+Shift+Z ili Ctrl+Y — ponovi\nV — pomeranje, B — krivljenje, T — nazivi, S — izbor\nCtrl+A — izaberi sve dostupne stanice; Esc — poništi izbor\nStrelice — pomeri izabrano (sa Shift — pet puta dalje)\nG — mreža; F ili 0 — uklopi u ekran; L — slojevi</string>
     <string name="metro_more">Još</string>

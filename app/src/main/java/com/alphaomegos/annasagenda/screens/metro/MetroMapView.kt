@@ -126,6 +126,10 @@ import androidx.compose.ui.graphics.luminance
  * With [onMarquee] (14.10) one finger off a station draws a box, and the
  * stations in reach inside it are said when it is let go; two fingers pan
  * and zoom as ever. [onTapEmpty] is a tap on no station.
+ *
+ * [loupe] and [haptics] (15.10): the loupe over the finger while dragging,
+ * and the tick when a dragged thing clicks into place — both the user's to
+ * turn off.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -158,6 +162,8 @@ internal fun MetroMapView(
     ghostHidden: Boolean = false,
     onMarquee: ((Set<Long>) -> Unit)? = null,
     onTapEmpty: (() -> Unit)? = null,
+    loupe: Boolean = true,
+    haptics: Boolean = true,
 ) {
     // Where the picture is looked at (14.10), in its own units: pixels to a
     // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
@@ -194,8 +200,9 @@ internal fun MetroMapView(
     val currentGroup by rememberUpdatedState(group)
     val currentMarquee by rememberUpdatedState(onMarquee)
     // A tick under the finger each time a dragged thing clicks into a place (14.10).
-    val haptics = LocalHapticFeedback.current
-    val currentHaptics by rememberUpdatedState(haptics)
+    val feedback = LocalHapticFeedback.current
+    val currentHaptics by rememberUpdatedState(feedback)
+    val currentTicks by rememberUpdatedState(haptics)
     val currentTapEmpty by rememberUpdatedState(onTapEmpty)
     // Layers (14.10): what is out of sight, what may not move, and the part a finger may bend.
     val hiddenStations = remember(scheme.stations, hiddenLines) {
@@ -374,7 +381,7 @@ internal fun MetroMapView(
                         val raw = toMap(dragAt)
                         val at = landing(raw)
                         val snapped = at != raw
-                        if (snapped && at != clickedInto && travelled > viewConfiguration.touchSlop) {
+                        if (currentTicks && snapped && at != clickedInto && travelled > viewConfiguration.touchSlop) {
                             currentHaptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         }
                         clickedInto = if (snapped) at else null
@@ -437,14 +444,14 @@ internal fun MetroMapView(
         // A loupe while dragging (14.10), as over text: the finger hides what it moves,
         // so what is under it shows, twice as big, above it. From Android 9 on; before, nothing.
         val loupeLift = with(density) { 96.dp.toPx() }
-        val loupe = Modifier.magnifier(
+        val magnified = if (!loupe) Modifier else Modifier.magnifier(
             sourceCenter = { if (dragId != null || dragBend != null) dragAt else Offset.Unspecified },
             magnifierCenter = { if (dragId != null || dragBend != null) dragAt - Offset(0f, loupeLift) else Offset.Unspecified },
             zoom = 2f,
             size = DpSize(112.dp, 112.dp),
             cornerRadius = 56.dp,
         )
-        Canvas(modifier = Modifier.fillMaxSize().then(recorded).then(gestures).then(loupe)) {
+        Canvas(modifier = Modifier.fillMaxSize().then(recorded).then(gestures).then(magnified)) {
             // Glued rings touch in the picture's units, so then they scale with it, unclamped.
             val glued = scheme.glue > 0
             // The look's sizes (08.10) on top.

@@ -118,6 +118,8 @@ internal data class AppStateDto(
     val flightCityNames: Map<String, String> = emptyMap(),
     val flightAirlineNames: Map<String, String> = emptyMap(),
     val flightHomes: List<String> = emptyList(),
+    // The metro section's settings (15.10).
+    val metroPrefs: MetroPrefsDto = MetroPrefsDto(),
 )
 
 /** A flight; times are the airports' local clocks as "2024-02-24T14:05". */
@@ -141,6 +143,14 @@ internal data class FlightDto(
     val note: String = "",
     val journeyId: Long? = null,
     val keptApart: Boolean = false,
+)
+
+@Serializable
+internal data class MetroPrefsDto(
+    val loupe: Boolean = true,
+    val haptics: Boolean = true,
+    val boxSelect: Boolean = true,
+    val tips: Boolean = true,
 )
 
 @Serializable

@@ -184,6 +184,9 @@ fun MetroMapEditorScreen(
         }
     }
     val scheme = state.metroSchemes.firstOrNull { it.id == schemeId }
+    // How the editor behaves (15.10): the user's to choose, in its menu.
+    val prefs = state.metroPrefs
+    var prefsShown by rememberSaveable { mutableStateOf(false) }
     val histories by vm.metroHistory.collectAsStateWithLifecycle()
     val history = histories[schemeId]
     val laidOut by produceState<Map<Long, MetroPoint>?>(null, scheme) {
@@ -303,6 +306,10 @@ fun MetroMapEditorScreen(
                                 onClick = { menuOpen = false; confirmReset = true },
                             )
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.metro_editor_prefs)) },
+                                onClick = { menuOpen = false; prefsShown = true },
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.metro_keys)) },
                                 onClick = { menuOpen = false; keysShown = true },
                             )
@@ -406,8 +413,10 @@ fun MetroMapEditorScreen(
                         fitKey = fitKey,
                         capture = pictureLayer,
                         // Select (14.10): a box drawn round stations adds them; a tap on nothing lets go of all.
-                        onMarquee = if (selecting) { ids -> selectedIds = (selection + ids - fixed).toLongArray() } else null,
+                        onMarquee = if (selecting && prefs.boxSelect) { ids -> selectedIds = (selection + ids - fixed).toLongArray() } else null,
                         onTapEmpty = if (selecting) { { selectedIds = longArrayOf() } } else null,
+                        loupe = prefs.loupe,
+                        haptics = prefs.haptics,
                         hiddenLines = scheme.hiddenLines.toSet(),
                         lockedLines = scheme.lockedLines.toSet(),
                         ghostHidden = scheme.ghostHidden,
@@ -427,7 +436,7 @@ fun MetroMapEditorScreen(
                     )
                 }
                 // The tool's tip (14.10), over the top of the picture until closed.
-                if (scheme != null && tipClosedFor != tool) {
+                if (scheme != null && prefs.tips && tipClosedFor != tool) {
                     Surface(
                         modifier = Modifier.align(Alignment.TopCenter).padding(8.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -440,7 +449,7 @@ fun MetroMapEditorScreen(
                                     when (tool) {
                                         TOOL_BEND -> R.string.metro_bend_hint
                                         TOOL_NAMES -> R.string.metro_names_hint
-                                        TOOL_SELECT -> R.string.metro_select_hint
+                                        TOOL_SELECT -> if (prefs.boxSelect) R.string.metro_select_hint else R.string.metro_select_hint_no_box
                                         else -> R.string.metro_place_stations_hint
                                     },
                                 ),
@@ -529,6 +538,31 @@ fun MetroMapEditorScreen(
                 }
             }
         }
+    }
+
+    if (prefsShown) {
+        AlertDialog(
+            onDismissRequest = { prefsShown = false },
+            title = { Text(stringResource(R.string.metro_editor_prefs)) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    MetroMapTick(stringResource(R.string.metro_pref_loupe), prefs.loupe, Modifier.fillMaxWidth()) { on ->
+                        vm.setMetroPrefs { it.copy(loupe = on) }
+                    }
+                    MetroMapTick(stringResource(R.string.metro_pref_haptics), prefs.haptics, Modifier.fillMaxWidth()) { on ->
+                        vm.setMetroPrefs { it.copy(haptics = on) }
+                    }
+                    MetroMapTick(stringResource(R.string.metro_pref_box), prefs.boxSelect, Modifier.fillMaxWidth()) { on ->
+                        vm.setMetroPrefs { it.copy(boxSelect = on) }
+                    }
+                    MetroMapTick(stringResource(R.string.metro_pref_tips), prefs.tips, Modifier.fillMaxWidth()) { on ->
+                        vm.setMetroPrefs { it.copy(tips = on) }
+                        if (on) tipClosedFor = -1
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { prefsShown = false }) { Text(stringResource(R.string.ok)) } },
+        )
     }
 
     if (keysShown) {

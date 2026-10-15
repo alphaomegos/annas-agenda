@@ -122,6 +122,12 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_editor_prefs">Editor settings</string>
+    <string name="metro_pref_loupe">A loupe over the finger while dragging</string>
+    <string name="metro_pref_haptics">A tick when a dragged thing clicks into place</string>
+    <string name="metro_pref_box">Select: one finger draws a box (else it moves the picture)</string>
+    <string name="metro_pref_tips">Tips over the picture</string>
+    <string name="metro_select_hint_no_box">Tap stations to select them; a tap on nothing lets go of all. Drag any selected station to move them all.</string>
     <string name="metro_keys">Keyboard shortcuts</string>
     <string name="metro_keys_text">Ctrl+Z — undo; Ctrl+Shift+Z or Ctrl+Y — redo\nV — move, B — bend, T — names, S — select\nCtrl+A — select every station in reach; Esc — let go\nArrows — nudge the selection (with Shift, five times as far)\nG — the grid; F or 0 — fit to the screen; L — layers</string>
     <string name="metro_more">More</string>

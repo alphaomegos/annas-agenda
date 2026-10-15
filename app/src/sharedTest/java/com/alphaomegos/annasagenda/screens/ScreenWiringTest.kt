@@ -414,4 +414,19 @@ class ScreenWiringTest {
         composeRule.onNodeWithContentDescription(word(R.string.metro_layers)).performClick()
         composeRule.onNodeWithText(word(R.string.metro_layers_ghost)).assertExists()
     }
+
+    @Test
+    fun theMapEditorsSettings_turnTheLoupeOff() {
+        val id = schemeWith("Alpha", "Beta")
+        composeRule.setContent {
+            MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
+        }
+
+        composeRule.onNodeWithContentDescription(word(R.string.metro_more)).performClick()
+        composeRule.onNodeWithText(word(R.string.metro_editor_prefs)).performClick()
+        composeRule.onNodeWithText(word(R.string.metro_pref_loupe)).performClick()
+        composeRule.waitForIdle()
+        assertEquals(false, vm.state.value.metroPrefs.loupe)
+        assertTrue(vm.state.value.metroPrefs.haptics)
+    }
 }

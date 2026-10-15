@@ -164,4 +164,6 @@ data class AppState(
     val flightAirlineNames: Map<String, String> = emptyMap(),
     // Places never suggested to the travel section (flightPlaceKey).
     val flightHomes: Set<String> = emptySet(),
+    // The metro section's own settings (15.10): how its editor behaves. Settings.
+    val metroPrefs: MetroPrefs = MetroPrefs(),
 ) : DateTasksData

@@ -229,3 +229,17 @@ sealed interface MetroHintTarget {
  * stations' names are written whatever this says. Stored by name.
  */
 enum class MetroLabelsMode { AUTO, ALWAYS, NEVER }
+
+/**
+ * The metro section's own settings (15.10), not a scheme's — each one the
+ * user's to turn off (Eduard: "everything optional"): the loupe over the
+ * finger, the tick when a dragged thing clicks into place, the box drawn
+ * with one finger in the select tool (off, one finger moves the picture
+ * there too), and the tools' tips.
+ */
+data class MetroPrefs(
+    val loupe: Boolean = true,
+    val haptics: Boolean = true,
+    val boxSelect: Boolean = true,
+    val tips: Boolean = true,
+)
