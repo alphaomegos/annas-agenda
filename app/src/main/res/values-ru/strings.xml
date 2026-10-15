@@ -911,6 +911,11 @@
     <string name="metro_transfer_links">Перемычки пересадок</string>
     <string name="metro_names_auto">Подписи сами выбирают сторону, подальше от линии (иначе справа)</string>
     <string name="metro_names_avoid_crowd">Подписи сторонятся соседних линий</string>
+    <string name="metro_style">Оформление</string>
+    <string name="metro_style_modern">Современное</string>
+    <string name="metro_style_win95">Windows 95</string>
+    <string name="metro_style_dos">DOS · Norton Commander</string>
+    <string name="metro_style_terminal">Зелёный терминал</string>
     <string name="metro_editor_prefs">Настройки редактора</string>
     <string name="metro_pref_loupe">Лупа над пальцем при перетаскивании</string>
     <string name="metro_pref_haptics">Щелчок вибрацией при прилипании</string>

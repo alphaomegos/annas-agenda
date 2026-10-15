@@ -34,6 +34,7 @@ import com.alphaomegos.annasagenda.screens.metro.MetroMapEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
+import com.alphaomegos.annasagenda.screens.metro.MetroThemed
 import com.alphaomegos.annasagenda.screens.travel.FlightAchievementsScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightEditScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightProfileScreen
@@ -214,53 +215,68 @@ fun AppNav(
         }
 
         composable(Route.METRO) {
-            MetroScreen(
-                vm = vm,
-                onBack = { nav.popBackStack() },
-                onEditScheme = { id -> nav.navigate("${Route.METRO_SCHEME}/$id") },
-            )
+            // In the style chosen for the metro section (15.10).
+            MetroThemed(vm) {
+                MetroScreen(
+                    vm = vm,
+                    onBack = { nav.popBackStack() },
+                    onEditScheme = { id -> nav.navigate("${Route.METRO_SCHEME}/$id") },
+                )
+            }
         }
 
         composable("${Route.METRO_SCHEME}/{schemeId}") { entry ->
             val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
-            MetroSchemeEditorScreen(
-                vm = vm,
-                schemeId = schemeId,
-                onBack = { nav.popBackStack() },
-                onOpenLine = { lineId -> nav.navigate("${Route.METRO_LINE}/$schemeId/$lineId") },
-                onOpenMap = { nav.navigate("${Route.METRO_MAP}/$schemeId") },
-            )
+            // In the style chosen for the metro section (15.10).
+            MetroThemed(vm) {
+                MetroSchemeEditorScreen(
+                    vm = vm,
+                    schemeId = schemeId,
+                    onBack = { nav.popBackStack() },
+                    onOpenLine = { lineId -> nav.navigate("${Route.METRO_LINE}/$schemeId/$lineId") },
+                    onOpenMap = { nav.navigate("${Route.METRO_MAP}/$schemeId") },
+                )
+            }
         }
 
         composable("${Route.METRO_MAP}/{schemeId}") { entry ->
-            MetroMapEditorScreen(
-                vm = vm,
-                schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L,
-                onBack = { nav.popBackStack() },
-            )
+            // In the style chosen for the metro section (15.10).
+            MetroThemed(vm) {
+                MetroMapEditorScreen(
+                    vm = vm,
+                    schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L,
+                    onBack = { nav.popBackStack() },
+                )
+            }
         }
 
         composable("${Route.METRO_LINE}/{schemeId}/{lineId}") { entry ->
             val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
             val lineId = entry.arguments?.getString("lineId")?.toLongOrNull() ?: -1L
-            MetroLineEditorScreen(
-                vm = vm,
-                schemeId = schemeId,
-                lineId = lineId,
-                onBack = { nav.popBackStack() },
-                onOpenStation = { stationId -> nav.navigate("${Route.METRO_STATION}/$schemeId/$stationId") },
-            )
+            // In the style chosen for the metro section (15.10).
+            MetroThemed(vm) {
+                MetroLineEditorScreen(
+                    vm = vm,
+                    schemeId = schemeId,
+                    lineId = lineId,
+                    onBack = { nav.popBackStack() },
+                    onOpenStation = { stationId -> nav.navigate("${Route.METRO_STATION}/$schemeId/$stationId") },
+                )
+            }
         }
 
         composable("${Route.METRO_STATION}/{schemeId}/{stationId}") { entry ->
             val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
             val stationId = entry.arguments?.getString("stationId")?.toLongOrNull() ?: -1L
-            MetroStationEditorScreen(
-                vm = vm,
-                schemeId = schemeId,
-                stationId = stationId,
-                onBack = { nav.popBackStack() },
-            )
+            // In the style chosen for the metro section (15.10).
+            MetroThemed(vm) {
+                MetroStationEditorScreen(
+                    vm = vm,
+                    schemeId = schemeId,
+                    stationId = stationId,
+                    onBack = { nav.popBackStack() },
+                )
+            }
         }
 
         composable(Route.TRAVEL) {

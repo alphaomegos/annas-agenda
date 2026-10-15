@@ -845,6 +845,11 @@
     <string name="metro_transfer_links">Veze presedanja</string>
     <string name="metro_names_auto">Nazivi sami biraju stranu, dalje od linije (inače desno)</string>
     <string name="metro_names_avoid_crowd">Nazivi se klone susednih linija</string>
+    <string name="metro_style">Izgled</string>
+    <string name="metro_style_modern">Savremeni</string>
+    <string name="metro_style_win95">Windows 95</string>
+    <string name="metro_style_dos">DOS · Norton Commander</string>
+    <string name="metro_style_terminal">Zeleni terminal</string>
     <string name="metro_editor_prefs">Podešavanja uređivača</string>
     <string name="metro_pref_loupe">Lupa iznad prsta pri prevlačenju</string>
     <string name="metro_pref_haptics">Vibracija pri prianjanju</string>

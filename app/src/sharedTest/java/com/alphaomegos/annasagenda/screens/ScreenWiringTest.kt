@@ -25,6 +25,7 @@ import com.alphaomegos.annasagenda.clearAppStateStoreFile
 import com.alphaomegos.annasagenda.model.TravelView
 import com.alphaomegos.annasagenda.screens.metro.MetroLineEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroMapEditorScreen
+import com.alphaomegos.annasagenda.model.MetroStyle
 import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
@@ -428,5 +429,19 @@ class ScreenWiringTest {
         composeRule.waitForIdle()
         assertEquals(false, vm.state.value.metroPrefs.loupe)
         assertTrue(vm.state.value.metroPrefs.haptics)
+    }
+
+    @Test
+    fun theMetroSectionsStyle_isChosenFromTheEditorsMenu() {
+        val id = schemeWith("Alpha", "Beta")
+        composeRule.setContent {
+            MaterialTheme { MetroMapEditorScreen(vm, id, onBack = {}) }
+        }
+
+        composeRule.onNodeWithContentDescription(word(R.string.metro_more)).performClick()
+        composeRule.onNodeWithText(word(R.string.metro_style)).performClick()
+        composeRule.onNodeWithText(word(R.string.metro_style_win95)).performClick()
+        composeRule.waitForIdle()
+        assertEquals(MetroStyle.WIN95, vm.state.value.metroPrefs.style)
     }
 }

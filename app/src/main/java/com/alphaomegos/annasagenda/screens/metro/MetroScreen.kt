@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -123,6 +124,8 @@ fun MetroScreen(
     var putOff by rememberSaveable { mutableStateOf(listOf<String>()) }
     var movingDateOf by rememberSaveable { mutableStateOf<String?>(null) }
     var showMap by rememberSaveable { mutableStateOf(true) }
+    // The section's style (15.10): the chooser open.
+    var styling by rememberSaveable { mutableStateOf(false) }
 
     val today = remember { LocalDate.now() }
 
@@ -144,6 +147,9 @@ fun MetroScreen(
                     TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
                 },
                 actions = {
+                    IconButton(onClick = { styling = true }) {
+                        Icon(Icons.Default.Palette, contentDescription = stringResource(R.string.metro_style))
+                    }
                     if (scheme != null && scheme.stations.isNotEmpty()) {
                         IconButton(onClick = { showMap = !showMap }) {
                             Icon(
@@ -264,6 +270,14 @@ fun MetroScreen(
             }
         }
         }
+    }
+
+    if (styling) {
+        MetroStyleDialog(
+            current = state.metroPrefs.style,
+            onPick = { style -> vm.setMetroPrefs { it.copy(style = style) } },
+            onDismiss = { styling = false },
+        )
     }
 
     if (creating) {

@@ -240,10 +240,26 @@ enum class MetroLabelsMode { AUTO, ALWAYS, NEVER }
  * finger, the tick when a dragged thing clicks into place, the box drawn
  * with one finger in the select tool (off, one finger moves the picture
  * there too), and the tools' tips.
+ *
+ * [style] (15.10): how the whole section looks — today's, or after an old
+ * program (Eduard: "a version in the style of old programs"), the user's
+ * pick, today's by default.
  */
 data class MetroPrefs(
+    val style: MetroStyle = MetroStyle.MODERN,
     val loupe: Boolean = true,
     val haptics: Boolean = true,
     val boxSelect: Boolean = true,
     val tips: Boolean = true,
 )
+
+/**
+ * How the metro section looks (15.10): [MODERN] as the rest of the app;
+ * [WIN95] grey windows, a navy title, a pixel font; [DOS] blue panels and
+ * cyan letters, as Norton Commander; [TERMINAL] green on black, as an old
+ * monitor.
+ */
+enum class MetroStyle { MODERN, WIN95, DOS, TERMINAL }
+
+/** A stored style; one this build does not know is today's. */
+fun parseMetroStyle(raw: String?): MetroStyle = MetroStyle.entries.firstOrNull { it.name == raw } ?: MetroStyle.MODERN

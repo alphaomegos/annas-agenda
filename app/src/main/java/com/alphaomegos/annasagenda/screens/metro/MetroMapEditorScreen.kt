@@ -187,6 +187,7 @@ fun MetroMapEditorScreen(
     // How the editor behaves (15.10): the user's to choose, in its menu.
     val prefs = state.metroPrefs
     var prefsShown by rememberSaveable { mutableStateOf(false) }
+    var styling by rememberSaveable { mutableStateOf(false) }
     val histories by vm.metroHistory.collectAsStateWithLifecycle()
     val history = histories[schemeId]
     val laidOut by produceState<Map<Long, MetroPoint>?>(null, scheme) {
@@ -304,6 +305,10 @@ fun MetroMapEditorScreen(
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.metro_layout_again)) },
                                 onClick = { menuOpen = false; confirmReset = true },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.metro_style)) },
+                                onClick = { menuOpen = false; styling = true },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.metro_editor_prefs)) },
@@ -538,6 +543,14 @@ fun MetroMapEditorScreen(
                 }
             }
         }
+    }
+
+    if (styling) {
+        MetroStyleDialog(
+            current = prefs.style,
+            onPick = { style -> vm.setMetroPrefs { it.copy(style = style) } },
+            onDismiss = { styling = false },
+        )
     }
 
     if (prefsShown) {

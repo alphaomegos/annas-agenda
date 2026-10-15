@@ -147,6 +147,8 @@ internal data class FlightDto(
 
 @Serializable
 internal data class MetroPrefsDto(
+    // MetroStyle by name.
+    val style: String = "MODERN",
     val loupe: Boolean = true,
     val haptics: Boolean = true,
     val boxSelect: Boolean = true,
