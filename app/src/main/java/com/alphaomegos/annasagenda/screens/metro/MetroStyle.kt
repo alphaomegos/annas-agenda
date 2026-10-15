@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
@@ -173,6 +175,43 @@ internal fun MetroTopBar(
                 }
             },
     )
+}
+
+/** A key of the DOS line: its number and what it does. */
+internal data class MetroKey(val number: Int, val label: String, val onPress: () -> Unit)
+
+/**
+ * Norton Commander's line of keys along the bottom (15.10): each a white
+ * number on black and a black word on cyan; a tap is the key — and on a
+ * keyboard F1…F10 are, too. Drawn only in DOS with the style's details.
+ */
+@Composable
+internal fun MetroKeyBar(keys: List<MetroKey>) {
+    if (LocalMetroStyle.current != MetroStyle.DOS || !LocalMetroStyleDetails.current) return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.Black)
+            .navigationBarsPadding()
+            .horizontalScroll(rememberScrollState()),
+    ) {
+        keys.forEach { key ->
+            Row(
+                modifier = Modifier
+                    .clickable(role = Role.Button, onClickLabel = key.label) { key.onPress() }
+                    .padding(end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("${key.number}", color = Color.White, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 2.dp, vertical = 8.dp))
+                Text(
+                    key.label,
+                    color = Color.Black,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.background(DosDarkCyan).padding(horizontal = 6.dp, vertical = 8.dp),
+                )
+            }
+        }
+    }
 }
 
 /** Windows' close box: a grey bevelled square with a cross, which goes back. */

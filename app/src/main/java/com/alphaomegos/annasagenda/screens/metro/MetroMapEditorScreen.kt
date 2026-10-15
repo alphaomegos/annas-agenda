@@ -261,7 +261,16 @@ fun MetroMapEditorScreen(
             e.key == Key.S -> { tool = TOOL_SELECT; true }
             e.key == Key.G -> { vm.setMetroView(schemeId) { it.copy(mapGrid = !it.mapGrid) }; true }
             e.key == Key.L -> { layering = true; true }
-            e.key == Key.F || e.key == Key.Zero -> { fitKey++; true }
+            e.key == Key.F || e.key == Key.Zero || e.key == Key.F5 -> { fitKey++; true }
+            // The DOS keys (15.10), whatever the style.
+            e.key == Key.F1 -> { tool = TOOL_MOVE; true }
+            e.key == Key.F2 -> { tool = TOOL_BEND; true }
+            e.key == Key.F3 -> { tool = TOOL_NAMES; true }
+            e.key == Key.F4 -> { tool = TOOL_SELECT; true }
+            e.key == Key.F6 -> { layering = true; true }
+            e.key == Key.F7 -> { styling = true; true }
+            e.key == Key.F8 -> { vm.undoMetroScheme(schemeId); true }
+            e.key == Key.F10 -> { onBack(); true }
             else -> false
         }
     }
@@ -273,6 +282,22 @@ fun MetroMapEditorScreen(
     }
 
     Scaffold(
+        // Norton Commander's keys along the bottom, in DOS (15.10); F1…F10 on a keyboard too.
+        bottomBar = {
+            MetroKeyBar(
+                listOf(
+                    MetroKey(1, stringResource(R.string.metro_tool_move)) { tool = TOOL_MOVE },
+                    MetroKey(2, stringResource(R.string.metro_bend_tracks)) { tool = TOOL_BEND },
+                    MetroKey(3, stringResource(R.string.metro_names_tool)) { tool = TOOL_NAMES },
+                    MetroKey(4, stringResource(R.string.metro_tool_select)) { tool = TOOL_SELECT },
+                    MetroKey(5, stringResource(R.string.metro_key_fit)) { fitKey++ },
+                    MetroKey(6, stringResource(R.string.metro_layers)) { layering = true },
+                    MetroKey(7, stringResource(R.string.metro_key_style)) { styling = true },
+                    MetroKey(8, stringResource(R.string.metro_key_undo)) { vm.undoMetroScheme(schemeId) },
+                    MetroKey(10, stringResource(R.string.metro_key_quit), onBack),
+                ),
+            )
+        },
         topBar = {
             // In the section's style (15.10).
             MetroTopBar(

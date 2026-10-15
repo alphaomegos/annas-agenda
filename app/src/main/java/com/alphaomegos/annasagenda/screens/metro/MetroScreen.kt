@@ -139,7 +139,36 @@ fun MetroScreen(
         if (scheme == null || fromIds.isEmpty() || toIds.isEmpty()) null else metroRoute(scheme, fromIds, toIds)
     }
 
+    // "From" and "to" the other way round.
+    val swap = {
+        val was = fromText
+        fromText = toText
+        toText = was
+        val wasPick = fromPick
+        fromPick = toPick
+        toPick = wasPick
+        typingIn = null
+    }
+    val edit = {
+        if (scheme != null) {
+            val id = if (libraryKey == null) scheme.id else vm.copyMetroLibraryScheme(libraryKey)
+            if (id != null) onEditScheme(id)
+        }
+    }
+
     Scaffold(
+        // Norton Commander's keys along the bottom, in DOS (15.10).
+        bottomBar = {
+            MetroKeyBar(
+                listOf(
+                    MetroKey(1, stringResource(R.string.metro_key_map)) { showMap = !showMap },
+                    MetroKey(2, stringResource(R.string.metro_key_swap), swap),
+                    MetroKey(3, stringResource(R.string.metro_key_style)) { styling = true },
+                    MetroKey(4, stringResource(R.string.metro_key_edit), edit),
+                    MetroKey(10, stringResource(R.string.metro_key_quit), onBack),
+                ),
+            )
+        },
         topBar = {
             // In the section's style (15.10).
             MetroTopBar(
@@ -159,10 +188,7 @@ fun MetroScreen(
                         }
                     }
                     if (scheme != null) {
-                        IconButton(onClick = {
-                            val id = if (libraryKey == null) scheme.id else vm.copyMetroLibraryScheme(libraryKey)
-                            if (id != null) onEditScheme(id)
-                        }) {
+                        IconButton(onClick = edit) {
                             Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.metro_edit))
                         }
                     }
@@ -252,15 +278,7 @@ fun MetroScreen(
                         }
                     }
                 }
-                IconButton(onClick = {
-                    val was = fromText
-                    fromText = toText
-                    toText = was
-                    val wasPick = fromPick
-                    fromPick = toPick
-                    toPick = wasPick
-                    typingIn = null
-                }) {
+                IconButton(onClick = swap) {
                     Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.metro_swap))
                 }
             }

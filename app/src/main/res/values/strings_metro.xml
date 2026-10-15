@@ -122,6 +122,13 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_key_map">Map</string>
+    <string name="metro_key_swap">Swap</string>
+    <string name="metro_key_style">Style</string>
+    <string name="metro_key_edit">Edit</string>
+    <string name="metro_key_quit">Quit</string>
+    <string name="metro_key_fit">Fit</string>
+    <string name="metro_key_undo">Undo</string>
     <string name="metro_style_details">The style\'s details: frames, close box, prompt, keys, scan lines</string>
     <string name="metro_names_auto">Names choose their side, off the track (else on the right)</string>
     <string name="metro_names_avoid_crowd">Names keep off lines running alongside</string>

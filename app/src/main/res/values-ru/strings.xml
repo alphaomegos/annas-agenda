@@ -909,6 +909,13 @@
     <string name="metro_snap_angles">Углы 45°</string>
     <string name="metro_look">Вид</string>
     <string name="metro_transfer_links">Перемычки пересадок</string>
+    <string name="metro_key_map">Схема</string>
+    <string name="metro_key_swap">Обмен</string>
+    <string name="metro_key_style">Стиль</string>
+    <string name="metro_key_edit">Правка</string>
+    <string name="metro_key_quit">Выход</string>
+    <string name="metro_key_fit">Вписать</string>
+    <string name="metro_key_undo">Отмена</string>
     <string name="metro_style_details">Детали стиля: рамки, кнопка закрытия, приглашение, клавиши, развёртка</string>
     <string name="metro_names_auto">Подписи сами выбирают сторону, подальше от линии (иначе справа)</string>
     <string name="metro_names_avoid_crowd">Подписи сторонятся соседних линий</string>
