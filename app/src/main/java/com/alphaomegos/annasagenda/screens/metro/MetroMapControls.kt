@@ -101,7 +101,7 @@ internal fun MetroMapTick(text: String, checked: Boolean, modifier: Modifier, on
         modifier = modifier.clickable { onChange(!checked) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = checked, onCheckedChange = onChange)
+        MetroCheckbox(checked = checked, onCheckedChange = onChange)
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }

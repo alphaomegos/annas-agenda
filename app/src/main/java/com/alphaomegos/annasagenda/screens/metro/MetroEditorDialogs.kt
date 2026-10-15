@@ -233,7 +233,7 @@ internal fun MetroLineDialog(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { ring = !ring }) {
-                    Checkbox(checked = ring, onCheckedChange = { ring = it })
+                    MetroCheckbox(checked = ring, onCheckedChange = { ring = it })
                     Text(stringResource(R.string.metro_line_ring))
                 }
                 OutlinedTextField(
@@ -365,7 +365,7 @@ internal fun MetroHintDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth().clickable { from = id },
                         ) {
-                            RadioButton(selected = from == id, onClick = { from = id })
+                            MetroRadio(selected = from == id, onClick = { from = id })
                             Text(stringResource(R.string.metro_hint_from, name))
                         }
                     }
@@ -376,7 +376,7 @@ internal fun MetroHintDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth().clickable { targetIndex = i },
                         ) {
-                            RadioButton(selected = targetIndex == i, onClick = { targetIndex = i })
+                            MetroRadio(selected = targetIndex == i, onClick = { targetIndex = i })
                             Text(choice.label)
                         }
                     }
@@ -483,7 +483,7 @@ internal fun MetroAddStationDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.fillMaxWidth().clickable { at = i },
                             ) {
-                                RadioButton(selected = at == i, onClick = { at = i })
+                                MetroRadio(selected = at == i, onClick = { at = i })
                                 Text(
                                     if (i == 0) stringResource(R.string.metro_add_at_start)
                                     else stringResource(R.string.metro_add_after, trackNames[i - 1])

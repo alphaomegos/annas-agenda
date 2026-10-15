@@ -1,6 +1,10 @@
 package com.alphaomegos.annasagenda.screens.metro
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.foundation.layout.widthIn
@@ -495,7 +499,7 @@ internal fun MetroStyleDialog(
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = style == current, onClick = { onPick(style) })
+                        MetroRadio(selected = style == current, onClick = { onPick(style) })
                         Text(metroStyleName(style), modifier = Modifier.weight(1f).padding(end = 8.dp))
                         MetroStyleSample(style)
                     }
@@ -508,7 +512,7 @@ internal fun MetroStyleDialog(
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Checkbox(checked = details, onCheckedChange = onDetails, enabled = current != MetroStyle.MODERN)
+                    MetroCheckbox(checked = details, onCheckedChange = onDetails, enabled = current != MetroStyle.MODERN)
                     Text(stringResource(R.string.metro_style_details), style = MaterialTheme.typography.bodyMedium)
                 }
                 // The era's colours for the lines, or each line its own.
@@ -519,7 +523,7 @@ internal fun MetroStyleDialog(
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Checkbox(checked = eraColors, onCheckedChange = onEraColors, enabled = current != MetroStyle.MODERN)
+                    MetroCheckbox(checked = eraColors, onCheckedChange = onEraColors, enabled = current != MetroStyle.MODERN)
                     Text(stringResource(R.string.metro_style_era_colors), style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -756,5 +760,86 @@ internal fun metroFieldColors(): TextFieldColors {
             focusedLabelColor = TermGreen,
             unfocusedLabelColor = TermDimGreen,
         )
+    }
+}
+
+/**
+ * A tick box in the section's style (15.10): Windows' white sunken square
+ * with a black tick; "[x]" and "[ ]" in DOS and on the terminal. Today's,
+ * and without the style's details, Material's. With [onCheckedChange] null
+ * it only shows, the row round it taking the tap.
+ */
+@Composable
+internal fun MetroCheckbox(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?, enabled: Boolean = true) {
+    val style = LocalMetroStyle.current
+    val details = LocalMetroStyleDetails.current
+    if (style == MetroStyle.MODERN || !details) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        return
+    }
+    val toggle = if (onCheckedChange == null) Modifier
+    else Modifier.toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onCheckedChange)
+    Box(
+        modifier = Modifier.size(40.dp).then(toggle).alpha(if (enabled) 1f else 0.45f),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (style == MetroStyle.WIN95) {
+            Canvas(modifier = Modifier.size(16.dp).background(Color.White).metroFrame(style, details = true, sunken = true)) {
+                if (checked) {
+                    val tick = Path().apply {
+                        moveTo(size.width * 0.24f, size.height * 0.50f)
+                        lineTo(size.width * 0.42f, size.height * 0.70f)
+                        lineTo(size.width * 0.78f, size.height * 0.28f)
+                    }
+                    drawPath(tick, Color.Black, style = Stroke(width = 2.dp.toPx()))
+                }
+            }
+        } else {
+            Text(
+                if (checked) "[x]" else "[ ]",
+                color = if (style == MetroStyle.DOS) Color.White else TermGreen,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
+        }
+    }
+}
+
+/**
+ * A choice among several in the section's style (15.10): Windows' white
+ * sunken round with a black dot; "(•)" and "( )" in DOS and on the
+ * terminal. Today's, and without the style's details, Material's.
+ */
+@Composable
+internal fun MetroRadio(selected: Boolean, onClick: (() -> Unit)?, enabled: Boolean = true) {
+    val style = LocalMetroStyle.current
+    val details = LocalMetroStyleDetails.current
+    if (style == MetroStyle.MODERN || !details) {
+        RadioButton(selected = selected, onClick = onClick, enabled = enabled)
+        return
+    }
+    val select = if (onClick == null) Modifier
+    else Modifier.selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
+    Box(
+        modifier = Modifier.size(40.dp).then(select).alpha(if (enabled) 1f else 0.45f),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (style == MetroStyle.WIN95) {
+            Canvas(modifier = Modifier.size(16.dp)) {
+                val r = size.minDimension / 2
+                drawCircle(Color.White, radius = r)
+                // Sunk: dark above and to the left, light below and to the right.
+                drawArc(Color(0xFF808080), 135f, 180f, useCenter = false, style = Stroke(1.5f.dp.toPx()))
+                drawArc(Color(0xFFDFDFDF), -45f, 180f, useCenter = false, style = Stroke(1.5f.dp.toPx()))
+                if (selected) drawCircle(Color.Black, radius = r * 0.36f)
+            }
+        } else {
+            Text(
+                if (selected) "(•)" else "( )",
+                color = if (style == MetroStyle.DOS) Color.White else TermGreen,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
+        }
     }
 }
