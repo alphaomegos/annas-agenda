@@ -274,9 +274,10 @@ fun MetroMapEditorScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.metro_place_stations), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
+            // In the section's style (15.10).
+            MetroTopBar(
+                title = stringResource(R.string.metro_place_stations),
+                onBack = onBack,
                 actions = {
                     // Undo and redo (08.10): every edit of the picture, back and forward.
                     IconButton(onClick = { vm.undoMetroScheme(schemeId) }, enabled = history?.canUndo == true) {
@@ -394,7 +395,7 @@ fun MetroMapEditorScreen(
                     MetroMapView(
                         scheme = scheme,
                         layout = l,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().metroMapField(),
                         // A whole interchange moves when kept together and so chosen; else
                         // the station alone, glued to its interchange if rings are glued.
                         onMoveStation = if (naming) null else { id, x, y ->
@@ -443,7 +444,7 @@ fun MetroMapEditorScreen(
                 // The tool's tip (14.10), over the top of the picture until closed.
                 if (scheme != null && prefs.tips && tipClosedFor != tool) {
                     Surface(
-                        modifier = Modifier.align(Alignment.TopCenter).padding(8.dp),
+                        modifier = Modifier.align(Alignment.TopCenter).padding(8.dp).metroFrame(LocalMetroStyle.current, LocalMetroStyleDetails.current),
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.94f),
                         tonalElevation = 2.dp,
@@ -471,7 +472,7 @@ fun MetroMapEditorScreen(
                 // What goes with the tool (14.10), along the bottom of the picture.
                 if (scheme != null && (selecting || (tool == TOOL_MOVE && scheme.transfersTogether))) {
                     Surface(
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp),
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp).metroFrame(LocalMetroStyle.current, LocalMetroStyleDetails.current),
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         tonalElevation = 3.dp,
@@ -548,7 +549,9 @@ fun MetroMapEditorScreen(
     if (styling) {
         MetroStyleDialog(
             current = prefs.style,
+            details = prefs.styleDetails,
             onPick = { style -> vm.setMetroPrefs { it.copy(style = style) } },
+            onDetails = { on -> vm.setMetroPrefs { it.copy(styleDetails = on) } },
             onDismiss = { styling = false },
         )
     }

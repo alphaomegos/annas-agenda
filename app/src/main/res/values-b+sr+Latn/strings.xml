@@ -843,6 +843,7 @@
     <string name="metro_snap_angles">Uglovi od 45°</string>
     <string name="metro_look">Izgled</string>
     <string name="metro_transfer_links">Veze presedanja</string>
+    <string name="metro_style_details">Detalji stila: okviri, dugme za zatvaranje, odziv, tasteri, linije ekrana</string>
     <string name="metro_names_auto">Nazivi sami biraju stranu, dalje od linije (inače desno)</string>
     <string name="metro_names_avoid_crowd">Nazivi se klone susednih linija</string>
     <string name="metro_style">Izgled</string>

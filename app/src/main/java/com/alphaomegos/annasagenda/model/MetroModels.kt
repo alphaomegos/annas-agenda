@@ -247,6 +247,9 @@ enum class MetroLabelsMode { AUTO, ALWAYS, NEVER }
  */
 data class MetroPrefs(
     val style: MetroStyle = MetroStyle.MODERN,
+    // The style's own details (15.10): Windows' bevels and its close box, DOS'
+    // double frames and keys, the terminal's prompt and scan lines.
+    val styleDetails: Boolean = true,
     val loupe: Boolean = true,
     val haptics: Boolean = true,
     val boxSelect: Boolean = true,

@@ -222,7 +222,8 @@ internal fun MetroMapView(
     val measurer = rememberTextMeasurer()
     val labelColor = MaterialTheme.colorScheme.onSurface
     val labelStyle = TextStyle(fontSize = 11.sp * scheme.labelScale, color = labelColor)
-    val ringFill = MaterialTheme.colorScheme.surface
+    // The rings' fill and the saved picture's ground: white on Windows' page (15.10).
+    val ringFill = metroPaper()
     val markColor = MaterialTheme.colorScheme.primary
     val transferColor = MaterialTheme.colorScheme.outline
     val gridColor = MaterialTheme.colorScheme.outlineVariant

@@ -141,11 +141,11 @@ fun MetroScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(scheme?.city ?: stringResource(R.string.menu_metro)) },
-                navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-                },
+            // In the section's style (15.10).
+            MetroTopBar(
+                title = scheme?.city ?: stringResource(R.string.menu_metro),
+                onBack = onBack,
+                centered = true,
                 actions = {
                     IconButton(onClick = { styling = true }) {
                         Icon(Icons.Default.Palette, contentDescription = stringResource(R.string.metro_style))
@@ -183,6 +183,7 @@ fun MetroScreen(
             MetroMapView(
                 scheme = scheme,
                 layout = pictured,
+                // On the style's field (15.10): Windows' white page, the others' frame.
                 route = shownRoute?.takeIf { it.steps.isNotEmpty() },
                 marked = fromIds + toIds,
                 onTapStation = { id ->
@@ -199,7 +200,7 @@ fun MetroScreen(
                     }
                     typingIn = null
                 },
-                modifier = Modifier.fillMaxWidth().height(300.dp),
+                modifier = Modifier.fillMaxWidth().height(300.dp).metroMapField(),
             )
         }
         Column(
@@ -275,7 +276,9 @@ fun MetroScreen(
     if (styling) {
         MetroStyleDialog(
             current = state.metroPrefs.style,
+            details = state.metroPrefs.styleDetails,
             onPick = { style -> vm.setMetroPrefs { it.copy(style = style) } },
+            onDetails = { on -> vm.setMetroPrefs { it.copy(styleDetails = on) } },
             onDismiss = { styling = false },
         )
     }

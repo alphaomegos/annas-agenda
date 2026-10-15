@@ -90,12 +90,8 @@ import com.alphaomegos.annasagenda.util.appLocale
 private fun MetroEditorScaffold(title: String, onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-                },
-            )
+            // In the section's style (15.10).
+            MetroTopBar(title = title, onBack = onBack, centered = true)
         },
     ) { inner ->
         Column(

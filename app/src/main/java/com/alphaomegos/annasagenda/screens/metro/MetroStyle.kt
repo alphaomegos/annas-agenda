@@ -14,6 +14,23 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -59,18 +76,21 @@ import com.alphaomegos.annasagenda.model.MetroStyle
  */
 val LocalMetroStyle = staticCompositionLocalOf { MetroStyle.MODERN }
 
+/** Whether the style's own details are drawn (15.10): frames, close box, prompt, scan lines. */
+val LocalMetroStyleDetails = staticCompositionLocalOf { true }
+
 /** The metro section's screens in the user's style. */
 @Composable
 fun MetroThemed(vm: AppViewModel, content: @Composable () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
-    MetroThemed(state.metroPrefs.style, content)
+    MetroThemed(state.metroPrefs.style, state.metroPrefs.styleDetails, content)
 }
 
-/** [content] in [style]. */
+/** [content] in [style], with its [details] or without. */
 @Composable
-fun MetroThemed(style: MetroStyle, content: @Composable () -> Unit) {
+fun MetroThemed(style: MetroStyle, details: Boolean = true, content: @Composable () -> Unit) {
     if (style == MetroStyle.MODERN) {
-        CompositionLocalProvider(LocalMetroStyle provides style, content = content)
+        CompositionLocalProvider(LocalMetroStyle provides style, LocalMetroStyleDetails provides details, content = content)
         return
     }
     MaterialTheme(
@@ -78,9 +98,168 @@ fun MetroThemed(style: MetroStyle, content: @Composable () -> Unit) {
         typography = metroStyleTypography(style),
         shapes = SquareShapes,
     ) {
-        CompositionLocalProvider(LocalMetroStyle provides style, content = content)
+        CompositionLocalProvider(LocalMetroStyle provides style, LocalMetroStyleDetails provides details, content = content)
     }
 }
+
+/* ---------------- the frame of each style (15.10) ---------------- */
+
+/**
+ * The bar over a metro screen, in the style: today's as before; Windows'
+ * navy title bar fading to blue, white letters, and — with details — its
+ * close box (Back); DOS' cyan menu line with black letters; the terminal's
+ * black line with a prompt ("> МЕТРО_") and a green rule under it.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun MetroTopBar(
+    title: String,
+    onBack: () -> Unit,
+    centered: Boolean = false,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    val style = LocalMetroStyle.current
+    val details = LocalMetroStyleDetails.current
+    if (style == MetroStyle.MODERN) {
+        val back: @Composable () -> Unit = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } }
+        val shown: @Composable () -> Unit = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        if (centered) CenterAlignedTopAppBar(title = shown, navigationIcon = back, actions = actions)
+        else TopAppBar(title = shown, navigationIcon = back, actions = actions)
+        return
+    }
+    val ink = when (style) {
+        MetroStyle.WIN95 -> Color.White
+        MetroStyle.DOS -> Color.Black
+        else -> TermGreen
+    }
+    val ground: Brush = when (style) {
+        MetroStyle.WIN95 -> Brush.horizontalGradient(listOf(Win95Navy, Color(0xFF1084D0)))
+        MetroStyle.DOS -> SolidColor(DosDarkCyan)
+        else -> SolidColor(TermBlack)
+    }
+    val shownTitle = if (style == MetroStyle.TERMINAL && details) "> ${title.uppercase()}_" else title
+    TopAppBar(
+        title = {
+            Text(
+                shownTitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontWeight = if (style == MetroStyle.WIN95) FontWeight.Bold else null,
+            )
+        },
+        navigationIcon = {
+            TextButton(onClick = onBack, colors = ButtonDefaults.textButtonColors(contentColor = ink)) {
+                Text(stringResource(R.string.back))
+            }
+        },
+        actions = {
+            actions()
+            if (style == MetroStyle.WIN95 && details) Win95CloseBox(onBack)
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+            titleContentColor = ink,
+            navigationIconContentColor = ink,
+            actionIconContentColor = ink,
+        ),
+        modifier = Modifier
+            .background(ground)
+            .drawWithContent {
+                drawContent()
+                // The terminal's rule under its line.
+                if (style == MetroStyle.TERMINAL && details) {
+                    drawLine(TermDimGreen, Offset(0f, size.height - 1.dp.toPx()), Offset(size.width, size.height - 1.dp.toPx()), 1.dp.toPx())
+                }
+            },
+    )
+}
+
+/** Windows' close box: a grey bevelled square with a cross, which goes back. */
+@Composable
+private fun Win95CloseBox(onBack: () -> Unit) {
+    val words = stringResource(R.string.back)
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 8.dp)
+            .size(width = 26.dp, height = 22.dp)
+            .background(Win95Grey)
+            .metroFrame(MetroStyle.WIN95, details = true)
+            .clickable(role = Role.Button, onClickLabel = words) { onBack() }
+            .semantics { contentDescription = words },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("×", color = Color.Black, fontWeight = FontWeight.Bold)
+    }
+}
+
+/**
+ * The style's frame round a panel (15.10): Windows' bevel, raised or — for a
+ * field the picture lies in — sunken; DOS' double line; the terminal's thin
+ * green line; nothing today, or without details.
+ */
+internal fun Modifier.metroFrame(style: MetroStyle, details: Boolean, sunken: Boolean = false): Modifier {
+    if (!details || style == MetroStyle.MODERN) return this
+    return drawWithContent {
+        drawContent()
+        val px = 1.dp.toPx()
+        val w = size.width
+        val h = size.height
+        when (style) {
+            MetroStyle.WIN95 -> {
+                // Two lines each side: light from above left, dark below right — or the other way, sunk.
+                val outerLight = if (sunken) Color(0xFF808080) else Color(0xFFDFDFDF)
+                val innerLight = if (sunken) Color.Black else Color.White
+                val outerDark = if (sunken) Color.White else Color.Black
+                val innerDark = if (sunken) Color(0xFFDFDFDF) else Color(0xFF808080)
+                fun edges(inset: Float, light: Color, dark: Color) {
+                    drawLine(light, Offset(inset, inset), Offset(w - inset, inset), px)
+                    drawLine(light, Offset(inset, inset), Offset(inset, h - inset), px)
+                    drawLine(dark, Offset(inset, h - inset - px / 2), Offset(w - inset, h - inset - px / 2), px)
+                    drawLine(dark, Offset(w - inset - px / 2, inset), Offset(w - inset - px / 2, h - inset), px)
+                }
+                edges(px / 2, outerLight, outerDark)
+                edges(px * 1.5f, innerLight, innerDark)
+            }
+            MetroStyle.DOS -> {
+                val line = DosCyan
+                drawRect(line, Offset(3 * px, 3 * px), Size(w - 6 * px, h - 6 * px), style = Stroke(1.5f * px))
+                drawRect(line, Offset(6 * px, 6 * px), Size(w - 12 * px, h - 12 * px), style = Stroke(1.5f * px))
+            }
+            MetroStyle.TERMINAL -> drawRect(TermDimGreen, Offset(px / 2, px / 2), Size(w - px, h - px), style = Stroke(px))
+            MetroStyle.MODERN -> Unit
+        }
+    }
+}
+
+/** How far a frame of [style] reaches in, so what it holds keeps clear of it. */
+internal fun metroFrameInset(style: MetroStyle, details: Boolean) = when {
+    !details -> 0.dp
+    style == MetroStyle.WIN95 -> 2.dp
+    style == MetroStyle.DOS -> 8.dp
+    style == MetroStyle.TERMINAL -> 1.dp
+    else -> 0.dp
+}
+
+/**
+ * The field the picture lies in (15.10): Windows' white page, sunk; DOS' and
+ * the terminal's ground, framed; today's, as it was.
+ */
+@Composable
+internal fun Modifier.metroMapField(): Modifier {
+    val style = LocalMetroStyle.current
+    val details = LocalMetroStyleDetails.current
+    if (style == MetroStyle.MODERN) return this
+    val ground = if (style == MetroStyle.WIN95) Color.White else MaterialTheme.colorScheme.surface
+    return background(ground)
+        .metroFrame(style, details, sunken = true)
+        .padding(metroFrameInset(style, details))
+}
+
+/** What the picture's rings are filled with, and the ground it is saved on: white on Windows' page. */
+@Composable
+internal fun metroPaper(): Color =
+    if (LocalMetroStyle.current == MetroStyle.WIN95) Color.White else MaterialTheme.colorScheme.surface
 
 /** The font of [style]; null for today's. */
 fun metroStyleFont(style: MetroStyle): FontFamily? = when (style) {
@@ -194,7 +373,13 @@ internal fun metroStyleName(style: MetroStyle): String = stringResource(
  * font — and today's first.
  */
 @Composable
-internal fun MetroStyleDialog(current: MetroStyle, onPick: (MetroStyle) -> Unit, onDismiss: () -> Unit) {
+internal fun MetroStyleDialog(
+    current: MetroStyle,
+    details: Boolean,
+    onPick: (MetroStyle) -> Unit,
+    onDetails: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_style)) },
@@ -212,6 +397,17 @@ internal fun MetroStyleDialog(current: MetroStyle, onPick: (MetroStyle) -> Unit,
                         Text(metroStyleName(style), modifier = Modifier.weight(1f).padding(end = 8.dp))
                         MetroStyleSample(style)
                     }
+                }
+                // The style's own details, each style's to have or not.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = current != MetroStyle.MODERN, role = Role.Checkbox) { onDetails(!details) }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = details, onCheckedChange = onDetails, enabled = current != MetroStyle.MODERN)
+                    Text(stringResource(R.string.metro_style_details), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
