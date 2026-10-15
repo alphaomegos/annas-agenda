@@ -644,6 +644,15 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
                 MetroMapTick(stringResource(R.string.metro_line_casing), scheme.lineCasing, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(lineCasing = on) }
                 }
+                // Names placing themselves (15.10): the user's to turn off.
+                MetroMapTick(stringResource(R.string.metro_names_auto), scheme.labelsAuto, Modifier.fillMaxWidth()) { on ->
+                    onEdit { it.copy(labelsAuto = on) }
+                }
+                if (scheme.labelsAuto) {
+                    MetroMapTick(stringResource(R.string.metro_names_avoid_crowd), scheme.labelsAvoidCrowd, Modifier.fillMaxWidth()) { on ->
+                        onEdit { it.copy(labelsAvoidCrowd = on) }
+                    }
+                }
                 MetroMapTick(stringResource(R.string.metro_labels_once), scheme.labelsOncePerInterchange, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(labelsOncePerInterchange = on) }
                 }

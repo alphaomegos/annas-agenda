@@ -63,9 +63,9 @@ fun metroLabelSides(scheme: MetroScheme, layout: Map<Long, MetroPoint>, facts: M
     layout.forEach { (id, p) -> cells.getOrPut(cell(floor(p.x / reach).toInt(), floor(p.y / reach).toInt())) { ArrayList() } += id to p }
     return scheme.stations.associate { st ->
         val byHand = st.labelSide?.takeIf { it in 0 until METRO_LABEL_SIDES }
-        st.id to (byHand ?: run {
+        st.id to (byHand ?: if (!scheme.labelsAuto) 0 else run {
             val p = layout[st.id]
-            metroAutoSideOf(facts.directions(st.id)) {
+            metroAutoSideOf(facts.directions(st.id), scheme.labelsAvoidCrowd) {
                 if (p == null) emptyList()
                 else {
                     val cx = floor(p.x / reach).toInt(); val cy = floor(p.y / reach).toInt()

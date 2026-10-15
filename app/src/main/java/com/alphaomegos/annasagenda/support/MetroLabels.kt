@@ -51,8 +51,11 @@ const val METRO_LABEL_CROWD_REACH = 2f
  * alongside.
  */
 fun metroAutoLabelSide(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stationId: Long): Int {
+    // Each rule the user's to turn off (15.10): names on the right, as before, or
+    // no keeping off lines alongside.
+    if (!scheme.labelsAuto) return 0
     val p = layout[stationId]
-    return metroAutoSideOf(metroStationDirections(scheme, layout, stationId)) {
+    return metroAutoSideOf(metroStationDirections(scheme, layout, stationId), scheme.labelsAvoidCrowd) {
         if (p == null) emptyList()
         else layout.filter { (id, q) -> id != stationId && metroNear(p, q, METRO_LABEL_CROWD_REACH) }
             .values.map { atan2((it.y - p.y).toDouble(), (it.x - p.x).toDouble()) }
@@ -64,12 +67,12 @@ fun metroAutoLabelSide(scheme: MetroScheme, layout: Map<Long, MetroPoint>, stati
  * along [dirs]; [near] gives the ways to the stations close by, asked only
  * when two sides are equally clear.
  */
-internal fun metroAutoSideOf(dirs: List<Double>, near: () -> List<Double>): Int {
+internal fun metroAutoSideOf(dirs: List<Double>, avoidCrowd: Boolean = true, near: () -> List<Double>): Int {
     if (dirs.isEmpty()) return 0
     fun clearance(side: Int): Double = dirs.minOf { d -> metroAngleGap(metroLabelAngle(side), d) }
     val best = PREFERENCE.maxOf { clearance(it) }
     val clear = PREFERENCE.filter { clearance(it) >= best - 1e-6 }
-    if (clear.size == 1) return clear[0]
+    if (clear.size == 1 || !avoidCrowd) return clear[0]
     val others = near()
     fun crowd(side: Int): Int = others.count { metroAngleGap(metroLabelAngle(side), it) <= PI / 6 + 1e-6 }
     // Stable: fewest crowding first, then the order of preference.

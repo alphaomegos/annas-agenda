@@ -71,6 +71,10 @@ data class MetroScheme(
     val hiddenLines: List<Long> = emptyList(),
     val lockedLines: List<Long> = emptyList(),
     val ghostHidden: Boolean = false,
+    // Names placing themselves (15.10): off the track (0197) — else on the
+    // right, as before — and off lines running alongside (0207). Settings.
+    val labelsAuto: Boolean = true,
+    val labelsAvoidCrowd: Boolean = true,
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),

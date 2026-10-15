@@ -98,4 +98,27 @@ class MetroLabelsTest {
             }
         }
     }
+
+    /** Each rule the user's to turn off (15.10). */
+    @Test
+    fun namesOnTheRight_orNotKeepingOffLinesAlongside_whenSoChosen() {
+        val right = scheme.copy(labelsAuto = false)
+        right.stations.forEach { assertEquals(0, metroLabelSide(right, metroLayout(right), it.id)) }
+        assertEquals(right.stations.associate { it.id to 0 }, metroLabelSides(right, metroLayout(right)))
+        // Two lines 0.6 apart: without keeping off, the first clear side in order — above.
+        val two = MetroScheme(
+            id = 2, city = "Тест",
+            lines = listOf(
+                MetroLine(1, "1", "Red", 0, trunk = listOf(1, 2, 3)),
+                MetroLine(2, "2", "Green", 0, trunk = listOf(11, 12, 13)),
+            ),
+            stations = listOf(
+                MetroStation(1, 1, "A", 0f, 0f), MetroStation(2, 1, "B", 1f, 0f), MetroStation(3, 1, "C", 2f, 0f),
+                MetroStation(11, 2, "D", 0f, -0.6f), MetroStation(12, 2, "E", 1f, -0.6f), MetroStation(13, 2, "F", 2f, -0.6f),
+            ),
+            labelsAvoidCrowd = false,
+        )
+        assertEquals(6, metroAutoLabelSide(two, metroLayout(two), 2))
+        assertEquals(6, metroLabelSides(two, metroLayout(two))[2L])
+    }
 }

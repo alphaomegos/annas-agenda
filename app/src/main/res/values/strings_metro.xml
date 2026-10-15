@@ -122,6 +122,8 @@
     <string name="metro_snap_angles">Angles of 45°</string>
     <string name="metro_look">Look</string>
     <string name="metro_transfer_links">Links between interchange stations</string>
+    <string name="metro_names_auto">Names choose their side, off the track (else on the right)</string>
+    <string name="metro_names_avoid_crowd">Names keep off lines running alongside</string>
     <string name="metro_editor_prefs">Editor settings</string>
     <string name="metro_pref_loupe">A loupe over the finger while dragging</string>
     <string name="metro_pref_haptics">A tick when a dragged thing clicks into place</string>

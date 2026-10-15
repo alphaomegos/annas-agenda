@@ -313,6 +313,8 @@ class AppStateWholeRoundTripTest {
                 hiddenLines = listOf(5L),
                 lockedLines = listOf(1L),
                 ghostHidden = true,
+                labelsAuto = false,
+                labelsAvoidCrowd = false,
                 bends = listOf(MetroBend(10L, 11L, listOf(MetroMapPoint(1f, 0.5f), MetroMapPoint(1f, 2.5f)))),
             ),
         ),
