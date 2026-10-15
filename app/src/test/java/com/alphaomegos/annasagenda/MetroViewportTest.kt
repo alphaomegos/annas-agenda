@@ -50,4 +50,32 @@ class MetroViewportTest {
         assertEquals(mapOf(1L to MetroPoint(0f, 0f), 2L to MetroPoint(3f, 1f)), metroLayout(s))
         assertFalse(metroIsPlaced(s.copy(stations = s.stations + MetroStation(3, 1, "C"))))
     }
+
+    /** A zoom about the fingers, gliding: the point under them stays under them in every frame. */
+    @Test
+    fun between_keepsTheStillPointStillAllTheWay() {
+        val a = MetroViewport(100f, 2f, 1f)
+        val b = a.zoomed(4f, 450f, 100f, 600f, 400f, 10f, 1000f)
+        val mx = a.toMapX(450f, 600f)
+        val my = a.toMapY(100f, 400f)
+        for (t in listOf(0.25f, 0.5f, 0.75f)) {
+            val v = metroViewportBetween(a, b, t)
+            assertEquals(450f, v.toScreenX(mx, 600f), 1e-2f)
+            assertEquals(100f, v.toScreenY(my, 400f), 1e-2f)
+        }
+        // Half way by ratio: twice, not two and a half times.
+        assertEquals(200f, metroViewportBetween(a, b, 0.5f).k, 1e-3f)
+    }
+
+    @Test
+    fun between_endsWhereItShouldAndSlidesAPlainPan() {
+        val a = MetroViewport(100f, 2f, 1f)
+        val b = MetroViewport(100f, 6f, -3f)
+        assertEquals(a, metroViewportBetween(a, b, 0f))
+        assertEquals(b, metroViewportBetween(a, b, 1f))
+        val half = metroViewportBetween(a, b, 0.5f)
+        assertEquals(4f, half.cx, 1e-4f)
+        assertEquals(-1f, half.cy, 1e-4f)
+        assertEquals(100f, half.k, 1e-4f)
+    }
 }

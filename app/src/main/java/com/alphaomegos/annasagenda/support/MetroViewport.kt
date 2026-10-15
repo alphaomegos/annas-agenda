@@ -43,3 +43,33 @@ fun metroFittedViewport(points: Collection<MetroPoint>, w: Float, h: Float): Met
     val k = if (w > 0f && h > 0f) minOf(w / bw, h / bh) else 1f
     return MetroViewport(k, (b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
 }
+
+/**
+ * The view [t] of the way from [a] to [b] (15.10), for a zoom that glides
+ * rather than jumps.
+ *
+ * The scale goes by ratio, so every frame zooms by the same factor; the
+ * middle follows so that the one point of the picture both views put on the
+ * same place of the screen stays there all the way — a zoom about the
+ * fingers looks like one, and "fit" swings about its own still point. With
+ * one scale, a plain pan, the middle simply slides.
+ */
+fun metroViewportBetween(a: MetroViewport, b: MetroViewport, t: Float): MetroViewport {
+    if (t <= 0f) return a
+    if (t >= 1f) return b
+    val k = a.k * Math.pow((b.k / a.k).toDouble(), t.toDouble()).toFloat()
+    if (kotlin.math.abs(b.k - a.k) < 1e-6f * a.k) {
+        return MetroViewport(k, a.cx + (b.cx - a.cx) * t, a.cy + (b.cy - a.cy) * t)
+    }
+    // The still point: (m - a.c) * a.k == (m - b.c) * b.k.
+    val mx = (b.cx * b.k - a.cx * a.k) / (b.k - a.k)
+    val my = (b.cy * b.k - a.cy * a.k) / (b.k - a.k)
+    return MetroViewport(k, mx - (mx - a.cx) * a.k / k, my - (my - a.cy) * a.k / k)
+}
+
+/** How far a button or a double tap zooms at once (15.10): twice, or half. */
+const val METRO_ZOOM_STEP = 2f
+
+/** The scales a view may take, as multiples of the fitted one: from half of it to twelve times. */
+const val METRO_MIN_ZOOM = 0.5f
+const val METRO_MAX_ZOOM = 12f

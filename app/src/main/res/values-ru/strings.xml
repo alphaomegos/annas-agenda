@@ -957,6 +957,13 @@
     <string name="metro_pref_haptics">Щелчок вибрацией при прилипании</string>
     <string name="metro_pref_box">Выделение: один палец рисует рамку (иначе двигает схему)</string>
     <string name="metro_pref_tips">Подсказки поверх схемы</string>
+    <!-- Zoom over the picture (0231) -->
+    <string name="metro_pref_zoom_buttons">Кнопки масштаба в углу</string>
+    <string name="metro_pref_double_tap">Двойной тап — ближе, тап двумя пальцами — дальше</string>
+    <string name="metro_zoom_in">Ближе</string>
+    <string name="metro_zoom_out">Дальше</string>
+    <string name="metro_map_prefs">Настройки схемы</string>
+    <string name="metro_key_setup">Настр</string>
     <string name="metro_select_hint_no_box">Нажимайте на станции, чтобы выделить; нажатие мимо станций снимает выделение. Тащите любую выделенную — сдвинутся все.</string>
     <string name="metro_keys">Клавиши</string>
     <string name="metro_keys_text">Ctrl+Z — отменить; Ctrl+Shift+Z или Ctrl+Y — повторить\nV — двигать, B — гнуть, T — подписи, S — выделять\nCtrl+A — выделить все доступные станции; Esc — снять выделение\nСтрелки — сдвинуть выделенное (с Shift — в пять раз дальше)\nG — сетка; F или 0 — вписать в экран; L — слои</string>

@@ -281,6 +281,7 @@ fun MetroMapEditorScreen(
             e.key == Key.F6 -> { layering = true; true }
             e.key == Key.F7 -> { styling = true; true }
             e.key == Key.F8 -> { vm.undoMetroScheme(schemeId); true }
+            e.key == Key.F9 -> { prefsShown = true; true }
             e.key == Key.F10 -> { onBack(); true }
             else -> false
         }
@@ -305,6 +306,7 @@ fun MetroMapEditorScreen(
                     MetroKey(6, stringResource(R.string.metro_layers)) { layering = true },
                     MetroKey(7, stringResource(R.string.metro_key_style)) { styling = true },
                     MetroKey(8, stringResource(R.string.metro_key_undo)) { vm.undoMetroScheme(schemeId) },
+                    MetroKey(9, stringResource(R.string.metro_key_setup)) { prefsShown = true },
                     MetroKey(10, stringResource(R.string.metro_key_quit), onBack),
                 ),
             )
@@ -459,6 +461,10 @@ fun MetroMapEditorScreen(
                         onTapEmpty = if (selecting) { { selectedIds = longArrayOf() } } else null,
                         loupe = prefs.loupe,
                         haptics = prefs.haptics,
+                        // The toolbar has its own "fit"; the corner keeps closer and farther (15.10).
+                        zoomButtons = prefs.zoomButtons,
+                        fitButton = false,
+                        doubleTapZoom = prefs.doubleTapZoom,
                         hiddenLines = scheme.hiddenLines.toSet(),
                         lockedLines = scheme.lockedLines.toSet(),
                         ghostHidden = scheme.ghostHidden,
@@ -670,6 +676,7 @@ fun MetroMapEditorScreen(
                         vm.setMetroPrefs { it.copy(tips = on) }
                         if (on) tipClosedFor = -1
                     }
+                    MetroMapPrefsTicks(prefs) { edit -> vm.setMetroPrefs(edit) }
                 }
             },
             confirmButton = { TextButton(onClick = { prefsShown = false }) { Text(stringResource(R.string.ok)) } },
@@ -703,18 +710,6 @@ fun MetroMapEditorScreen(
             },
             onDismiss = { confirmReset = false },
         )
-    }
-}
-
-/** A tick with its words; the words toggle it too. */
-@Composable
-private fun MetroMapTick(text: String, checked: Boolean, modifier: Modifier, onChange: (Boolean) -> Unit) {
-    Row(
-        modifier = modifier.clickable { onChange(!checked) },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(checked = checked, onCheckedChange = onChange)
-        Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

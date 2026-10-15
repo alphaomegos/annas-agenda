@@ -156,6 +156,8 @@ internal data class MetroPrefsDto(
     val haptics: Boolean = true,
     val boxSelect: Boolean = true,
     val tips: Boolean = true,
+    val zoomButtons: Boolean = true,
+    val doubleTapZoom: Boolean = true,
 )
 
 @Serializable

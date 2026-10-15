@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -126,6 +127,8 @@ fun MetroScreen(
     var showMap by rememberSaveable { mutableStateOf(true) }
     // The section's style (15.10): the chooser open.
     var styling by rememberSaveable { mutableStateOf(false) }
+    // How the picture is worked (15.10): its settings open.
+    var mapPrefsShown by rememberSaveable { mutableStateOf(false) }
 
     val today = remember { LocalDate.now() }
 
@@ -165,6 +168,7 @@ fun MetroScreen(
                     MetroKey(2, stringResource(R.string.metro_key_swap), swap),
                     MetroKey(3, stringResource(R.string.metro_key_style)) { styling = true },
                     MetroKey(4, stringResource(R.string.metro_key_edit), edit),
+                    MetroKey(9, stringResource(R.string.metro_key_setup)) { mapPrefsShown = true },
                     MetroKey(10, stringResource(R.string.metro_key_quit), onBack),
                 ),
             )
@@ -178,6 +182,9 @@ fun MetroScreen(
                 actions = {
                     IconButton(onClick = { styling = true }) {
                         Icon(Icons.Default.Palette, contentDescription = stringResource(R.string.metro_style))
+                    }
+                    IconButton(onClick = { mapPrefsShown = true }) {
+                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.metro_map_prefs))
                     }
                     if (scheme != null && scheme.stations.isNotEmpty()) {
                         IconButton(onClick = { showMap = !showMap }) {
@@ -227,6 +234,8 @@ fun MetroScreen(
                     typingIn = null
                 },
                 modifier = Modifier.fillMaxWidth().height(300.dp).metroMapField(),
+                zoomButtons = state.metroPrefs.zoomButtons,
+                doubleTapZoom = state.metroPrefs.doubleTapZoom,
             )
         }
         Column(
@@ -300,6 +309,19 @@ fun MetroScreen(
             eraColors = state.metroPrefs.eraColors,
             onEraColors = { on -> vm.setMetroPrefs { it.copy(eraColors = on) } },
             onDismiss = { styling = false },
+        )
+    }
+
+    if (mapPrefsShown) {
+        AlertDialog(
+            onDismissRequest = { mapPrefsShown = false },
+            title = { Text(stringResource(R.string.metro_map_prefs)) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    MetroMapPrefsTicks(state.metroPrefs) { edit -> vm.setMetroPrefs(edit) }
+                }
+            },
+            confirmButton = { TextButton(onClick = { mapPrefsShown = false }) { Text(stringResource(R.string.ok)) } },
         )
     }
 

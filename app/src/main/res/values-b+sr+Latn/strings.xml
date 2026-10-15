@@ -891,6 +891,13 @@
     <string name="metro_pref_haptics">Vibracija pri prianjanju</string>
     <string name="metro_pref_box">Izbor: jedan prst crta okvir (inače pomera šemu)</string>
     <string name="metro_pref_tips">Saveti preko šeme</string>
+    <!-- Zoom over the picture (0231) -->
+    <string name="metro_pref_zoom_buttons">Dugmad za zumiranje u uglu</string>
+    <string name="metro_pref_double_tap">Dupli dodir približava, dodir sa dva prsta udaljava</string>
+    <string name="metro_zoom_in">Približi</string>
+    <string name="metro_zoom_out">Udalji</string>
+    <string name="metro_map_prefs">Podešavanja mape</string>
+    <string name="metro_key_setup">Podeš</string>
     <string name="metro_select_hint_no_box">Dodirujte stanice da ih izaberete; dodir pored stanica poništava izbor. Prevucite bilo koju izabranu — pomeriće se sve.</string>
     <string name="metro_keys">Prečice</string>
     <string name="metro_keys_text">Ctrl+Z — poništi; Ctrl+Shift+Z ili Ctrl+Y — ponovi\nV — pomeranje, B — krivljenje, T — nazivi, S — izbor\nCtrl+A — izaberi sve dostupne stanice; Esc — poništi izbor\nStrelice — pomeri izabrano (sa Shift — pet puta dalje)\nG — mreža; F ili 0 — uklopi u ekran; L — slojevi</string>

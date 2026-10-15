@@ -152,6 +152,13 @@
     <string name="metro_pref_haptics">A tick when a dragged thing clicks into place</string>
     <string name="metro_pref_box">Select: one finger draws a box (else it moves the picture)</string>
     <string name="metro_pref_tips">Tips over the picture</string>
+    <!-- Zoom over the picture (0231) -->
+    <string name="metro_pref_zoom_buttons">Buttons in the corner to zoom</string>
+    <string name="metro_pref_double_tap">Double tap zooms in, a tap of two fingers zooms out</string>
+    <string name="metro_zoom_in">Zoom in</string>
+    <string name="metro_zoom_out">Zoom out</string>
+    <string name="metro_map_prefs">Map settings</string>
+    <string name="metro_key_setup">Setup</string>
     <string name="metro_select_hint_no_box">Tap stations to select them; a tap on nothing lets go of all. Drag any selected station to move them all.</string>
     <string name="metro_keys">Keyboard shortcuts</string>
     <string name="metro_keys_text">Ctrl+Z — undo; Ctrl+Shift+Z or Ctrl+Y — redo\nV — move, B — bend, T — names, S — select\nCtrl+A — select every station in reach; Esc — let go\nArrows — nudge the selection (with Shift, five times as far)\nG — the grid; F or 0 — fit to the screen; L — layers</string>

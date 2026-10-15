@@ -90,6 +90,16 @@ import com.alphaomegos.annasagenda.support.metroTermini
 import com.alphaomegos.annasagenda.support.metroLabelFacesOutward
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import com.alphaomegos.annasagenda.support.METRO_MAX_ZOOM
+import com.alphaomegos.annasagenda.support.METRO_MIN_ZOOM
+import com.alphaomegos.annasagenda.support.METRO_ZOOM_STEP
+import com.alphaomegos.annasagenda.support.metroViewportBetween
 
 /**
  * The picture of the metro map (05.10): lines in their colours, stations as
@@ -134,6 +144,12 @@ import androidx.compose.ui.graphics.luminance
  * [loupe] and [haptics] (15.10): the loupe over the finger while dragging,
  * and the tick when a dragged thing clicks into place — both the user's to
  * turn off.
+ *
+ * [zoomButtons] (15.10): closer and farther in the corner, and — with
+ * [fitButton], where the screen has none of its own — the whole picture;
+ * with [doubleTapZoom] a double tap off the stations zooms in about the
+ * finger and a tap of two fingers zooms out, as on any map. Each glides
+ * rather than jumps, and a finger put down stops the glide where it is.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -168,6 +184,9 @@ internal fun MetroMapView(
     onTapEmpty: (() -> Unit)? = null,
     loupe: Boolean = true,
     haptics: Boolean = true,
+    zoomButtons: Boolean = false,
+    fitButton: Boolean = true,
+    doubleTapZoom: Boolean = false,
 ) {
     // Where the picture is looked at (14.10), in its own units: pixels to a
     // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
@@ -208,6 +227,10 @@ internal fun MetroMapView(
     val currentHaptics by rememberUpdatedState(feedback)
     val currentTicks by rememberUpdatedState(haptics)
     val currentTapEmpty by rememberUpdatedState(onTapEmpty)
+    val currentDoubleTap by rememberUpdatedState(doubleTapZoom)
+    // A zoom gliding to where a button or a double tap sent it (15.10).
+    val scope = rememberCoroutineScope()
+    val glide = remember { MetroGlide() }
     // Layers (14.10): what is out of sight, what may not move, and the part a finger may bend.
     val hiddenStations = remember(scheme.stations, hiddenLines) {
         if (hiddenLines.isEmpty()) emptySet() else scheme.stations.filter { it.lineId in hiddenLines }.map { it.id }.toSet()
@@ -307,6 +330,24 @@ internal fun MetroMapView(
         val cx = view.cx
         val cy = view.cy
         fun toScreen(p: MetroPoint) = Offset((p.x - cx) * k + w / 2, (p.y - cy) * k + h / 2)
+        val minK = fitted.k * METRO_MIN_ZOOM
+        val maxK = fitted.k * METRO_MAX_ZOOM
+        fun currentView(): MetroViewport = if (viewK > 0f) MetroViewport(viewK, viewCx, viewCy) else fitted
+        // Glides to [target] (15.10); with [fit], it is "fitted" again at the end,
+        // and keeps fitting as the picture changes.
+        fun glideTo(target: MetroViewport, fit: Boolean = false) {
+            val from = currentView()
+            glide.job?.cancel()
+            glide.job = scope.launch {
+                animate(0f, 1f, animationSpec = tween(METRO_GLIDE_MILLIS)) { t, _ ->
+                    val v = metroViewportBetween(from, target, t)
+                    viewK = v.k
+                    viewCx = v.cx
+                    viewCy = v.cy
+                }
+                if (fit) viewK = -1f
+            }
+        }
         val hitPx = with(density) { 22.dp.toPx() }
         // How near a direction of 45° a dropped station is pulled onto it (08.10).
         val angleTolPx = with(density) { 18.dp.toPx() }
@@ -324,8 +365,13 @@ internal fun MetroMapView(
                 val v = viewNow()
                 return Offset(v.toScreenX(p.x, w), v.toScreenY(p.y, h))
             }
+            // The last tap off every station, for a double tap (15.10): when and where.
+            var lastTap: Pair<Long, Offset>? = null
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
+                // A finger stops a glide where it is.
+                glide.job?.cancel()
+                var liftedAt = down.uptimeMillis
                 val start = toMap(down.position)
                 val hitRadius = hitPx / viewNow().k
                 val bending = currentBendMode
@@ -379,6 +425,7 @@ internal fun MetroMapView(
                 if (boxing) marquee = down.position to down.position
                 do {
                     val event = awaitPointerEvent()
+                    liftedAt = event.changes.maxOf { it.uptimeMillis }
                     val pressed = event.changes.filter { it.pressed }
                     fingers = maxOf(fingers, pressed.size)
                     if ((grabbed != null || grabbedBend != null || boxing) && !cancelled && pressed.size > 1) {
@@ -412,7 +459,7 @@ internal fun MetroMapView(
                         if (zoomChange != 1f) {
                             // The point under the fingers stays under them; from half the fitted scale to twelve times it.
                             val c = event.calculateCentroid()
-                            v = v.zoomed(zoomChange, c.x, c.y, w, h, fitted.k * 0.5f, fitted.k * 12f)
+                            v = v.zoomed(zoomChange, c.x, c.y, w, h, minK, maxK)
                         }
                         if (zoomChange != 1f || pan != Offset.Zero) setView(v.panned(pan.x, pan.y))
                         event.changes.forEach { it.consume() }
@@ -446,7 +493,25 @@ internal fun MetroMapView(
                     currentMove?.invoke(grabbed, at.x, at.y)
                 } else if (travelled <= slop && fingers == 1) {
                     val tapped = metroStationAt(reachable, start.x, start.y, hitRadius)
-                    if (tapped != null) currentTap(tapped) else currentTapEmpty?.invoke()
+                    val before = lastTap
+                    lastTap = null
+                    if (tapped != null) {
+                        currentTap(tapped)
+                    } else if (currentDoubleTap && before != null &&
+                        down.uptimeMillis - before.first <= viewConfiguration.doubleTapTimeoutMillis &&
+                        (down.position - before.second).getDistance() <= hitPx * 2
+                    ) {
+                        // The second tap of a double one (15.10): closer, about the finger.
+                        glideTo(viewNow().zoomed(METRO_ZOOM_STEP, down.position.x, down.position.y, w, h, minK, maxK))
+                    } else {
+                        lastTap = down.uptimeMillis to down.position
+                        currentTapEmpty?.invoke()
+                    }
+                } else if (travelled <= slop && fingers == 2 && currentDoubleTap &&
+                    liftedAt - down.uptimeMillis <= viewConfiguration.longPressTimeoutMillis
+                ) {
+                    // Two fingers tapped together (15.10): farther, about the middle.
+                    glideTo(viewNow().zoomed(1f / METRO_ZOOM_STEP, w / 2, h / 2, w, h, minK, maxK))
                 }
                 dragId = null
             }
@@ -725,8 +790,26 @@ internal fun MetroMapView(
                 drawRect(markColor, topLeft, size, style = Stroke(1.5f.dp.toPx()))
             }
         }
+
+        // Closer, farther and the whole picture, in the corner (15.10).
+        if (zoomButtons) {
+            MetroZoomButtons(
+                onZoomIn = { glideTo(currentView().zoomed(METRO_ZOOM_STEP, w / 2, h / 2, w, h, minK, maxK)) },
+                onZoomOut = { glideTo(currentView().zoomed(1f / METRO_ZOOM_STEP, w / 2, h / 2, w, h, minK, maxK)) },
+                onFit = if (fitButton) ({ glideTo(fitted, fit = true) }) else null,
+                modifier = Modifier.align(Alignment.BottomEnd),
+            )
+        }
     }
 }
+
+/** The zoom gliding now (15.10), to be stopped by the next one or by a finger. */
+private class MetroGlide {
+    var job: Job? = null
+}
+
+/** How long a zoom glides (15.10): long enough to follow, short enough not to wait for. */
+private const val METRO_GLIDE_MILLIS = 260
 
 /**
  * Where a dragged station lands before glue (08.10): with the scheme's

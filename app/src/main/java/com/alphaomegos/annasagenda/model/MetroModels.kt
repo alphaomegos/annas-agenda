@@ -259,6 +259,10 @@ data class MetroPrefs(
     val haptics: Boolean = true,
     val boxSelect: Boolean = true,
     val tips: Boolean = true,
+    // Over the picture (15.10): buttons to zoom and fit, and a double tap to
+    // zoom in (two fingers tapped zoom out) — as on any map, each to turn off.
+    val zoomButtons: Boolean = true,
+    val doubleTapZoom: Boolean = true,
 )
 
 /**

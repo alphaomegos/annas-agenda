@@ -367,20 +367,20 @@ private val SquareShapes = Shapes(
 )
 
 // Windows 95: the grey of its windows, the navy of a title and a highlight.
-private val Win95Grey = Color(0xFFC0C0C0)
+internal val Win95Grey = Color(0xFFC0C0C0)
 private val Win95Navy = Color(0xFF000080)
 
 // Norton Commander's text mode: the CGA blue, cyan, yellow.
 private val DosBlue = Color(0xFF0000AA)
-private val DosCyan = Color(0xFF55FFFF)
+internal val DosCyan = Color(0xFF55FFFF)
 private val DosDarkCyan = Color(0xFF00AAAA)
 private val DosYellow = Color(0xFFFFFF55)
 private val DosGrey = Color(0xFFAAAAAA)
 
 // A green phosphor monitor.
 private val TermBlack = Color(0xFF050A05)
-private val TermGreen = Color(0xFF33FF66)
-private val TermDimGreen = Color(0xFF1FA846)
+internal val TermGreen = Color(0xFF33FF66)
+internal val TermDimGreen = Color(0xFF1FA846)
 private val TermDeepGreen = Color(0xFF0E3A1A)
 
 /** The colours of [style] (MODERN has none of its own: the app's). */
