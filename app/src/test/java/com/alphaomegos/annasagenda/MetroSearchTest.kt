@@ -108,4 +108,13 @@ class MetroSearchTest {
         assertEquals(6, exact.minutes)
         assertEquals(1, exact.transfers)
     }
+
+    /** Finding a station on the editor's picture (15.10): every station on its own, an exact name too. */
+    @Test
+    fun findingListsEachStationAndAnExactNameAsWell() {
+        assertEquals(listOf(1L, 3L), metroStationsMatching(scheme, "Каховская").map { it.id })
+        assertEquals(listOf(1L, 3L, 2L, 4L), metroStationsMatching(scheme, "ка").map { it.id })
+        assertEquals(listOf(4L), metroStationsMatching(scheme, "стар").map { it.id })
+        assertTrue(metroStationsMatching(scheme, "  ").isEmpty())
+    }
 }

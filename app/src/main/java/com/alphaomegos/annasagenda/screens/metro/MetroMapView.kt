@@ -162,8 +162,8 @@ import androidx.compose.ui.semantics.semantics
  * with [doubleTapZoom] a double tap off the stations zooms in about the
  * finger and a tap of two fingers zooms out, as on any map. Each glides
  * rather than jumps, and a finger put down stops the glide where it is.
- * Each new [focus] (15.10) — a route found — glides the view to show all
- * of those stations. [highlightLines] (15.10) stand out as a route does,
+ * Each new [focus] (15.10) — a route found, a station looked for — or a
+ * new [focusKey] glides the view to show all of those stations. [highlightLines] (15.10) stand out as a route does,
  * their names written, the rest faded; with a route too, both stand out.
  * With [minimap] (15.10), zoomed in, the whole scheme shows small above the
  * buttons, a box round what the view shows; a finger on it takes the view there.
@@ -205,6 +205,7 @@ internal fun MetroMapView(
     fitButton: Boolean = true,
     doubleTapZoom: Boolean = false,
     focus: Set<Long> = emptySet(),
+    focusKey: Int = 0,
     highlightLines: Set<Long> = emptySet(),
     minimap: Boolean = false,
 ) {
@@ -829,7 +830,7 @@ internal fun MetroMapView(
 
         // A route found, framed (15.10): no nearer than a pinch may come.
         // Framed again when the picture's room changes — the map made big, the phone turned.
-        LaunchedEffect(focus, w, h) {
+        LaunchedEffect(focus, focusKey, w, h) {
             val points = focus.mapNotNull { layout[it] }
             if (points.isNotEmpty()) {
                 val framed = metroFittedViewport(points, w, h)

@@ -73,6 +73,7 @@ import com.alphaomegos.annasagenda.support.metroLayerOnly
 import com.alphaomegos.annasagenda.support.metroLayersAllShown
 import com.alphaomegos.annasagenda.support.metroLayerLockToggled
 import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Search
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -240,6 +241,10 @@ fun MetroMapEditorScreen(
     // The tool whose tip was closed; the tip comes back with another tool.
     var tipClosedFor by rememberSaveable { mutableStateOf(-1) }
     var keysShown by rememberSaveable { mutableStateOf(false) }
+    // Finding a station (15.10): the dialog, the one found — marked till the next tap — and each look for it.
+    var finding by rememberSaveable { mutableStateOf(false) }
+    var foundId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var foundKey by rememberSaveable { mutableStateOf(0) }
     // Keys (14.10), for a keyboard on the Fold or at the emulator, as in drawing programs.
     val keys = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { keys.requestFocus() } }
@@ -256,6 +261,7 @@ fun MetroMapEditorScreen(
             ctrl && e.key == Key.Z && e.isShiftPressed -> { vm.redoMetroScheme(schemeId); true }
             ctrl && e.key == Key.Z -> { vm.undoMetroScheme(schemeId); true }
             ctrl && e.key == Key.Y -> { vm.redoMetroScheme(schemeId); true }
+            ctrl && e.key == Key.F -> { finding = true; true }
             ctrl && e.key == Key.A -> {
                 tool = TOOL_SELECT
                 selectedIds = scheme.stations.map { it.id }.filter { it !in fixed }.toLongArray()
@@ -337,6 +343,11 @@ fun MetroMapEditorScreen(
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             // The whole picture, without the tools' marks, then where to save it.
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.metro_find)) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                onClick = { menuOpen = false; finding = true },
+                            )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.metro_save_picture)) },
                                 leadingIcon = { Icon(Icons.Default.SaveAlt, contentDescription = null) },
@@ -447,19 +458,25 @@ fun MetroMapEditorScreen(
                             }
                         },
                         onTapStation = { id ->
+                            foundId = null
                             when {
                                 naming -> vm.editMetroScheme(schemeId) { metroStationLabelCycled(it, id) }
                                 selecting -> { selectedIds = metroSelectionToggled(selection, id).toLongArray() }
                             }
                         },
                         namingMode = naming,
-                        marked = if (selecting) selection else emptySet(),
+                        marked = (if (selecting) selection else emptySet()) + listOfNotNull(foundId),
+                        focus = foundId?.let { setOf(it) } ?: emptySet(),
+                        focusKey = foundKey,
                         group = if (selecting) selection else emptySet(),
                         fitKey = fitKey,
                         capture = pictureLayer,
                         // Select (14.10): a box drawn round stations adds them; a tap on nothing lets go of all.
                         onMarquee = if (selecting && prefs.boxSelect) { ids -> selectedIds = (selection + ids - fixed).toLongArray() } else null,
-                        onTapEmpty = if (selecting) { { selectedIds = longArrayOf() } } else null,
+                        onTapEmpty = {
+                            foundId = null
+                            if (selecting) selectedIds = longArrayOf()
+                        },
                         loupe = prefs.loupe,
                         haptics = prefs.haptics,
                         // The toolbar has its own "fit"; the corner keeps closer and farther (15.10).
@@ -682,6 +699,23 @@ fun MetroMapEditorScreen(
                 }
             },
             confirmButton = { MetroTextButton(onClick = { prefsShown = false }) { Text(stringResource(R.string.ok)) } },
+        )
+    }
+
+    if (finding && scheme != null) {
+        MetroFindDialog(
+            scheme = scheme,
+            onPick = { id ->
+                // A station of a hidden line brings its line back into sight.
+                val lineId = scheme.stations.firstOrNull { it.id == id }?.lineId
+                if (lineId != null && lineId in scheme.hiddenLines) {
+                    vm.setMetroView(schemeId) { it.copy(hiddenLines = it.hiddenLines - lineId) }
+                }
+                foundId = id
+                foundKey++
+                finding = false
+            },
+            onDismiss = { finding = false },
         )
     }
 

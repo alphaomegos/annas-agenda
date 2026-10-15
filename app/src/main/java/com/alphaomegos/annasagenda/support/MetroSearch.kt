@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda.support
 
 import com.alphaomegos.annasagenda.model.MetroScheme
+import com.alphaomegos.annasagenda.model.MetroStation
 
 /**
  * A station to pick while typing "from" or "to": its name, its line and
@@ -80,4 +81,31 @@ fun metroStationsForName(scheme: MetroScheme, typed: String): Set<Long> {
     val key = metroNameKey(typed)
     if (key.isEmpty()) return emptySet()
     return scheme.stations.filter { metroNameKey(it.name) == key }.mapTo(LinkedHashSet()) { it.id }
+}
+
+/**
+ * The stations of [scheme] whose name has [typed] in it (15.10), for finding
+ * one on the editor's picture: each station on its own — "Курская" on two
+ * lines is two — names that start with it first, then those with a word
+ * that does, then the rest; within each, alphabetical, then in the
+ * scheme's order of lines.
+ */
+fun metroStationsMatching(scheme: MetroScheme, typed: String, limit: Int = 12): List<MetroStation> {
+    val key = metroNameKey(typed)
+    if (key.isEmpty()) return emptyList()
+    val lineOrder = scheme.lines.mapIndexed { i, l -> l.id to i }.toMap()
+    return scheme.stations
+        .mapNotNull { st ->
+            val name = metroNameKey(st.name)
+            val rank = when {
+                name.startsWith(key) -> 0
+                name.split(' ', '-').any { it.startsWith(key) } -> 1
+                key in name -> 2
+                else -> return@mapNotNull null
+            }
+            Triple(rank, name, st)
+        }
+        .sortedWith(compareBy<Triple<Int, String, MetroStation>>({ it.first }, { it.second }, { lineOrder[it.third.lineId] ?: Int.MAX_VALUE }))
+        .take(limit)
+        .map { it.third }
 }

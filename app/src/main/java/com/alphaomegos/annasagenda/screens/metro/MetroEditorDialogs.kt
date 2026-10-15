@@ -41,6 +41,7 @@ import com.alphaomegos.annasagenda.model.MetroHintTarget
 import com.alphaomegos.annasagenda.model.MetroLine
 import com.alphaomegos.annasagenda.model.MetroScheme
 import com.alphaomegos.annasagenda.support.metroStationSuggestions
+import com.alphaomegos.annasagenda.support.metroStationsMatching
 
 /**
  * Line colours to choose from: the usual ones of a metro map. Twenty-one, in
@@ -487,5 +488,61 @@ internal fun MetroAddStationDialog(
         dismissButton = {
             MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
+    )
+}
+
+/**
+ * Finding a station on the editor's picture (15.10): a name typed, the
+ * stations that have it — each with its line — and a tap on one takes the
+ * picture there.
+ */
+@Composable
+internal fun MetroFindDialog(scheme: MetroScheme, onPick: (Long) -> Unit, onDismiss: () -> Unit) {
+    var typed by rememberSaveable { mutableStateOf("") }
+    val found = remember(scheme, typed) { metroStationsMatching(scheme, typed) }
+    val lines = remember(scheme) { scheme.lines.associateBy { it.id } }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.metro_find)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                OutlinedTextField(
+                    value = typed,
+                    onValueChange = { typed = it },
+                    label = { Text(stringResource(R.string.metro_find_name)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Column(modifier = Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+                    found.forEach { st ->
+                        val line = lines[st.lineId]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onPick(st.id) }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (line != null) LineDot(line, size = 18)
+                            Column(modifier = Modifier.padding(start = 8.dp)) {
+                                Text(st.name, style = MaterialTheme.typography.bodyLarge)
+                                if (line != null) {
+                                    Text(
+                                        line.name,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (typed.isNotBlank() && found.isEmpty()) {
+                        Text(stringResource(R.string.metro_find_none), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+        },
+        confirmButton = { MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
