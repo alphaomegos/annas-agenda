@@ -2,6 +2,8 @@ package com.alphaomegos.annasagenda
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import com.alphaomegos.annasagenda.model.*
 import com.alphaomegos.annasagenda.support.*
@@ -510,4 +512,21 @@ class ReadingCrudSupportTest {
         createdAtEpochMillis = 1_000L,
         currentYear = year,
     )
+
+    /** Waiting for the next season (15.10). */
+    @Test
+    fun theNextSeason_isSetKeptAndCleared_andSaidOutOnItsDay() {
+        val day = java.time.LocalDate.of(2026, 11, 1)
+        val show = ReadingSeries(id = 1L, title = "Severance", shelf = ReadingShelf.WAITING)
+        val set = updateReadingSeriesEntity(show, nextSeasonDate = day, remindNextSeason = true, currentYear = 2026)
+        assertEquals(day, set.nextSeasonDate)
+        assertTrue(set.remindNextSeason)
+        // An edit saying nothing about it keeps it.
+        assertEquals(day, updateReadingSeriesEntity(set, title = "Severance!", currentYear = 2026).nextSeasonDate)
+        assertEquals(null, updateReadingSeriesEntity(set, clearNextSeasonDate = true, currentYear = 2026).nextSeasonDate)
+        assertFalse(nextSeasonIsOut(set, day.minusDays(1)))
+        assertTrue(nextSeasonIsOut(set, day))
+        // Off the waiting shelf, nothing is out.
+        assertFalse(nextSeasonIsOut(set.copy(shelf = ReadingShelf.NOW), day))
+    }
 }

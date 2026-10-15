@@ -193,7 +193,8 @@ internal fun MediaDetailsForm(
                         shelf = shelf,
                         menuExpanded = shelfMenuExpanded,
                         onMenuExpandedChange = { shelfMenuExpanded = it },
-                        onShelfSelected = onShelfChange
+                        onShelfSelected = onShelfChange,
+                        canWait = type == ReadingMediaType.SERIES,
                     )
 
                     if (shelf == ReadingShelf.DONE || shelf == ReadingShelf.ABANDONED) {

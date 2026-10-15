@@ -167,7 +167,11 @@ private fun sortReadingItems(
     }
 
     val sorted = items.sortedWith(comparator)
-    return if (sort.ascending) sorted else sorted.asReversed()
+    val ordered = if (sort.ascending) sorted else sorted.asReversed()
+    // Waiting for the next season (15.10): the soonest out first, as a calendar;
+    // the tab's own order among those of one day, and those of no day last.
+    if (shelf != ReadingShelf.WAITING) return ordered
+    return ordered.sortedBy { (it as? ReadingSeriesItem)?.series?.nextSeasonDate?.toEpochDay() ?: Long.MAX_VALUE }
 }
 
 private fun searchReadingItems(
@@ -267,7 +271,8 @@ private fun readingItemYearForShelf(
         }
 
         ReadingShelf.PLANS,
-        ReadingShelf.NOW -> null
+        ReadingShelf.NOW,
+        ReadingShelf.WAITING -> null
     }
 }
 
@@ -285,6 +290,7 @@ private fun shelfOrder(shelf: ReadingShelf): Int {
         ReadingShelf.NOW -> 1
         ReadingShelf.DONE -> 2
         ReadingShelf.ABANDONED -> 3
+        ReadingShelf.WAITING -> 4
     }
 }
 

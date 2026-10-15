@@ -364,6 +364,9 @@ fun updateReadingSeriesEntity(
     yearAbandoned: Int? = null,
     shelf: ReadingShelf? = null,
     currentYear: Int,
+    nextSeasonDate: java.time.LocalDate? = null,
+    clearNextSeasonDate: Boolean = false,
+    remindNextSeason: Boolean? = null,
 ): ReadingSeries {
     val newShelf = shelf ?: old.shelf
 
@@ -387,7 +390,19 @@ fun updateReadingSeriesEntity(
         currentEpisode = (currentEpisode ?: old.currentEpisode).coerceAtLeast(1),
         yearWatched = years.finished,
         yearAbandoned = years.abandoned,
+        // The next season (15.10): a day given replaces the one there; cleared, none.
+        nextSeasonDate = if (clearNextSeasonDate) null else nextSeasonDate ?: old.nextSeasonDate,
+        remindNextSeason = remindNextSeason ?: old.remindNextSeason,
     )
+}
+
+/**
+ * Whether [series], waiting, has its next season out by [today] (15.10): its
+ * day given and come.
+ */
+fun nextSeasonIsOut(series: ReadingSeries, today: java.time.LocalDate): Boolean {
+    val day = series.nextSeasonDate ?: return false
+    return series.shelf == ReadingShelf.WAITING && !day.isAfter(today)
 }
 
 /**

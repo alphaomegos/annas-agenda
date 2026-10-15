@@ -47,6 +47,7 @@ fun mediaDetailsShelfLabel(shelf: ReadingShelf): String {
         ReadingShelf.NOW -> stringResource(R.string.reading_tab_now)
         ReadingShelf.DONE -> stringResource(R.string.reading_tab_done)
         ReadingShelf.ABANDONED -> stringResource(R.string.reading_tab_abandoned)
+        ReadingShelf.WAITING -> stringResource(R.string.reading_tab_waiting)
     }
 }
 
@@ -183,6 +184,7 @@ fun MediaDetailsShelfSelector(
     menuExpanded: Boolean,
     onMenuExpandedChange: (Boolean) -> Unit,
     onShelfSelected: (ReadingShelf) -> Unit,
+    canWait: Boolean = false,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -231,6 +233,16 @@ fun MediaDetailsShelfSelector(
                         onShelfSelected(ReadingShelf.ABANDONED)
                     }
                 )
+                // A series can wait for its next season (15.10).
+                if (canWait) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.reading_tab_waiting)) },
+                        onClick = {
+                            onMenuExpandedChange(false)
+                            onShelfSelected(ReadingShelf.WAITING)
+                        }
+                    )
+                }
             }
         }
     }

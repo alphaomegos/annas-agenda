@@ -61,6 +61,7 @@ internal fun migrateAppStateRawJson(
             9 -> migrateAppState9To10(cur)
             10 -> migrateAppState10To11(cur)
             11 -> migrateAppState11To12(cur)
+            12 -> migrateAppState12To13(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -210,6 +211,17 @@ private fun migrateAppState10To11(obj: JsonObject): JsonObject {
 private fun migrateAppState11To12(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(12)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp. Version 13 (15.10) adds series waiting for their next season —
+ * a shelf of their own, the day it is expected, whether to be told — data
+ * nothing else holds. None waiting is what every payload before it means.
+ */
+private fun migrateAppState12To13(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(13)
     return JsonObject(m)
 }
 

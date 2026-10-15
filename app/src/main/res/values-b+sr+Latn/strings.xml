@@ -225,6 +225,16 @@
     <string name="reading_session_start_page_label">Početna strana</string>
     <string name="reading_sort_descending">Opadajuće</string>
     <string name="reading_tab_abandoned">Ostavljene</string>
+    <string name="reading_tab_waiting">Čekam</string>
+    <string name="reading_menu_move_to_waiting">Čekam sledeću sezonu</string>
+    <string name="reading_field_next_season">Nova sezona izlazi</string>
+    <string name="reading_next_season_pick">Izaberi datum</string>
+    <string name="reading_next_season_clear">Ukloni</string>
+    <string name="reading_next_season_unknown">Nova sezona: datum nepoznat</string>
+    <string name="reading_next_season_on">Nova sezona: %1$s</string>
+    <string name="reading_next_season_out">Nova sezona je izašla!</string>
+    <string name="reading_remind_next_season">Podseti me tog dana</string>
+    <string name="reading_remind_next_season_hint">Tog dana aplikacija će podsetiti — ako su joj obaveštenja uključena.</string>
     <string name="reading_menu_move_to_abandoned">Premesti u ostavljene</string>
     <string name="reading_media_field_year_abandoned">Godina napuštanja</string>
     <string name="reading_search_label">Pretraga po naslovu, autoru ili godini</string>

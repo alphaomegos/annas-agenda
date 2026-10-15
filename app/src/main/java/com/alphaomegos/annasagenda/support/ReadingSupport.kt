@@ -11,6 +11,7 @@ fun readingTabPrefsForShelf(state: AppState, shelf: ReadingShelf): ReadingTabPre
         ReadingShelf.NOW -> state.readingNowPrefs
         ReadingShelf.DONE -> state.readingDonePrefs
         ReadingShelf.ABANDONED -> state.readingAbandonedPrefs
+        ReadingShelf.WAITING -> state.readingWaitingPrefs
     }
 }
 
@@ -24,6 +25,7 @@ fun readingStateWithTabPrefs(
         ReadingShelf.NOW -> state.copy(readingNowPrefs = prefs)
         ReadingShelf.DONE -> state.copy(readingDonePrefs = prefs)
         ReadingShelf.ABANDONED -> state.copy(readingAbandonedPrefs = prefs)
+        ReadingShelf.WAITING -> state.copy(readingWaitingPrefs = prefs)
     }
 }
 

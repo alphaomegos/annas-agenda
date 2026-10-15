@@ -623,6 +623,20 @@ class AppStateStoreMigrationTest {
         assertTrue(stations.all { it.labelSide == null })
     }
 
+    /** Schema 13 (15.10): a payload from before has no series waiting, and a book said to wait is planned. */
+    @Test
+    fun version12_readsWithNothingWaiting() {
+        val state = decoded(
+            """{ "v": 12,
+                "readingSeries": [ { "id": 1, "title": "Twin Peaks", "shelf": "NOW" } ],
+                "readingBooks": [ { "id": 2, "title": "Dune", "totalPages": 600, "shelf": "WAITING" } ] }""",
+        )
+        val series = state.readingSeries.single()
+        assertEquals(null, series.nextSeasonDate)
+        assertEquals(false, series.remindNextSeason)
+        assertEquals(ReadingShelf.PLANS, state.readingBooks.single().shelf)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

@@ -205,4 +205,22 @@ class MediaLibrarySupportTest {
             shelfOf(books = books, sort = ReadingSort(ReadingSortField.AUTHOR, ascending = false)),
         )
     }
+
+    /** Waiting for the next season (15.10): the soonest first, the unknown last. */
+    @Test
+    fun theWaitingShelf_isACalendar() {
+        val today = java.time.LocalDate.of(2026, 10, 15)
+        fun waiting(id: Long, title: String, inDays: Long?) = ReadingSeries(
+            id = id, title = title, shelf = ReadingShelf.WAITING,
+            nextSeasonDate = inDays?.let { today.plusDays(it) },
+        )
+        val state = AppState(
+            readingSeries = listOf(
+                waiting(1, "Andor", null), waiting(2, "Fargo", 90), waiting(3, "Severance", 10),
+                ReadingSeries(id = 4, title = "Twin Peaks", shelf = ReadingShelf.NOW),
+            ),
+        )
+        val shown = buildVisibleReadingItems(state, ReadingShelf.WAITING, ReadingSort(ReadingSortField.TITLE, true), "")
+        assertEquals(listOf("Severance", "Fargo", "Andor"), shown.map { it.title })
+    }
 }

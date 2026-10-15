@@ -41,8 +41,9 @@ import kotlinx.coroutines.launch
 internal fun MediaLibraryShelfTabs(
     selectedTab: Int,
     onSelectTab: (Int) -> Unit,
+    showWaiting: Boolean = false,
 ) {
-    TabRow(selectedTabIndex = selectedTab) {
+    TabRow(selectedTabIndex = if (showWaiting) selectedTab else selectedTab.coerceAtMost(3)) {
         Tab(
             selected = selectedTab == 0,
             onClick = { onSelectTab(0) },
@@ -63,6 +64,14 @@ internal fun MediaLibraryShelfTabs(
             onClick = { onSelectTab(3) },
             text = { Text(stringResource(R.string.reading_tab_abandoned)) }
         )
+        // Series waiting for their next season (15.10), while series are shown.
+        if (showWaiting) {
+            Tab(
+                selected = selectedTab == 4,
+                onClick = { onSelectTab(4) },
+                text = { Text(stringResource(R.string.reading_tab_waiting)) }
+            )
+        }
     }
 }
 

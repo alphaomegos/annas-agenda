@@ -238,6 +238,16 @@
     <string name="reading_tab_now">Сейчас</string>
     <string name="reading_tab_done">Завершено</string>
     <string name="reading_tab_abandoned">Брошено</string>
+    <string name="reading_tab_waiting">Жду</string>
+    <string name="reading_menu_move_to_waiting">Жду следующего сезона</string>
+    <string name="reading_field_next_season">Новый сезон выйдет</string>
+    <string name="reading_next_season_pick">Выбрать дату</string>
+    <string name="reading_next_season_clear">Убрать</string>
+    <string name="reading_next_season_unknown">Новый сезон: дата неизвестна</string>
+    <string name="reading_next_season_on">Новый сезон: %1$s</string>
+    <string name="reading_next_season_out">Новый сезон вышел!</string>
+    <string name="reading_remind_next_season">Напомнить в день выхода</string>
+    <string name="reading_remind_next_season_hint">В этот день приложение напомнит — если его оповещения включены.</string>
     <string name="reading_media_book">Книга</string>
     <string name="reading_media_movie">Фильм</string>
     <string name="reading_media_series">Сериал</string>

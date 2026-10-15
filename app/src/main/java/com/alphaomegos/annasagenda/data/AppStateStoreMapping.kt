@@ -44,6 +44,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     readingNowPrefs = readingNowPrefs.toDto(),
     readingDonePrefs = readingDonePrefs.toDto(),
     readingAbandonedPrefs = readingAbandonedPrefs.toDto(),
+    readingWaitingPrefs = readingWaitingPrefs.toDto(),
     anthropometryShowForecast = anthropometryShowForecast,
     anthropometryShowEntries = anthropometryShowEntries,
     anthropometryRange = anthropometryRange.name,
@@ -148,6 +149,7 @@ internal fun AppStateDto.toDomain(): AppState {
         readingNowPrefs = readingNowPrefs.toDomain(),
         readingDonePrefs = readingDonePrefs.toDomain(),
         readingAbandonedPrefs = readingAbandonedPrefs.toDomain(),
+        readingWaitingPrefs = readingWaitingPrefs.toDomain(),
         anthropometryShowForecast = anthropometryShowForecast,
         anthropometryShowEntries = anthropometryShowEntries,
         anthropometryRange = anthropometryRangeFromName(anthropometryRange),
@@ -480,6 +482,9 @@ internal fun CounterDto.toDomainOrNull(): Counter? = when (kind) {
 internal fun parseReadingShelf(raw: String): ReadingShelf =
     runCatching { ReadingShelf.valueOf(raw) }.getOrElse { ReadingShelf.PLANS }
 
+/** Only a series waits for its next season (15.10): a book or a film said to is planned. */
+internal fun ReadingShelf.notWaiting(): ReadingShelf = if (this == ReadingShelf.WAITING) ReadingShelf.PLANS else this
+
 internal fun parseReadingViewMode(raw: String): ReadingViewMode =
     runCatching { ReadingViewMode.valueOf(raw) }.getOrElse { ReadingViewMode.GRID }
 
@@ -508,7 +513,7 @@ internal fun ReadingBookDto.toDomainOrNull(): ReadingBook? {
     val cur = currentPage.coerceIn(0, pages)
     return ReadingBook(
         id = id,
-        shelf = parseReadingShelf(shelf),
+        shelf = parseReadingShelf(shelf).notWaiting(),
         author = author,
         title = cleanTitle,
         coverUri = coverUri,
@@ -538,7 +543,7 @@ internal fun ReadingMovieDto.toDomainOrNull(): ReadingMovie? {
 
     return ReadingMovie(
         id = id,
-        shelf = parseReadingShelf(shelf),
+        shelf = parseReadingShelf(shelf).notWaiting(),
         title = cleanTitle,
         coverUri = coverUri,
         releaseYear = releaseYear,
@@ -557,6 +562,8 @@ internal fun ReadingSeries.toDto(): ReadingSeriesDto = ReadingSeriesDto(
     totalSeasons = totalSeasons,
     currentSeason = currentSeason,
     currentEpisode = currentEpisode,
+    nextSeasonEpochDay = nextSeasonDate?.toEpochDay(),
+    remindNextSeason = remindNextSeason,
     yearWatched = yearWatched,
     yearAbandoned = yearAbandoned,
     createdAtEpochMillis = createdAtEpochMillis,
@@ -578,6 +585,8 @@ internal fun ReadingSeriesDto.toDomainOrNull(): ReadingSeries? {
         totalSeasons = safeTotalSeasons,
         currentSeason = safeCurrentSeason,
         currentEpisode = safeCurrentEpisode,
+        nextSeasonDate = nextSeasonEpochDay?.let { runCatching { java.time.LocalDate.ofEpochDay(it) }.getOrNull() },
+        remindNextSeason = remindNextSeason,
         yearWatched = yearWatched,
         yearAbandoned = yearAbandoned,
         createdAtEpochMillis = createdAtEpochMillis,

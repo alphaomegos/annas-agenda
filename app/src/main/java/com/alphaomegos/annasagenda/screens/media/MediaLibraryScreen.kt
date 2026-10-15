@@ -60,13 +60,15 @@ fun MediaLibraryScreen(
     // own card has always asked first.
     var pendingDelete by remember { mutableStateOf<ReadingUiItem?>(null) }
 
-    val shelf = mediaLibraryShelfForTab(selectedTab)
+    // The waiting shelf only while series are shown (15.10).
+    val shelf = mediaLibraryShelfForTab(if (st.readingMediaFilter.showSeries) selectedTab else selectedTab.coerceAtMost(3))
 
     val prefs = when (shelf) {
         ReadingShelf.PLANS -> st.readingPlansPrefs
         ReadingShelf.NOW -> st.readingNowPrefs
         ReadingShelf.DONE -> st.readingDonePrefs
         ReadingShelf.ABANDONED -> st.readingAbandonedPrefs
+        ReadingShelf.WAITING -> st.readingWaitingPrefs
     }
 
     val mediaFilter = st.readingMediaFilter
@@ -154,6 +156,7 @@ fun MediaLibraryScreen(
             yearGroups = yearGroups,
             showMediaTypeLabel = showMediaTypeLabel,
             remainingHours = vm::estimateRemainingHours,
+            showWaiting = st.readingMediaFilter.showSeries,
             onOpenItem = { item ->
                 openMediaLibraryItem(
                     item = item,
@@ -273,6 +276,7 @@ private fun MediaLibraryScreenContent(
     yearGroups: List<ReadingYearGroup>,
     showMediaTypeLabel: Boolean,
     remainingHours: (Long) -> Int?,
+    showWaiting: Boolean = false,
     onOpenItem: (ReadingUiItem) -> Unit,
     onReadItem: (ReadingUiItem) -> Unit,
     onMoveItem: (ReadingUiItem, ReadingShelf) -> Unit,
@@ -281,7 +285,8 @@ private fun MediaLibraryScreenContent(
     Column(modifier = modifier) {
         MediaLibraryShelfTabs(
             selectedTab = selectedTab,
-            onSelectTab = onSelectTab
+            onSelectTab = onSelectTab,
+            showWaiting = showWaiting,
         )
 
         if (searchEnabled && viewMode != ReadingViewMode.WALL) {
@@ -332,11 +337,12 @@ private fun MediaLibraryDialogs(
     if (addDialogOpen) {
         AddMediaDialog(
             initialShelf = shelf,
-            initialType = defaultMediaType(mediaFilter),
+            initialType = if (shelf == ReadingShelf.WAITING && mediaFilter.showSeries) ReadingMediaType.SERIES else defaultMediaType(mediaFilter),
             onDismiss = onDismissAddDialog,
             onAddBook = { title, pages, author ->
                 val id = vm.addReadingBook(
-                    shelf = shelf,
+                    // Only a series waits (15.10).
+                    shelf = if (shelf == ReadingShelf.WAITING) ReadingShelf.PLANS else shelf,
                     title = title,
                     totalPages = pages,
                     author = author
@@ -349,7 +355,7 @@ private fun MediaLibraryDialogs(
             },
             onAddMovie = { title, releaseYear, translation ->
                 val id = vm.addReadingMovie(
-                    shelf = shelf,
+                    shelf = if (shelf == ReadingShelf.WAITING) ReadingShelf.PLANS else shelf,
                     title = title,
                     releaseYear = releaseYear,
                     translation = translation
@@ -482,7 +488,8 @@ private fun mediaLibraryShelfForTab(selectedTab: Int): ReadingShelf {
         0 -> ReadingShelf.PLANS
         1 -> ReadingShelf.NOW
         2 -> ReadingShelf.DONE
-        else -> ReadingShelf.ABANDONED
+        3 -> ReadingShelf.ABANDONED
+        else -> ReadingShelf.WAITING
     }
 }
 

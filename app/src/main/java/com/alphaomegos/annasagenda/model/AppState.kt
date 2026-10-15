@@ -96,6 +96,8 @@ data class AppState(
     val readingNowPrefs: ReadingTabPrefs = ReadingTabPrefs(),
     val readingDonePrefs: ReadingTabPrefs = ReadingTabPrefs(),
     val readingAbandonedPrefs: ReadingTabPrefs = ReadingTabPrefs(),
+    // The shelf of series waiting for the next season (15.10). A setting.
+    val readingWaitingPrefs: ReadingTabPrefs = ReadingTabPrefs(),
 
     // --- Schema 6 (0137): settings, all at once, and the diet. ---------------
     // Every default is what the app did before these existed, so the step to

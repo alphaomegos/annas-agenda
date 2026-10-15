@@ -872,6 +872,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         yearWatched: Int? = null,
         yearAbandoned: Int? = null,
         shelf: ReadingShelf? = null,
+        nextSeasonDate: LocalDate? = null,
+        clearNextSeasonDate: Boolean = false,
+        remindNextSeason: Boolean? = null,
     ) {
         val currentYear = LocalDate.now().year
 
@@ -888,6 +891,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 yearAbandoned = yearAbandoned,
                 shelf = shelf,
                 currentYear = currentYear,
+                nextSeasonDate = nextSeasonDate,
+                clearNextSeasonDate = clearNextSeasonDate,
+                remindNextSeason = remindNextSeason,
             )
         } ?: return
 

@@ -29,7 +29,8 @@ fun yearsForShelf(shelf: ReadingShelf, currentYear: Int): ShelfYears = when (she
     ReadingShelf.DONE -> ShelfYears(finished = currentYear, abandoned = null)
     ReadingShelf.ABANDONED -> ShelfYears(finished = null, abandoned = currentYear)
     ReadingShelf.PLANS,
-    ReadingShelf.NOW -> ShelfYears(finished = null, abandoned = null)
+    ReadingShelf.NOW,
+    ReadingShelf.WAITING -> ShelfYears(finished = null, abandoned = null)
 }
 
 /**
@@ -58,7 +59,8 @@ fun resolvedShelfYears(
     )
 
     ReadingShelf.PLANS,
-    ReadingShelf.NOW -> ShelfYears(finished = null, abandoned = null)
+    ReadingShelf.NOW,
+    ReadingShelf.WAITING -> ShelfYears(finished = null, abandoned = null)
 }
 
 /**
@@ -107,7 +109,8 @@ fun shelfYearText(shelf: ReadingShelf, years: ShelfYears, currentYear: Int): Str
         ReadingShelf.DONE -> (years.finished ?: currentYear).toString()
         ReadingShelf.ABANDONED -> (years.abandoned ?: currentYear).toString()
         ReadingShelf.PLANS,
-        ReadingShelf.NOW -> ""
+        ReadingShelf.NOW,
+        ReadingShelf.WAITING -> ""
     }
 
 /**
@@ -131,5 +134,6 @@ fun shelfYearsFromText(shelf: ReadingShelf, yearText: String, currentYear: Int):
         )
 
         ReadingShelf.PLANS,
-        ReadingShelf.NOW -> NoShelfYears
+        ReadingShelf.NOW,
+        ReadingShelf.WAITING -> NoShelfYears
     }

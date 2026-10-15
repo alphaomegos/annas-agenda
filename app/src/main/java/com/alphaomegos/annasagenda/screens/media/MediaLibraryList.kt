@@ -59,6 +59,9 @@ import androidx.compose.ui.unit.IntOffset
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.model.ReadingShelf
 import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
+import com.alphaomegos.annasagenda.util.appLocale
+import com.alphaomegos.annasagenda.support.formatShortDate
+import com.alphaomegos.annasagenda.support.nextSeasonIsOut
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -528,7 +531,8 @@ private fun ReadingItemRowCard(
             ReadingItemMenu(
                 currentShelf = shelf,
                 onMove = onMove,
-                onDelete = onDelete
+                onDelete = onDelete,
+                canWait = item is ReadingSeriesItem,
             )
         }
     }
@@ -615,7 +619,8 @@ private fun ReadingItemGridCard(
                     ReadingItemMenu(
                         currentShelf = shelf,
                         onMove = onMove,
-                        onDelete = onDelete
+                        onDelete = onDelete,
+                        canWait = item is ReadingSeriesItem,
                     )
                 }
             }
@@ -755,6 +760,7 @@ private fun ReadingItemMenu(
     currentShelf: ReadingShelf,
     onMove: (ReadingShelf) -> Unit,
     onDelete: () -> Unit,
+    canWait: Boolean = false,
 ) {
     val expanded = remember { mutableStateOf(false) }
 
@@ -802,6 +808,16 @@ private fun ReadingItemMenu(
                 onClick = {
                     expanded.value = false
                     onMove(ReadingShelf.ABANDONED)
+                }
+            )
+        }
+        // A series can wait for its next season (15.10).
+        if (canWait && currentShelf != ReadingShelf.WAITING) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.reading_menu_move_to_waiting)) },
+                onClick = {
+                    expanded.value = false
+                    onMove(ReadingShelf.WAITING)
                 }
             )
         }
@@ -870,7 +886,8 @@ private fun readingItemSecondaryText(
                     if (y == null) "" else stringResource(R.string.reading_year, y)
                 }
 
-                ReadingShelf.PLANS -> ""
+                ReadingShelf.PLANS,
+                ReadingShelf.WAITING -> ""
             }
         }
 
@@ -891,7 +908,8 @@ private fun readingItemSecondaryText(
                     }
 
                     ReadingShelf.PLANS,
-                    ReadingShelf.NOW -> ""
+                    ReadingShelf.NOW,
+                    ReadingShelf.WAITING -> ""
                 }
             }
         }
@@ -906,6 +924,16 @@ private fun readingItemSecondaryText(
                 ReadingShelf.ABANDONED -> {
                     val y = item.series.yearAbandoned
                     if (y == null) "" else stringResource(R.string.reading_year, y)
+                }
+
+                // Waiting (15.10): when the next season is out — or that it is.
+                ReadingShelf.WAITING -> {
+                    val day = item.series.nextSeasonDate
+                    when {
+                        day == null -> stringResource(R.string.reading_next_season_unknown)
+                        nextSeasonIsOut(item.series, java.time.LocalDate.now()) -> stringResource(R.string.reading_next_season_out)
+                        else -> stringResource(R.string.reading_next_season_on, formatShortDate(day, appLocale()))
+                    }
                 }
 
                 ReadingShelf.PLANS,

@@ -181,6 +181,9 @@ class AppStateWholeRoundTripTest {
                 currentEpisode = 7,
                 yearAbandoned = 2026,
                 createdAtEpochMillis = 1_700_000_000_002L,
+                // Schema 13: an abandoned show still says when it was to be back.
+                nextSeasonDate = day.plusDays(100),
+                remindNextSeason = true,
             )
         ),
         readingSessions = listOf(
@@ -225,6 +228,10 @@ class AppStateWholeRoundTripTest {
         readingAbandonedPrefs = ReadingTabPrefs(
             viewMode = ReadingViewMode.WALL,
             sort = ReadingSort(field = ReadingSortField.YEAR, ascending = true),
+        ),
+        readingWaitingPrefs = ReadingTabPrefs(
+            viewMode = ReadingViewMode.LIST,
+            sort = ReadingSort(field = ReadingSortField.TITLE, ascending = false),
         ),
         // Schema 6 — every one the opposite of its default.
         anthropometryShowForecast = false,
@@ -445,6 +452,7 @@ class AppStateWholeRoundTripTest {
             "closed", "expectedOpeningEpochDay",
             "travelCountries", "travelView", "countryId", "trips", "month", "cities", "continent",
             "bends", "glue", "labelsOncePerInterchange", "labelSide", "hiddenLines", "lockedLines",
+            "nextSeasonEpochDay", "remindNextSeason", "readingWaitingPrefs",
             "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes", "metroPrefs",
             "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
         ).forEach { key ->

@@ -77,6 +77,7 @@ internal data class AppStateDto(
     val readingNowPrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),
     val readingDonePrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),
     val readingAbandonedPrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),
+    val readingWaitingPrefs: ReadingTabPrefsDto = ReadingTabPrefsDto(),
 
     // Schema 6. The settings alone would have been additive-with-a-default;
     // the diet is not — it is data nothing else holds, and a build that did
@@ -495,6 +496,9 @@ internal data class ReadingSeriesDto(
     val totalSeasons: Int = 1,
     val currentSeason: Int = 1,
     val currentEpisode: Int = 1,
+    // Schema 13 (15.10): waiting for the next season.
+    val nextSeasonEpochDay: Long? = null,
+    val remindNextSeason: Boolean = false,
     val yearWatched: Int? = null,
     val yearAbandoned: Int? = null,
     val createdAtEpochMillis: Long = 0L,

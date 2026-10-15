@@ -18,6 +18,20 @@ import com.alphaomegos.annasagenda.support.ShelfYears
 import com.alphaomegos.annasagenda.support.shelfYearText
 import com.alphaomegos.annasagenda.support.shelfYearsFromText
 import java.time.LocalDate
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.alphaomegos.annasagenda.components.PickDateDialog
+import com.alphaomegos.annasagenda.model.ReadingShelf
+import com.alphaomegos.annasagenda.support.formatShortDate
+import com.alphaomegos.annasagenda.util.appLocale
 
 @Composable
 fun SeriesDetailsScreen(
@@ -52,6 +66,10 @@ fun SeriesDetailsScreen(
         mutableStateOf(series.yearWatched?.toString() ?: "")
     }
     var shelf by rememberSaveable(seriesId) { mutableStateOf(series.shelf) }
+    // Waiting for the next season (15.10): its day (as an epoch day, -1 for none) and the reminder.
+    var nextSeasonDay by rememberSaveable(seriesId) { mutableStateOf(series.nextSeasonDate?.toEpochDay() ?: -1L) }
+    var remind by rememberSaveable(seriesId) { mutableStateOf(series.remindNextSeason) }
+    var pickingDay by rememberSaveable(seriesId) { mutableStateOf(false) }
 
     val pickCover = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -97,7 +115,10 @@ fun SeriesDetailsScreen(
             currentEpisode = currentEpisode,
             yearWatched = years.finished,
             yearAbandoned = years.abandoned,
-            shelf = shelf
+            shelf = shelf,
+            nextSeasonDate = nextSeasonDay.takeIf { it >= 0 }?.let { LocalDate.ofEpochDay(it) },
+            clearNextSeasonDate = nextSeasonDay < 0,
+            remindNextSeason = remind,
         )
         return true
     }
@@ -136,6 +157,47 @@ fun SeriesDetailsScreen(
             value = currentEpisodeText,
             onValueChange = { currentEpisodeText = it },
             labelRes = R.string.reading_field_current_episode,
+        )
+
+        // Waiting for the next season (15.10): the day it is expected out, and a reminder on it.
+        if (shelf == ReadingShelf.WAITING) {
+            val day = nextSeasonDay.takeIf { it >= 0 }?.let { LocalDate.ofEpochDay(it) }
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.reading_field_next_season),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { pickingDay = true }) {
+                    Text(day?.let { formatShortDate(it, appLocale()) } ?: stringResource(R.string.reading_next_season_pick))
+                }
+                if (day != null) {
+                    TextButton(onClick = { nextSeasonDay = -1L }) { Text(stringResource(R.string.reading_next_season_clear)) }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { remind = !remind },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(checked = remind, onCheckedChange = { remind = it })
+                Text(stringResource(R.string.reading_remind_next_season), style = MaterialTheme.typography.bodyLarge)
+            }
+            Text(
+                stringResource(R.string.reading_remind_next_season_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    if (pickingDay) {
+        PickDateDialog(
+            initialDate = nextSeasonDay.takeIf { it >= 0 }?.let { LocalDate.ofEpochDay(it) },
+            onDismiss = { pickingDay = false },
+            onPicked = { picked ->
+                nextSeasonDay = picked.toEpochDay()
+                pickingDay = false
+            },
         )
     }
 }

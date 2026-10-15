@@ -10,6 +10,8 @@ enum class ReadingShelf {
     NOW,
     DONE,
     ABANDONED,
+    // Series only (15.10): waiting for the next season — schema 13.
+    WAITING,
 }
 
 enum class ReadingViewMode {
@@ -98,6 +100,11 @@ data class ReadingSeries(
     val totalSeasons: Int = 1,
     val currentSeason: Int = 1,
     val currentEpisode: Int = 1,
+
+    // Waiting for the next season (15.10): when it is expected out, and
+    // whether to be told on the day. Data the user gave: schema 13.
+    val nextSeasonDate: java.time.LocalDate? = null,
+    val remindNextSeason: Boolean = false,
 
     // Filled automatically when moved to DONE.
     val yearWatched: Int? = null,

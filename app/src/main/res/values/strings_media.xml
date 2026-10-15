@@ -8,6 +8,16 @@
     <string name="reading_tab_now">Now</string>
     <string name="reading_tab_done">Done</string>
     <string name="reading_tab_abandoned">Abandoned</string>
+    <string name="reading_tab_waiting">Waiting</string>
+    <string name="reading_menu_move_to_waiting">Wait for the next season</string>
+    <string name="reading_field_next_season">Next season out</string>
+    <string name="reading_next_season_pick">Pick a day</string>
+    <string name="reading_next_season_clear">Clear</string>
+    <string name="reading_next_season_unknown">Next season: day unknown</string>
+    <string name="reading_next_season_on">Next season: %1$s</string>
+    <string name="reading_next_season_out">The next season is out!</string>
+    <string name="reading_remind_next_season">Remind me on the day</string>
+    <string name="reading_remind_next_season_hint">On the day the app will say so — if its notifications are on.</string>
     <string name="reading_media_book">Book</string>
     <string name="reading_media_movie">Movie</string>
     <string name="reading_media_series">Series</string>
