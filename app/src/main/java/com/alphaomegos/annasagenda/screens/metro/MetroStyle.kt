@@ -355,12 +355,15 @@ fun metroStyleFont(style: MetroStyle): FontFamily? = when (style) {
     MetroStyle.DOS, MetroStyle.TERMINAL -> FontFamily(Font(R.font.ibm_plex_mono))
 }
 
+// Shapes takes corner-based shapes only: square is a rounded one with no rounding.
+private val Square = RoundedCornerShape(0.dp)
+
 private val SquareShapes = Shapes(
-    extraSmall = RectangleShape,
-    small = RectangleShape,
-    medium = RectangleShape,
-    large = RectangleShape,
-    extraLarge = RectangleShape,
+    extraSmall = Square,
+    small = Square,
+    medium = Square,
+    large = Square,
+    extraLarge = Square,
 )
 
 // Windows 95: the grey of its windows, the navy of a title and a highlight.
