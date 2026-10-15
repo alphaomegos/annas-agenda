@@ -68,6 +68,7 @@ internal fun MetroTextDialog(
         title = { Text(title) },
         text = {
             OutlinedTextField(
+                colors = metroFieldColors(),
                 value = text,
                 onValueChange = { text = it },
                 label = { Text(label) },
@@ -105,6 +106,7 @@ internal fun MetroMinutesDialog(
         title = { Text(title) },
         text = {
             OutlinedTextField(
+                colors = metroFieldColors(),
                 value = text,
                 onValueChange = { text = it.filter(Char::isDigit).take(3) },
                 label = { Text(stringResource(R.string.metro_minutes_label)) },
@@ -142,6 +144,7 @@ internal fun MetroDefaultsDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = segmentText,
                     onValueChange = { segmentText = it.filter(Char::isDigit).take(2) },
                     label = { Text(stringResource(R.string.metro_default_segment)) },
@@ -149,6 +152,7 @@ internal fun MetroDefaultsDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = transferText,
                     onValueChange = { transferText = it.filter(Char::isDigit).take(2) },
                     label = { Text(stringResource(R.string.metro_default_transfer)) },
@@ -194,6 +198,7 @@ internal fun MetroLineDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = label,
                     onValueChange = { label = it.take(6) },
                     label = { Text(stringResource(R.string.metro_line_label)) },
@@ -201,6 +206,7 @@ internal fun MetroLineDialog(
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
                 )
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = name,
                     onValueChange = { name = it },
                     label = { Text(stringResource(R.string.metro_line_name)) },
@@ -231,6 +237,7 @@ internal fun MetroLineDialog(
                     Text(stringResource(R.string.metro_line_ring))
                 }
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = cars,
                     onValueChange = { cars = it.filter(Char::isDigit).take(2) },
                     label = { Text(stringResource(R.string.metro_line_cars)) },
@@ -238,6 +245,7 @@ internal fun MetroLineDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = doors,
                     onValueChange = { doors = it.filter(Char::isDigit).take(1) },
                     label = { Text(stringResource(R.string.metro_line_doors)) },
@@ -283,6 +291,7 @@ internal fun MetroTransferDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = typed,
                     onValueChange = { typed = it },
                     label = { Text(stringResource(R.string.metro_station_name)) },
@@ -374,6 +383,7 @@ internal fun MetroHintDialog(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
+                        colors = metroFieldColors(),
                         value = car,
                         onValueChange = { car = it.filter(Char::isDigit).take(2) },
                         label = { Text(stringResource(R.string.metro_hint_car_of, carCount)) },
@@ -382,6 +392,7 @@ internal fun MetroHintDialog(
                         modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
+                        colors = metroFieldColors(),
                         value = door,
                         onValueChange = { door = it.filter(Char::isDigit).take(1) },
                         label = { Text(stringResource(R.string.metro_hint_door_of, doorsPerCar)) },
@@ -452,6 +463,7 @@ internal fun MetroAddStationDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = text,
                     onValueChange = { text = it },
                     label = { Text(stringResource(R.string.metro_station_name)) },
@@ -507,6 +519,7 @@ internal fun MetroFindDialog(scheme: MetroScheme, onPick: (Long) -> Unit, onDism
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 OutlinedTextField(
+                    colors = metroFieldColors(),
                     value = typed,
                     onValueChange = { typed = it },
                     label = { Text(stringResource(R.string.metro_find_name)) },

@@ -1,6 +1,8 @@
 package com.alphaomegos.annasagenda.screens.metro
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -707,5 +709,52 @@ internal fun MetroDialog(
                 confirmButton()
             }
         }
+    }
+}
+
+/**
+ * A text field's colours in the section's style (15.10): Windows' white
+ * field with black letters; DOS' cyan input line, brighter while typed in;
+ * the terminal's green on black. Today's, and without details, Material's.
+ */
+@Composable
+internal fun metroFieldColors(): TextFieldColors {
+    val style = LocalMetroStyle.current
+    val details = LocalMetroStyleDetails.current
+    if (style == MetroStyle.MODERN || !details) return OutlinedTextFieldDefaults.colors()
+    return when (style) {
+        MetroStyle.WIN95 -> OutlinedTextFieldDefaults.colors(
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            cursorColor = Color.Black,
+            focusedBorderColor = Color(0xFF404040),
+            unfocusedBorderColor = Color(0xFF808080),
+            focusedLabelColor = Win95Navy,
+            unfocusedLabelColor = Color(0xFF404040),
+        )
+        MetroStyle.DOS -> OutlinedTextFieldDefaults.colors(
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            focusedContainerColor = DosCyan,
+            unfocusedContainerColor = DosDarkCyan,
+            cursorColor = Color.Black,
+            focusedBorderColor = DosCyan,
+            unfocusedBorderColor = DosDarkCyan,
+            focusedLabelColor = DosYellow,
+            unfocusedLabelColor = Color.White,
+        )
+        else -> OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TermGreen,
+            unfocusedTextColor = TermGreen,
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+            cursorColor = TermGreen,
+            focusedBorderColor = TermGreen,
+            unfocusedBorderColor = TermDimGreen,
+            focusedLabelColor = TermGreen,
+            unfocusedLabelColor = TermDimGreen,
+        )
     }
 }

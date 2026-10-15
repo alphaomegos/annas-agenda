@@ -505,6 +505,7 @@ private fun closableKey(target: MetroClosable): String = when (target) {
 @Composable
 private fun StationField(label: String, value: String, onValueChange: (String) -> Unit) {
     OutlinedTextField(
+        colors = metroFieldColors(),
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
@@ -1052,6 +1053,7 @@ private fun CreateSchemeDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit
         title = { Text(stringResource(R.string.metro_create_scheme)) },
         text = {
             OutlinedTextField(
+                colors = metroFieldColors(),
                 value = city,
                 onValueChange = { city = it },
                 label = { Text(stringResource(R.string.metro_city)) },
