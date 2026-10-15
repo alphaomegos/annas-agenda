@@ -10,7 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,7 +39,6 @@ import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.Icons
