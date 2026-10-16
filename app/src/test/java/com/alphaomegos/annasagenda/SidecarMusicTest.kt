@@ -52,7 +52,7 @@ class SidecarSessionTest {
 
     @Test
     fun theIconIsOutWithNobodyInWhileTheSessionRunsAndAsksOtherwise() {
-        val live = SidecarSession("t", now + 10)
+        val live = now + 10
 
         assertEquals(SidecarSignInState.SIGNED_OUT, sidecarSignInState(false, live, false, now))
         assertEquals(SidecarSignInState.SIGNED_IN, sidecarSignInState(true, live, false, now))

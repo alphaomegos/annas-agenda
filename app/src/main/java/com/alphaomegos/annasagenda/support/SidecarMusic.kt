@@ -85,12 +85,13 @@ enum class SidecarSignInState {
 
 /**
  * The icon's state at [nowMillis] (16.10): out with no account kept; in with
- * a session still running that the server has not [rejected]; otherwise the
- * account is known and wants its password again.
+ * a session that ends at [sessionEndsAtMillis], still running, and that the
+ * server has not [rejected]; otherwise the account is known and wants its
+ * password again.
  */
-fun sidecarSignInState(hasAccount: Boolean, session: SidecarSession?, rejected: Boolean, nowMillis: Long): SidecarSignInState = when {
+fun sidecarSignInState(hasAccount: Boolean, sessionEndsAtMillis: Long?, rejected: Boolean, nowMillis: Long): SidecarSignInState = when {
     !hasAccount -> SidecarSignInState.SIGNED_OUT
-    session != null && nowMillis < session.expiresAtMillis && !rejected -> SidecarSignInState.SIGNED_IN
+    sessionEndsAtMillis != null && nowMillis < sessionEndsAtMillis && !rejected -> SidecarSignInState.SIGNED_IN
     else -> SidecarSignInState.ATTENTION
 }
 
