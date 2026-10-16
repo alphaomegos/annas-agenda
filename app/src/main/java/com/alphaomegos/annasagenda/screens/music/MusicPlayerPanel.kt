@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,8 +22,6 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -48,7 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.session.MediaController
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.musicPlayerRepeatMode
+import com.alphaomegos.annasagenda.model.MetroStyle
 import com.alphaomegos.annasagenda.model.MusicRepeat
+import com.alphaomegos.annasagenda.screens.metro.LocalMetroStyle
 import com.alphaomegos.annasagenda.support.musicRepeatNext
 import com.alphaomegos.annasagenda.support.musicTimeLabel
 import kotlinx.coroutines.delay
@@ -77,9 +76,7 @@ internal fun ColumnScope.MusicPlayerPanel(controller: MediaController, now: Musi
     }
 
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onClose) {
-            Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.music_player_close), tint = colors.onSurface)
-        }
+        MusicControl(Icons.Default.KeyboardArrowDown, "v", stringResource(R.string.music_player_close), onClose)
     }
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
@@ -105,18 +102,27 @@ internal fun ColumnScope.MusicPlayerPanel(controller: MediaController, now: Musi
         )
 
         val shownAt = dragged?.toLong() ?: position
-        Slider(
-            value = shownAt.coerceAtMost(duration).toFloat(),
-            onValueChange = { dragged = it },
-            onValueChangeFinished = {
-                dragged?.let { controller.seekTo(it.toLong()) }
-                dragged = null
-            },
-            valueRange = 0f..duration.coerceAtLeast(1L).toFloat(),
-            enabled = duration > 0L,
-            colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary),
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-        )
+        // DOS and the terminal draw it in letters, as their players did; the others slide.
+        if (musicStyled() && LocalMetroStyle.current != MetroStyle.WIN95) {
+            MusicTextProgress(
+                fraction = if (duration > 0L) shownAt.toFloat() / duration else 0f,
+                enabled = duration > 0L,
+                onSeek = { part -> controller.seekTo((part * duration).toLong()) },
+            )
+        } else {
+            Slider(
+                value = shownAt.coerceAtMost(duration).toFloat(),
+                onValueChange = { dragged = it },
+                onValueChangeFinished = {
+                    dragged?.let { controller.seekTo(it.toLong()) }
+                    dragged = null
+                },
+                valueRange = 0f..duration.coerceAtLeast(1L).toFloat(),
+                enabled = duration > 0L,
+                colors = SliderDefaults.colors(thumbColor = colors.primary, activeTrackColor = colors.primary),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
+        }
         Row(modifier = Modifier.fillMaxWidth()) {
             Text(musicTimeLabel(shownAt), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             Text(
@@ -133,40 +139,41 @@ internal fun ColumnScope.MusicPlayerPanel(controller: MediaController, now: Musi
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = { controller.shuffleModeEnabled = !now.shuffle }) {
-                Icon(
-                    Icons.Default.Shuffle,
-                    contentDescription = stringResource(if (now.shuffle) R.string.music_shuffle_on else R.string.music_shuffle_off),
-                    tint = if (now.shuffle) colors.primary else colors.onSurfaceVariant.copy(alpha = 0.6f),
-                )
-            }
-            IconButton(onClick = { controller.seekToPrevious() }) {
-                Icon(Icons.Default.SkipPrevious, contentDescription = stringResource(R.string.music_previous), tint = colors.onSurface, modifier = Modifier.size(36.dp))
-            }
-            IconButton(onClick = { if (controller.isPlaying) controller.pause() else controller.play() }, modifier = Modifier.size(64.dp)) {
-                Icon(
-                    if (now.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = stringResource(if (now.playing) R.string.music_pause else R.string.music_play),
-                    tint = colors.primary,
-                    modifier = Modifier.size(56.dp),
-                )
-            }
-            IconButton(onClick = { controller.seekToNext() }) {
-                Icon(Icons.Default.SkipNext, contentDescription = stringResource(R.string.music_next), tint = colors.onSurface, modifier = Modifier.size(36.dp))
-            }
-            IconButton(onClick = { controller.repeatMode = musicPlayerRepeatMode(musicRepeatNext(now.repeat)) }) {
-                Icon(
-                    if (now.repeat == MusicRepeat.ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
-                    contentDescription = stringResource(
-                        when (now.repeat) {
-                            MusicRepeat.ALL -> R.string.music_repeat_all
-                            MusicRepeat.ONE -> R.string.music_repeat_one
-                            MusicRepeat.OFF -> R.string.music_repeat_off
-                        },
-                    ),
-                    tint = if (now.repeat == MusicRepeat.OFF) colors.onSurfaceVariant.copy(alpha = 0.6f) else colors.primary,
-                )
-            }
+            MusicControl(
+                Icons.Default.Shuffle,
+                "RND",
+                stringResource(if (now.shuffle) R.string.music_shuffle_on else R.string.music_shuffle_off),
+                { controller.shuffleModeEnabled = !now.shuffle },
+                lit = now.shuffle,
+                on = now.shuffle,
+            )
+            MusicControl(Icons.Default.SkipPrevious, "|<", stringResource(R.string.music_previous), { controller.seekToPrevious() })
+            MusicControl(
+                if (now.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                if (now.playing) "||" else ">",
+                stringResource(if (now.playing) R.string.music_pause else R.string.music_play),
+                { if (controller.isPlaying) controller.pause() else controller.play() },
+                big = true,
+            )
+            MusicControl(Icons.Default.SkipNext, ">|", stringResource(R.string.music_next), { controller.seekToNext() })
+            MusicControl(
+                if (now.repeat == MusicRepeat.ONE) Icons.Default.RepeatOne else Icons.Default.Repeat,
+                when (now.repeat) {
+                    MusicRepeat.ALL -> "ALL"
+                    MusicRepeat.ONE -> "ONE"
+                    MusicRepeat.OFF -> "OFF"
+                },
+                stringResource(
+                    when (now.repeat) {
+                        MusicRepeat.ALL -> R.string.music_repeat_all
+                        MusicRepeat.ONE -> R.string.music_repeat_one
+                        MusicRepeat.OFF -> R.string.music_repeat_off
+                    },
+                ),
+                { controller.repeatMode = musicPlayerRepeatMode(musicRepeatNext(now.repeat)) },
+                lit = now.repeat != MusicRepeat.OFF,
+                on = now.repeat != MusicRepeat.OFF,
+            )
         }
     }
 

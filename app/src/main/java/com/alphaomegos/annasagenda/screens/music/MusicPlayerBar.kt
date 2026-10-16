@@ -13,8 +13,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +43,11 @@ import com.alphaomegos.annasagenda.app.musicRepeatOf
 import com.alphaomegos.annasagenda.model.MusicRepeat
 import com.alphaomegos.annasagenda.support.MusicQueue
 import com.alphaomegos.annasagenda.support.MusicResumed
+import com.alphaomegos.annasagenda.model.MetroStyle
+import com.alphaomegos.annasagenda.screens.metro.LocalMetroStyle
+import com.alphaomegos.annasagenda.screens.metro.Win95Grey
+import com.alphaomegos.annasagenda.screens.metro.metroFrame
+import androidx.compose.ui.graphics.Color
 
 /**
  * The screen's hold on the player (16.10): a controller of the playback
@@ -158,14 +161,38 @@ internal fun MediaController.resumeMusic(resumed: MusicResumed, shuffle: Boolean
 
 /**
  * The bar along the bottom while something plays (16.10): what, by whom,
- * and the three buttons the shade has too.
+ * and the three buttons the shade has too — in the section's style: today's
+ * raised bar; Windows' grey panel; Norton's cyan status line; the
+ * terminal's "> PLAYING:" under a green rule. A tap on the words opens the
+ * player.
  */
 @Composable
 internal fun MusicMiniBar(now: MusicNowPlaying, controller: MediaController?, onOpen: () -> Unit) {
     if (now.trackId == null || controller == null) return
+    val style = LocalMetroStyle.current
+    val styled = musicStyled()
     val colors = MaterialTheme.colorScheme
-    Column(modifier = Modifier.fillMaxWidth().background(colors.surfaceContainerHighest)) {
-        HorizontalDivider(color = colors.outlineVariant)
+    val ground = when {
+        !styled -> colors.surfaceContainerHighest
+        style == MetroStyle.WIN95 -> Win95Grey
+        style == MetroStyle.DOS -> colors.primaryContainer
+        else -> colors.background
+    }
+    val ink = when {
+        !styled -> colors.onSurface
+        style == MetroStyle.WIN95 -> Color.Black
+        style == MetroStyle.DOS -> colors.onPrimaryContainer
+        else -> colors.primary
+    }
+    val title = now.title.orEmpty()
+    val shownTitle = if (styled && style == MetroStyle.TERMINAL) "> PLAYING: ${title.uppercase()}" else title
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(ground)
+            .then(if (styled && style == MetroStyle.WIN95) Modifier.metroFrame(style, details = true) else Modifier),
+    ) {
+        HorizontalDivider(color = if (styled) ink.copy(alpha = 0.6f) else colors.outlineVariant)
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -176,34 +203,29 @@ internal fun MusicMiniBar(now: MusicNowPlaying, controller: MediaController?, on
                     .clickable(role = Role.Button, onClickLabel = stringResource(R.string.music_player_open), onClick = onOpen),
             ) {
                 Text(
-                    now.title.orEmpty(),
+                    shownTitle,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = colors.onSurface,
+                    fontWeight = if (style == MetroStyle.WIN95 || !styled) FontWeight.Medium else null,
+                    color = ink,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     now.artist.orEmpty(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
+                    color = if (styled) ink.copy(alpha = 0.75f) else colors.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = { controller.seekToPrevious() }) {
-                Icon(Icons.Default.SkipPrevious, contentDescription = stringResource(R.string.music_previous), tint = colors.onSurface)
-            }
-            IconButton(onClick = { if (controller.isPlaying) controller.pause() else controller.play() }) {
-                Icon(
-                    if (now.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = stringResource(if (now.playing) R.string.music_pause else R.string.music_play),
-                    tint = colors.onSurface,
-                )
-            }
-            IconButton(onClick = { controller.seekToNext() }) {
-                Icon(Icons.Default.SkipNext, contentDescription = stringResource(R.string.music_next), tint = colors.onSurface)
-            }
+            MusicControl(Icons.Default.SkipPrevious, "|<", stringResource(R.string.music_previous), { controller.seekToPrevious() })
+            MusicControl(
+                if (now.playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                if (now.playing) "||" else ">",
+                stringResource(if (now.playing) R.string.music_pause else R.string.music_play),
+                { if (controller.isPlaying) controller.pause() else controller.play() },
+            )
+            MusicControl(Icons.Default.SkipNext, ">|", stringResource(R.string.music_next), { controller.seekToNext() })
         }
     }
 }

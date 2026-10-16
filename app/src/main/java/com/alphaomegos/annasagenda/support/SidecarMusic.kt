@@ -317,6 +317,18 @@ fun musicRepeatNext(repeat: MusicRepeat): MusicRepeat = when (repeat) {
     MusicRepeat.OFF -> MusicRepeat.ALL
 }
 
+/**
+ * How far into a track, drawn in letters (16.10), as a DOS player or a
+ * terminal would: [width] cells between brackets, [fraction] of them [full],
+ * the rest [empty] — "[█████░░░░░]".
+ */
+fun musicTextBar(fraction: Float, width: Int, full: Char, empty: Char): String {
+    val cells = width.coerceAtLeast(1)
+    val part = if (fraction.isNaN()) 0f else fraction.coerceIn(0f, 1f)
+    val filled = (part * cells + 0.5f).toInt().coerceIn(0, cells)
+    return "[" + full.toString().repeat(filled) + empty.toString().repeat(cells - filled) + "]"
+}
+
 /** A position as the player shows it: "3:07"; minutes go past sixty, as the web's do. */
 fun musicTimeLabel(millis: Long): String {
     if (millis < 0) return "0:00"

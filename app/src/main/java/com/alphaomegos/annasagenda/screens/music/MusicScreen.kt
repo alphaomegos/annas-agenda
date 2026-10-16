@@ -419,8 +419,10 @@ private fun MusicTrackRow(track: SidecarTrack, addedBy: String?, size: String?, 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
+            // DOS and the terminal point at the one playing, as their lists did.
+            val pointed = current && musicStyled() && LocalMetroStyle.current != MetroStyle.WIN95
             Text(
-                track.title,
+                if (pointed) "> ${track.title}" else track.title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color = if (current) colors.onSecondaryContainer else colors.onSurface,

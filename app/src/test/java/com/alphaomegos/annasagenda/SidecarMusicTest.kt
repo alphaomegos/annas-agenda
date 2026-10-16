@@ -332,6 +332,17 @@ class SidecarMusicTest {
     }
 
     @Test
+    fun theProgressInLettersFillsAsTheTrackGoes() {
+        assertEquals("[░░░░░░░░░░]", musicTextBar(0f, 10, '█', '░'))
+        assertEquals("[█████░░░░░]", musicTextBar(0.5f, 10, '█', '░'))
+        assertEquals("[##########]", musicTextBar(1f, 10, '#', '.'))
+        assertEquals("[####......]", musicTextBar(0.38f, 10, '#', '.'))
+        assertEquals("[..........]", musicTextBar(Float.NaN, 10, '#', '.'))
+        assertEquals("[####]", musicTextBar(7f, 4, '#', '.'))
+        assertEquals("[.]", musicTextBar(0.2f, 0, '#', '.'))
+    }
+
+    @Test
     fun aPositionIsMinutesAndSeconds() {
         assertEquals("0:00", musicTimeLabel(0))
         assertEquals("0:00", musicTimeLabel(-5))
