@@ -60,6 +60,14 @@ sealed interface MusicTab {
 /** The orders the web offers (16.10): newest, oldest, by name either way. */
 enum class MusicSort { NEWEST, OLDEST, AZ, ZA }
 
+/**
+ * A file of the phone's that stands for a sidecar's track (16.10, Eduard:
+ * the same "Moby – Lift Me Up" is on the phone already — why keep a copy?):
+ * where it is (a content:// address the person picked, with a lasting
+ * permission to read it) and what it was called then.
+ */
+data class MusicLocalFile(val uri: String, val name: String? = null)
+
 /** A track "save all" is to fetch (16.10): which, under what name it is kept, how large, from where. */
 data class MusicSaveItem(val trackId: String, val key: String, val size: Long, val url: String)
 

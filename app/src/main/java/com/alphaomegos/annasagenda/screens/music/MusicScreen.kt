@@ -53,6 +53,16 @@ import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.app.MusicLibraries
 import com.alphaomegos.annasagenda.app.MusicCache
+import com.alphaomegos.annasagenda.app.MusicLocalFileStores
+import com.alphaomegos.annasagenda.model.MusicLocalFile
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import com.alphaomegos.annasagenda.app.MusicSaveAllWorker
 import com.alphaomegos.annasagenda.support.musicCacheKey
 import com.alphaomegos.annasagenda.support.musicDownloadPlan
@@ -144,6 +154,9 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     var removing by rememberSaveable { mutableStateOf<String?>(null) }
     var clearAsked by rememberSaveable { mutableStateOf(false) }
     var saveAllAsked by rememberSaveable { mutableStateOf(false) }
+    var trackActions by rememberSaveable { mutableStateOf<String?>(null) }
+    // The track a file of the phone's is being picked for, across the picker's own screen.
+    var pickingFor by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Signed out (or another person in): nothing of the last one's music is kept in sight.
     LaunchedEffect(status.account?.userId) {
@@ -173,17 +186,40 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val upstream = remember(context) { musicUpstreamFactory(context, connection) }
     // "Save all" for the list shown (16.10): what it would fetch, and how it is going.
     val saveAll by remember(context) { MusicSaveAllWorker.progress(context) }.collectAsStateWithLifecycle(initialValue = null)
-    val savePlan = musicDownloadPlan(shown, shown.filter { it.id in kept }.mapNotNull { musicCacheKey(it) }.toSet(), emptySet())
+    val savePlan = musicDownloadPlan(
+        shown,
+        shown.filter { it.id in kept }.mapNotNull { musicCacheKey(it) }.toSet(),
+        localFiles.keys - unreadable,
+    )
     // Copies of tracks gone from the sidecar, or replaced on it, go once its list is in.
-    LaunchedEffect(lib.loaded, lib.fromPhone, lib.tracks) { if (lib.loaded && !lib.fromPhone) MusicCache.dropStale(context, lib.tracks) }
+    LaunchedEffect(lib.loaded, lib.fromPhone, lib.tracks, localFiles, unreadable) {
+        if (lib.loaded && !lib.fromPhone) MusicCache.dropStale(context, lib.tracks, localFiles.keys - unreadable)
+    }
 
-    val mediaItemOf: (SidecarTrack) -> MediaItem = { track -> musicMediaItem(track, connection.audioUrl(track.id), unknownArtist) }
+    // Files of the phone's standing for tracks (16.10); one that can no longer be read plays from the sidecar.
+    val localStore = remember(context) { MusicLocalFileStores.of(context) }
+    val localFiles by localStore.files.collectAsStateWithLifecycle()
+    val unreadable by produceState(emptySet<String>(), localFiles) {
+        value = withContext(Dispatchers.IO) { localFiles.filterValues { !musicFileReadable(context, it.uri) }.keys }
+    }
+    val localOf: (SidecarTrack) -> MusicLocalFile? = { track -> localFiles[track.id]?.takeIf { track.id !in unreadable } }
+    val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val trackId = pickingFor
+        pickingFor = null
+        if (uri != null && trackId != null) {
+            runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            localStore.set(trackId, MusicLocalFile(uri.toString(), musicFileName(context, uri)))
+            // Its copy is no longer wanted.
+            lib.tracks.firstOrNull { it.id == trackId }?.let { MusicCache.remove(context, it) }
+        }
+    }
+    val mediaItemOf: (SidecarTrack) -> MediaItem = { track -> musicMediaItem(track, connection.audioUrl(track.id), unknownArtist, localOf(track)) }
     val panelShown = playerOpen && controller != null && now.trackId != null
 
     // A tap plays the list from that track on, going round it; a track with no file is passed by.
     // Without the network (16.10), only what is kept on the phone plays.
     val offline = lib.failure == SidecarFailure.NO_NETWORK
-    val playable: (SidecarTrack) -> Boolean = { it.hasAudio && (!offline || it.id in kept) }
+    val playable: (SidecarTrack) -> Boolean = { localOf(it) != null || (it.hasAudio && (!offline || it.id in kept)) }
     val play: (SidecarTrack) -> Unit = { start ->
         val queue = musicQueue(shown, start, playable)
         if (controller != null && queue != null) controller.playMusic(queue, mediaItemOf)
@@ -315,9 +351,12 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                                 kept = track.id in kept,
                                 saving = track.id in saving,
                                 playable = playable(track),
+                                local = localFiles[track.id],
+                                localMissing = track.id in unreadable,
                                 onPlay = { play(track) },
                                 onSave = { MusicCache.save(context, track, connection.audioUrl(track.id), upstream) },
                                 onRemove = { removing = track.id },
+                                onMore = { trackActions = track.id },
                             )
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         }
@@ -422,6 +461,36 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         )
     }
 
+    lib.tracks.firstOrNull { it.id == trackActions }?.let { track ->
+        val local = localFiles[track.id]
+        MetroDialog(
+            onDismissRequest = { trackActions = null },
+            title = { Text(track.title) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.music_local_hint), style = MaterialTheme.typography.bodyMedium)
+                    MetroTextButton(onClick = {
+                        trackActions = null
+                        pickingFor = track.id
+                        pickFile.launch(arrayOf("audio/*"))
+                    }) {
+                        Text(stringResource(if (local == null) R.string.music_local_pick else R.string.music_local_change))
+                    }
+                    if (local != null) {
+                        MetroTextButton(onClick = {
+                            trackActions = null
+                            runCatching { context.contentResolver.releasePersistableUriPermission(Uri.parse(local.uri), Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+                            localStore.remove(track.id)
+                        }) {
+                            Text(stringResource(R.string.music_local_forget))
+                        }
+                    }
+                }
+            },
+            confirmButton = { MetroTextButton(onClick = { trackActions = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
     if (saveAllAsked) {
         MetroDialog(
             onDismissRequest = { saveAllAsked = false },
@@ -457,6 +526,17 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         )
     }
 }
+
+/** Whether the phone's file at [uri] can still be read: not deleted, not moved, the permission kept. */
+private fun musicFileReadable(context: Context, uri: String): Boolean =
+    runCatching { context.contentResolver.openFileDescriptor(Uri.parse(uri), "r")?.use { true } ?: false }.getOrDefault(false)
+
+/** What the phone calls the file at [uri], as the picker showed it. */
+private fun musicFileName(context: Context, uri: Uri): String? = runCatching {
+    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0) else null
+    }
+}.getOrNull()
 
 private fun musicSortName(sort: MusicSort): Int = when (sort) {
     MusicSort.NEWEST -> R.string.music_sort_newest
@@ -533,6 +613,7 @@ private fun MusicTabStrip(
 }
 
 /** One track: its name, its artist and who added it, and what it lacks. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MusicTrackRow(
     track: SidecarTrack,
@@ -542,16 +623,25 @@ private fun MusicTrackRow(
     kept: Boolean,
     saving: Boolean,
     playable: Boolean,
+    local: MusicLocalFile?,
+    localMissing: Boolean,
     onPlay: () -> Unit,
     onSave: () -> Unit,
     onRemove: () -> Unit,
+    onMore: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(if (current) colors.secondaryContainer else Color.Transparent)
-            .clickable(enabled = playable, role = Role.Button, onClick = onPlay)
+            // A long press opens the track's own actions — a file of the phone's for it among them.
+            .combinedClickable(
+                role = Role.Button,
+                onLongClickLabel = stringResource(R.string.music_track_more),
+                onLongClick = onMore,
+                onClick = { if (playable) onPlay() },
+            )
             .alpha(if (playable) 1f else 0.55f)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -574,7 +664,12 @@ private fun MusicTrackRow(
             Text(by, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val marks = listOfNotNull(
                 if (track.approvedAt == null) stringResource(R.string.music_waiting) else null,
-                if (!track.hasAudio) stringResource(R.string.music_no_file) else null,
+                if (!track.hasAudio && local == null) stringResource(R.string.music_no_file) else null,
+                when {
+                    local == null -> null
+                    localMissing -> stringResource(R.string.music_local_missing)
+                    else -> stringResource(R.string.music_local_label, local.name ?: "…")
+                },
             )
             if (marks.isNotEmpty()) {
                 Text(marks.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = colors.tertiary)
@@ -584,7 +679,8 @@ private fun MusicTrackRow(
             Text(size, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
         }
         // Kept on the phone or not (16.10): a tap keeps it; a kept one, a tap asks to take it off.
-        if (track.hasAudio) {
+        // One played from a file of the phone's needs no copy.
+        if (track.hasAudio && (local == null || localMissing)) {
             when {
                 saving -> if (musicStyled()) {
                     Text("...", style = MaterialTheme.typography.labelLarge, color = colors.primary, modifier = Modifier.padding(horizontal = 12.dp))

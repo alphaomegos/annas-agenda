@@ -167,6 +167,22 @@ class MusicLibraryTest {
     }
 
     @Test
+    fun theFilesOfThePhonesForTracksAreKeptByTrack() {
+        val where = File(folder.root, "music/local-files.json")
+        val files = MusicLocalFiles(where)
+        files.set("t1", MusicLocalFile("content://media/external/audio/media/7", "Moby - Lift Me Up.mp3"))
+        files.set("t2", MusicLocalFile("content://media/external/audio/media/9"))
+        files.remove("t2")
+        files.remove("t9")
+
+        assertEquals(mapOf("t1" to MusicLocalFile("content://media/external/audio/media/7", "Moby - Lift Me Up.mp3")), files.files.value)
+        assertEquals(files.files.value, MusicLocalFiles(where).files.value)
+
+        where.writeText("{broken")
+        assertTrue(MusicLocalFiles(where).files.value.isEmpty())
+    }
+
+    @Test
     fun anEndedSessionIsSaidSoAndForgettingEmptiesIt() {
         val library = library()
         answer = ::server

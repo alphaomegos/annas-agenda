@@ -1090,4 +1090,12 @@
     <string name="music_save_all_waiting">Čuvanje čeka mrežu…</string>
     <string name="music_pref_wifi_only">„Sačuvaj sve“ samo preko Wi-Fi mreže</string>
     <string name="music_offline_hint">Bez mreže se puštaju pesme sačuvane na telefonu.</string>
+    <!-- Fajl sa telefona za pesmu (16.10) -->
+    <string name="music_track_more">Radnje sa pesmom</string>
+    <string name="music_local_hint">Pesma može da se pušta iz fajla na telefonu — tada se kopija ne čuva.</string>
+    <string name="music_local_pick">Puštaj fajl sa telefona…</string>
+    <string name="music_local_change">Drugi fajl sa telefona…</string>
+    <string name="music_local_forget">Ponovo puštaj iz sajdkara</string>
+    <string name="music_local_label">Fajl na telefonu: %1$s</string>
+    <string name="music_local_missing">Fajl na telefonu nije pronađen — pušta se iz sajdkara</string>
 </resources>

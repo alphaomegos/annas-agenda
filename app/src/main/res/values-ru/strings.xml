@@ -1156,4 +1156,12 @@
     <string name="music_save_all_waiting">Сохранение ждёт сети…</string>
     <string name="music_pref_wifi_only">«Сохранить все» только по Wi-Fi</string>
     <string name="music_offline_hint">Без сети играют треки, сохранённые на телефоне.</string>
+    <!-- Свой файл для трека (16.10) -->
+    <string name="music_track_more">Действия с треком</string>
+    <string name="music_local_hint">Трек может играть из файла на телефоне — тогда копия не хранится.</string>
+    <string name="music_local_pick">Играть файл с телефона…</string>
+    <string name="music_local_change">Другой файл с телефона…</string>
+    <string name="music_local_forget">Снова играть из сайдкара</string>
+    <string name="music_local_label">Файл на телефоне: %1$s</string>
+    <string name="music_local_missing">Файл на телефоне не найден — играет из сайдкара</string>
 </resources>

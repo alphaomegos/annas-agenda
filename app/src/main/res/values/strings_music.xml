@@ -80,4 +80,12 @@
     <string name="music_save_all_waiting">Keeping waits for the network…</string>
     <string name="music_pref_wifi_only">"Keep all" only over Wi-Fi</string>
     <string name="music_offline_hint">Without the network, the tracks kept on the phone play.</string>
+    <!-- A file of the phone's for a track (16.10) -->
+    <string name="music_track_more">Actions for the track</string>
+    <string name="music_local_hint">The track can play from a file on the phone instead: then no copy of it is kept.</string>
+    <string name="music_local_pick">Play a file of the phone\'s…</string>
+    <string name="music_local_change">Another file of the phone\'s…</string>
+    <string name="music_local_forget">Play from the sidecar again</string>
+    <string name="music_local_label">File on the phone: %1$s</string>
+    <string name="music_local_missing">The file on the phone is not found: plays from the sidecar</string>
 </resources>

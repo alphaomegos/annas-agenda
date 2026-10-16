@@ -37,6 +37,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.alphaomegos.annasagenda.MusicPlaybackService
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.model.MusicLocalFile
 import com.alphaomegos.annasagenda.model.SidecarTrack
 import com.alphaomegos.annasagenda.app.musicPlayerRepeatMode
 import com.alphaomegos.annasagenda.app.musicRepeatOf
@@ -130,12 +131,13 @@ internal fun rememberMusicNowPlaying(controller: MediaController?): MusicNowPlay
 
 /** A track as the player is given it: streamed from [url], named for the shade and the lock screen. */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-internal fun musicMediaItem(track: SidecarTrack, url: String, unknownArtist: String): MediaItem =
+internal fun musicMediaItem(track: SidecarTrack, url: String, unknownArtist: String, local: MusicLocalFile? = null): MediaItem =
     MediaItem.Builder()
         .setMediaId(track.id)
-        .setUri(url)
+        // A file of the phone's standing for the track plays as it is, and is never kept a copy of.
+        .setUri(local?.uri ?: url)
         // The kept copy's name: the same track with another file is another copy.
-        .setCustomCacheKey(musicCacheKey(track))
+        .setCustomCacheKey(if (local != null) null else musicCacheKey(track))
         .setMediaMetadata(
             MediaMetadata.Builder()
                 .setTitle(track.title)

@@ -103,3 +103,13 @@ internal object SidecarAvatarStores {
         ).also { instance = it }
     }
 }
+
+/** The phone's files standing for tracks (16.10), one record for the process. */
+internal object MusicLocalFileStores {
+    @Volatile
+    private var instance: MusicLocalFiles? = null
+
+    fun of(context: Context): MusicLocalFiles = instance ?: synchronized(this) {
+        instance ?: MusicLocalFiles(File(File(context.applicationContext.noBackupFilesDir, "music"), "local-files.json")).also { instance = it }
+    }
+}

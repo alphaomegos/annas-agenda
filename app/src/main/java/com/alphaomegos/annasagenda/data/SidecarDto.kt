@@ -206,3 +206,16 @@ internal fun SidecarTrack.toDto() = SidecarTrackDto(
     audioContentType = audioContentType,
     pendingApproval = pendingApproval,
 )
+
+/** The phone's files standing for tracks (16.10), by track id: MusicLocalFile. */
+@Serializable
+internal data class MusicLocalFileDto(
+    val trackId: String,
+    val uri: String,
+    val name: String? = null,
+)
+
+@Serializable
+internal data class MusicLocalFilesDto(
+    val files: List<MusicLocalFileDto> = emptyList(),
+)

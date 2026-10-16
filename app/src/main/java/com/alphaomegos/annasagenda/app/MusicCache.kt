@@ -1,11 +1,14 @@
 package com.alphaomegos.annasagenda.app
 
 import android.content.Context
+import android.net.Uri
 import androidx.annotation.OptIn
+import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.TransferListener
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheWriter
 import androidx.media3.datasource.cache.NoOpCacheEvictor
@@ -97,7 +100,12 @@ internal object MusicCache {
             .setCache(store)
             .setUpstreamDataSourceFactory(upstream)
             .setCacheWriteDataSinkFactory(null)
-        return DataSource.Factory { if (keepWhilePlaying) keeping.createDataSource() else readingOnly.createDataSource() }
+        return DataSource.Factory {
+            MusicRoutingDataSource(
+                kept = if (keepWhilePlaying) keeping.createDataSource() else readingOnly.createDataSource(),
+                direct = upstream.createDataSource(),
+            )
+        }
     }
 
     /** [track] fetched from [url] through [upstream] and kept, in the background; once at a time each. */
@@ -149,16 +157,51 @@ internal object MusicCache {
     /**
      * The copies no longer wanted (musicCacheKeysStale): of tracks gone from
      * the sidecar's [tracks] — its whole list, as the server last gave it —
-     * or whose file was replaced since.
+     * or whose file was replaced since — and of tracks [notKept]: played
+     * from a file of the phone's.
      */
-    fun dropStale(context: Context, tracks: List<SidecarTrack>) {
+    fun dropStale(context: Context, tracks: List<SidecarTrack>, notKept: Set<String>) {
         scope.launch {
             runCatching {
                 val store = of(context)
-                val stale = musicCacheKeysStale(store.keys.toSet(), tracks, emptySet())
+                val stale = musicCacheKeysStale(store.keys.toSet(), tracks, notKept)
                 stale.forEach { store.removeResource(it) }
                 if (stale.isNotEmpty()) changed()
             }
         }
+    }
+}
+
+/**
+ * A file of the phone's read as it is (16.10) — content:// or file:// — and
+ * never copied into the store; the sidecar's files through it ([kept]).
+ */
+@OptIn(UnstableApi::class)
+private class MusicRoutingDataSource(private val kept: DataSource, private val direct: DataSource) : DataSource {
+    private var opened: DataSource? = null
+
+    override fun addTransferListener(transferListener: TransferListener) {
+        kept.addTransferListener(transferListener)
+        direct.addTransferListener(transferListener)
+    }
+
+    override fun open(dataSpec: DataSpec): Long {
+        val scheme = dataSpec.uri.scheme?.lowercase()
+        val source = if (scheme == "content" || scheme == "file") direct else kept
+        opened = source
+        return source.open(dataSpec)
+    }
+
+    override fun read(buffer: ByteArray, offset: Int, length: Int): Int =
+        opened?.read(buffer, offset, length) ?: C.RESULT_END_OF_INPUT
+
+    override fun getUri(): Uri? = opened?.uri
+
+    override fun getResponseHeaders(): Map<String, List<String>> = opened?.responseHeaders ?: emptyMap()
+
+    override fun close() {
+        val source = opened
+        opened = null
+        source?.close()
     }
 }
