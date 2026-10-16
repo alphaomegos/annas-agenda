@@ -41,11 +41,13 @@ class MusicLibraryTest {
         override fun forget() {}
     }
 
-    private fun library(): MusicLibrary {
+    private fun library(snapshots: MusicLibrarySnapshots? = null): MusicLibrary {
         val connection = SidecarConnection(File(folder.root, "s.json"), sealer, http, clock = { now }, io = Dispatchers.Unconfined)
         runBlocking { connection.signIn("oursidecar.com", "e@example.org", "pw") }
-        return MusicLibrary(connection)
+        return MusicLibrary(connection, snapshots)
     }
+
+    private val lists get() = MusicLibrarySnapshots(File(folder.root, "lists"))
 
     private val members = """{"members":[{"id":"u1","email":"e@example.org","joined_at":1},{"id":"u2","email":"a@example.org","joined_at":2}]}"""
     private val tracks = """{"tracks":[{"id":"t1","title":"One","created_by_user_id":"u1","hasAudio":true,"audio_etag":"e1","approved_at":5}]}"""
@@ -129,6 +131,39 @@ class MusicLibraryTest {
         assertEquals(items, plan.read())
         plan.forget()
         assertEquals(null, plan.read())
+    }
+
+    @Test
+    fun offlineTheListKeptOnThePhoneIsShown() {
+        answer = ::server
+        runBlocking { library(lists).refresh("s1") }
+
+        answer = { throw IOException("offline") }
+        val next = library(lists)
+        runBlocking { next.refresh("s1") }
+
+        val s = next.state.value
+        assertTrue(s.loaded)
+        assertTrue(s.fromPhone)
+        assertEquals(SidecarFailure.NO_NETWORK, s.failure)
+        assertEquals(listOf("t1"), s.tracks.map { it.id })
+        assertEquals(listOf("u1", "u2"), s.members.map { it.id })
+    }
+
+    @Test
+    fun aFreshListIsNotFromThePhoneAndSigningOutForgetsTheKeptOnes() {
+        answer = ::server
+        val library = library(lists)
+        runBlocking { library.refresh("s1") }
+        assertFalse(library.state.value.fromPhone)
+
+        library.forget()
+
+        answer = { throw IOException("offline") }
+        val next = library(lists)
+        runBlocking { next.refresh("s1") }
+        assertFalse(next.state.value.loaded)
+        assertTrue(next.state.value.tracks.isEmpty())
     }
 
     @Test

@@ -79,4 +79,5 @@
     <string name="music_save_all_going">Keeping %1$d of %2$d…</string>
     <string name="music_save_all_waiting">Keeping waits for the network…</string>
     <string name="music_pref_wifi_only">"Keep all" only over Wi-Fi</string>
+    <string name="music_offline_hint">Without the network, the tracks kept on the phone play.</string>
 </resources>

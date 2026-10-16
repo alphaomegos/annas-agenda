@@ -181,3 +181,28 @@ internal data class MusicSavePlanDto(
 internal fun MusicSaveItem.toDto() = MusicSaveItemDto(trackId, key, size, url)
 
 internal fun MusicSaveItemDto.toDomain() = MusicSaveItem(trackId, key, size, url)
+
+/** A sidecar's list as the server last gave it (16.10), for the music section offline. */
+@Serializable
+internal data class MusicLibrarySnapshotDto(
+    val spaceId: String,
+    val members: List<SidecarMemberDto> = emptyList(),
+    val tracks: List<SidecarTrackDto> = emptyList(),
+)
+
+internal fun SidecarMember.toDto() = SidecarMemberDto(id = id, email = email, nickname = nickname, avatarId = avatarId, joinedAt = joinedAt)
+
+internal fun SidecarTrack.toDto() = SidecarTrackDto(
+    id = id,
+    title = title,
+    artist = artist,
+    createdByUserId = createdByUserId,
+    createdAt = createdAt,
+    approvedAt = approvedAt,
+    hasAudio = hasAudio,
+    audioSize = audioSize,
+    audioEtag = audioEtag,
+    audioFilename = audioFilename,
+    audioContentType = audioContentType,
+    pendingApproval = pendingApproval,
+)

@@ -1089,4 +1089,5 @@
     <string name="music_save_all_going">Čuva se %1$d od %2$d…</string>
     <string name="music_save_all_waiting">Čuvanje čeka mrežu…</string>
     <string name="music_pref_wifi_only">„Sačuvaj sve“ samo preko Wi-Fi mreže</string>
+    <string name="music_offline_hint">Bez mreže se puštaju pesme sačuvane na telefonu.</string>
 </resources>

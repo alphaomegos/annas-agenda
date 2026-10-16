@@ -79,7 +79,10 @@ internal object MusicLibraries {
     private var instance: MusicLibrary? = null
 
     fun of(context: Context): MusicLibrary = instance ?: synchronized(this) {
-        instance ?: MusicLibrary(SidecarConnections.of(context)).also { instance = it }
+        instance ?: MusicLibrary(
+            SidecarConnections.of(context),
+            MusicLibrarySnapshots(File(File(context.applicationContext.noBackupFilesDir, "music"), "lists")),
+        ).also { instance = it }
     }
 }
 

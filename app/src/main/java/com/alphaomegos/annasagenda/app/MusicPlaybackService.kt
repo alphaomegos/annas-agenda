@@ -8,6 +8,7 @@ import android.os.Looper
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
@@ -55,6 +56,9 @@ class MusicPlaybackService : MediaSessionService() {
     private val handler = Handler(Looper.getMainLooper())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
+    // Tracks failed one after another (16.10): no network for them, a file gone. Passed by, once round at most.
+    private var failuresInARow = 0
+
     // Where the player is, written down while it plays — every few seconds,
     // and at every change of track, queue or way of going on — so that the
     // app opened again, after Android let the service go, finds it there.
@@ -98,9 +102,19 @@ class MusicPlaybackService : MediaSessionService() {
                 if (MusicCache.keepWhilePlaying && events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_IS_PLAYING_CHANGED)) {
                     MusicCache.changed()
                 }
+                if (player.isPlaying) failuresInARow = 0
                 if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) {
                     handler.removeCallbacks(rememberTick)
                     if (player.isPlaying) handler.postDelayed(rememberTick, MEMORY_TICK_MS)
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                if (failuresInARow < player.mediaItemCount - 1 && player.hasNextMediaItem()) {
+                    failuresInARow++
+                    player.seekToNextMediaItem()
+                    player.prepare()
+                    player.play()
                 }
             }
         })

@@ -84,6 +84,7 @@ import com.alphaomegos.annasagenda.screens.metro.MetroTextButton
 import com.alphaomegos.annasagenda.screens.metro.MetroThemed
 import com.alphaomegos.annasagenda.screens.metro.MetroTopBar
 import com.alphaomegos.annasagenda.screens.metro.metroFrame
+import com.alphaomegos.annasagenda.support.SidecarFailure
 import com.alphaomegos.annasagenda.support.SidecarSignInState
 import com.alphaomegos.annasagenda.support.musicArtistShown
 import com.alphaomegos.annasagenda.support.musicArtists
@@ -174,14 +175,17 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val saveAll by remember(context) { MusicSaveAllWorker.progress(context) }.collectAsStateWithLifecycle(initialValue = null)
     val savePlan = musicDownloadPlan(shown, shown.filter { it.id in kept }.mapNotNull { musicCacheKey(it) }.toSet(), emptySet())
     // Copies of tracks gone from the sidecar, or replaced on it, go once its list is in.
-    LaunchedEffect(lib.loaded, lib.tracks) { if (lib.loaded) MusicCache.dropStale(context, lib.tracks) }
+    LaunchedEffect(lib.loaded, lib.fromPhone, lib.tracks) { if (lib.loaded && !lib.fromPhone) MusicCache.dropStale(context, lib.tracks) }
 
     val mediaItemOf: (SidecarTrack) -> MediaItem = { track -> musicMediaItem(track, connection.audioUrl(track.id), unknownArtist) }
     val panelShown = playerOpen && controller != null && now.trackId != null
 
     // A tap plays the list from that track on, going round it; a track with no file is passed by.
+    // Without the network (16.10), only what is kept on the phone plays.
+    val offline = lib.failure == SidecarFailure.NO_NETWORK
+    val playable: (SidecarTrack) -> Boolean = { it.hasAudio && (!offline || it.id in kept) }
     val play: (SidecarTrack) -> Unit = { start ->
-        val queue = musicQueue(shown, start) { it.hasAudio }
+        val queue = musicQueue(shown, start, playable)
         if (controller != null && queue != null) controller.playMusic(queue, mediaItemOf)
     }
 
@@ -191,7 +195,7 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         val spaceId = space?.id ?: return@LaunchedEffect
         if (!lib.loaded || c.mediaItemCount > 0) return@LaunchedEffect
         val memory = withContext(Dispatchers.IO) { memoryFile.read() } ?: return@LaunchedEffect
-        val resumed = musicResumed(memory, spaceId, lib.tracks) { it.hasAudio } ?: return@LaunchedEffect
+        val resumed = musicResumed(memory, spaceId, lib.tracks, playable) ?: return@LaunchedEffect
         if (c.mediaItemCount == 0) c.resumeMusic(resumed, memory.shuffle, memory.repeat, mediaItemOf)
     }
 
@@ -288,7 +292,8 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                     if (lib.loading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     lib.failure?.let { failure ->
                         MusicMessage(
-                            text = sidecarFailureText(failure),
+                            text = sidecarFailureText(failure) +
+                                if (failure == SidecarFailure.NO_NETWORK && kept.isNotEmpty()) "\n" + stringResource(R.string.music_offline_hint) else "",
                             action = stringResource(R.string.music_retry),
                             onAction = refresh,
                             compact = lib.loaded,
@@ -309,6 +314,7 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                                 current = track.id == now.trackId,
                                 kept = track.id in kept,
                                 saving = track.id in saving,
+                                playable = playable(track),
                                 onPlay = { play(track) },
                                 onSave = { MusicCache.save(context, track, connection.audioUrl(track.id), upstream) },
                                 onRemove = { removing = track.id },
@@ -535,6 +541,7 @@ private fun MusicTrackRow(
     current: Boolean,
     kept: Boolean,
     saving: Boolean,
+    playable: Boolean,
     onPlay: () -> Unit,
     onSave: () -> Unit,
     onRemove: () -> Unit,
@@ -544,8 +551,8 @@ private fun MusicTrackRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(if (current) colors.secondaryContainer else Color.Transparent)
-            .clickable(enabled = track.hasAudio, role = Role.Button, onClick = onPlay)
-            .alpha(if (track.hasAudio) 1f else 0.55f)
+            .clickable(enabled = playable, role = Role.Button, onClick = onPlay)
+            .alpha(if (playable) 1f else 0.55f)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
