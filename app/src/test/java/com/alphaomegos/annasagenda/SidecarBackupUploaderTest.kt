@@ -101,7 +101,7 @@ class SidecarBackupUploaderTest {
             return SidecarBackupReply(200, "{}")
         }
 
-        override fun download(url: String, bearer: String, from: Long, out: OutputStream, onBytes: (Long) -> Unit) = SidecarBackupDownloadReply(500)
+        override fun download(url: String, bearer: String, from: Long, open: (Boolean) -> OutputStream, onBytes: (Long) -> Unit) = SidecarBackupDownloadReply(500)
 
         fun whole(): ByteArray = parts.values.fold(ByteArray(0)) { a, b -> a + b }
     }

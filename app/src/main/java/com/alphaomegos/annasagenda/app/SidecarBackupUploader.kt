@@ -157,7 +157,7 @@ internal class SidecarBackupUploader(
             sealed
         }
         val size = file.length()
-        val sha = sha256Of(file)
+        val sha = sidecarFileSha256(file)
         val started = client.start(
             server,
             token,
@@ -250,17 +250,18 @@ internal class SidecarBackupUploader(
         }
         return null
     }
+}
 
-    private fun sha256Of(file: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        BufferedInputStream(FileInputStream(file)).use { input ->
-            val buffer = ByteArray(64 * 1024)
-            while (true) {
-                val n = input.read(buffer)
-                if (n < 0) break
-                digest.update(buffer, 0, n)
-            }
+/** The sha256 of [file]'s bytes, in the hex the server keeps it in. */
+internal fun sidecarFileSha256(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    BufferedInputStream(FileInputStream(file)).use { input ->
+        val buffer = ByteArray(64 * 1024)
+        while (true) {
+            val n = input.read(buffer)
+            if (n < 0) break
+            digest.update(buffer, 0, n)
         }
-        return sidecarHex(digest.digest())
     }
+    return sidecarHex(digest.digest())
 }

@@ -29,7 +29,7 @@ class SidecarBackupsClientTest {
     private val sha = "0123456789abcdef".repeat(4)
     private val sent = mutableListOf<Sent>()
     private var answer: (Sent) -> SidecarBackupReply = { SidecarBackupReply(404, "{}") }
-    private var download: (Sent, OutputStream) -> SidecarBackupDownloadReply = { _, _ -> SidecarBackupDownloadReply(404) }
+    private var download: (Sent, (Boolean) -> OutputStream) -> SidecarBackupDownloadReply = { _, _ -> SidecarBackupDownloadReply(404) }
 
     private val http = object : SidecarBackupHttp {
         override fun json(method: String, url: String, bearer: String?, json: String?): SidecarBackupReply =
@@ -38,8 +38,8 @@ class SidecarBackupsClientTest {
         override fun putBytes(url: String, bearer: String, bytes: ByteArray, offset: Int, length: Int): SidecarBackupReply =
             Sent("PUT", url, bearer, String(bytes, offset, length), bytes = length).also { sent += it }.let(answer)
 
-        override fun download(url: String, bearer: String, from: Long, out: OutputStream, onBytes: (Long) -> Unit): SidecarBackupDownloadReply =
-            Sent("GET", url, bearer, null, from = from).also { sent += it }.let { download(it, out) }
+        override fun download(url: String, bearer: String, from: Long, open: (Boolean) -> OutputStream, onBytes: (Long) -> Unit): SidecarBackupDownloadReply =
+            Sent("GET", url, bearer, null, from = from).also { sent += it }.let { download(it, open) }
     }
 
     private val client = SidecarBackupsClient(http, Dispatchers.Unconfined)
@@ -190,20 +190,23 @@ class SidecarBackupsClientTest {
 
     @Test
     fun aDownloadGoesOnFromWhereItStoppedAndBringsTheServersSha() = runBlocking {
-        download = { request, out ->
-            out.write("rest".toByteArray())
-            SidecarBackupDownloadReply(if (request.from > 0) 206 else 200, sha256 = " ${sha.uppercase()} ")
+        download = { request, open ->
+            val partial = request.from > 0
+            open(partial).use { it.write("rest".toByteArray()) }
+            SidecarBackupDownloadReply(if (partial) 206 else 200, sha256 = " ${sha.uppercase()} ")
         }
         val out = ByteArrayOutputStream()
+        var toldPartial: Boolean? = null
 
-        val result = (client.download(server, "osb_t", "b1", 100, out) as SidecarBackupResult.Ok).value
+        val result = (client.download(server, "osb_t", "b1", 100, { partial -> toldPartial = partial; out }) as SidecarBackupResult.Ok).value
 
         assertEquals(true to sha, result)
+        assertEquals(true, toldPartial)
         assertEquals(Sent("GET", "$server/api/backups/b1/download", "osb_t", null, from = 100), sent.single())
         assertEquals("rest", out.toString())
 
         download = { _, _ -> SidecarBackupDownloadReply(404, body = """{"error":"Not found"}""") }
-        assertEquals(SidecarBackupResult.Failed(SidecarBackupFailure.GONE), client.download(server, "osb_t", "b1", 0, out))
+        assertEquals(SidecarBackupResult.Failed(SidecarBackupFailure.GONE), client.download(server, "osb_t", "b1", 0, { out }))
     }
 
     @Test

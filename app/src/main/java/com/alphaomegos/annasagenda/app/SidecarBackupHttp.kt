@@ -36,11 +36,12 @@ internal interface SidecarBackupHttp {
     fun putBytes(url: String, bearer: String, bytes: ByteArray, offset: Int, length: Int): SidecarBackupReply
 
     /**
-     * The file at [url] into [out], from byte [from] on (a Range when above
-     * zero); [onBytes] is told what has come so far. A 206 is the rest; a
-     * 200 is the whole of it, from the start.
+     * The file at [url], from byte [from] on (a Range when above zero), into
+     * the stream [open] gives — told whether what comes is the rest (a 206)
+     * or the whole, from the start (a 200) — and closed after. [onBytes] is
+     * told what has come so far. Nothing is opened for an error.
      */
-    fun download(url: String, bearer: String, from: Long, out: OutputStream, onBytes: (Long) -> Unit): SidecarBackupDownloadReply
+    fun download(url: String, bearer: String, from: Long, open: (partial: Boolean) -> OutputStream, onBytes: (Long) -> Unit): SidecarBackupDownloadReply
 }
 
 /**
@@ -100,7 +101,7 @@ internal object SidecarBackupUrlConnection : SidecarBackupHttp {
         }
     }
 
-    override fun download(url: String, bearer: String, from: Long, out: OutputStream, onBytes: (Long) -> Unit): SidecarBackupDownloadReply {
+    override fun download(url: String, bearer: String, from: Long, open: (partial: Boolean) -> OutputStream, onBytes: (Long) -> Unit): SidecarBackupDownloadReply {
         val c = open("GET", url, bearer)
         try {
             if (from > 0) c.setRequestProperty("Range", "bytes=$from-")
@@ -111,14 +112,16 @@ internal object SidecarBackupUrlConnection : SidecarBackupHttp {
             }
             val sha = c.getHeaderField("X-Backup-Sha256")
             c.inputStream.use { input ->
-                val buffer = ByteArray(64 * 1024)
-                var total = 0L
-                while (true) {
-                    val n = input.read(buffer)
-                    if (n < 0) break
-                    out.write(buffer, 0, n)
-                    total += n
-                    onBytes(total)
+                open(status == 206).use { out ->
+                    val buffer = ByteArray(64 * 1024)
+                    var total = 0L
+                    while (true) {
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        out.write(buffer, 0, n)
+                        total += n
+                        onBytes(total)
+                    }
                 }
             }
             return SidecarBackupDownloadReply(status, sha)

@@ -207,19 +207,20 @@ internal class SidecarBackupsClient(
     }
 
     /**
-     * A backup brought down into [out] from byte [from] on. The answer is
-     * whether it came as the rest (true) or whole from the start (false),
-     * and the sha256 the server keeps.
+     * A backup brought down from byte [from] on, into the stream [open]
+     * gives (see SidecarBackupHttp.download). The answer is whether it came
+     * as the rest (true) or whole from the start (false), and the sha256 the
+     * server keeps.
      */
     suspend fun download(
         server: String,
         token: String,
         backupId: String,
         from: Long,
-        out: OutputStream,
+        open: (partial: Boolean) -> OutputStream,
         onBytes: (Long) -> Unit = {},
     ): SidecarBackupResult<Pair<Boolean, String?>> = call {
-        val reply = http.download(server + sidecarBackupDownloadPath(backupId), token, from, out, onBytes)
+        val reply = http.download(server + sidecarBackupDownloadPath(backupId), token, from, open, onBytes)
         failed(SidecarBackupReply(reply.status, reply.body))
             ?: SidecarBackupResult.Ok((reply.status == 206) to reply.sha256?.trim()?.lowercase())
     }

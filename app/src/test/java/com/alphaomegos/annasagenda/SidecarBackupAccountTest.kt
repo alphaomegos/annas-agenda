@@ -50,7 +50,7 @@ class SidecarBackupAccountTest {
 
         override fun putBytes(url: String, bearer: String, bytes: ByteArray, offset: Int, length: Int) = SidecarBackupReply(500, "")
 
-        override fun download(url: String, bearer: String, from: Long, out: OutputStream, onBytes: (Long) -> Unit) = SidecarBackupDownloadReply(500)
+        override fun download(url: String, bearer: String, from: Long, open: (Boolean) -> OutputStream, onBytes: (Long) -> Unit) = SidecarBackupDownloadReply(500)
     }
 
     private fun salt(password: String) = ByteArray(16) { (password.length + it).toByte() }
