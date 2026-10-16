@@ -1137,4 +1137,14 @@
     <string name="music_repeat_one">Повтор: этот трек</string>
     <string name="music_repeat_off">Повтор: выключен</string>
     <string name="music_queue">Очередь</string>
+    <!-- На телефоне (16.10) -->
+    <string name="music_save">Сохранить на телефон</string>
+    <string name="music_kept">Сохранён на телефоне</string>
+    <string name="music_remove_title">Убрать с телефона?</string>
+    <string name="music_remove_text">«%1$s» снова будет играть из сети.</string>
+    <string name="music_pref_keep_played">Сохранять прослушанное на телефоне</string>
+    <string name="music_kept_size">На телефоне: %1$s</string>
+    <string name="music_clear">Очистить</string>
+    <string name="music_clear_title">Убрать всю музыку с телефона?</string>
+    <string name="music_clear_text">Всё сохранённое (%1$s) будет удалено и снова будет играть из сети.</string>
 </resources>

@@ -52,7 +52,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.app.MusicLibraries
+import com.alphaomegos.annasagenda.app.MusicCache
 import com.alphaomegos.annasagenda.app.SidecarAvatarStores
+import com.alphaomegos.annasagenda.musicUpstreamFactory
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DownloadDone
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.produceState
 import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.components.SidecarAccountDialog
 import com.alphaomegos.annasagenda.components.sidecarFailureText
@@ -129,6 +136,8 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val now = rememberMusicNowPlaying(controller)
     val unknownArtist = stringResource(R.string.music_unknown_artist)
     val memoryFile = remember(context) { musicPlayerMemoryFile(context) }
+    var removing by rememberSaveable { mutableStateOf<String?>(null) }
+    var clearAsked by rememberSaveable { mutableStateOf(false) }
 
     // Signed out (or another person in): nothing of the last one's music is kept in sight.
     LaunchedEffect(status.account?.userId) {
@@ -146,6 +155,18 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val artist = musicArtistShown(prefs.artist, artists)
     val shown = musicSorted(musicTracksOf(lib.tracks, tab, artist), prefs.sort, locale)
     val namesById = lib.members.associate { it.id to musicMemberName(it) }
+
+    // What is kept on the phone (16.10): looked at again whenever it may have changed.
+    LaunchedEffect(prefs.cacheWhilePlaying) { MusicCache.keepWhilePlaying = prefs.cacheWhilePlaying }
+    val cacheRevision by MusicCache.revision.collectAsStateWithLifecycle()
+    val saving by MusicCache.saving.collectAsStateWithLifecycle()
+    val kept by produceState(emptySet<String>(), lib.tracks, cacheRevision) {
+        value = withContext(Dispatchers.IO) { MusicCache.keptIds(context, lib.tracks) }
+    }
+    val keptBytes by produceState(0L, cacheRevision) { value = withContext(Dispatchers.IO) { MusicCache.bytes(context) } }
+    val upstream = remember(context) { musicUpstreamFactory(context, connection) }
+    // Copies of tracks gone from the sidecar, or replaced on it, go once its list is in.
+    LaunchedEffect(lib.loaded, lib.tracks) { if (lib.loaded) MusicCache.dropStale(context, lib.tracks) }
 
     val mediaItemOf: (SidecarTrack) -> MediaItem = { track -> musicMediaItem(track, connection.audioUrl(track.id), unknownArtist) }
     val panelShown = playerOpen && controller != null && now.trackId != null
@@ -258,7 +279,11 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                                 addedBy = if (tab is MusicTab.Member) null else namesById[track.createdByUserId],
                                 size = track.audioSize?.let { Formatter.formatShortFileSize(context, it) },
                                 current = track.id == now.trackId,
+                                kept = track.id in kept,
+                                saving = track.id in saving,
                                 onPlay = { play(track) },
+                                onSave = { MusicCache.save(context, track, connection.audioUrl(track.id), upstream) },
+                                onRemove = { removing = track.id },
                             )
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         }
@@ -326,9 +351,52 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                     MetroMapTick(stringResource(R.string.music_pref_artist_tab), prefs.artistTab, Modifier.fillMaxWidth()) { on ->
                         onPrefs { it.copy(artistTab = on) }
                     }
+                    MetroMapTick(stringResource(R.string.music_pref_keep_played), prefs.cacheWhilePlaying, Modifier.fillMaxWidth()) { on ->
+                        onPrefs { it.copy(cacheWhilePlaying = on) }
+                    }
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.music_kept_size, Formatter.formatShortFileSize(context, keptBytes)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        MetroTextButton(onClick = { clearAsked = true }, enabled = keptBytes > 0L) {
+                            Text(stringResource(R.string.music_clear))
+                        }
+                    }
                 }
             },
             confirmButton = { MetroTextButton(onClick = { setupOpen = false }) { Text(stringResource(R.string.ok)) } },
+        )
+    }
+
+    lib.tracks.firstOrNull { it.id == removing }?.let { track ->
+        MetroDialog(
+            onDismissRequest = { removing = null },
+            title = { Text(stringResource(R.string.music_remove_title)) },
+            text = { Text(stringResource(R.string.music_remove_text, track.title)) },
+            confirmButton = {
+                MetroTextButton(onClick = {
+                    MusicCache.remove(context, track)
+                    removing = null
+                }) { Text(stringResource(R.string.remove)) }
+            },
+            dismissButton = { MetroTextButton(onClick = { removing = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
+    if (clearAsked) {
+        MetroDialog(
+            onDismissRequest = { clearAsked = false },
+            title = { Text(stringResource(R.string.music_clear_title)) },
+            text = { Text(stringResource(R.string.music_clear_text, Formatter.formatShortFileSize(context, keptBytes))) },
+            confirmButton = {
+                MetroTextButton(onClick = {
+                    MusicCache.clear(context)
+                    clearAsked = false
+                }) { Text(stringResource(R.string.music_clear)) }
+            },
+            dismissButton = { MetroTextButton(onClick = { clearAsked = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -409,7 +477,17 @@ private fun MusicTabStrip(
 
 /** One track: its name, its artist and who added it, and what it lacks. */
 @Composable
-private fun MusicTrackRow(track: SidecarTrack, addedBy: String?, size: String?, current: Boolean, onPlay: () -> Unit) {
+private fun MusicTrackRow(
+    track: SidecarTrack,
+    addedBy: String?,
+    size: String?,
+    current: Boolean,
+    kept: Boolean,
+    saving: Boolean,
+    onPlay: () -> Unit,
+    onSave: () -> Unit,
+    onRemove: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -446,6 +524,18 @@ private fun MusicTrackRow(track: SidecarTrack, addedBy: String?, size: String?, 
         }
         if (size != null) {
             Text(size, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
+        }
+        // Kept on the phone or not (16.10): a tap keeps it; a kept one, a tap asks to take it off.
+        if (track.hasAudio) {
+            when {
+                saving -> if (musicStyled()) {
+                    Text("...", style = MaterialTheme.typography.labelLarge, color = colors.primary, modifier = Modifier.padding(horizontal = 12.dp))
+                } else {
+                    CircularProgressIndicator(modifier = Modifier.padding(horizontal = 12.dp).size(22.dp), strokeWidth = 2.dp)
+                }
+                kept -> MusicControl(Icons.Default.DownloadDone, "KEPT", stringResource(R.string.music_kept), onRemove, on = true)
+                else -> MusicControl(Icons.Default.Download, "SAVE", stringResource(R.string.music_save), onSave, lit = false)
+            }
         }
     }
 }

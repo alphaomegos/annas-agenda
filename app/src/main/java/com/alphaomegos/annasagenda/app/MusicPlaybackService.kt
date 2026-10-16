@@ -21,6 +21,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.alphaomegos.annasagenda.app.SIDECAR_HTTP_AGENT
 import com.alphaomegos.annasagenda.app.SidecarConnection
+import com.alphaomegos.annasagenda.app.MusicCache
 import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.app.musicPlayerMemoryFile
 import com.alphaomegos.annasagenda.app.musicRepeatOf
@@ -92,6 +93,10 @@ class MusicPlaybackService : MediaSessionService() {
                     )
                 ) {
                     remember(player)
+                }
+                // A track played and kept on the way: the lists may show it kept now.
+                if (MusicCache.keepWhilePlaying && events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_IS_PLAYING_CHANGED)) {
+                    MusicCache.changed()
                 }
                 if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) {
                     handler.removeCallbacks(rememberTick)
@@ -165,14 +170,18 @@ class MusicPlaybackService : MediaSessionService() {
     }
 }
 
+/** Where the player reads a track from (16.10): the copy kept on the phone, else the network — MusicCache. */
+internal fun musicDataSourceFactory(context: Context, connection: SidecarConnection): DataSource.Factory =
+    MusicCache.playbackFactory(context, musicUpstreamFactory(context, connection))
+
 /**
- * Where the player reads a track from (16.10): the phone's own files as
- * they are; the sidecar's server over https, with the session cookie added
- * at the moment of asking — the session may have been renewed since the
- * track was queued — and to that server only.
+ * Where a track is fetched from (16.10): the phone's own files as they are;
+ * the sidecar's server over https, with the session cookie added at the
+ * moment of asking — the session may have been renewed since the track was
+ * queued — and to that server only.
  */
 @OptIn(UnstableApi::class)
-internal fun musicDataSourceFactory(context: Context, connection: SidecarConnection): DataSource.Factory {
+internal fun musicUpstreamFactory(context: Context, connection: SidecarConnection): DataSource.Factory {
     val http = DefaultHttpDataSource.Factory()
         .setUserAgent(SIDECAR_HTTP_AGENT)
         .setConnectTimeoutMs(15_000)

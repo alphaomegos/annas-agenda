@@ -1071,4 +1071,14 @@
     <string name="music_repeat_one">Ponavljanje: ova pesma</string>
     <string name="music_repeat_off">Ponavljanje: isključeno</string>
     <string name="music_queue">Red za puštanje</string>
+    <!-- Na telefonu (16.10) -->
+    <string name="music_save">Sačuvaj na telefonu</string>
+    <string name="music_kept">Sačuvano na telefonu</string>
+    <string name="music_remove_title">Ukloniti sa telefona?</string>
+    <string name="music_remove_text">„%1$s“ će se ponovo puštati sa mreže.</string>
+    <string name="music_pref_keep_played">Čuvaj odslušano na telefonu</string>
+    <string name="music_kept_size">Na telefonu: %1$s</string>
+    <string name="music_clear">Obriši</string>
+    <string name="music_clear_title">Ukloniti svu muziku sa telefona?</string>
+    <string name="music_clear_text">Sve sačuvano (%1$s) biće uklonjeno i ponovo će se puštati sa mreže.</string>
 </resources>

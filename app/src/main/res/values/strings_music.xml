@@ -61,4 +61,14 @@
     <string name="music_repeat_one">Repeat: this track</string>
     <string name="music_repeat_off">Repeat: off</string>
     <string name="music_queue">Queue</string>
+    <!-- Kept on the phone (16.10) -->
+    <string name="music_save">Keep on the phone</string>
+    <string name="music_kept">Kept on the phone</string>
+    <string name="music_remove_title">Take it off the phone?</string>
+    <string name="music_remove_text">“%1$s” will play online again.</string>
+    <string name="music_pref_keep_played">Keep what is played on the phone</string>
+    <string name="music_kept_size">Kept on the phone: %1$s</string>
+    <string name="music_clear">Clear</string>
+    <string name="music_clear_title">Take all the music off the phone?</string>
+    <string name="music_clear_text">Everything kept (%1$s) is removed and plays online again.</string>
 </resources>

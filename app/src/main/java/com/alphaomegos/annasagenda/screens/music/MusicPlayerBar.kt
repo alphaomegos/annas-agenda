@@ -43,6 +43,7 @@ import com.alphaomegos.annasagenda.app.musicRepeatOf
 import com.alphaomegos.annasagenda.model.MusicRepeat
 import com.alphaomegos.annasagenda.support.MusicQueue
 import com.alphaomegos.annasagenda.support.MusicResumed
+import com.alphaomegos.annasagenda.support.musicCacheKey
 import com.alphaomegos.annasagenda.model.MetroStyle
 import com.alphaomegos.annasagenda.screens.metro.LocalMetroStyle
 import com.alphaomegos.annasagenda.screens.metro.Win95Grey
@@ -128,10 +129,13 @@ internal fun rememberMusicNowPlaying(controller: MediaController?): MusicNowPlay
 }
 
 /** A track as the player is given it: streamed from [url], named for the shade and the lock screen. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 internal fun musicMediaItem(track: SidecarTrack, url: String, unknownArtist: String): MediaItem =
     MediaItem.Builder()
         .setMediaId(track.id)
         .setUri(url)
+        // The kept copy's name: the same track with another file is another copy.
+        .setCustomCacheKey(musicCacheKey(track))
         .setMediaMetadata(
             MediaMetadata.Builder()
                 .setTitle(track.title)

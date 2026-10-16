@@ -15,9 +15,14 @@
     <cloud-backup>
         <exclude domain="file" path="corrupt_state" />
         <exclude domain="file" path="media_covers" />
+        <!-- The index of the music kept on the phone (16.10), whose music is in the no-backup folder. -->
+        <exclude domain="database" path="exoplayer_internal.db" />
+        <exclude domain="database" path="exoplayer_internal.db-journal" />
     </cloud-backup>
 
     <device-transfer>
         <exclude domain="file" path="corrupt_state" />
+        <exclude domain="database" path="exoplayer_internal.db" />
+        <exclude domain="database" path="exoplayer_internal.db-journal" />
     </device-transfer>
 </data-extraction-rules>

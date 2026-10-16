@@ -20,4 +20,8 @@
 <full-backup-content>
     <exclude domain="file" path="corrupt_state" />
     <exclude domain="file" path="media_covers" />
+    <!-- The index of the music kept on the phone (16.10); the music itself is in
+         the no-backup folder, so the index would only name files not there. -->
+    <exclude domain="database" path="exoplayer_internal.db" />
+    <exclude domain="database" path="exoplayer_internal.db-journal" />
 </full-backup-content>
