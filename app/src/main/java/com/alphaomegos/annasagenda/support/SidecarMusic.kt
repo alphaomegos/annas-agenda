@@ -149,6 +149,32 @@ fun sidecarAudioPath(trackId: String): String = "/api/tracks/${sidecarPathSegmen
 fun sidecarIsServerUrl(url: String, server: String): Boolean =
     server.startsWith("https://") && url.startsWith("$server/", ignoreCase = true)
 
+/**
+ * Where a person's picture of [avatarId] is on the server (16.10), as the
+ * web finds it (src/lib/avatarIds.ts): one of its twenty drawn ones,
+ * "avatar-7" → /avatars/avatar-7.png, open to anybody; or one uploaded,
+ * "custom:avatars/<sidecar>/<person>/<file>" → the member's picture, asked
+ * for with the session. Null for none, or anything else.
+ */
+fun sidecarAvatarPath(avatarId: String?): String? {
+    val id = avatarId?.trim().orEmpty()
+    if (Regex("""avatar-([1-9]|1[0-9]|20)""").matches(id)) return "/avatars/$id.png"
+    val key = id.removePrefix("custom:").takeIf { id.startsWith("custom:") } ?: return null
+    if (!key.startsWith("avatars/") || key.contains("..")) return null
+    val parts = key.split('/')
+    if (parts.size != 4 || parts.any { it.isEmpty() }) return null
+    return "/api/sidecars/${sidecarPathSegment(parts[1])}/members/${sidecarPathSegment(parts[2])}/avatar/image?v=${sidecarPathSegment(id)}"
+}
+
+/** Whether a picture's [path] is asked for with the session: the uploaded ones, behind the API. */
+fun sidecarAvatarNeedsSession(path: String): Boolean = path.startsWith("/api/")
+
+/** A file name for the kept copy of [avatarId]'s picture: the same id, the same name; nothing of the id's own letters. */
+fun sidecarAvatarFileName(avatarId: String): String {
+    val digest = java.security.MessageDigest.getInstance("SHA-256").digest(avatarId.toByteArray(Charsets.UTF_8))
+    return digest.joinToString("") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }.take(32) + ".img"
+}
+
 /** What went wrong talking to the server, as the screens say it. */
 enum class SidecarFailure { NO_NETWORK, SIGNED_OUT, WRONG_PASSWORD, TOO_MANY_ATTEMPTS, NOT_FOUND, SERVER, UNEXPECTED }
 

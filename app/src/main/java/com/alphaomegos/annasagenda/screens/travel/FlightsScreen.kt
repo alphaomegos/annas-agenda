@@ -51,6 +51,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import com.alphaomegos.annasagenda.app.SidecarConnections
+import com.alphaomegos.annasagenda.components.rememberSidecarAvatar
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -130,6 +137,8 @@ fun FlightsScreen(
     var groupingTo by rememberSaveable { mutableStateOf<Boolean?>(null) }
 
     val context = LocalContext.current
+    val sidecarStatus by remember(context) { SidecarConnections.of(context) }.status.collectAsStateWithLifecycle()
+    val avatar = rememberSidecarAvatar(sidecarStatus)
     val scope = rememberCoroutineScope()
     val notRecognised = stringResource(R.string.flights_import_not_recognised)
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -150,8 +159,18 @@ fun FlightsScreen(
                 title = { Text(stringResource(R.string.flights_title)) },
                 navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
                 actions = {
+                    // Signed in to oursidecar, the person's own picture from it (16.10); else the silhouette.
                     IconButton(onClick = onProfile) {
-                        Icon(Icons.Default.Person, contentDescription = stringResource(R.string.flights_profile))
+                        if (avatar != null) {
+                            Image(
+                                avatar,
+                                contentDescription = stringResource(R.string.flights_profile),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(30.dp).clip(CircleShape),
+                            )
+                        } else {
+                            Icon(Icons.Default.Person, contentDescription = stringResource(R.string.flights_profile))
+                        }
                     }
                     IconButton(onClick = { vm.setFlightPrefs(prefs.copy(showMap = !prefs.showMap)) }) {
                         Icon(

@@ -86,3 +86,17 @@ internal object MusicLibraries {
 /** Where the player was (16.10), in the no-backup folder. */
 internal fun musicPlayerMemoryFile(context: Context): MusicPlayerMemoryFile =
     MusicPlayerMemoryFile(File(File(context.applicationContext.noBackupFilesDir, "music"), "player.json"))
+
+/** The person's own picture from the sidecar (16.10), kept in the no-backup folder. */
+internal object SidecarAvatarStores {
+    @Volatile
+    private var instance: SidecarAvatars? = null
+
+    fun of(context: Context): SidecarAvatars = instance ?: synchronized(this) {
+        instance ?: SidecarAvatars(
+            dir = File(File(context.applicationContext.noBackupFilesDir, "sidecar"), "avatars"),
+            connection = SidecarConnections.of(context),
+            fetch = SidecarUrlFetch,
+        ).also { instance = it }
+    }
+}

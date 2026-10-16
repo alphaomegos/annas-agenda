@@ -52,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.app.MusicLibraries
+import com.alphaomegos.annasagenda.app.SidecarAvatarStores
 import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.components.SidecarAccountDialog
 import com.alphaomegos.annasagenda.components.sidecarFailureText
@@ -272,7 +273,10 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
             status = status,
             nowMillis = System.currentTimeMillis(),
             onSignIn = { server, email, password -> connection.signIn(server, email, password) },
-            onSignOut = { connection.signOut() },
+            onSignOut = {
+                connection.signOut()
+                SidecarAvatarStores.of(context).forget()
+            },
             onRefresh = { connection.refreshAccount() },
             onChooseSpace = { id -> scope.launch { connection.chooseSpace(id) } },
             onDismiss = { accountOpen = false },

@@ -45,6 +45,8 @@ internal data class SidecarStatus(
     val rejected: Boolean = false,
     val spaces: List<SidecarSpace> = emptyList(),
     val spaceId: String? = null,
+    // The person's own picture in the chosen sidecar, as the server names it (sidecarAvatarPath).
+    val avatarId: String? = null,
 ) {
     /** How the icon looks at [nowMillis]. */
     fun signIn(nowMillis: Long): SidecarSignInState = sidecarSignInState(account != null, sessionEndsAtMillis, rejected, nowMillis)
@@ -114,6 +116,7 @@ internal class SidecarConnection(
             rejected = dto.rejected,
             spaces = dto.spaces.map { it.toDomain() },
             spaceId = dto.spaceId,
+            avatarId = dto.avatarId,
         )
     }
 
@@ -129,6 +132,7 @@ internal class SidecarConnection(
             rejected = s.rejected,
             spaces = s.spaces.map { it.toDto() },
             spaceId = s.spaceId,
+            avatarId = s.avatarId,
         )
         runCatching {
             val dir = file.absoluteFile.parentFile ?: return
@@ -186,17 +190,41 @@ internal class SidecarConnection(
             token = session.token
             tokenOpened = true
             sealedToken = sealer.seal(session.token)
+            val was = _status.value
             _status.value = SidecarStatus(
                 server = base,
                 account = user.toDomain(),
                 sessionEndsAtMillis = session.expiresAtMillis,
                 rejected = false,
                 spaces = spaces,
-                spaceId = keptSpace(spaces, _status.value.spaceId),
+                spaceId = keptSpace(spaces, was.spaceId),
+                avatarId = was.avatarId.takeIf { was.account?.userId == user.id },
             )
             save()
         }
+        refreshAvatarNow()
         return SidecarResult.Ok(Unit)
+    }
+
+    /**
+     * The person's own picture in the chosen sidecar, asked again (16.10):
+     * one changed on the web since appears. When the asking fails, the one
+     * known stays.
+     */
+    private suspend fun refreshAvatarNow() {
+        val s = _status.value
+        val me = s.account?.userId ?: return
+        val space = s.space?.id ?: return
+        val r = authorizedGet(sidecarSpacePath(space)) as? SidecarResult.Ok ?: return
+        val members = parse(SidecarSpaceReplyDto.serializer(), r.value) ?: return
+        val avatarId = members.members.firstOrNull { it.id == me }?.avatarId
+        mutex.withLock {
+            val now = _status.value
+            if (now.account?.userId == me && now.space?.id == space && now.avatarId != avatarId) {
+                _status.value = now.copy(avatarId = avatarId)
+                save()
+            }
+        }
     }
 
     /**
@@ -240,10 +268,12 @@ internal class SidecarConnection(
         mutex.withLock {
             val s = _status.value
             if (s.spaceId != spaceId && s.spaces.any { it.id == spaceId }) {
-                _status.value = s.copy(spaceId = spaceId)
+                _status.value = s.copy(spaceId = spaceId, avatarId = null)
                 save()
             }
         }
+        // A picture is the person's in one sidecar: another may have another.
+        refreshAvatarNow()
     }
 
     /**
@@ -291,6 +321,7 @@ internal class SidecarConnection(
                         _status.value = s.copy(spaces = spaces, spaceId = keptSpace(spaces, s.spaceId))
                         save()
                     }
+                    refreshAvatarNow()
                     SidecarResult.Ok(Unit)
                 }
             }

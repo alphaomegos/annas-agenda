@@ -136,6 +136,8 @@ internal data class SidecarDeviceDto(
     val rejected: Boolean = false,
     val spaces: List<SidecarSpaceDto> = emptyList(),
     val spaceId: String? = null,
+    // The person's own picture in the chosen sidecar (avatar_id, as the server has it).
+    val avatarId: String? = null,
 )
 
 /** Where the player was (16.10), in the no-backup folder: MusicPlayerMemory. */

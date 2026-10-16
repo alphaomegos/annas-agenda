@@ -78,7 +78,7 @@ class SidecarConnectionTest {
         val result = runBlocking { c.signIn("oursidecar.com", " eduard@example.org ", password) }
 
         assertEquals(SidecarResult.Ok(Unit), result)
-        val request = sent.single()
+        val request = sent.first()
         assertEquals("POST", request.method)
         assertEquals("https://oursidecar.com/api/auth/login", request.url)
         assertNull(request.cookie)
@@ -280,13 +280,64 @@ class SidecarConnectionTest {
     fun aJoinedSidecarAppearsAndAGoneOneIsNoLongerChosen() {
         val c = signedIn()
         runBlocking { c.chooseSpace("s2") }
+        sent.clear()
         answer = { SidecarHttpReply(200, """{"user":{"id":"u1","email":"eduard@example.org"},"sidecars":[{"id":"s1","name":"Our place"},{"id":"s3","name":"New"}]}""") }
 
         assertEquals(SidecarResult.Ok(Unit), runBlocking { c.refreshAccount() })
 
-        assertEquals("https://oursidecar.com/api/me", sent.single().url)
+        assertEquals("https://oursidecar.com/api/me", sent.first().url)
         assertEquals(listOf("s1", "s3"), c.status.value.spaces.map { it.id })
         assertEquals("s1", c.status.value.space?.id)
+    }
+
+    private val membersOfOurs = """{"members":[{"id":"u1","email":"eduard@example.org","avatar_id":"avatar-7","joined_at":1},
+        {"id":"u2","email":"anna@example.org","avatar_id":"avatar-3","joined_at":2}]}"""
+
+    @Test
+    fun signingInAsksForThePersonsOwnPictureInTheChosenSidecar() {
+        val c = connection()
+        answer = { r -> if (r.url.endsWith("/api/sidecars/s1")) SidecarHttpReply(200, membersOfOurs) else signedInReply() }
+
+        runBlocking { c.signIn("oursidecar.com", "eduard@example.org", password) }
+
+        assertEquals("https://oursidecar.com/api/sidecars/s1", sent.last().url)
+        assertEquals("oursidecar_session=$token", sent.last().cookie)
+        assertEquals("avatar-7", c.status.value.avatarId)
+        assertEquals("avatar-7", connection().status.value.avatarId)
+    }
+
+    @Test
+    fun aPictureNotToBeHadKeepsTheOneKnownAndAnotherSidecarHasItsOwn() {
+        val c = connection()
+        answer = { r -> if (r.url.endsWith("/api/sidecars/s1")) SidecarHttpReply(200, membersOfOurs) else signedInReply() }
+        runBlocking { c.signIn("oursidecar.com", "eduard@example.org", password) }
+
+        answer = { throw IOException("offline") }
+        runBlocking { c.refreshAccount() }
+        assertEquals("avatar-7", c.status.value.avatarId)
+
+        answer = { r ->
+            if (r.url.endsWith("/api/sidecars/s2")) {
+                SidecarHttpReply(200, """{"members":[{"id":"u1","email":"e","avatar_id":"custom:avatars/s2/u1/a.webp"}]}""")
+            } else {
+                SidecarHttpReply(404, "{}")
+            }
+        }
+        runBlocking { c.chooseSpace("s2") }
+        assertEquals("custom:avatars/s2/u1/a.webp", c.status.value.avatarId)
+    }
+
+    @Test
+    fun signingOutForgetsThePicture() {
+        val c = connection()
+        answer = { r -> if (r.url.endsWith("/api/sidecars/s1")) SidecarHttpReply(200, membersOfOurs) else signedInReply() }
+        runBlocking { c.signIn("oursidecar.com", "eduard@example.org", password) }
+
+        answer = { SidecarHttpReply(200, "{}") }
+        runBlocking { c.signOut() }
+
+        assertNull(c.status.value.avatarId)
+        assertNull(connection().status.value.avatarId)
     }
 
     @Test

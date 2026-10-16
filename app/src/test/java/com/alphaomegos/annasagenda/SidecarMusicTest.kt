@@ -99,6 +99,37 @@ class SidecarSessionTest {
     }
 
     @Test
+    fun aPictureIsOneOfTheDrawnOrTheOneUploaded() {
+        assertEquals("/avatars/avatar-7.png", sidecarAvatarPath("avatar-7"))
+        assertEquals("/avatars/avatar-20.png", sidecarAvatarPath("avatar-20"))
+        assertEquals(
+            "/api/sidecars/s1/members/u2/avatar/image?v=custom%3Aavatars%2Fs1%2Fu2%2Fab12.webp",
+            sidecarAvatarPath("custom:avatars/s1/u2/ab12.webp"),
+        )
+        assertTrue(sidecarAvatarNeedsSession(sidecarAvatarPath("custom:avatars/s1/u2/x")!!))
+        assertFalse(sidecarAvatarNeedsSession(sidecarAvatarPath("avatar-1")!!))
+
+        assertNull(sidecarAvatarPath(null))
+        assertNull(sidecarAvatarPath(""))
+        assertNull(sidecarAvatarPath("avatar-21"))
+        assertNull(sidecarAvatarPath("avatar-0"))
+        assertNull(sidecarAvatarPath("custom:posters/s1/u2/x"))
+        assertNull(sidecarAvatarPath("custom:avatars/s1/../x"))
+        assertNull(sidecarAvatarPath("custom:avatars/s1/u2"))
+        assertNull(sidecarAvatarPath("custom:avatars//u2/x"))
+        assertNull(sidecarAvatarPath("https://example.org/me.png"))
+    }
+
+    @Test
+    fun aKeptPictureIsNamedByItsIdAlone() {
+        val a = sidecarAvatarFileName("custom:avatars/s1/u2/ab12.webp")
+
+        assertEquals(a, sidecarAvatarFileName("custom:avatars/s1/u2/ab12.webp"))
+        assertFalse(a == sidecarAvatarFileName("avatar-7"))
+        assertTrue(Regex("[0-9a-f]{32}\\.img").matches(a))
+    }
+
+    @Test
     fun anAnswerSaysWhatWentWrong() {
         assertNull(sidecarFailureOf(200))
         assertNull(sidecarFailureOf(201))

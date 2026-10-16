@@ -102,6 +102,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import com.alphaomegos.annasagenda.components.TinyIconButton
 import com.alphaomegos.annasagenda.components.SidecarAccountDialog
 import com.alphaomegos.annasagenda.components.SidecarAccountIcon
+import com.alphaomegos.annasagenda.components.rememberSidecarAvatar
+import com.alphaomegos.annasagenda.app.SidecarAvatarStores
+import androidx.compose.ui.graphics.ImageBitmap
 import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.support.SidecarSignInState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -277,6 +280,7 @@ fun MainMenuScreen(
         onLanguage = onLanguage,
         onSettings = onSettings,
         sidecarState = sidecarStatus.signIn(System.currentTimeMillis()),
+        sidecarAvatar = rememberSidecarAvatar(sidecarStatus),
         onSidecar = openSidecar,
         onUndone = onUndone,
         onExport = {
@@ -322,7 +326,10 @@ fun MainMenuScreen(
             status = sidecarStatus,
             nowMillis = System.currentTimeMillis(),
             onSignIn = { server, email, password -> sidecar.signIn(server, email, password) },
-            onSignOut = { sidecar.signOut() },
+            onSignOut = {
+                sidecar.signOut()
+                SidecarAvatarStores.of(context).forget()
+            },
             onRefresh = { sidecar.refreshAccount() },
             onChooseSpace = { id -> scope.launch { sidecar.chooseSpace(id) } },
             onDismiss = { sidecarDialogOpen = false },
@@ -407,6 +414,7 @@ internal fun MainMenuContent(
     // Defaulted so the tests that draw the menu need not know about it.
     onSettings: () -> Unit = {},
     sidecarState: SidecarSignInState = SidecarSignInState.SIGNED_OUT,
+    sidecarAvatar: ImageBitmap? = null,
     onSidecar: () -> Unit = {},
     onUndone: () -> Unit,
     onExport: () -> Unit,
@@ -465,6 +473,7 @@ internal fun MainMenuContent(
                 showShowAllButton = menuHiddenIds.isNotEmpty(),
                 dataMenuExpanded = dataMenuExpanded,
                 sidecarState = sidecarState,
+                sidecarAvatar = sidecarAvatar,
                 onSidecar = onSidecar,
                 onUndone = onUndone,
                 onLanguage = onLanguage,
@@ -640,6 +649,7 @@ private fun MainMenuTopBar(
     showShowAllButton: Boolean,
     dataMenuExpanded: Boolean,
     sidecarState: SidecarSignInState,
+    sidecarAvatar: ImageBitmap?,
     onSidecar: () -> Unit,
     onUndone: () -> Unit,
     onLanguage: () -> Unit,
@@ -680,12 +690,12 @@ private fun MainMenuTopBar(
                 }
             } else {
                 // The oursidecar account (16.10): Eduard's cat in the sidecar's
-                // "O" with nobody in; when in, a green dot on it; when the
-                // session has ended, a red ring and a "!".
+                // "O" with nobody in; when in, the person's own picture from
+                // the sidecar; when the session has ended, a red ring and a "!".
                 IconButton(onClick = onSidecar) {
                     SidecarAccountIcon(
                         state = sidecarState,
-                        avatar = null,
+                        avatar = sidecarAvatar,
                         contentDescription = stringResource(
                             when (sidecarState) {
                                 SidecarSignInState.SIGNED_OUT -> R.string.sidecar_account_signed_out
