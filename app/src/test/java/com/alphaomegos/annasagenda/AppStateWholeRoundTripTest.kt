@@ -387,6 +387,16 @@ class AppStateWholeRoundTripTest {
             MetroRecentRoute("user:3", 1L, 2L, 1_760_000_000_000L, pinned = true),
             MetroRecentRoute("library:moscow", 7L, 9L, 1_760_000_100_000L),
         ),
+        musicPrefs = MusicPrefs(
+            style = MetroStyle.TERMINAL,
+            styleDetails = false,
+            tab = "member:u2",
+            artist = "Moby",
+            sort = MusicSort.ZA,
+            artistTab = false,
+            cacheWhilePlaying = true,
+            downloadOnWifiOnly = false,
+        ),
     )
 
     private fun roundTrip(state: AppState): AppState =
@@ -473,6 +483,7 @@ class AppStateWholeRoundTripTest {
             "metroRecent", "schemeKey", "atEpochMillis", "pinned",
             "underlay", "metersPerUnit", "rotationDeg", "underlayShown", "underlayOpacity", "underlaySource",
             "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
+            "musicPrefs", "artistTab", "cacheWhilePlaying", "downloadOnWifiOnly",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))
         }

@@ -651,6 +651,31 @@ class AppStateStoreMigrationTest {
         assertTrue(state.metroPrefs.recentRoutes)
     }
 
+    /** The music section's settings (16.10) are settings: an archive from before them reads as the defaults. */
+    @Test
+    fun anArchiveFromBeforeMusicHasItsDefaultSettings() {
+        val state = decoded("""{ "v": 15, "metroPrefs": { "style": "DOS" } }""")
+
+        assertEquals(MusicPrefs(), state.musicPrefs)
+        assertEquals(MetroStyle.DOS, state.metroPrefs.style)
+    }
+
+    /** A look, a list or an order this build does not know reads as today's, all songs, the newest first. */
+    @Test
+    fun musicSettingsThisBuildDoesNotKnowReadAsTheDefaults() {
+        val state = decoded(
+            """{ "v": 15,
+                "musicPrefs": { "style": "VAPORWAVE", "tab": "playlist:7", "sort": "SHUFFLED", "artist": "  ", "artistTab": false } }""",
+        )
+
+        assertEquals(MetroStyle.MODERN, state.musicPrefs.style)
+        assertEquals("all", state.musicPrefs.tab)
+        assertEquals(MusicSort.NEWEST, state.musicPrefs.sort)
+        assertEquals(null, state.musicPrefs.artist)
+        assertFalse(state.musicPrefs.artistTab)
+        assertTrue(state.musicPrefs.downloadOnWifiOnly)
+    }
+
     /** Version 15 (16.10): a scheme from before it has no city map under it, and keeps all else. */
     @Test
     fun version14_readsWithNoCityMap() {

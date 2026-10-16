@@ -124,6 +124,8 @@ internal data class AppStateDto(
     val metroPrefs: MetroPrefsDto = MetroPrefsDto(),
     // Schema 14 (15.10): the routes looked up lately.
     val metroRecent: List<MetroRecentRouteDto> = emptyList(),
+    // The music section's settings (16.10).
+    val musicPrefs: MusicPrefsDto = MusicPrefsDto(),
 )
 
 /** A flight; times are the airports' local clocks as "2024-02-24T14:05". */
@@ -169,6 +171,20 @@ internal data class MetroPrefsDto(
     val routeTimeline: Boolean = true,
     val arrivalTime: Boolean = true,
     val moveWholeInterchange: Boolean = true,
+)
+
+@Serializable
+internal data class MusicPrefsDto(
+    // MetroStyle by name.
+    val style: String = "MODERN",
+    val styleDetails: Boolean = true,
+    val tab: String = "all",
+    val artist: String? = null,
+    // MusicSort by name.
+    val sort: String = "NEWEST",
+    val artistTab: Boolean = true,
+    val cacheWhilePlaying: Boolean = false,
+    val downloadOnWifiOnly: Boolean = true,
 )
 
 @Serializable

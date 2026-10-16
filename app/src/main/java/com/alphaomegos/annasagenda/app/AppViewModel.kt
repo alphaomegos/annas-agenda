@@ -1920,6 +1920,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _metroHistory.value = _metroHistory.value + (schemeId to next)
     }
 
+    /** The music section's own settings (16.10). */
+    fun setMusicPrefs(edit: (MusicPrefs) -> MusicPrefs) {
+        val cur = _state.value
+        val prefs = edit(cur.musicPrefs)
+        if (prefs != cur.musicPrefs) _state.value = cur.copy(musicPrefs = prefs)
+    }
+
     /** The metro section's own settings (15.10). */
     fun setMetroPrefs(edit: (MetroPrefs) -> MetroPrefs) {
         val cur = _state.value

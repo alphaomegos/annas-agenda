@@ -89,6 +89,16 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     flightHomes = flightHomes.sorted(),
     metroPrefs = MetroPrefsDto(metroPrefs.style.name, metroPrefs.styleDetails, metroPrefs.eraColors, metroPrefs.loupe, metroPrefs.haptics, metroPrefs.boxSelect, metroPrefs.tips, metroPrefs.zoomButtons, metroPrefs.doubleTapZoom, metroPrefs.frameRoute, metroPrefs.legend, metroPrefs.stationCard, metroPrefs.minimap, metroPrefs.recentRoutes, metroPrefs.routeTimeline, metroPrefs.arrivalTime, metroPrefs.moveWholeInterchange),
     metroRecent = metroRecent.map { MetroRecentRouteDto(it.schemeKey, it.fromStationId, it.toStationId, it.atEpochMillis, it.pinned) },
+    musicPrefs = MusicPrefsDto(
+        style = musicPrefs.style.name,
+        styleDetails = musicPrefs.styleDetails,
+        tab = musicPrefs.tab,
+        artist = musicPrefs.artist,
+        sort = musicPrefs.sort.name,
+        artistTab = musicPrefs.artistTab,
+        cacheWhilePlaying = musicPrefs.cacheWhilePlaying,
+        downloadOnWifiOnly = musicPrefs.downloadOnWifiOnly,
+    ),
 )
 
 internal fun normalizeAnthropometryFieldIdsForStore(ids: List<String>): Set<String> {
@@ -201,6 +211,17 @@ internal fun AppStateDto.toDomain(): AppState {
         metroRecent = metroRecent
             .filter { it.schemeKey.isNotBlank() }
             .map { MetroRecentRoute(it.schemeKey, it.fromStationId, it.toStationId, it.atEpochMillis, it.pinned) },
+        // A list or an order this build does not know is all songs, the newest first.
+        musicPrefs = MusicPrefs(
+            style = parseMetroStyle(musicPrefs.style),
+            styleDetails = musicPrefs.styleDetails,
+            tab = musicTabKey(parseMusicTab(musicPrefs.tab)),
+            artist = musicPrefs.artist?.trim()?.takeIf { it.isNotEmpty() },
+            sort = parseMusicSort(musicPrefs.sort),
+            artistTab = musicPrefs.artistTab,
+            cacheWhilePlaying = musicPrefs.cacheWhilePlaying,
+            downloadOnWifiOnly = musicPrefs.downloadOnWifiOnly,
+        ),
     )
 
     val whole = stateWithDanglingReferencesCleared(decoded)

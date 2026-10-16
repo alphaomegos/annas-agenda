@@ -176,4 +176,6 @@ data class AppState(
     val metroPrefs: MetroPrefs = MetroPrefs(),
     // The routes looked up lately, of every scheme (15.10): schema 14.
     val metroRecent: List<MetroRecentRoute> = emptyList(),
+    // The music section's own settings (16.10). Settings.
+    val musicPrefs: MusicPrefs = MusicPrefs(),
 ) : DateTasksData
