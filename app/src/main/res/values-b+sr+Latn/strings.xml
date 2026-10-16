@@ -1010,4 +1010,30 @@
     <string name="metro_size_labels">Nazivi</string>
     <string name="metro_size_lines">Linije</string>
     <string name="metro_size_stations">Krugovi</string>
+    <!-- oursidecar: nalog (16.10) -->
+    <string name="sidecar_account_signed_out">oursidecar: niste prijavljeni</string>
+    <string name="sidecar_account_signed_in">oursidecar: prijavljeni ste</string>
+    <string name="sidecar_account_attention">oursidecar: prijavite se ponovo</string>
+    <string name="sidecar_dialog_title">oursidecar</string>
+    <string name="sidecar_sign_in_why">Prijavite se da biste ovde slušali muziku svog sajdkara.</string>
+    <string name="sidecar_session_ended">Sesija je istekla. Unesite lozinku ponovo.</string>
+    <string name="sidecar_email">Email</string>
+    <string name="sidecar_password">Lozinka</string>
+    <string name="sidecar_password_show">Prikaži lozinku</string>
+    <string name="sidecar_password_hide">Sakrij lozinku</string>
+    <string name="sidecar_server">Server</string>
+    <string name="sidecar_server_other">Drugi server…</string>
+    <string name="sidecar_server_invalid">Unesite adresu https servera, na primer oursidecar.com.</string>
+    <string name="sidecar_sign_in">Prijavi se</string>
+    <string name="sidecar_sign_out">Odjavi se</string>
+    <string name="sidecar_forget_account">Odjavi se sa ovog naloga</string>
+    <string name="sidecar_signed_in_as">Prijavljeni ste kao %1$s</string>
+    <string name="sidecar_session_until">Sesija traje do %1$s.</string>
+    <string name="sidecar_space">Čija muzika svira</string>
+    <string name="sidecar_no_spaces">Ovaj nalog još nije ni u jednom sajdkaru. Napravite ga ili prihvatite poziv na sajtu.</string>
+    <string name="sidecar_failure_no_network">Nema veze sa serverom. Proverite internet i pokušajte ponovo.</string>
+    <string name="sidecar_failure_wrong_password">Pogrešan email ili lozinka.</string>
+    <string name="sidecar_failure_too_many">Previše pokušaja. Pokušajte ponovo za %1$d min.</string>
+    <string name="sidecar_failure_server">Server ne odgovara kako treba. Pokušajte kasnije.</string>
+    <string name="sidecar_failure_unexpected">Server je odgovorio nešto neočekivano.</string>
 </resources>

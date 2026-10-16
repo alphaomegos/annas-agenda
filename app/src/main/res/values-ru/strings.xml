@@ -1076,4 +1076,30 @@
     <string name="metro_size_labels">Названия</string>
     <string name="metro_size_lines">Линии</string>
     <string name="metro_size_stations">Кружки</string>
+    <!-- oursidecar: аккаунт (16.10) -->
+    <string name="sidecar_account_signed_out">oursidecar: вход не выполнен</string>
+    <string name="sidecar_account_signed_in">oursidecar: вход выполнен</string>
+    <string name="sidecar_account_attention">oursidecar: нужно войти снова</string>
+    <string name="sidecar_dialog_title">oursidecar</string>
+    <string name="sidecar_sign_in_why">Войдите, чтобы слушать здесь музыку вашего сайдкара.</string>
+    <string name="sidecar_session_ended">Сессия закончилась. Введите пароль ещё раз.</string>
+    <string name="sidecar_email">Email</string>
+    <string name="sidecar_password">Пароль</string>
+    <string name="sidecar_password_show">Показать пароль</string>
+    <string name="sidecar_password_hide">Скрыть пароль</string>
+    <string name="sidecar_server">Сервер</string>
+    <string name="sidecar_server_other">Другой сервер…</string>
+    <string name="sidecar_server_invalid">Введите адрес https-сервера, например oursidecar.com.</string>
+    <string name="sidecar_sign_in">Войти</string>
+    <string name="sidecar_sign_out">Выйти</string>
+    <string name="sidecar_forget_account">Выйти из этого аккаунта</string>
+    <string name="sidecar_signed_in_as">Вход выполнен: %1$s</string>
+    <string name="sidecar_session_until">Сессия действует до %1$s.</string>
+    <string name="sidecar_space">Чья музыка играет</string>
+    <string name="sidecar_no_spaces">Этот аккаунт пока не состоит ни в одном сайдкаре. Создайте его или примите приглашение на сайте.</string>
+    <string name="sidecar_failure_no_network">Нет связи с сервером. Проверьте интернет и попробуйте ещё раз.</string>
+    <string name="sidecar_failure_wrong_password">Неверный email или пароль.</string>
+    <string name="sidecar_failure_too_many">Слишком много попыток. Попробуйте через %1$d мин.</string>
+    <string name="sidecar_failure_server">Сервер отвечает с ошибкой. Попробуйте позже.</string>
+    <string name="sidecar_failure_unexpected">Сервер ответил что-то неожиданное.</string>
 </resources>

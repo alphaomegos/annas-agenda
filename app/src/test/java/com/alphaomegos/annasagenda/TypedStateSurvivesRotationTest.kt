@@ -39,6 +39,12 @@ class TypedStateSurvivesRotationTest {
         "TodayTasksWidget.kt:data" to
             "the home-screen widget's copy of the state, reloaded from the app on every " +
                 "change; a widget does not rotate, and nothing typed or picked is in it",
+        "SidecarAccountDialog.kt:password" to
+            "a password is never put into the saved state, which outlives the process; " +
+                "turning the phone asks for it again (16.10)",
+        "SidecarAccountDialog.kt:working" to
+            "a request in flight belongs to this composition and ends with it; the " +
+                "button is pressed again",
         "MainMenuScreen.kt:dataMenuExpanded" to
             "a dropdown being open; turning the phone closes it, nothing typed is in it",
         "MainMenuScreen.kt:items" to

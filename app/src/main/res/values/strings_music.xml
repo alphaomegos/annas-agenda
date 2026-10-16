@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- oursidecar: the account, from the icon in the main menu's bar (16.10) -->
+    <string name="sidecar_account_signed_out">oursidecar: not signed in</string>
+    <string name="sidecar_account_signed_in">oursidecar: signed in</string>
+    <string name="sidecar_account_attention">oursidecar: sign in again</string>
+    <string name="sidecar_dialog_title">oursidecar</string>
+    <string name="sidecar_sign_in_why">Sign in to listen to your sidecar\'s music here.</string>
+    <string name="sidecar_session_ended">The session has ended. Enter the password again.</string>
+    <string name="sidecar_email">Email</string>
+    <string name="sidecar_password">Password</string>
+    <string name="sidecar_password_show">Show the password</string>
+    <string name="sidecar_password_hide">Hide the password</string>
+    <string name="sidecar_server">Server</string>
+    <string name="sidecar_server_other">Another server…</string>
+    <string name="sidecar_server_invalid">Enter the address of an https server, such as oursidecar.com.</string>
+    <string name="sidecar_sign_in">Sign in</string>
+    <string name="sidecar_sign_out">Sign out</string>
+    <string name="sidecar_forget_account">Sign out of this account</string>
+    <string name="sidecar_signed_in_as">Signed in as %1$s</string>
+    <string name="sidecar_session_until">The session lasts until %1$s.</string>
+    <string name="sidecar_space">Whose music plays</string>
+    <string name="sidecar_no_spaces">This account is in no sidecar yet. Create one or accept an invitation on the website.</string>
+    <string name="sidecar_failure_no_network">No connection to the server. Check the internet and try again.</string>
+    <string name="sidecar_failure_wrong_password">Incorrect email or password.</string>
+    <string name="sidecar_failure_too_many">Too many attempts. Try again in %1$d min.</string>
+    <string name="sidecar_failure_server">The server is not answering properly. Try again later.</string>
+    <string name="sidecar_failure_unexpected">The server answered something unexpected.</string>
+</resources>

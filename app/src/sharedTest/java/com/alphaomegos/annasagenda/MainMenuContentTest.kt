@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.support.SidecarSignInState
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -102,6 +103,54 @@ class MainMenuContentTest {
 
         composeRule.runOnIdle {
             assertEquals(1, calendarClicks)
+        }
+    }
+
+    /** The oursidecar account sits in the bar, says which state it is in, and opens on a tap (16.10). */
+    @Test
+    fun mainMenuContent_theSidecarAccountSaysItsStateAndOpens() {
+        var sidecarClicks = 0
+
+        composeRule.setContent {
+            MaterialTheme {
+                MainMenuContent(
+                    today = anOrdinaryDay,
+                    langIconRes = R.drawable.ic_langflag_en,
+                    undoneLampIconRes = R.drawable.ic_undone_lamp_green,
+                    menuEntries = listOf(
+                        MenuEntry(
+                            id = "calendar",
+                            iconRes = R.drawable.ic_menu_calendar,
+                            titleRes = R.string.calendar,
+                            onClick = {},
+                        ),
+                    ),
+                    menuOrderIds = listOf("calendar"),
+                    menuHiddenIds = emptySet(),
+                    onMenuOrderChange = {},
+                    onHideMenuItem = {},
+                    onShowAllMenuItems = {},
+                    onLanguage = {},
+                    sidecarState = SidecarSignInState.ATTENTION,
+                    onSidecar = { sidecarClicks++ },
+                    onUndone = {},
+                    onExport = {},
+                    onImport = {},
+                    onResetConfirmed = {},
+                )
+            }
+        }
+
+        val activity = composeRule.activity
+
+        composeRule.onNodeWithContentDescription(activity.getString(R.string.sidecar_account_signed_out))
+            .assertDoesNotExist()
+
+        composeRule.onNodeWithContentDescription(activity.getString(R.string.sidecar_account_attention))
+            .performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(1, sidecarClicks)
         }
     }
 

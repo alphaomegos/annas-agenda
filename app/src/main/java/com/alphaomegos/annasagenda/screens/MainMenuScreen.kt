@@ -100,8 +100,17 @@ import kotlin.math.min
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import com.alphaomegos.annasagenda.components.TinyIconButton
+import com.alphaomegos.annasagenda.components.SidecarAccountDialog
+import com.alphaomegos.annasagenda.app.AppIcons
+import com.alphaomegos.annasagenda.app.SidecarConnections
+import com.alphaomegos.annasagenda.support.SidecarSignInState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private const val MENU_REORDER_HOLD_MS = 3000L
+
+/** oursidecar's own green (its logo), and a lighter one that reads on the dark theme. */
+private val SidecarGreen = Color(0xFF607055)
+private val SidecarGreenOnDark = Color(0xFFA3B596)
 private const val MENU_ROW_MIN_HEIGHT_DP = 80
 private const val MENU_ICON_SIZE_DP = 64
 
@@ -212,6 +221,11 @@ fun MainMenuScreen(
 
     val state by vm.state.collectAsState()
 
+    // The oursidecar sign-in (16.10): one for the process, kept by the connection.
+    val sidecar = remember(context) { SidecarConnections.of(context) }
+    val sidecarStatus by sidecar.status.collectAsStateWithLifecycle()
+    var sidecarDialogOpen by rememberSaveable { mutableStateOf(false) }
+
     // The lamp reads the same debts as the Undone screen, so it needs the same
     // horizon materialised. Without this it only went red for days the calendar
     // had already drawn.
@@ -255,6 +269,8 @@ fun MainMenuScreen(
         onShowAllMenuItems = vm::showAllMainMenuItems,
         onLanguage = onLanguage,
         onSettings = onSettings,
+        sidecarState = sidecarStatus.signIn(System.currentTimeMillis()),
+        onSidecar = { sidecarDialogOpen = true },
         onUndone = onUndone,
         onExport = {
             scope.launch {
@@ -293,6 +309,18 @@ fun MainMenuScreen(
             ).show()
         }
     )
+
+    if (sidecarDialogOpen) {
+        SidecarAccountDialog(
+            status = sidecarStatus,
+            nowMillis = System.currentTimeMillis(),
+            onSignIn = { server, email, password -> sidecar.signIn(server, email, password) },
+            onSignOut = { sidecar.signOut() },
+            onRefresh = { sidecar.refreshAccount() },
+            onChooseSpace = { id -> scope.launch { sidecar.chooseSpace(id) } },
+            onDismiss = { sidecarDialogOpen = false },
+        )
+    }
 }
 
 @Composable
@@ -356,6 +384,8 @@ internal fun MainMenuContent(
     onLanguage: () -> Unit,
     // Defaulted so the tests that draw the menu need not know about it.
     onSettings: () -> Unit = {},
+    sidecarState: SidecarSignInState = SidecarSignInState.SIGNED_OUT,
+    onSidecar: () -> Unit = {},
     onUndone: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -412,6 +442,8 @@ internal fun MainMenuContent(
                 reorderMode = reorderMode,
                 showShowAllButton = menuHiddenIds.isNotEmpty(),
                 dataMenuExpanded = dataMenuExpanded,
+                sidecarState = sidecarState,
+                onSidecar = onSidecar,
                 onUndone = onUndone,
                 onLanguage = onLanguage,
                 onOpenDataMenu = { dataMenuExpanded = true },
@@ -585,6 +617,8 @@ private fun MainMenuTopBar(
     reorderMode: Boolean,
     showShowAllButton: Boolean,
     dataMenuExpanded: Boolean,
+    sidecarState: SidecarSignInState,
+    onSidecar: () -> Unit,
     onUndone: () -> Unit,
     onLanguage: () -> Unit,
     onOpenDataMenu: () -> Unit,
@@ -623,6 +657,27 @@ private fun MainMenuTopBar(
                     )
                 }
             } else {
+                // The oursidecar account (16.10): hollow and grey with nobody
+                // in, the sidecar's green when in, red when it wants the
+                // password again.
+                IconButton(onClick = onSidecar) {
+                    Icon(
+                        AppIcons.sidecarAccount(sidecarState),
+                        contentDescription = stringResource(
+                            when (sidecarState) {
+                                SidecarSignInState.SIGNED_OUT -> R.string.sidecar_account_signed_out
+                                SidecarSignInState.SIGNED_IN -> R.string.sidecar_account_signed_in
+                                SidecarSignInState.ATTENTION -> R.string.sidecar_account_attention
+                            },
+                        ),
+                        tint = when (sidecarState) {
+                            SidecarSignInState.SIGNED_OUT -> MaterialTheme.colorScheme.onSurfaceVariant
+                            SidecarSignInState.SIGNED_IN -> if (appIsDarkTheme) SidecarGreenOnDark else SidecarGreen
+                            SidecarSignInState.ATTENTION -> MaterialTheme.colorScheme.error
+                        },
+                    )
+                }
+
                 IconButton(onClick = onLanguage) {
                     Icon(
                         painter = painterResource(langIconRes),
