@@ -146,4 +146,18 @@ class SidecarBackupsTest {
         assertFalse(sidecarBackupShaValid("ab"))
         assertEquals("00ff10", sidecarHex(byteArrayOf(0, -1, 16)))
     }
+
+    @Test
+    fun theKeyIsKeptAsTextAndReadBackWhole() {
+        val key = deriveBackupKey("pw", ByteArray(16) { it.toByte() }, 5)
+        val back = backupKeyOf(backupKeyText(key))
+
+        assertEquals(5, back!!.iterations)
+        assertTrue(back.salt.contentEquals(key.salt) && back.bytes.contentEquals(key.bytes))
+        assertNull(backupKeyOf("5:00ff"))
+        assertNull(backupKeyOf("x:00:00"))
+        assertNull(backupKeyOf("5:" + "0".repeat(32) + ":abc"))
+        assertNull(sidecarUnhex("0g"))
+        assertTrue(sidecarUnhex("00ff10")!!.contentEquals(byteArrayOf(0, -1, 16)))
+    }
 }

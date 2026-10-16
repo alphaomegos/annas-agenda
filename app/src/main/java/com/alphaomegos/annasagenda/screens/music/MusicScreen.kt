@@ -67,7 +67,8 @@ import com.alphaomegos.annasagenda.app.MusicSaveAllWorker
 import com.alphaomegos.annasagenda.support.musicCacheKey
 import com.alphaomegos.annasagenda.support.musicDownloadPlan
 import com.alphaomegos.annasagenda.support.musicSaveItems
-import com.alphaomegos.annasagenda.app.SidecarAvatarStores
+import com.alphaomegos.annasagenda.app.sidecarSignIn
+import com.alphaomegos.annasagenda.app.sidecarSignOut
 import com.alphaomegos.annasagenda.musicUpstreamFactory
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DownloadDone
@@ -370,13 +371,8 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         SidecarAccountDialog(
             status = status,
             nowMillis = System.currentTimeMillis(),
-            onSignIn = { server, email, password -> connection.signIn(server, email, password) },
-            onSignOut = {
-                connection.signOut()
-                SidecarAvatarStores.of(context).forget()
-                // The queue was this person's.
-                musicPlayerMemoryFile(context).forget()
-            },
+            onSignIn = { server, email, password -> sidecarSignIn(context, server, email, password) },
+            onSignOut = { sidecarSignOut(context) },
             onRefresh = { connection.refreshAccount() },
             onChooseSpace = { id -> scope.launch { connection.chooseSpace(id) } },
             onDismiss = { accountOpen = false },

@@ -180,3 +180,29 @@ fun sidecarHex(bytes: ByteArray): String = buildString(bytes.size * 2) {
         append("0123456789abcdef"[v and 0xF])
     }
 }
+
+/** The bytes [text] spells in hex; null when it is not hex of whole bytes. */
+fun sidecarUnhex(text: String): ByteArray? {
+    if (text.length % 2 != 0) return null
+    val out = ByteArray(text.length / 2)
+    for (i in out.indices) {
+        val high = Character.digit(text[2 * i], 16)
+        val low = Character.digit(text[2 * i + 1], 16)
+        if (high < 0 || low < 0) return null
+        out[i] = ((high shl 4) or low).toByte()
+    }
+    return out
+}
+
+/** A backup key as it is kept sealed on the phone: the rounds, the salt and the key. */
+fun backupKeyText(key: BackupKey): String = "${key.iterations}:${sidecarHex(key.salt)}:${sidecarHex(key.bytes)}"
+
+/** The key [text] keeps; null when it is not one. */
+fun backupKeyOf(text: String?): BackupKey? {
+    val parts = text?.split(':') ?: return null
+    if (parts.size != 3) return null
+    val iterations = parts[0].toIntOrNull() ?: return null
+    val salt = sidecarUnhex(parts[1]) ?: return null
+    val bytes = sidecarUnhex(parts[2]) ?: return null
+    return runCatching { BackupKey(salt, iterations, bytes) }.getOrNull()
+}

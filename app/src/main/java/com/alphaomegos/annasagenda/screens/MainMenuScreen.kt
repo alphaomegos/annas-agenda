@@ -103,8 +103,8 @@ import com.alphaomegos.annasagenda.components.TinyIconButton
 import com.alphaomegos.annasagenda.components.SidecarAccountDialog
 import com.alphaomegos.annasagenda.components.SidecarAccountIcon
 import com.alphaomegos.annasagenda.components.rememberSidecarAvatar
-import com.alphaomegos.annasagenda.app.SidecarAvatarStores
-import com.alphaomegos.annasagenda.app.musicPlayerMemoryFile
+import com.alphaomegos.annasagenda.app.sidecarSignIn
+import com.alphaomegos.annasagenda.app.sidecarSignOut
 import androidx.compose.ui.graphics.ImageBitmap
 import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.support.SidecarSignInState
@@ -326,13 +326,8 @@ fun MainMenuScreen(
         SidecarAccountDialog(
             status = sidecarStatus,
             nowMillis = System.currentTimeMillis(),
-            onSignIn = { server, email, password -> sidecar.signIn(server, email, password) },
-            onSignOut = {
-                sidecar.signOut()
-                SidecarAvatarStores.of(context).forget()
-                // The queue was this person's.
-                musicPlayerMemoryFile(context).forget()
-            },
+            onSignIn = { server, email, password -> sidecarSignIn(context, server, email, password) },
+            onSignOut = { sidecarSignOut(context) },
             onRefresh = { sidecar.refreshAccount() },
             onChooseSpace = { id -> scope.launch { sidecar.chooseSpace(id) } },
             onDismiss = { sidecarDialogOpen = false },

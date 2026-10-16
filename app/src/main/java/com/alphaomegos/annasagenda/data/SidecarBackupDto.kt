@@ -142,3 +142,22 @@ internal fun SidecarBackupListReplyDto.toDomain(): SidecarBackupListing = Sideca
         partSize = limits.partSize,
     ),
 )
+
+/**
+ * What this phone keeps of its backups in oursidecar (16.10), in the
+ * no-backup folder: the server and the account, the phone's token and the
+ * encryption key sealed by the keystore, and the choices made here.
+ */
+@Serializable
+internal data class SidecarBackupAccountDto(
+    val server: String? = null,
+    val email: String? = null,
+    val deviceId: String? = null,
+    val deviceName: String? = null,
+    val sealedToken: String? = null,
+    val needsSignIn: Boolean = false,
+    val notEnabled: Boolean = false,
+    val encrypt: Boolean? = null,
+    val auto: Boolean = true,
+    val sealedKey: String? = null,
+)
