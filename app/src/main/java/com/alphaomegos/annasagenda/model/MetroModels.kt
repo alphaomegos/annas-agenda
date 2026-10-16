@@ -90,7 +90,36 @@ data class MetroScheme(
     // Track drawn bent between two neighbouring stations (08.10): data the
     // user drew, so schema 11.
     val bends: List<MetroBend> = emptyList(),
+    // A city map under the editor's picture (16.10): where it lies — data the
+    // user aligned, schema 15 — and how it is shown, settings.
+    val underlay: MetroUnderlay? = null,
+    val underlayShown: Boolean = false,
+    val underlayOpacity: Float = 0.5f,
+    val underlaySource: MetroTileSource = MetroTileSource.CARTO_LIGHT,
 )
+
+/**
+ * Where a city map lies under the picture (16.10): the picture's point
+ * ([x], [y]) is the place ([lat], [lon]); one step of the picture is
+ * [metersPerUnit] metres on the ground; and the picture's right is turned
+ * [rotationDeg] clockwise from the east. The picture is a scheme, not a map,
+ * so this only lays the map roughly where its stations are.
+ */
+data class MetroUnderlay(
+    val lat: Double,
+    val lon: Double,
+    val x: Float,
+    val y: Float,
+    val metersPerUnit: Float,
+    val rotationDeg: Float = 0f,
+)
+
+/**
+ * Where the map's tiles come from (16.10), each free and each to be named
+ * on the map: OpenStreetMap's own, and CARTO's light and dark ones drawn
+ * from OpenStreetMap — quieter under a scheme.
+ */
+enum class MetroTileSource { OSM, CARTO_LIGHT, CARTO_DARK }
 
 /** A place on the scheme's picture, in its own units (one step between neighbours). */
 data class MetroMapPoint(val x: Float, val y: Float)

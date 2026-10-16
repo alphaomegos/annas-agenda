@@ -872,6 +872,25 @@
     <string name="metro_figure_around">Oko jedne u sredini</string>
     <string name="metro_bundle_tracks">Spoji paralelne deonice između istih presedanja</string>
     <string name="metro_bundle_striped">Kao jedna linija, u prugama njihovih boja</string>
+    <!-- The city map under the picture (0252) -->
+    <string name="metro_underlay">Mapa grada ispod šeme</string>
+    <string name="metro_underlay_show">Prikaži mapu grada ispod šeme</string>
+    <string name="metro_underlay_none">Mapa još nije postavljena: nađite grad ili upišite koordinate.</string>
+    <string name="metro_underlay_at">Postavljena u tački %1$s</string>
+    <string name="metro_underlay_place">Grad, mesto ili koordinate</string>
+    <string name="metro_underlay_find">Postavi tamo</string>
+    <string name="metro_underlay_finding">Tražim…</string>
+    <string name="metro_underlay_not_found">Ništa nije pronađeno — ili nema interneta.</string>
+    <string name="metro_underlay_source">Mapa</string>
+    <string name="metro_underlay_source_carto_light">CARTO, svetla — mirna ispod šeme</string>
+    <string name="metro_underlay_source_carto_dark">CARTO, tamna</string>
+    <string name="metro_underlay_source_osm">OpenStreetMap</string>
+    <string name="metro_underlay_opacity">Koliko je mapa uočljiva</string>
+    <string name="metro_underlay_align">Podesi prstima</string>
+    <string name="metro_underlay_remove">Ukloni mapu</string>
+    <string name="metro_underlay_note">Mapa je besplatna, dolazi sa interneta i čuva se na telefonu mesec dana. Leži samo približno: šema je crtež, a ne mapa.</string>
+    <string name="metro_underlay_aligning">Jednim prstom pomerajte mapu, sa dva menjajte razmeru i okretanje.</string>
+    <string name="metro_underlay_done">Gotovo</string>
     <string name="metro_style_era_colors">Boje linija iz palete epohe</string>
     <string name="metro_key_map">Šema</string>
     <string name="metro_key_swap">Zamena</string>

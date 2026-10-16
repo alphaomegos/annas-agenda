@@ -262,6 +262,22 @@ internal data class MetroSchemeDto(
     val labelsWrap: Boolean = false,
     // Schema 11 (08.10): bent track.
     val bends: List<MetroBendDto> = emptyList(),
+    // Schema 15 (16.10): the city map under the picture, and how it is shown.
+    val underlay: MetroUnderlayDto? = null,
+    val underlayShown: Boolean = false,
+    val underlayOpacity: Float = 0.5f,
+    // MetroTileSource by name.
+    val underlaySource: String = "CARTO_LIGHT",
+)
+
+@Serializable
+internal data class MetroUnderlayDto(
+    val lat: Double,
+    val lon: Double,
+    val x: Float,
+    val y: Float,
+    val metersPerUnit: Float,
+    val rotationDeg: Float = 0f,
 )
 
 /** Track between two neighbours drawn through points, from a to b: x and y side by side. */

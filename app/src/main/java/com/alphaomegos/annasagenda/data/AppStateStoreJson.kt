@@ -7,7 +7,7 @@ import com.alphaomegos.annasagenda.model.*
 import com.alphaomegos.annasagenda.support.*
 import com.alphaomegos.annasagenda.app.*
 
-internal const val CURRENT_SCHEMA_VERSION = 14
+internal const val CURRENT_SCHEMA_VERSION = 15
 
 @OptIn(ExperimentalSerializationApi::class)
 internal val appStateStoreJson = Json {

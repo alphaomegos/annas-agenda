@@ -79,6 +79,13 @@ class TypedStateSurvivesRotationTest {
         "ReadingSessionScreen.kt:errorText" to
             "a message about the last tap on Save, recomputed by the next one; the three " +
             "numbers typed in that dialog are saveable",
+        "MetroEditorDialogs.kt:searching" to
+            "a place being asked of OpenStreetMap (16.10); turning the phone drops the " +
+            "question, and one tap asks again",
+        "MetroEditorDialogs.kt:notFound" to "a message about the last search; the next search says it again",
+        "MetroEditorDialogs.kt:strength" to
+            "the slider's place while a finger moves it; written to the scheme when let go, " +
+            "and read back from it",
     )
 
     @Test

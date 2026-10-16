@@ -651,6 +651,35 @@ class AppStateStoreMigrationTest {
         assertTrue(state.metroPrefs.recentRoutes)
     }
 
+    /** Version 15 (16.10): a scheme from before it has no city map under it, and keeps all else. */
+    @Test
+    fun version14_readsWithNoCityMap() {
+        val state = decoded(
+            """{ "v": 14,
+                "metroSchemes": [ { "id": 3, "city": "Москва", "bundleTracks": true } ] }""",
+        )
+        val scheme = state.metroSchemes.single()
+        assertEquals(null, scheme.underlay)
+        assertFalse(scheme.underlayShown)
+        assertEquals(MetroTileSource.CARTO_LIGHT, scheme.underlaySource)
+        assertTrue(scheme.bundleTracks)
+        assertTrue(scheme.bundleStriped)
+    }
+
+    /** A map laid where no map can be is no map; a strength past the slider is brought back to it. */
+    @Test
+    fun aCityMapOffTheEarthIsDropped() {
+        val state = decoded(
+            """{ "v": 15,
+                "metroSchemes": [ { "id": 3, "city": "Москва", "underlayOpacity": 7.0, "underlaySource": "NOPE",
+                  "underlay": { "lat": 95.0, "lon": 37.6, "x": 0, "y": 0, "metersPerUnit": 1500 } } ] }""",
+        )
+        val scheme = state.metroSchemes.single()
+        assertEquals(null, scheme.underlay)
+        assertEquals(1f, scheme.underlayOpacity, 0f)
+        assertEquals(MetroTileSource.CARTO_LIGHT, scheme.underlaySource)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

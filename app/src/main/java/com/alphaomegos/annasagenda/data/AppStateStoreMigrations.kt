@@ -63,6 +63,7 @@ internal fun migrateAppStateRawJson(
             11 -> migrateAppState11To12(cur)
             12 -> migrateAppState12To13(cur)
             13 -> migrateAppState13To14(cur)
+            14 -> migrateAppState14To15(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -234,6 +235,17 @@ private fun migrateAppState12To13(obj: JsonObject): JsonObject {
 private fun migrateAppState13To14(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(14)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp. Version 15 (16.10) adds a city map under a metro scheme's
+ * picture — where the user laid it — data nothing else holds. No map is
+ * what every payload before it means.
+ */
+private fun migrateAppState14To15(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(15)
     return JsonObject(m)
 }
 

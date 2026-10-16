@@ -757,6 +757,10 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
     bundleStriped = bundleStriped,
     labelsWrap = labelsWrap,
     bends = bends.map { b -> MetroBendDto(b.aStationId, b.bStationId, b.points.map { it.x }, b.points.map { it.y }) },
+    underlay = underlay?.let { MetroUnderlayDto(it.lat, it.lon, it.x, it.y, it.metersPerUnit, it.rotationDeg) },
+    underlayShown = underlayShown,
+    underlayOpacity = underlayOpacity,
+    underlaySource = underlaySource.name,
 )
 
 /**
@@ -841,6 +845,16 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
             val pts = b.x.zip(b.y).map { (x, y) -> MetroMapPoint(x, y) }
             if (pts.any { !it.x.isFinite() || !it.y.isFinite() }) null else MetroBend(b.aStationId, b.bStationId, pts)
         },
+        // A map laid where no map can be — off the Earth, at no scale — is no map.
+        underlay = underlay?.let { u ->
+            val ok = u.lat.isFinite() && u.lon.isFinite() && u.lat in -85.0..85.0 && u.lon in -180.0..180.0 &&
+                u.x.isFinite() && u.y.isFinite() && u.metersPerUnit.isFinite() && u.metersPerUnit > 0f &&
+                u.rotationDeg.isFinite()
+            if (ok) MetroUnderlay(u.lat, u.lon, u.x, u.y, u.metersPerUnit, u.rotationDeg) else null
+        },
+        underlayShown = underlayShown,
+        underlayOpacity = underlayOpacity.takeIf { it.isFinite() }?.coerceIn(METRO_UNDERLAY_MIN_OPACITY, 1f) ?: 0.5f,
+        underlaySource = MetroTileSource.entries.firstOrNull { it.name == underlaySource } ?: MetroTileSource.CARTO_LIGHT,
     )
     return reconciled(scheme, scheme)
 }

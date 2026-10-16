@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- The city map under the metro editor's picture (16.10): its tiles, and a place found by name. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Daily summaries and task reminders (0144). Asked for at the moment the
          user switches one on, on Android 13 and later. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

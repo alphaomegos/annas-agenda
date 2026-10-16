@@ -938,6 +938,25 @@
     <string name="metro_figure_around">Вокруг одной в центре</string>
     <string name="metro_bundle_tracks">Совмещать параллельные перегоны между одними пересадками</string>
     <string name="metro_bundle_striped">Одной линией, полосами их цветов</string>
+    <!-- The city map under the picture (0252) -->
+    <string name="metro_underlay">Карта города под схемой</string>
+    <string name="metro_underlay_show">Показывать карту города под схемой</string>
+    <string name="metro_underlay_none">Карта ещё не положена: найдите город или введите координаты.</string>
+    <string name="metro_underlay_at">Лежит в точке %1$s</string>
+    <string name="metro_underlay_place">Город, место или координаты</string>
+    <string name="metro_underlay_find">Положить туда</string>
+    <string name="metro_underlay_finding">Ищу…</string>
+    <string name="metro_underlay_not_found">Ничего не нашлось — или нет интернета.</string>
+    <string name="metro_underlay_source">Карта</string>
+    <string name="metro_underlay_source_carto_light">CARTO, светлая — спокойная под схемой</string>
+    <string name="metro_underlay_source_carto_dark">CARTO, тёмная</string>
+    <string name="metro_underlay_source_osm">OpenStreetMap</string>
+    <string name="metro_underlay_opacity">Насколько заметна карта</string>
+    <string name="metro_underlay_align">Подогнать пальцами</string>
+    <string name="metro_underlay_remove">Убрать карту</string>
+    <string name="metro_underlay_note">Карта бесплатная, берётся из интернета и хранится на телефоне месяц. Лежит лишь примерно: схема — это рисунок, а не карта.</string>
+    <string name="metro_underlay_aligning">Одним пальцем — двигать карту, двумя — масштаб и поворот.</string>
+    <string name="metro_underlay_done">Готово</string>
     <string name="metro_style_era_colors">Цвета линий из палитры эпохи</string>
     <string name="metro_key_map">Схема</string>
     <string name="metro_key_swap">Обмен</string>

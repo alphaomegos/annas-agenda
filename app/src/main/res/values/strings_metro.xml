@@ -132,6 +132,25 @@
     <string name="metro_figure_around">Round one in the middle</string>
     <string name="metro_bundle_tracks">Lines between the same interchanges run together</string>
     <string name="metro_bundle_striped">As one line, striped in their colours</string>
+    <!-- The city map under the picture (0252) -->
+    <string name="metro_underlay">City map under the picture</string>
+    <string name="metro_underlay_show">Show the city map under the picture</string>
+    <string name="metro_underlay_none">Not laid yet: find the city, or type its coordinates.</string>
+    <string name="metro_underlay_at">Laid at %1$s</string>
+    <string name="metro_underlay_place">City, place or coordinates</string>
+    <string name="metro_underlay_find">Lay it there</string>
+    <string name="metro_underlay_finding">Looking…</string>
+    <string name="metro_underlay_not_found">Nothing found — or no internet.</string>
+    <string name="metro_underlay_source">Map</string>
+    <string name="metro_underlay_source_carto_light">CARTO, light — quiet under a scheme</string>
+    <string name="metro_underlay_source_carto_dark">CARTO, dark</string>
+    <string name="metro_underlay_source_osm">OpenStreetMap</string>
+    <string name="metro_underlay_opacity">How strong the map is</string>
+    <string name="metro_underlay_align">Lay it by hand</string>
+    <string name="metro_underlay_remove">Take the map away</string>
+    <string name="metro_underlay_note">The map comes from the internet, free, and is kept on the phone for a month. It lies only roughly: a scheme is a picture, not a map.</string>
+    <string name="metro_underlay_aligning">One finger moves the map; two scale and turn it.</string>
+    <string name="metro_underlay_done">Done</string>
     <string name="metro_style_era_colors">Lines in the colours of the era</string>
     <string name="metro_key_map">Map</string>
     <string name="metro_key_swap">Swap</string>

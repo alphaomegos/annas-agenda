@@ -104,6 +104,11 @@ import com.alphaomegos.annasagenda.support.METRO_MIN_ZOOM
 import com.alphaomegos.annasagenda.support.METRO_ZOOM_STEP
 import com.alphaomegos.annasagenda.support.metroViewportBetween
 import com.alphaomegos.annasagenda.support.metroMinimap
+import com.alphaomegos.annasagenda.support.metroTileCredit
+import androidx.compose.foundation.gestures.calculateRotation
+import androidx.compose.foundation.background
+import androidx.compose.material3.Text
+import androidx.compose.ui.geometry.isSpecified
 import com.alphaomegos.annasagenda.support.metroLabelWrapped
 import androidx.compose.ui.text.style.TextAlign
 import com.alphaomegos.annasagenda.support.METRO_MINIMAP_FROM
@@ -170,6 +175,10 @@ import androidx.compose.ui.semantics.semantics
  * their names written, the rest faded; with a route too, both stand out.
  * With [minimap] (15.10), zoomed in, the whole scheme shows small above the
  * buttons, a box round what the view shows; a finger on it takes the view there.
+ *
+ * [underlay] (16.10) is a city map drawn under it all, its source named in
+ * the corner; with [onUnderlayMove] every finger moves that map instead —
+ * one carries it, two scale and turn it — said in the picture's units.
  */
 internal sealed interface MetroBendAction {
     data class Cycle(val track: MetroTrack) : MetroBendAction
@@ -211,6 +220,8 @@ internal fun MetroMapView(
     focusKey: Int = 0,
     highlightLines: Set<Long> = emptySet(),
     minimap: Boolean = false,
+    underlay: MetroUnderlayLayer? = null,
+    onUnderlayMove: ((dx: Float, dy: Float, zoom: Float, turnDeg: Float, cx: Float, cy: Float) -> Unit)? = null,
 ) {
     // Where the picture is looked at (14.10), in its own units: pixels to a
     // unit and the point at the middle; a scale of -1 is "fitted", as it opens.
@@ -252,6 +263,7 @@ internal fun MetroMapView(
     val currentTicks by rememberUpdatedState(haptics)
     val currentTapEmpty by rememberUpdatedState(onTapEmpty)
     val currentDoubleTap by rememberUpdatedState(doubleTapZoom)
+    val currentUnderlayMove by rememberUpdatedState(onUnderlayMove)
     // A zoom gliding to where a button or a double tap sent it (15.10).
     val scope = rememberCoroutineScope()
     val glide = remember { MetroGlide() }
@@ -398,7 +410,7 @@ internal fun MetroMapView(
 
         // Keyed on what does not change while a finger is down: zooming must
         // not restart the very gesture that zooms. The scale is read afresh.
-        val gestures = Modifier.pointerInput(layout, w, h, onMoveStation != null, fixedStations, hiddenStations) {
+        val gestures = Modifier.pointerInput(layout, w, h, onMoveStation != null, fixedStations, hiddenStations, onUnderlayMove != null) {
             fun viewNow(): MetroViewport = if (viewK > 0f) MetroViewport(viewK, viewCx, viewCy) else fitted
             fun setView(v: MetroViewport) { viewK = v.k; viewCx = v.cx; viewCy = v.cy }
             fun toMap(o: Offset): MetroPoint {
@@ -415,6 +427,23 @@ internal fun MetroMapView(
                 val down = awaitFirstDown(requireUnconsumed = false)
                 // A finger stops a glide where it is.
                 glide.job?.cancel()
+                // Laying the city map (16.10): every finger moves the map, not the picture.
+                val laying = currentUnderlayMove
+                if (laying != null) {
+                    do {
+                        val event = awaitPointerEvent()
+                        val v = viewNow()
+                        val pan = event.calculatePan()
+                        val zoom = event.calculateZoom()
+                        val turn = event.calculateRotation()
+                        val c = event.calculateCentroid().takeIf { it.isSpecified } ?: down.position
+                        if (pan != Offset.Zero || zoom != 1f || turn != 0f) {
+                            laying(pan.x / v.k, pan.y / v.k, zoom, turn, v.toMapX(c.x, w), v.toMapY(c.y, h))
+                        }
+                        event.changes.forEach { it.consume() }
+                    } while (event.changes.any { it.pressed })
+                    return@awaitEachGesture
+                }
                 var liftedAt = down.uptimeMillis
                 val start = toMap(down.position)
                 val hitRadius = hitPx / viewNow().k
@@ -580,6 +609,8 @@ internal fun MetroMapView(
             cornerRadius = 56.dp,
         )
         Canvas(modifier = Modifier.fillMaxSize().then(recorded).then(gestures).then(magnified)) {
+            // The city map under it all (16.10).
+            underlay?.let { drawMetroUnderlay(it, MetroViewport(k, cx, cy), w, h) }
             // Glued rings touch in the picture's units, so then they scale with it, unclamped.
             val glued = scheme.glue > 0
             // The look's sizes (08.10) on top.
@@ -888,6 +919,19 @@ internal fun MetroMapView(
             }
         }
 
+        // Whose map it is (16.10), as its source asks, in the corner opposite the buttons.
+        if (underlay != null) {
+            Text(
+                metroTileCredit(underlay.source),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(4.dp)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.75f))
+                    .padding(horizontal = 4.dp, vertical = 1.dp),
+            )
+        }
         // The corner (15.10): the small picture while zoomed in; closer, farther, the whole picture.
         val showMini = minimap && currentView().k > fitted.k * METRO_MINIMAP_FROM
         if (zoomButtons || showMini) {

@@ -306,6 +306,11 @@ class AppStateWholeRoundTripTest {
                 librarySource = "moscow",
                 mapGrid = true,
                 gridDivisions = 4,
+                // Schema 15 — a city map laid under it, shown its own way.
+                underlay = MetroUnderlay(lat = 55.7558, lon = 37.6176, x = 1.5f, y = -2f, metersPerUnit = 1300f, rotationDeg = -12.5f),
+                underlayShown = true,
+                underlayOpacity = 0.7f,
+                underlaySource = MetroTileSource.OSM,
                 transfersTogether = true,
                 labelsOncePerInterchange = true,
                 glue = 12,
@@ -466,6 +471,7 @@ class AppStateWholeRoundTripTest {
             "nextSeasonEpochDay", "remindNextSeason", "readingWaitingPrefs",
             "flights", "flightPrefs", "flightCityNames", "flightAirlineNames", "flightHomes", "metroPrefs",
             "metroRecent", "schemeKey", "atEpochMillis", "pinned",
+            "underlay", "metersPerUnit", "rotationDeg", "underlayShown", "underlayOpacity", "underlaySource",
             "departure", "arrival", "actualDeparture", "departureOffsetMinutes", "aircraft", "journeyId", "keptApart",
         ).forEach { key ->
             assertTrue("the archive says nothing about $key", json.contains("\"$key\""))

@@ -73,6 +73,11 @@ import com.alphaomegos.annasagenda.support.metroLayersAllShown
 import com.alphaomegos.annasagenda.support.metroLayerLockToggled
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Map
+import com.alphaomegos.annasagenda.app.MetroTileLoader
+import com.alphaomegos.annasagenda.model.MetroUnderlay
+import com.alphaomegos.annasagenda.support.metroUnderlayMoved
+import com.alphaomegos.annasagenda.support.metroLayoutBounds
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -98,6 +103,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -209,6 +215,18 @@ fun MetroMapEditorScreen(
     // in the background, a dropped station first jumped back for a frame or two.
     val placed = remember(scheme) { scheme?.takeIf { metroIsPlaced(it) }?.let { metroLayout(it) } }
     val layout = placed ?: laidOut
+    // The city map under the picture (16.10): its panel, laying it by hand, the
+    // map as laid so far while the fingers move it, and its tiles.
+    var underlaying by rememberSaveable { mutableStateOf(false) }
+    var aligning by rememberSaveable { mutableStateOf(false) }
+    var draft by rememberSaveable(stateSaver = metroUnderlaySaver) { mutableStateOf<MetroUnderlay?>(null) }
+    val tiles = remember { MetroTileLoader(context, scope) }
+    val underlayNow = draft ?: scheme?.underlay
+    val underlayLayer = if (scheme != null && underlayNow != null && (scheme.underlayShown || aligning)) {
+        MetroUnderlayLayer(underlayNow, scheme.underlaySource, scheme.underlayOpacity, tiles)
+    } else {
+        null
+    }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     // Tools of the editor (08.10), not settings: bending track, and moving an
     // interchange whole or one station of it.
@@ -349,6 +367,11 @@ fun MetroMapEditorScreen(
                                 onClick = { menuOpen = false; finding = true },
                             )
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.metro_underlay)) },
+                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = null) },
+                                onClick = { menuOpen = false; underlaying = true },
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.metro_save_picture)) },
                                 leadingIcon = { Icon(Icons.Default.SaveAlt, contentDescription = null) },
                                 onClick = { menuOpen = false; startExport() },
@@ -484,6 +507,16 @@ fun MetroMapEditorScreen(
                         fitButton = false,
                         doubleTapZoom = prefs.doubleTapZoom,
                         minimap = prefs.minimap,
+                        underlay = underlayLayer,
+                        // Laying the map by hand (16.10): the fingers move it, not the picture.
+                        onUnderlayMove = if (aligning) {
+                            { dx, dy, zoom, turn, cx, cy ->
+                                val base = draft ?: scheme.underlay
+                                if (base != null) draft = metroUnderlayMoved(base, dx, dy, zoom, turn, cx, cy)
+                            }
+                        } else {
+                            null
+                        },
                         hiddenLines = scheme.hiddenLines.toSet(),
                         lockedLines = scheme.lockedLines.toSet(),
                         ghostHidden = scheme.ghostHidden,
@@ -511,8 +544,36 @@ fun MetroMapEditorScreen(
                         },
                     )
                 }
+                // Laying the city map (16.10): what the fingers do now, and the way out.
+                if (scheme != null && aligning) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopCenter).padding(8.dp).metroFrame(LocalMetroStyle.current, LocalMetroStyleDetails.current),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.94f),
+                        tonalElevation = 2.dp,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp)) {
+                            Text(
+                                stringResource(R.string.metro_underlay_aligning),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            MetroTextButton(onClick = {
+                                draft = null
+                                aligning = false
+                            }) { Text(stringResource(R.string.cancel)) }
+                            MetroTextButton(onClick = {
+                                val laid = draft
+                                if (laid != null) vm.setMetroView(schemeId) { it.copy(underlay = laid, underlayShown = true) }
+                                draft = null
+                                aligning = false
+                            }) { Text(stringResource(R.string.metro_underlay_done)) }
+                        }
+                    }
+                }
                 // The tool's tip (14.10), over the top of the picture until closed.
-                if (scheme != null && prefs.tips && tipClosedFor != tool) {
+                if (scheme != null && prefs.tips && tipClosedFor != tool && !aligning) {
                     Surface(
                         modifier = Modifier.align(Alignment.TopCenter).padding(8.dp).metroFrame(LocalMetroStyle.current, LocalMetroStyleDetails.current),
                         shape = RoundedCornerShape(12.dp),
@@ -697,6 +758,23 @@ fun MetroMapEditorScreen(
                 }
             },
             confirmButton = { MetroTextButton(onClick = { prefsShown = false }) { Text(stringResource(R.string.ok)) } },
+        )
+    }
+
+    if (underlaying && scheme != null) {
+        val centre = layout?.values?.let { pts ->
+            if (pts.isEmpty()) null else metroLayoutBounds(pts).let { b -> MetroPoint((b[0] + b[2]) / 2, (b[1] + b[3]) / 2) }
+        } ?: MetroPoint(0f, 0f)
+        MetroUnderlayDialog(
+            scheme = scheme,
+            centre = centre,
+            onEdit = { edit -> vm.setMetroView(schemeId, edit) },
+            onAlign = {
+                underlaying = false
+                draft = null
+                aligning = true
+            },
+            onDismiss = { underlaying = false },
         )
     }
 
@@ -1021,3 +1099,12 @@ private fun MetroLayersDialog(scheme: MetroScheme, onLayers: ((MetroScheme) -> M
         confirmButton = { MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
     )
 }
+
+/** A map being laid by hand (16.10), kept through a turn of the phone as its six numbers. */
+private val metroUnderlaySaver = listSaver<MetroUnderlay?, Double>(
+    save = { u -> if (u == null) emptyList() else listOf(u.lat, u.lon, u.x.toDouble(), u.y.toDouble(), u.metersPerUnit.toDouble(), u.rotationDeg.toDouble()) },
+    restore = { v ->
+        if (v.size != 6) null
+        else MetroUnderlay(v[0], v[1], v[2].toFloat(), v[3].toFloat(), v[4].toFloat(), v[5].toFloat())
+    },
+)

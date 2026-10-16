@@ -34,6 +34,18 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
+import java.util.Locale
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.Slider
+import kotlinx.coroutines.launch
+import com.alphaomegos.annasagenda.app.metroGeocode
+import com.alphaomegos.annasagenda.model.MetroUnderlay
+import com.alphaomegos.annasagenda.model.MetroTileSource
+import com.alphaomegos.annasagenda.support.MetroPoint
+import com.alphaomegos.annasagenda.support.METRO_UNDERLAY_DEFAULT_METERS
+import com.alphaomegos.annasagenda.support.METRO_UNDERLAY_MIN_OPACITY
+import com.alphaomegos.annasagenda.support.metroCityCentre
+import com.alphaomegos.annasagenda.support.metroParseLatLon
 import com.alphaomegos.annasagenda.model.MetroHintTarget
 import com.alphaomegos.annasagenda.model.MetroLine
 import com.alphaomegos.annasagenda.model.MetroScheme
@@ -554,5 +566,135 @@ internal fun MetroFindDialog(scheme: MetroScheme, onPick: (Long) -> Unit, onDism
             }
         },
         confirmButton = { MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+/**
+ * The city map under the editor's picture (16.10): shown or not; where it
+ * lies — a city this build knows, coordinates typed in, or a place asked of
+ * OpenStreetMap — pinned to the picture's middle; whose tiles; how strong;
+ * laying it by hand; taking it away.
+ */
+@Composable
+internal fun MetroUnderlayDialog(
+    scheme: MetroScheme,
+    centre: MetroPoint,
+    onEdit: ((MetroScheme) -> MetroScheme) -> Unit,
+    onAlign: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    var place by rememberSaveable { mutableStateOf(scheme.city) }
+    var searching by remember { mutableStateOf(false) }
+    var notFound by remember { mutableStateOf(false) }
+    var strength by remember(scheme.underlayOpacity) { mutableStateOf(scheme.underlayOpacity) }
+    // A fresh map, or the same map moved: pinned to the picture's middle, its scale and turn kept.
+    fun layAt(at: Pair<Double, Double>) {
+        onEdit { s ->
+            s.copy(
+                underlay = MetroUnderlay(
+                    lat = at.first,
+                    lon = at.second,
+                    x = centre.x,
+                    y = centre.y,
+                    metersPerUnit = s.underlay?.metersPerUnit ?: METRO_UNDERLAY_DEFAULT_METERS,
+                    rotationDeg = s.underlay?.rotationDeg ?: 0f,
+                ),
+                underlayShown = true,
+            )
+        }
+    }
+    MetroDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.metro_underlay)) },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                MetroMapTick(stringResource(R.string.metro_underlay_show), scheme.underlayShown, Modifier.fillMaxWidth()) { on ->
+                    val known = if (on && scheme.underlay == null) metroCityCentre(scheme.city) else null
+                    if (known != null) layAt(known) else onEdit { it.copy(underlayShown = on) }
+                }
+                val laid = scheme.underlay
+                Text(
+                    if (laid == null) stringResource(R.string.metro_underlay_none)
+                    else stringResource(R.string.metro_underlay_at, String.format(Locale.ROOT, "%.4f, %.4f", laid.lat, laid.lon)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    colors = metroFieldColors(),
+                    value = place,
+                    onValueChange = {
+                        place = it
+                        notFound = false
+                    },
+                    label = { Text(stringResource(R.string.metro_underlay_place)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                MetroTextButton(
+                    onClick = {
+                        val known = metroParseLatLon(place) ?: metroCityCentre(place)
+                        if (known != null) {
+                            layAt(known)
+                        } else {
+                            searching = true
+                            scope.launch {
+                                val found = metroGeocode(place)
+                                searching = false
+                                if (found != null) layAt(found) else notFound = true
+                            }
+                        }
+                    },
+                    enabled = !searching && place.isNotBlank(),
+                ) {
+                    Text(stringResource(if (searching) R.string.metro_underlay_finding else R.string.metro_underlay_find))
+                }
+                if (notFound) {
+                    Text(
+                        stringResource(R.string.metro_underlay_not_found),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                Text(stringResource(R.string.metro_underlay_source), style = MaterialTheme.typography.labelLarge)
+                Column(Modifier.selectableGroup()) {
+                    listOf(
+                        MetroTileSource.CARTO_LIGHT to R.string.metro_underlay_source_carto_light,
+                        MetroTileSource.CARTO_DARK to R.string.metro_underlay_source_carto_dark,
+                        MetroTileSource.OSM to R.string.metro_underlay_source_osm,
+                    ).forEach { (source, words) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { onEdit { it.copy(underlaySource = source) } },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            MetroRadio(selected = scheme.underlaySource == source, onClick = { onEdit { it.copy(underlaySource = source) } })
+                            Text(stringResource(words))
+                        }
+                    }
+                }
+                Text(stringResource(R.string.metro_underlay_opacity), style = MaterialTheme.typography.labelLarge)
+                Slider(
+                    value = strength,
+                    onValueChange = { strength = it },
+                    onValueChangeFinished = { onEdit { it.copy(underlayOpacity = strength) } },
+                    valueRange = METRO_UNDERLAY_MIN_OPACITY..1f,
+                )
+                MetroTextButton(onClick = onAlign, enabled = laid != null) { Text(stringResource(R.string.metro_underlay_align)) }
+                MetroTextButton(
+                    onClick = { onEdit { it.copy(underlay = null, underlayShown = false) } },
+                    enabled = laid != null,
+                ) { Text(stringResource(R.string.metro_underlay_remove)) }
+                Text(
+                    stringResource(R.string.metro_underlay_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = { MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
     )
 }
