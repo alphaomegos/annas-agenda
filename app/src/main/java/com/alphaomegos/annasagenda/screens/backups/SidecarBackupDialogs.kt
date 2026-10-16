@@ -105,8 +105,9 @@ internal fun BackupEncryptionDialog(
 }
 
 /**
- * The oursidecar password asked (16.10): to make the encryption key from,
- * or to open a backup made with an older one. [onPassword] answers null
+ * The oursidecar password asked (16.10): to sign the phone in for
+ * backups, to make the encryption key from, or to open a backup made with
+ * an older one. [onPassword] answers null
  * when it is done with it, or what went wrong.
  *
  * The password lives only in this composition: never in the saved state.
@@ -115,6 +116,7 @@ internal fun BackupEncryptionDialog(
 internal fun BackupPasswordDialog(
     text: String,
     wrong: Boolean,
+    confirm: String,
     onPassword: suspend (String) -> SidecarFailure?,
     onDismiss: () -> Unit,
 ) {
@@ -171,7 +173,7 @@ internal fun BackupPasswordDialog(
         },
         confirmButton = {
             TextButton(onClick = { submit() }, enabled = !working && password.isNotEmpty()) {
-                Text(stringResource(R.string.sidecar_backups_open))
+                Text(confirm)
             }
         },
         dismissButton = {

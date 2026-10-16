@@ -1104,6 +1104,7 @@
     <string name="sidecar_backups_why">Kopija svega što je u aplikaciji — zadataka, beleški, knjiga sa koricama — čuva se na vašem oursidecar nalogu, pa izgubljen telefon ništa ne odnosi. Tri ručne i jedna nedeljna; vidite ih samo vi.</string>
     <string name="sidecar_backups_sign_in_first">Prijavite se na oursidecar da biste tamo čuvali rezervne kopije.</string>
     <string name="sidecar_backups_sign_in">Prijavite se</string>
+    <string name="sidecar_backups_password_needed">Upišite oursidecar lozinku jednom — i ovaj telefon će tamo čuvati rezervne kopije.</string>
     <string name="sidecar_backups_sign_in_again">Ovaj telefon je odjavljen sa rezervnih kopija — na sajtu ili od strane servera. Prijavite se ponovo da biste nastavili.</string>
     <string name="sidecar_backups_not_enabled">Ovaj oursidecar nalog ne čuva rezervne kopije.</string>
     <string name="sidecar_backups_counts">Ručne %1$d od %2$d · Nedeljna %3$d od %4$d · svaka do %5$s</string>

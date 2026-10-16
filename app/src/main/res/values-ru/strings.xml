@@ -1170,6 +1170,7 @@
     <string name="sidecar_backups_why">Копия всего, что есть в приложении, — задач, заметок, книг с обложками — хранится в вашем аккаунте oursidecar, и потеря телефона ничего не унесёт. Три ручных и один еженедельный; видите их только вы.</string>
     <string name="sidecar_backups_sign_in_first">Войдите в oursidecar, чтобы хранить там бэкапы.</string>
     <string name="sidecar_backups_sign_in">Войти</string>
+    <string name="sidecar_backups_password_needed">Введите пароль oursidecar один раз — и этот телефон будет хранить там бэкапы.</string>
     <string name="sidecar_backups_sign_in_again">Этот телефон вышел из бэкапов — на сайте или по решению сервера. Войдите снова, чтобы продолжить.</string>
     <string name="sidecar_backups_not_enabled">Этот аккаунт oursidecar не хранит бэкапы.</string>
     <string name="sidecar_backups_counts">Ручные %1$d из %2$d · Еженедельный %3$d из %4$d · каждый до %5$s</string>

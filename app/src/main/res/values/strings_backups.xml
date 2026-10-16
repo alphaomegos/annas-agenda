@@ -6,6 +6,7 @@
     <string name="sidecar_backups_why">A copy of everything in the app — tasks, notes, books, their covers — kept in your oursidecar account, so a lost phone loses nothing. Three made by hand and one made every week; only you see them.</string>
     <string name="sidecar_backups_sign_in_first">Sign in to oursidecar to keep backups there.</string>
     <string name="sidecar_backups_sign_in">Sign in</string>
+    <string name="sidecar_backups_password_needed">Type the oursidecar password once, and this phone keeps backups there.</string>
     <string name="sidecar_backups_sign_in_again">This phone was signed out of backups — on the web, or by the server. Sign in again to go on.</string>
     <string name="sidecar_backups_not_enabled">This oursidecar account does not keep backups.</string>
     <string name="sidecar_backups_counts">By hand %1$d of %2$d · Weekly %3$d of %4$d · each up to %5$s</string>

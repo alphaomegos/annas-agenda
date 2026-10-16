@@ -68,7 +68,9 @@ import com.alphaomegos.annasagenda.util.BackupImportPayload
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.readBackupImportPayload
 import java.time.ZoneId
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * This app's backups in the oursidecar account (16.10, Eduard): from the
@@ -98,6 +100,7 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val outcome by remember(context) { SidecarBackupWorker.outcome(context) }.collectAsStateWithLifecycle(initialValue = null)
 
     var accountOpen by rememberSaveable { mutableStateOf(false) }
+    var signInPasswordOpen by rememberSaveable { mutableStateOf(false) }
     var encryptionOpen by rememberSaveable { mutableStateOf(false) }
     var encryptPasswordOpen by rememberSaveable { mutableStateOf(false) }
     var makeOpen by rememberSaveable { mutableStateOf(false) }
@@ -162,10 +165,13 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 is SidecarBackupResult.Ok -> {
                     restoring = -1L to backup.size
                     val payload = readBackupImportPayload(context, Uri.fromFile(fetched.value))
-                    val imported = when (payload) {
-                        is BackupImportPayload.ZipPackage -> vm.importBackupPackage(payload.appStateJson, payload.coverEntries)
-                        is BackupImportPayload.LegacyJson -> vm.importBackupJson(payload.json)
-                        null -> ImportOutcome.Failed
+                    // Once begun, the import finishes even if the screen is left: it replaces everything.
+                    val imported = withContext(NonCancellable) {
+                        when (payload) {
+                            is BackupImportPayload.ZipPackage -> vm.importBackupPackage(payload.appStateJson, payload.coverEntries)
+                            is BackupImportPayload.LegacyJson -> vm.importBackupJson(payload.json)
+                            null -> ImportOutcome.Failed
+                        }
                     }
                     restoring = null
                     restorer.clear()
@@ -217,8 +223,13 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
                     BackupNotice(stringResource(R.string.sidecar_backups_not_enabled), null) {}
                 }
                 !status.signedIn -> item {
-                    BackupNotice(stringResource(R.string.sidecar_backups_sign_in_again), stringResource(R.string.sidecar_backups_sign_in)) {
-                        accountOpen = true
+                    // Signed in to the music before backups were there, or revoked since: the password
+                    // once more signs the phone in for them — the account's dialog, signed in, has no field for it.
+                    BackupNotice(
+                        stringResource(if (status.needsSignIn) R.string.sidecar_backups_sign_in_again else R.string.sidecar_backups_password_needed),
+                        stringResource(R.string.sidecar_backups_sign_in),
+                    ) {
+                        if (sidecar.account != null) signInPasswordOpen = true else accountOpen = true
                     }
                 }
                 else -> {
@@ -395,6 +406,25 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
         )
     }
 
+    if (signInPasswordOpen) {
+        BackupPasswordDialog(
+            text = stringResource(R.string.sidecar_backups_password_needed),
+            wrong = false,
+            confirm = stringResource(R.string.sidecar_backups_sign_in),
+            onPassword = { password ->
+                when (val r = sidecarSignIn(context, sidecar.server, sidecar.account?.email ?: status.email.orEmpty(), password)) {
+                    is SidecarResult.Ok -> {
+                        signInPasswordOpen = false
+                        failure = account.status.value.failure
+                        null
+                    }
+                    is SidecarResult.Failed -> r.failure
+                }
+            },
+            onDismiss = { signInPasswordOpen = false },
+        )
+    }
+
     if (encryptionOpen) {
         BackupEncryptionDialog(
             chosen = status.encrypt,
@@ -424,6 +454,7 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
         BackupPasswordDialog(
             text = stringResource(R.string.sidecar_backups_encrypt_password_text),
             wrong = false,
+            confirm = stringResource(R.string.sidecar_backups_encrypt_yes),
             onPassword = { password ->
                 // Checked against the server, as signing in is; the key is made from it here.
                 when (val r = connection.signIn(sidecar.server, status.email ?: sidecar.account?.email.orEmpty(), password)) {
@@ -501,6 +532,7 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
         BackupPasswordDialog(
             text = stringResource(R.string.sidecar_backups_password_text, momentOf(backup)),
             wrong = passwordWasWrong,
+            confirm = stringResource(R.string.sidecar_backups_open),
             onPassword = { password ->
                 passwordFor = null
                 restore(backup, password)
