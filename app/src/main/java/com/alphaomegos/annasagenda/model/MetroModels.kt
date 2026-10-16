@@ -285,6 +285,10 @@ data class MetroPrefs(
     // colour, each walk on a thin one; and when one would arrive, by the clock.
     val routeTimeline: Boolean = true,
     val arrivalTime: Boolean = true,
+    // The editor (16.10): a station of an interchange kept together drags the
+    // whole interchange along — off, it moves alone. Was a tick under the
+    // picture; now a setting like the rest.
+    val moveWholeInterchange: Boolean = true,
 )
 
 /**

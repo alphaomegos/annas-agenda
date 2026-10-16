@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import com.alphaomegos.annasagenda.support.METRO_SCALE_MIN
 import com.alphaomegos.annasagenda.support.METRO_SCALE_MAX
 import com.alphaomegos.annasagenda.model.MetroScheme
+import com.alphaomegos.annasagenda.model.MetroPrefs
 import com.alphaomegos.annasagenda.model.MetroLabelsMode
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.verticalScroll
@@ -224,7 +225,8 @@ fun MetroMapEditorScreen(
     val bending = tool == TOOL_BEND
     val naming = tool == TOOL_NAMES
     val selecting = tool == TOOL_SELECT
-    var moveWhole by rememberSaveable { mutableStateOf(true) }
+    // A whole interchange dragged along (16.10): a setting now, in the look panel.
+    val moveWhole = prefs.moveWholeInterchange
     // The look's panel open (08.10).
     var looking by rememberSaveable { mutableStateOf(false) }
     // Bumped by "Fit to the screen" (08.10).
@@ -538,7 +540,7 @@ fun MetroMapEditorScreen(
                     }
                 }
                 // What goes with the tool (14.10), along the bottom of the picture.
-                if (scheme != null && (selecting || (tool == TOOL_MOVE && scheme.transfersTogether))) {
+                if (scheme != null && selecting) {
                     Surface(
                         modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp).metroFrame(LocalMetroStyle.current, LocalMetroStyleDetails.current),
                         shape = RoundedCornerShape(16.dp),
@@ -608,8 +610,6 @@ fun MetroMapEditorScreen(
                                         ) { Text(stringResource(words)) }
                                     }
                                 }
-                            } else {
-                                MetroMapTick(stringResource(R.string.metro_move_whole), moveWhole, Modifier.padding(end = 12.dp)) { moveWhole = it }
                             }
                         }
                     }
@@ -731,7 +731,13 @@ fun MetroMapEditorScreen(
     }
 
     if (looking && scheme != null) {
-        MetroLookDialog(scheme, onEdit = { edit -> vm.editMetroScheme(schemeId, edit) }, onDismiss = { looking = false })
+        MetroLookDialog(
+            scheme,
+            prefs = prefs,
+            onEdit = { edit -> vm.editMetroScheme(schemeId, edit) },
+            onPrefs = { edit -> vm.setMetroPrefs(edit) },
+            onDismiss = { looking = false },
+        )
     }
 
     if (confirmReset) {
@@ -755,7 +761,13 @@ fun MetroMapEditorScreen(
  * undo takes it back in one step.
  */
 @Composable
-private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> MetroScheme) -> Unit, onDismiss: () -> Unit) {
+private fun MetroLookDialog(
+    scheme: MetroScheme,
+    prefs: MetroPrefs,
+    onEdit: ((MetroScheme) -> MetroScheme) -> Unit,
+    onPrefs: ((MetroPrefs) -> MetroPrefs) -> Unit,
+    onDismiss: () -> Unit,
+) {
     MetroDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.metro_look)) },
@@ -763,6 +775,12 @@ private fun MetroLookDialog(scheme: MetroScheme, onEdit: ((MetroScheme) -> Metro
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 MetroMapTick(stringResource(R.string.metro_transfers_together), scheme.transfersTogether, Modifier.fillMaxWidth()) { on ->
                     onEdit { metroTransfersTogether(it, on) }
+                }
+                // Dragging one station of such an interchange drags it all (16.10) — or not.
+                if (scheme.transfersTogether) {
+                    MetroMapTick(stringResource(R.string.metro_move_whole), prefs.moveWholeInterchange, Modifier.fillMaxWidth().padding(start = 24.dp)) { on ->
+                        onPrefs { it.copy(moveWholeInterchange = on) }
+                    }
                 }
                 MetroMapTick(stringResource(R.string.metro_transfer_links), scheme.showTransferLinks, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(showTransferLinks = on) }

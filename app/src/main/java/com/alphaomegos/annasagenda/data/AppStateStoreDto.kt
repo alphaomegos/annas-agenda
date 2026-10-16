@@ -168,6 +168,7 @@ internal data class MetroPrefsDto(
     val recentRoutes: Boolean = true,
     val routeTimeline: Boolean = true,
     val arrivalTime: Boolean = true,
+    val moveWholeInterchange: Boolean = true,
 )
 
 @Serializable
