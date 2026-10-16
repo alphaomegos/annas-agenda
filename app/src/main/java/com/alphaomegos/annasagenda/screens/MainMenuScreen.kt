@@ -101,16 +101,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import com.alphaomegos.annasagenda.components.TinyIconButton
 import com.alphaomegos.annasagenda.components.SidecarAccountDialog
-import com.alphaomegos.annasagenda.app.AppIcons
+import com.alphaomegos.annasagenda.components.SidecarAccountIcon
 import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.support.SidecarSignInState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 private const val MENU_REORDER_HOLD_MS = 3000L
 
-/** oursidecar's own green (its logo), and a lighter one that reads on the dark theme. */
-private val SidecarGreen = Color(0xFF607055)
-private val SidecarGreenOnDark = Color(0xFFA3B596)
 private const val MENU_ROW_MIN_HEIGHT_DP = 80
 private const val MENU_ICON_SIZE_DP = 64
 
@@ -378,10 +375,10 @@ private fun rememberMainMenuEntries(
             MenuEntry("reading", R.drawable.ic_menu_reading, R.string.menu_reading, onMediaLibrary),
             MenuEntry("metro", R.drawable.ic_menu_metro, R.string.menu_metro, onMetro),
             MenuEntry("travel", R.drawable.ic_menu_travel, R.string.menu_travel, onTravel),
-            // Eduard's drawing is to come; the "soon" picture stands in.
+            // Eduard's two cats with a record; grey until signed in.
             MenuEntry(
                 "music",
-                R.drawable.ic_menu_soon,
+                R.drawable.ic_menu_music,
                 R.string.menu_music,
                 if (musicOpen) onMusic else onMusicClosed,
                 comingSoon = !musicOpen,
@@ -682,12 +679,13 @@ private fun MainMenuTopBar(
                     )
                 }
             } else {
-                // The oursidecar account (16.10): hollow and grey with nobody
-                // in, the sidecar's green when in, red when it wants the
-                // password again.
+                // The oursidecar account (16.10): Eduard's cat in the sidecar's
+                // "O" with nobody in; when in, a green dot on it; when the
+                // session has ended, a red ring and a "!".
                 IconButton(onClick = onSidecar) {
-                    Icon(
-                        AppIcons.sidecarAccount(sidecarState),
+                    SidecarAccountIcon(
+                        state = sidecarState,
+                        avatar = null,
                         contentDescription = stringResource(
                             when (sidecarState) {
                                 SidecarSignInState.SIGNED_OUT -> R.string.sidecar_account_signed_out
@@ -695,11 +693,6 @@ private fun MainMenuTopBar(
                                 SidecarSignInState.ATTENTION -> R.string.sidecar_account_attention
                             },
                         ),
-                        tint = when (sidecarState) {
-                            SidecarSignInState.SIGNED_OUT -> MaterialTheme.colorScheme.onSurfaceVariant
-                            SidecarSignInState.SIGNED_IN -> if (appIsDarkTheme) SidecarGreenOnDark else SidecarGreen
-                            SidecarSignInState.ATTENTION -> MaterialTheme.colorScheme.error
-                        },
                     )
                 }
 

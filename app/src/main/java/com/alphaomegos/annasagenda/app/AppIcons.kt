@@ -1,7 +1,6 @@
 package com.alphaomegos.annasagenda.app
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.BreakfastDining
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Category
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.filled.RiceBowl
 import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.WineBar
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.alphaomegos.annasagenda.*
 import com.alphaomegos.annasagenda.model.*
@@ -36,12 +34,6 @@ internal object AppIcons {
         CalendarBadge.ANTHROPOMETRY -> Icons.Filled.Straighten
         CalendarBadge.FOOD -> Icons.Filled.Restaurant
         CalendarBadge.DEBTS -> Icons.Filled.ErrorOutline
-    }
-
-    /** The oursidecar sign-in in the main menu's bar (16.10): hollow while nobody is in. Eduard's drawings will come here. */
-    fun sidecarAccount(state: SidecarSignInState): ImageVector = when (state) {
-        SidecarSignInState.SIGNED_OUT -> Icons.Outlined.AccountCircle
-        SidecarSignInState.SIGNED_IN, SidecarSignInState.ATTENTION -> Icons.Filled.AccountCircle
     }
 
     fun foodCategory(category: FoodCategory): ImageVector = when (category) {
