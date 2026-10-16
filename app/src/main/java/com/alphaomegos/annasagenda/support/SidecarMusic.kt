@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.support
 
+import com.alphaomegos.annasagenda.model.MusicPlayerMemory
+import com.alphaomegos.annasagenda.model.MusicRepeat
 import com.alphaomegos.annasagenda.model.MusicSort
 import com.alphaomegos.annasagenda.model.MusicTab
 import com.alphaomegos.annasagenda.model.SidecarMember
@@ -258,6 +260,35 @@ fun musicQueue(shown: List<SidecarTrack>, start: SidecarTrack?, playable: (Sidec
     val index = list.indexOfFirst { it.id == start.id }
     if (index >= 0) return MusicQueue(list, index)
     return if (playable(start)) MusicQueue(listOf(start), 0) else null
+}
+
+/** Where the player starts again from [memory]: the queue, and how far into its first track. */
+data class MusicResumed(val queue: MusicQueue, val positionMillis: Long)
+
+/**
+ * The queue [memory] kept, made of the sidecar's [tracks] as they are now
+ * (16.10): a track gone or no longer [playable] is left out; the one that
+ * was playing goes on where it was, or — gone — the next one still there
+ * from its start. Null for another sidecar's memory or nothing left to play.
+ */
+fun musicResumed(memory: MusicPlayerMemory, spaceId: String, tracks: List<SidecarTrack>, playable: (SidecarTrack) -> Boolean): MusicResumed? {
+    if (memory.spaceId != spaceId) return null
+    val byId = tracks.associateBy { it.id }
+    val queue = memory.queueIds.distinct().mapNotNull { byId[it] }.filter(playable)
+    if (queue.isEmpty()) return null
+    val index = queue.indexOfFirst { it.id == memory.currentId }
+    if (index >= 0) return MusicResumed(MusicQueue(queue, index), memory.positionMillis.coerceAtLeast(0L))
+    // The one that played is gone: the next of the old queue that is still here, from its start.
+    val was = memory.queueIds.indexOf(memory.currentId)
+    val next = if (was < 0) null else memory.queueIds.drop(was + 1).firstNotNullOfOrNull { id -> queue.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
+    return MusicResumed(MusicQueue(queue, next ?: 0), 0L)
+}
+
+/** The next way of going on, as the button steps through them: round the queue, the one again, stop at the end. */
+fun musicRepeatNext(repeat: MusicRepeat): MusicRepeat = when (repeat) {
+    MusicRepeat.ALL -> MusicRepeat.ONE
+    MusicRepeat.ONE -> MusicRepeat.OFF
+    MusicRepeat.OFF -> MusicRepeat.ALL
 }
 
 /** A position as the player shows it: "3:07"; minutes go past sixty, as the web's do. */

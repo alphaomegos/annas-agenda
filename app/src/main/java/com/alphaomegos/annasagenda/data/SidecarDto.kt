@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.data
 
+import com.alphaomegos.annasagenda.model.MusicPlayerMemory
+import com.alphaomegos.annasagenda.model.MusicRepeat
 import com.alphaomegos.annasagenda.model.SidecarAccount
 import com.alphaomegos.annasagenda.model.SidecarMember
 import com.alphaomegos.annasagenda.model.SidecarSpace
@@ -134,4 +136,27 @@ internal data class SidecarDeviceDto(
     val rejected: Boolean = false,
     val spaces: List<SidecarSpaceDto> = emptyList(),
     val spaceId: String? = null,
+)
+
+/** Where the player was (16.10), in the no-backup folder: MusicPlayerMemory. */
+@Serializable
+internal data class MusicPlayerMemoryDto(
+    val spaceId: String,
+    val queueIds: List<String> = emptyList(),
+    val currentId: String? = null,
+    val positionMillis: Long = 0L,
+    val shuffle: Boolean = false,
+    // MusicRepeat by name.
+    val repeat: String = "ALL",
+)
+
+internal fun MusicPlayerMemory.toDto() = MusicPlayerMemoryDto(spaceId, queueIds, currentId, positionMillis, shuffle, repeat.name)
+
+internal fun MusicPlayerMemoryDto.toDomain() = MusicPlayerMemory(
+    spaceId = spaceId,
+    queueIds = queueIds.filter { it.isNotBlank() },
+    currentId = currentId?.takeIf { it.isNotBlank() },
+    positionMillis = positionMillis.coerceAtLeast(0L),
+    shuffle = shuffle,
+    repeat = MusicRepeat.entries.firstOrNull { it.name == repeat } ?: MusicRepeat.ALL,
 )

@@ -1129,4 +1129,12 @@
     <string name="music_pause">Пауза</string>
     <string name="music_previous">Предыдущий трек</string>
     <string name="music_next">Следующий трек</string>
+    <string name="music_player_open">Открыть плеер</string>
+    <string name="music_player_close">Свернуть плеер</string>
+    <string name="music_shuffle_on">Перемешивание: включено</string>
+    <string name="music_shuffle_off">Перемешивание: выключено</string>
+    <string name="music_repeat_all">Повтор: вся очередь</string>
+    <string name="music_repeat_one">Повтор: этот трек</string>
+    <string name="music_repeat_off">Повтор: выключен</string>
+    <string name="music_queue">Очередь</string>
 </resources>

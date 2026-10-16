@@ -77,6 +77,11 @@ import com.alphaomegos.annasagenda.support.musicArtistShown
 import com.alphaomegos.annasagenda.support.musicArtists
 import com.alphaomegos.annasagenda.support.musicMemberName
 import com.alphaomegos.annasagenda.support.musicQueue
+import com.alphaomegos.annasagenda.support.musicResumed
+import com.alphaomegos.annasagenda.app.musicPlayerMemoryFile
+import androidx.media3.common.MediaItem
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.alphaomegos.annasagenda.support.musicSorted
 import com.alphaomegos.annasagenda.support.musicTabKey
 import com.alphaomegos.annasagenda.support.musicTabShown
@@ -118,9 +123,11 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     var styleOpen by rememberSaveable { mutableStateOf(false) }
     var setupOpen by rememberSaveable { mutableStateOf(false) }
     var artistOpen by rememberSaveable { mutableStateOf(false) }
+    var playerOpen by rememberSaveable { mutableStateOf(false) }
     val controller = rememberMusicController()
     val now = rememberMusicNowPlaying(controller)
     val unknownArtist = stringResource(R.string.music_unknown_artist)
+    val memoryFile = remember(context) { musicPlayerMemoryFile(context) }
 
     // Signed out (or another person in): nothing of the last one's music is kept in sight.
     LaunchedEffect(status.account?.userId) {
@@ -139,19 +146,30 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val shown = musicSorted(musicTracksOf(lib.tracks, tab, artist), prefs.sort, locale)
     val namesById = lib.members.associate { it.id to musicMemberName(it) }
 
+    val mediaItemOf: (SidecarTrack) -> MediaItem = { track -> musicMediaItem(track, connection.audioUrl(track.id), unknownArtist) }
+    val panelShown = playerOpen && controller != null && now.trackId != null
+
     // A tap plays the list from that track on, going round it; a track with no file is passed by.
     val play: (SidecarTrack) -> Unit = { start ->
         val queue = musicQueue(shown, start) { it.hasAudio }
-        if (controller != null && queue != null) {
-            controller.playMusic(queue) { track -> musicMediaItem(track, connection.audioUrl(track.id), unknownArtist) }
-        }
+        if (controller != null && queue != null) controller.playMusic(queue, mediaItemOf)
+    }
+
+    // The app opened again with the player empty — Android let the service go — finds it where it was, paused.
+    LaunchedEffect(controller, lib.loaded, space?.id) {
+        val c = controller ?: return@LaunchedEffect
+        val spaceId = space?.id ?: return@LaunchedEffect
+        if (!lib.loaded || c.mediaItemCount > 0) return@LaunchedEffect
+        val memory = withContext(Dispatchers.IO) { memoryFile.read() } ?: return@LaunchedEffect
+        val resumed = musicResumed(memory, spaceId, lib.tracks) { it.hasAudio } ?: return@LaunchedEffect
+        if (c.mediaItemCount == 0) c.resumeMusic(resumed, memory.shuffle, memory.repeat, mediaItemOf)
     }
 
     Scaffold(
         // Norton Commander's keys along the bottom, in DOS.
         bottomBar = {
             Column {
-                MusicMiniBar(now, controller)
+                if (!panelShown) MusicMiniBar(now, controller) { playerOpen = true }
                 MetroKeyBar(
                     listOf(
                         MetroKey(2, stringResource(R.string.music_sort)) { sortOpen = true },
@@ -188,7 +206,9 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         },
     ) { inner ->
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
+            val c = controller
             when {
+                panelShown && c != null -> MusicPlayerPanel(c, now) { playerOpen = false }
                 signIn != SidecarSignInState.SIGNED_IN -> MusicMessage(
                     text = stringResource(
                         if (signIn == SidecarSignInState.ATTENTION) R.string.sidecar_session_ended else R.string.sidecar_sign_in_why,

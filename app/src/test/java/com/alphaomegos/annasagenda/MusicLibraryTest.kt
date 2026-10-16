@@ -8,6 +8,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import com.alphaomegos.annasagenda.app.*
 import com.alphaomegos.annasagenda.support.*
+import com.alphaomegos.annasagenda.model.*
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -99,6 +100,23 @@ class MusicLibraryTest {
         assertTrue(s.tracks.isEmpty())
         assertFalse(s.loaded)
         assertEquals(SidecarFailure.NOT_FOUND, s.failure)
+    }
+
+    @Test
+    fun whereThePlayerWasIsKeptAndReadBack() {
+        val memoryFile = MusicPlayerMemoryFile(File(folder.root, "music/player.json"))
+        val memory = MusicPlayerMemory("s1", listOf("t2", "t1"), "t1", 95_000L, shuffle = true, repeat = MusicRepeat.ONE)
+
+        assertEquals(null, memoryFile.read())
+        memoryFile.write(memory)
+        assertEquals(memory, memoryFile.read())
+
+        File(folder.root, "music/player.json").writeText("{broken")
+        assertEquals(null, memoryFile.read())
+
+        memoryFile.write(memory)
+        memoryFile.forget()
+        assertEquals(null, memoryFile.read())
     }
 
     @Test

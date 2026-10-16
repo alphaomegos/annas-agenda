@@ -60,6 +60,23 @@ sealed interface MusicTab {
 /** The orders the web offers (16.10): newest, oldest, by name either way. */
 enum class MusicSort { NEWEST, OLDEST, AZ, ZA }
 
+/** How the player goes on at the end of a track (16.10): stop at the end, go round the queue, or the one again. */
+enum class MusicRepeat { OFF, ALL, ONE }
+
+/**
+ * Where the player was (16.10), so that the app opened again finds it there:
+ * the sidecar, the queue by track, the one playing and how far in, and how
+ * it was going on. This phone's only — never in a backup.
+ */
+data class MusicPlayerMemory(
+    val spaceId: String,
+    val queueIds: List<String>,
+    val currentId: String?,
+    val positionMillis: Long = 0L,
+    val shuffle: Boolean = false,
+    val repeat: MusicRepeat = MusicRepeat.ALL,
+)
+
 /**
  * The music section's own settings (16.10). Settings, not data: each has a
  * default, and an archive from before them reads as these.

@@ -2,6 +2,7 @@ package com.alphaomegos.annasagenda.screens.music
 
 import android.content.ComponentName
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,7 +40,11 @@ import androidx.media3.session.SessionToken
 import com.alphaomegos.annasagenda.MusicPlaybackService
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.model.SidecarTrack
+import com.alphaomegos.annasagenda.app.musicPlayerRepeatMode
+import com.alphaomegos.annasagenda.app.musicRepeatOf
+import com.alphaomegos.annasagenda.model.MusicRepeat
 import com.alphaomegos.annasagenda.support.MusicQueue
+import com.alphaomegos.annasagenda.support.MusicResumed
 
 /**
  * The screen's hold on the player (16.10): a controller of the playback
@@ -65,12 +71,19 @@ internal fun rememberMusicController(): MediaController? {
     return controller
 }
 
-/** What is playing, as a screen shows it. */
+/** A track of the player's queue, as the queue shows it. */
+internal data class MusicQueued(val id: String, val title: String, val artist: String)
+
+/** What is playing, as a screen shows it: the track, the queue it is in, and how the player goes on. */
 internal data class MusicNowPlaying(
     val trackId: String? = null,
     val title: String? = null,
     val artist: String? = null,
     val playing: Boolean = false,
+    val index: Int = -1,
+    val queue: List<MusicQueued> = emptyList(),
+    val shuffle: Boolean = false,
+    val repeat: MusicRepeat = MusicRepeat.ALL,
 )
 
 /** What [controller] is playing, read again on everything the player says. */
@@ -90,6 +103,13 @@ internal fun rememberMusicNowPlaying(controller: MediaController?): MusicNowPlay
                 title = metadata.title?.toString(),
                 artist = metadata.artist?.toString(),
                 playing = c.isPlaying,
+                index = c.currentMediaItemIndex,
+                queue = (0 until c.mediaItemCount).map { i ->
+                    val item = c.getMediaItemAt(i)
+                    MusicQueued(item.mediaId, item.mediaMetadata.title?.toString().orEmpty(), item.mediaMetadata.artist?.toString().orEmpty())
+                },
+                shuffle = c.shuffleModeEnabled,
+                repeat = musicRepeatOf(c.repeatMode),
             )
         }
         val listener = object : Player.Listener {
@@ -117,12 +137,23 @@ internal fun musicMediaItem(track: SidecarTrack, url: String, unknownArtist: Str
         )
         .build()
 
-/** [queue] played from its start, going round it as the web's player does. */
+/**
+ * [queue] played from its start (16.10). The first time, going round it as
+ * the web's player does; after that, as the person last set it.
+ */
 internal fun MediaController.playMusic(queue: MusicQueue, item: (SidecarTrack) -> MediaItem) {
+    if (mediaItemCount == 0) repeatMode = Player.REPEAT_MODE_ALL
     setMediaItems(queue.tracks.map(item), queue.startIndex, 0L)
-    repeatMode = Player.REPEAT_MODE_ALL
     prepare()
     play()
+}
+
+/** [resumed] put back in the player, paused where it was, going on as it did. */
+internal fun MediaController.resumeMusic(resumed: MusicResumed, shuffle: Boolean, repeat: MusicRepeat, item: (SidecarTrack) -> MediaItem) {
+    setMediaItems(resumed.queue.tracks.map(item), resumed.queue.startIndex, resumed.positionMillis)
+    shuffleModeEnabled = shuffle
+    repeatMode = musicPlayerRepeatMode(repeat)
+    prepare()
 }
 
 /**
@@ -130,7 +161,7 @@ internal fun MediaController.playMusic(queue: MusicQueue, item: (SidecarTrack) -
  * and the three buttons the shade has too.
  */
 @Composable
-internal fun MusicMiniBar(now: MusicNowPlaying, controller: MediaController?) {
+internal fun MusicMiniBar(now: MusicNowPlaying, controller: MediaController?, onOpen: () -> Unit) {
     if (now.trackId == null || controller == null) return
     val colors = MaterialTheme.colorScheme
     Column(modifier = Modifier.fillMaxWidth().background(colors.surfaceContainerHighest)) {
@@ -139,7 +170,11 @@ internal fun MusicMiniBar(now: MusicNowPlaying, controller: MediaController?) {
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(role = Role.Button, onClickLabel = stringResource(R.string.music_player_open), onClick = onOpen),
+            ) {
                 Text(
                     now.title.orEmpty(),
                     style = MaterialTheme.typography.bodyLarge,

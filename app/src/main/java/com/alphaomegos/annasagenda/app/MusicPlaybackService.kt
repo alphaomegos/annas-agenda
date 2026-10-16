@@ -3,9 +3,12 @@ package com.alphaomegos.annasagenda
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
@@ -19,6 +22,9 @@ import androidx.media3.session.MediaSessionService
 import com.alphaomegos.annasagenda.app.SIDECAR_HTTP_AGENT
 import com.alphaomegos.annasagenda.app.SidecarConnection
 import com.alphaomegos.annasagenda.app.SidecarConnections
+import com.alphaomegos.annasagenda.app.musicPlayerMemoryFile
+import com.alphaomegos.annasagenda.app.musicRepeatOf
+import com.alphaomegos.annasagenda.model.MusicPlayerMemory
 import com.alphaomegos.annasagenda.support.sidecarIsServerUrl
 import kotlinx.coroutines.runBlocking
 
@@ -37,6 +43,18 @@ import kotlinx.coroutines.runBlocking
 class MusicPlaybackService : MediaSessionService() {
 
     private var session: MediaSession? = null
+    private val handler = Handler(Looper.getMainLooper())
+
+    // Where the player is, written down while it plays — every few seconds,
+    // and at every change of track, queue or way of going on — so that the
+    // app opened again, after Android let the service go, finds it there.
+    private val rememberTick = object : Runnable {
+        override fun run() {
+            val player = session?.player ?: return
+            remember(player)
+            if (player.isPlaying) handler.postDelayed(this, MEMORY_TICK_MS)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -53,6 +71,25 @@ class MusicPlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
+        player.addListener(object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) {
+                if (events.containsAny(
+                        Player.EVENT_TIMELINE_CHANGED,
+                        Player.EVENT_MEDIA_ITEM_TRANSITION,
+                        Player.EVENT_IS_PLAYING_CHANGED,
+                        Player.EVENT_REPEAT_MODE_CHANGED,
+                        Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED,
+                        Player.EVENT_POSITION_DISCONTINUITY,
+                    )
+                ) {
+                    remember(player)
+                }
+                if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) {
+                    handler.removeCallbacks(rememberTick)
+                    if (player.isPlaying) handler.postDelayed(rememberTick, MEMORY_TICK_MS)
+                }
+            }
+        })
         session = MediaSession.Builder(this, player)
             .setSessionActivity(openApp())
             .build()
@@ -67,12 +104,34 @@ class MusicPlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onDestroy() {
+        handler.removeCallbacks(rememberTick)
         session?.run {
+            remember(player)
             player.release()
             release()
         }
         session = null
         super.onDestroy()
+    }
+
+    /** The queue, the track and how far in, for the sidecar whose music it is. An empty player keeps what was. */
+    private fun remember(player: Player) {
+        if (player.mediaItemCount == 0) return
+        val spaceId = SidecarConnections.of(this).status.value.space?.id ?: return
+        musicPlayerMemoryFile(this).write(
+            MusicPlayerMemory(
+                spaceId = spaceId,
+                queueIds = (0 until player.mediaItemCount).map { player.getMediaItemAt(it).mediaId },
+                currentId = player.currentMediaItem?.mediaId,
+                positionMillis = player.currentPosition.coerceAtLeast(0L),
+                shuffle = player.shuffleModeEnabled,
+                repeat = musicRepeatOf(player.repeatMode),
+            ),
+        )
+    }
+
+    private companion object {
+        const val MEMORY_TICK_MS = 10_000L
     }
 
     /** The app, as its icon opens it: the one already open comes forward, its place kept. */

@@ -53,4 +53,12 @@
     <string name="music_pause">Pause</string>
     <string name="music_previous">Previous track</string>
     <string name="music_next">Next track</string>
+    <string name="music_player_open">Open the player</string>
+    <string name="music_player_close">Close the player</string>
+    <string name="music_shuffle_on">Shuffle: on</string>
+    <string name="music_shuffle_off">Shuffle: off</string>
+    <string name="music_repeat_all">Repeat: the whole queue</string>
+    <string name="music_repeat_one">Repeat: this track</string>
+    <string name="music_repeat_off">Repeat: off</string>
+    <string name="music_queue">Queue</string>
 </resources>

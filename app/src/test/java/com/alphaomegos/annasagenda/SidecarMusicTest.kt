@@ -259,6 +259,47 @@ class SidecarMusicTest {
         assertEquals(0, queue?.startIndex)
     }
 
+    private fun memory(vararg ids: String, current: String?, at: Long = 61_000, space: String = "s1") =
+        MusicPlayerMemory(space, ids.toList(), current, at, shuffle = true, repeat = MusicRepeat.ONE)
+
+    @Test
+    fun thePlayerGoesOnWhereItWas() {
+        val tracks = listOf(track("1"), track("2"), track("3"))
+
+        val resumed = musicResumed(memory("3", "1", "2", current = "1"), "s1", tracks) { it.hasAudio }
+
+        assertEquals(listOf("3", "1", "2"), resumed?.queue?.tracks?.map { it.id })
+        assertEquals(1, resumed?.queue?.startIndex)
+        assertEquals(61_000L, resumed?.positionMillis)
+    }
+
+    @Test
+    fun aTrackGoneFromTheSidecarIsLeftOutAndTheOnePlayingGivesWayToTheNext() {
+        val tracks = listOf(track("1"), track("3"), track("4", audio = false))
+
+        val resumed = musicResumed(memory("1", "2", "4", "3", current = "2"), "s1", tracks) { it.hasAudio }
+
+        assertEquals(listOf("1", "3"), resumed?.queue?.tracks?.map { it.id })
+        assertEquals(1, resumed?.queue?.startIndex)
+        assertEquals(0L, resumed?.positionMillis)
+    }
+
+    @Test
+    fun anotherSidecarsMemoryOrNothingLeftIsNoQueue() {
+        val tracks = listOf(track("1"))
+
+        assertNull(musicResumed(memory("1", current = "1", space = "s2"), "s1", tracks) { true })
+        assertNull(musicResumed(memory("9", current = "9"), "s1", tracks) { true })
+        assertEquals(0, musicResumed(memory("1", current = null), "s1", tracks) { true }?.queue?.startIndex)
+    }
+
+    @Test
+    fun theRepeatButtonStepsRoundItsThreeWays() {
+        assertEquals(MusicRepeat.ONE, musicRepeatNext(MusicRepeat.ALL))
+        assertEquals(MusicRepeat.OFF, musicRepeatNext(MusicRepeat.ONE))
+        assertEquals(MusicRepeat.ALL, musicRepeatNext(MusicRepeat.OFF))
+    }
+
     @Test
     fun aPositionIsMinutesAndSeconds() {
         assertEquals("0:00", musicTimeLabel(0))

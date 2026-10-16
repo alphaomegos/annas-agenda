@@ -82,3 +82,7 @@ internal object MusicLibraries {
         instance ?: MusicLibrary(SidecarConnections.of(context)).also { instance = it }
     }
 }
+
+/** Where the player was (16.10), in the no-backup folder. */
+internal fun musicPlayerMemoryFile(context: Context): MusicPlayerMemoryFile =
+    MusicPlayerMemoryFile(File(File(context.applicationContext.noBackupFilesDir, "music"), "player.json"))

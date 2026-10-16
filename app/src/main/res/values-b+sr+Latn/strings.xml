@@ -1063,4 +1063,12 @@
     <string name="music_pause">Pauza</string>
     <string name="music_previous">Prethodna pesma</string>
     <string name="music_next">Sledeća pesma</string>
+    <string name="music_player_open">Otvori plejer</string>
+    <string name="music_player_close">Skupi plejer</string>
+    <string name="music_shuffle_on">Nasumično: uključeno</string>
+    <string name="music_shuffle_off">Nasumično: isključeno</string>
+    <string name="music_repeat_all">Ponavljanje: ceo red</string>
+    <string name="music_repeat_one">Ponavljanje: ova pesma</string>
+    <string name="music_repeat_off">Ponavljanje: isključeno</string>
+    <string name="music_queue">Red za puštanje</string>
 </resources>
