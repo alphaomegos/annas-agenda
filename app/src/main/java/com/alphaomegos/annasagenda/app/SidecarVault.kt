@@ -5,6 +5,7 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import com.alphaomegos.annasagenda.model.SidecarBackupSlot
 import com.alphaomegos.annasagenda.support.sidecarBackupDeviceName
 import java.io.File
 import java.security.KeyStore
@@ -149,13 +150,30 @@ internal object SidecarBackupAccounts {
 internal suspend fun sidecarSignIn(context: Context, server: String, email: String, password: String): SidecarResult<Unit> {
     val connection = SidecarConnections.of(context)
     val result = connection.signIn(server, email, password)
-    if (result is SidecarResult.Ok) SidecarBackupAccounts.of(context).signedIn(connection.status.value.server, email, password)
+    if (result is SidecarResult.Ok) {
+        val backups = SidecarBackupAccounts.of(context)
+        backups.signedIn(connection.status.value.server, email, password)
+        planSidecarAutoBackup(context, backups.status.value)
+    }
     return result
 }
 
-/** Signing out of oursidecar (16.10): the music, the backups, the picture, and the queue that was this person's. */
+/** The weekly backup planned while it can go — signed in, wanted, encryption chosen — and not otherwise. */
+internal fun planSidecarAutoBackup(context: Context, status: SidecarBackupStatus) {
+    SidecarBackupWorker.planAuto(context, status.signedIn && status.auto && status.encrypt != null)
+}
+
+/**
+ * Signing out of oursidecar (16.10): the music, the backups — any going up
+ * given up, the weekly one no more — the picture, and the queue that was
+ * this person's.
+ */
 internal suspend fun sidecarSignOut(context: Context) {
     SidecarConnections.of(context).signOut()
+    SidecarBackupWorker.cancelManual(context)
+    SidecarBackupWorker.planAuto(context, false)
+    SidecarBackupUploaders.of(context).discard(SidecarBackupSlot.MANUAL)
+    SidecarBackupUploaders.of(context).discard(SidecarBackupSlot.AUTO)
     SidecarBackupAccounts.of(context).signOut()
     SidecarAvatarStores.of(context).forget()
     musicPlayerMemoryFile(context).forget()

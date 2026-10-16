@@ -12,7 +12,11 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -118,37 +122,7 @@ private fun writeBackupArchive(
         val out = resolver.openOutputStream(stagingUri, "wt")
             ?: throw IOException("MediaStore refused to open $stagingName for writing")
 
-        out.use { rawOut ->
-            ZipOutputStream(rawOut).use { zip ->
-                writeZipStringEntry(
-                    zip = zip,
-                    entryName = BACKUP_APP_STATE_ENTRY_NAME,
-                    text = json
-                )
-
-                writeZipStringEntry(
-                    zip = zip,
-                    entryName = BACKUP_META_ENTRY_NAME,
-                    text = buildBackupMetaJson(
-                        coverCount = coverFiles.size
-                    )
-                )
-
-                coverFiles
-                    .sortedBy { it.ref }
-                    .forEach { stored ->
-                        val entryName = zipEntryNameForCoverRef(stored.ref)
-                            ?: return@forEach
-                        val bytes = runCatching { stored.file.readBytes() }.getOrNull()
-                            ?: return@forEach
-                        writeZipBytesEntry(
-                            zip = zip,
-                            entryName = entryName,
-                            bytes = bytes
-                        )
-                    }
-            }
-        }
+        out.use { rawOut -> writeBackupZip(rawOut, json, coverFiles) }
     } catch (e: Throwable) {
         // Leave nothing behind that could be mistaken for a backup. The one
         // that was already there has not been touched.
@@ -175,6 +149,64 @@ private fun writeBackupArchive(
         null,
         null,
     )
+}
+
+/**
+ * The archive itself — the state, its meta, and every cover — into [out],
+ * which is closed. The same archive whether it goes to Documents or, as a
+ * file in the app's own folder, to oursidecar (16.10).
+ */
+internal fun writeBackupZip(
+    out: OutputStream,
+    json: String,
+    coverFiles: List<StoredCoverFile>,
+) {
+    ZipOutputStream(out).use { zip ->
+        writeZipStringEntry(
+            zip = zip,
+            entryName = BACKUP_APP_STATE_ENTRY_NAME,
+            text = json
+        )
+
+        writeZipStringEntry(
+            zip = zip,
+            entryName = BACKUP_META_ENTRY_NAME,
+            text = buildBackupMetaJson(
+                coverCount = coverFiles.size
+            )
+        )
+
+        coverFiles
+            .sortedBy { it.ref }
+            .forEach { stored ->
+                val entryName = zipEntryNameForCoverRef(stored.ref)
+                    ?: return@forEach
+                val bytes = runCatching { stored.file.readBytes() }.getOrNull()
+                    ?: return@forEach
+                writeZipBytesEntry(
+                    zip = zip,
+                    entryName = entryName,
+                    bytes = bytes
+                )
+            }
+    }
+}
+
+/**
+ * The archive written to [file] (16.10, for oursidecar): whole, or not at
+ * all — a failure leaves no file behind that could be taken for one.
+ */
+suspend fun writeBackupZipFile(
+    file: File,
+    json: String,
+    coverFiles: List<StoredCoverFile>,
+): Boolean = withContext(Dispatchers.IO) {
+    val ok = runCatching {
+        file.parentFile?.mkdirs()
+        FileOutputStream(file).use { writeBackupZip(BufferedOutputStream(it), json, coverFiles) }
+    }.isSuccess
+    if (!ok) file.delete()
+    ok
 }
 
 /** Named so it keeps the .zip extension MediaStore checks against the type. */

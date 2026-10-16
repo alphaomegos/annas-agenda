@@ -161,3 +161,21 @@ internal data class SidecarBackupAccountDto(
     val auto: Boolean = true,
     val sealedKey: String? = null,
 )
+
+/**
+ * A backup going up (16.10), written down after the server has begun it,
+ * so that one stopped — the network gone, Android's ten minutes over —
+ * goes on from the parts the server has, with the same file, rather than
+ * from nothing.
+ */
+@Serializable
+internal data class SidecarBackupPendingDto(
+    val backupId: String,
+    val slot: String,
+    val fileName: String,
+    val size: Long,
+    val sha256: String,
+    val encrypted: Boolean,
+    val partSize: Long,
+    val partCount: Int,
+)

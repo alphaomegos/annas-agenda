@@ -101,6 +101,12 @@ enum class SidecarBackupFailure {
 
     // Encrypted with a password that is not the one given.
     WRONG_BACKUP_PASSWORD,
+
+    // Backups are to be encrypted and the key is not on the phone: sign in again.
+    NO_KEY,
+
+    // Whether to encrypt is not chosen yet: nothing goes up until it is.
+    NOT_CHOSEN,
     UNEXPECTED,
 }
 
