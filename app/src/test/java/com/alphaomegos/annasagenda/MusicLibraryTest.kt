@@ -120,6 +120,18 @@ class MusicLibraryTest {
     }
 
     @Test
+    fun whatSaveAllIsToFetchIsWrittenDownWhole() {
+        val plan = MusicSavePlanFile(File(folder.root, "music/save-all.json"))
+        val items = listOf(MusicSaveItem("t1", "track:t1:e", 7L, "https://oursidecar.com/api/tracks/t1/audio"))
+
+        assertEquals(null, plan.read())
+        plan.write(items)
+        assertEquals(items, plan.read())
+        plan.forget()
+        assertEquals(null, plan.read())
+    }
+
+    @Test
     fun anEndedSessionIsSaidSoAndForgettingEmptiesIt() {
         val library = library()
         answer = ::server

@@ -332,6 +332,19 @@ class SidecarMusicTest {
     }
 
     @Test
+    fun saveAllIsGivenEachTracksNameSizeAndAddress() {
+        val plan = musicDownloadPlan(listOf(track("1", size = 5), track("2", audio = false), track("3", size = null)), emptySet(), emptySet())
+
+        assertEquals(
+            listOf(
+                MusicSaveItem("1", "track:1:e1", 5L, "https://oursidecar.com/api/tracks/1/audio"),
+                MusicSaveItem("3", "track:3:e3", 0L, "https://oursidecar.com/api/tracks/3/audio"),
+            ),
+            musicSaveItems(plan, "https://oursidecar.com"),
+        )
+    }
+
+    @Test
     fun theProgressInLettersFillsAsTheTrackGoes() {
         assertEquals("[░░░░░░░░░░]", musicTextBar(0f, 10, '█', '░'))
         assertEquals("[█████░░░░░]", musicTextBar(0.5f, 10, '█', '░'))

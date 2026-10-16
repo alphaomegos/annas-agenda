@@ -53,6 +53,10 @@ import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.app.MusicLibraries
 import com.alphaomegos.annasagenda.app.MusicCache
+import com.alphaomegos.annasagenda.app.MusicSaveAllWorker
+import com.alphaomegos.annasagenda.support.musicCacheKey
+import com.alphaomegos.annasagenda.support.musicDownloadPlan
+import com.alphaomegos.annasagenda.support.musicSaveItems
 import com.alphaomegos.annasagenda.app.SidecarAvatarStores
 import com.alphaomegos.annasagenda.musicUpstreamFactory
 import androidx.compose.material.icons.filled.Download
@@ -138,6 +142,7 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val memoryFile = remember(context) { musicPlayerMemoryFile(context) }
     var removing by rememberSaveable { mutableStateOf<String?>(null) }
     var clearAsked by rememberSaveable { mutableStateOf(false) }
+    var saveAllAsked by rememberSaveable { mutableStateOf(false) }
 
     // Signed out (or another person in): nothing of the last one's music is kept in sight.
     LaunchedEffect(status.account?.userId) {
@@ -165,6 +170,9 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     }
     val keptBytes by produceState(0L, cacheRevision) { value = withContext(Dispatchers.IO) { MusicCache.bytes(context) } }
     val upstream = remember(context) { musicUpstreamFactory(context, connection) }
+    // "Save all" for the list shown (16.10): what it would fetch, and how it is going.
+    val saveAll by remember(context) { MusicSaveAllWorker.progress(context) }.collectAsStateWithLifecycle(initialValue = null)
+    val savePlan = musicDownloadPlan(shown, shown.filter { it.id in kept }.mapNotNull { musicCacheKey(it) }.toSet(), emptySet())
     // Copies of tracks gone from the sidecar, or replaced on it, go once its list is in.
     LaunchedEffect(lib.loaded, lib.tracks) { if (lib.loaded) MusicCache.dropStale(context, lib.tracks) }
 
@@ -255,6 +263,26 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                     if (tab == MusicTab.ByArtist) {
                         MetroTextButton(onClick = { artistOpen = true }, enabled = artists.isNotEmpty(), modifier = Modifier.padding(horizontal = 8.dp)) {
                             Text(artist ?: stringResource(R.string.music_no_artists), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                    val going = saveAll
+                    if (going != null) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                if (going.waiting || going.total == 0) {
+                                    stringResource(R.string.music_save_all_waiting)
+                                } else {
+                                    stringResource(R.string.music_save_all_going, going.done, going.total)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                            )
+                            MetroTextButton(onClick = { MusicSaveAllWorker.cancel(context) }) { Text(stringResource(R.string.cancel)) }
+                        }
+                    } else if (savePlan.tracks.isNotEmpty() && lib.loaded) {
+                        MetroTextButton(onClick = { saveAllAsked = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                            Text(stringResource(R.string.music_save_all, savePlan.tracks.size, Formatter.formatShortFileSize(context, savePlan.bytes)))
                         }
                     }
                     if (lib.loading) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -354,6 +382,9 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                     MetroMapTick(stringResource(R.string.music_pref_keep_played), prefs.cacheWhilePlaying, Modifier.fillMaxWidth()) { on ->
                         onPrefs { it.copy(cacheWhilePlaying = on) }
                     }
+                    MetroMapTick(stringResource(R.string.music_pref_wifi_only), prefs.downloadOnWifiOnly, Modifier.fillMaxWidth()) { on ->
+                        onPrefs { it.copy(downloadOnWifiOnly = on) }
+                    }
                     Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             stringResource(R.string.music_kept_size, Formatter.formatShortFileSize(context, keptBytes)),
@@ -382,6 +413,26 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                 }) { Text(stringResource(R.string.remove)) }
             },
             dismissButton = { MetroTextButton(onClick = { removing = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
+    if (saveAllAsked) {
+        MetroDialog(
+            onDismissRequest = { saveAllAsked = false },
+            title = { Text(stringResource(R.string.music_save_all_title)) },
+            text = {
+                Text(
+                    stringResource(R.string.music_save_all_text, savePlan.tracks.size, Formatter.formatShortFileSize(context, savePlan.bytes)) +
+                        if (prefs.downloadOnWifiOnly) "\n" + stringResource(R.string.music_save_all_wifi) else "",
+                )
+            },
+            confirmButton = {
+                MetroTextButton(onClick = {
+                    MusicSaveAllWorker.start(context, musicSaveItems(savePlan, status.server), prefs.downloadOnWifiOnly)
+                    saveAllAsked = false
+                }) { Text(stringResource(R.string.music_save)) }
+            },
+            dismissButton = { MetroTextButton(onClick = { saveAllAsked = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 

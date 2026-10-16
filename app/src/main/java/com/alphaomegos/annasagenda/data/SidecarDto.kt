@@ -2,6 +2,7 @@ package com.alphaomegos.annasagenda.data
 
 import com.alphaomegos.annasagenda.model.MusicPlayerMemory
 import com.alphaomegos.annasagenda.model.MusicRepeat
+import com.alphaomegos.annasagenda.model.MusicSaveItem
 import com.alphaomegos.annasagenda.model.SidecarAccount
 import com.alphaomegos.annasagenda.model.SidecarMember
 import com.alphaomegos.annasagenda.model.SidecarSpace
@@ -162,3 +163,21 @@ internal fun MusicPlayerMemoryDto.toDomain() = MusicPlayerMemory(
     shuffle = shuffle,
     repeat = MusicRepeat.entries.firstOrNull { it.name == repeat } ?: MusicRepeat.ALL,
 )
+
+/** What "save all" is to fetch (16.10), for its worker: MusicSaveItem. */
+@Serializable
+internal data class MusicSaveItemDto(
+    val trackId: String,
+    val key: String,
+    val size: Long = 0L,
+    val url: String,
+)
+
+@Serializable
+internal data class MusicSavePlanDto(
+    val items: List<MusicSaveItemDto> = emptyList(),
+)
+
+internal fun MusicSaveItem.toDto() = MusicSaveItemDto(trackId, key, size, url)
+
+internal fun MusicSaveItemDto.toDomain() = MusicSaveItem(trackId, key, size, url)

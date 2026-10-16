@@ -10,6 +10,7 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheWriter
 import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import com.alphaomegos.annasagenda.model.MusicSaveItem
 import com.alphaomegos.annasagenda.model.SidecarTrack
 import com.alphaomegos.annasagenda.support.musicCacheKey
 import com.alphaomegos.annasagenda.support.musicCacheKeysStale
@@ -114,6 +115,15 @@ internal object MusicCache {
                 changed()
             }
         }
+    }
+
+    /** [item] fetched and kept now, blocking — for "save all"'s worker. True when it is kept whole. */
+    fun saveNow(context: Context, item: MusicSaveItem, upstream: DataSource.Factory): Boolean {
+        val store = of(context)
+        if (item.size > 0 && runCatching { store.isCached(item.key, 0, item.size) }.getOrDefault(false)) return true
+        val source = CacheDataSource.Factory().setCache(store).setUpstreamDataSourceFactory(upstream).createDataSource()
+        val spec = DataSpec.Builder().setUri(item.url).setKey(item.key).build()
+        return runCatching { CacheWriter(source, spec, null, null).cache() }.isSuccess
     }
 
     /** [track]'s copy taken off the phone: it plays online again. */

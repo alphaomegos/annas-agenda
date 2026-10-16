@@ -60,6 +60,9 @@ sealed interface MusicTab {
 /** The orders the web offers (16.10): newest, oldest, by name either way. */
 enum class MusicSort { NEWEST, OLDEST, AZ, ZA }
 
+/** A track "save all" is to fetch (16.10): which, under what name it is kept, how large, from where. */
+data class MusicSaveItem(val trackId: String, val key: String, val size: Long, val url: String)
+
 /** How the player goes on at the end of a track (16.10): stop at the end, go round the queue, or the one again. */
 enum class MusicRepeat { OFF, ALL, ONE }
 

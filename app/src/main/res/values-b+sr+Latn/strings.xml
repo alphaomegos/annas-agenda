@@ -1081,4 +1081,12 @@
     <string name="music_clear">Obriši</string>
     <string name="music_clear_title">Ukloniti svu muziku sa telefona?</string>
     <string name="music_clear_text">Sve sačuvano (%1$s) biće uklonjeno i ponovo će se puštati sa mreže.</string>
+    <!-- Sačuvaj sve (16.10) -->
+    <string name="music_save_all">Sačuvaj sve: %1$d · %2$s</string>
+    <string name="music_save_all_title">Sačuvati listu na telefonu?</string>
+    <string name="music_save_all_text">Pesama: %1$d, %2$s. Preuzimaju se u pozadini, i kad je aplikacija zatvorena.</string>
+    <string name="music_save_all_wifi">Samo preko Wi-Fi mreže, kako stoji u podešavanjima.</string>
+    <string name="music_save_all_going">Čuva se %1$d od %2$d…</string>
+    <string name="music_save_all_waiting">Čuvanje čeka mrežu…</string>
+    <string name="music_pref_wifi_only">„Sačuvaj sve“ samo preko Wi-Fi mreže</string>
 </resources>

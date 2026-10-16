@@ -1147,4 +1147,12 @@
     <string name="music_clear">Очистить</string>
     <string name="music_clear_title">Убрать всю музыку с телефона?</string>
     <string name="music_clear_text">Всё сохранённое (%1$s) будет удалено и снова будет играть из сети.</string>
+    <!-- Сохранить все (16.10) -->
+    <string name="music_save_all">Сохранить все: %1$d · %2$s</string>
+    <string name="music_save_all_title">Сохранить список на телефон?</string>
+    <string name="music_save_all_text">Треков: %1$d, %2$s. Скачиваются в фоне, в том числе с закрытым приложением.</string>
+    <string name="music_save_all_wifi">Только по Wi-Fi — так в настройках.</string>
+    <string name="music_save_all_going">Сохраняется %1$d из %2$d…</string>
+    <string name="music_save_all_waiting">Сохранение ждёт сети…</string>
+    <string name="music_pref_wifi_only">«Сохранить все» только по Wi-Fi</string>
 </resources>

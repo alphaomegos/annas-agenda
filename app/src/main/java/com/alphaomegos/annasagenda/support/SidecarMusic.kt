@@ -2,6 +2,7 @@ package com.alphaomegos.annasagenda.support
 
 import com.alphaomegos.annasagenda.model.MusicPlayerMemory
 import com.alphaomegos.annasagenda.model.MusicRepeat
+import com.alphaomegos.annasagenda.model.MusicSaveItem
 import com.alphaomegos.annasagenda.model.MusicSort
 import com.alphaomegos.annasagenda.model.MusicTab
 import com.alphaomegos.annasagenda.model.SidecarMember
@@ -316,6 +317,12 @@ fun musicRepeatNext(repeat: MusicRepeat): MusicRepeat = when (repeat) {
     MusicRepeat.ONE -> MusicRepeat.OFF
     MusicRepeat.OFF -> MusicRepeat.ALL
 }
+
+/** What "save all" is given for [plan] (16.10): each track, its kept name, its size, and where on [server] it is. */
+fun musicSaveItems(plan: MusicDownloadPlan, server: String): List<MusicSaveItem> =
+    plan.tracks.mapNotNull { track ->
+        musicCacheKey(track)?.let { key -> MusicSaveItem(track.id, key, track.audioSize ?: 0L, server + sidecarAudioPath(track.id)) }
+    }
 
 /**
  * How far into a track, drawn in letters (16.10), as a DOS player or a

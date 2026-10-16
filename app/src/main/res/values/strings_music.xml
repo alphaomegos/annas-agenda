@@ -71,4 +71,12 @@
     <string name="music_clear">Clear</string>
     <string name="music_clear_title">Take all the music off the phone?</string>
     <string name="music_clear_text">Everything kept (%1$s) is removed and plays online again.</string>
+    <!-- Keep all (16.10) -->
+    <string name="music_save_all">Keep all: %1$d · %2$s</string>
+    <string name="music_save_all_title">Keep the list on the phone?</string>
+    <string name="music_save_all_text">Tracks: %1$d, %2$s. They are fetched in the background, with the app closed too.</string>
+    <string name="music_save_all_wifi">Only over Wi-Fi, as the settings say.</string>
+    <string name="music_save_all_going">Keeping %1$d of %2$d…</string>
+    <string name="music_save_all_waiting">Keeping waits for the network…</string>
+    <string name="music_pref_wifi_only">"Keep all" only over Wi-Fi</string>
 </resources>
