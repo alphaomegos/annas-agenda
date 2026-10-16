@@ -128,6 +128,25 @@ class StringResourcesTest {
         }
     }
 
+    /**
+     * A plain double quote is not text to aapt (16.10): it quotes, and is
+     * taken out. The music settings said Keep all only over Wi-Fi, without
+     * the quotes they were written with, and nothing warned. In the app
+     * they are typographic (“ ”, « », „ “) or escaped (\").
+     */
+    @Test
+    fun noStringLosesItsQuotes() {
+        val plain = Regex("""(?<!\\)"""")
+        (listOf(baseDir()) + translationDirs()).forEach { dir ->
+            val strings = entriesIn(dir).map { it.name to it.text }
+            val items = resourceFiles(dir)
+                .flatMap { file -> elementsOf(file).filter { it.tagName == "plurals" } }
+                .flatMap { plural -> childElements(plural).map { plural.getAttribute("name") to it.textContent.orEmpty() } }
+            val losing = (strings + items).filter { (_, text) -> plain.containsMatchIn(text) }.map { it.first }.sorted()
+            assertEquals("${dir.name} has a string whose quotes aapt takes out", emptyList<String>(), losing)
+        }
+    }
+
     // -- reading the files ---------------------------------------------------
 
     private fun entriesIn(dir: File): List<Entry> =

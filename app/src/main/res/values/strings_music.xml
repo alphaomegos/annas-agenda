@@ -38,7 +38,7 @@
     <string name="music_sort_az">A to Z</string>
     <string name="music_sort_za">Z to A</string>
     <string name="music_settings">Music settings</string>
-    <string name="music_pref_artist_tab">The "By artist" list</string>
+    <string name="music_pref_artist_tab">The “By artist” list</string>
     <string name="music_artist">Artist</string>
     <string name="music_no_artists">No artists yet</string>
     <string name="music_unknown_artist">Unknown artist</string>
@@ -78,7 +78,7 @@
     <string name="music_save_all_wifi">Only over Wi-Fi, as the settings say.</string>
     <string name="music_save_all_going">Keeping %1$d of %2$d…</string>
     <string name="music_save_all_waiting">Keeping waits for the network…</string>
-    <string name="music_pref_wifi_only">"Keep all" only over Wi-Fi</string>
+    <string name="music_pref_wifi_only">“Keep all” only over Wi-Fi</string>
     <string name="music_offline_hint">Without the network, the tracks kept on the phone play.</string>
     <!-- A file of the phone's for a track (16.10) -->
     <string name="music_track_more">Actions for the track</string>
