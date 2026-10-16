@@ -138,6 +138,15 @@ fun sidecarTracksPath(sidecarId: String): String = "/api/sidecars/${sidecarPathS
 
 fun sidecarAudioPath(trackId: String): String = "/api/tracks/${sidecarPathSegment(trackId)}/audio"
 
+/**
+ * Whether [url] goes to [server] — "https://host[:port]" as [sidecarServerUrl]
+ * makes it — and to nowhere else (16.10): the session cookie is added only
+ * then. A host that merely begins the same ("oursidecar.com.example") or
+ * borrows it as a user name ("oursidecar.com@example") is another server.
+ */
+fun sidecarIsServerUrl(url: String, server: String): Boolean =
+    server.startsWith("https://") && url.startsWith("$server/", ignoreCase = true)
+
 /** What went wrong talking to the server, as the screens say it. */
 enum class SidecarFailure { NO_NETWORK, SIGNED_OUT, WRONG_PASSWORD, TOO_MANY_ATTEMPTS, NOT_FOUND, SERVER, UNEXPECTED }
 

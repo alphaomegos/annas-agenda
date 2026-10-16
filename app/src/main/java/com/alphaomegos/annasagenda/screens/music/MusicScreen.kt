@@ -76,6 +76,7 @@ import com.alphaomegos.annasagenda.support.SidecarSignInState
 import com.alphaomegos.annasagenda.support.musicArtistShown
 import com.alphaomegos.annasagenda.support.musicArtists
 import com.alphaomegos.annasagenda.support.musicMemberName
+import com.alphaomegos.annasagenda.support.musicQueue
 import com.alphaomegos.annasagenda.support.musicSorted
 import com.alphaomegos.annasagenda.support.musicTabKey
 import com.alphaomegos.annasagenda.support.musicTabShown
@@ -117,6 +118,9 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     var styleOpen by rememberSaveable { mutableStateOf(false) }
     var setupOpen by rememberSaveable { mutableStateOf(false) }
     var artistOpen by rememberSaveable { mutableStateOf(false) }
+    val controller = rememberMusicController()
+    val now = rememberMusicNowPlaying(controller)
+    val unknownArtist = stringResource(R.string.music_unknown_artist)
 
     // Signed out (or another person in): nothing of the last one's music is kept in sight.
     LaunchedEffect(status.account?.userId) {
@@ -135,18 +139,29 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val shown = musicSorted(musicTracksOf(lib.tracks, tab, artist), prefs.sort, locale)
     val namesById = lib.members.associate { it.id to musicMemberName(it) }
 
+    // A tap plays the list from that track on, going round it; a track with no file is passed by.
+    val play: (SidecarTrack) -> Unit = { start ->
+        val queue = musicQueue(shown, start) { it.hasAudio }
+        if (controller != null && queue != null) {
+            controller.playMusic(queue) { track -> musicMediaItem(track, connection.audioUrl(track.id), unknownArtist) }
+        }
+    }
+
     Scaffold(
         // Norton Commander's keys along the bottom, in DOS.
         bottomBar = {
-            MetroKeyBar(
-                listOf(
-                    MetroKey(2, stringResource(R.string.music_sort)) { sortOpen = true },
-                    MetroKey(3, stringResource(R.string.metro_key_style)) { styleOpen = true },
-                    MetroKey(5, stringResource(R.string.music_refresh), refresh),
-                    MetroKey(9, stringResource(R.string.metro_key_setup)) { setupOpen = true },
-                    MetroKey(10, stringResource(R.string.metro_key_quit), onBack),
-                ),
-            )
+            Column {
+                MusicMiniBar(now, controller)
+                MetroKeyBar(
+                    listOf(
+                        MetroKey(2, stringResource(R.string.music_sort)) { sortOpen = true },
+                        MetroKey(3, stringResource(R.string.metro_key_style)) { styleOpen = true },
+                        MetroKey(5, stringResource(R.string.music_refresh), refresh),
+                        MetroKey(9, stringResource(R.string.metro_key_setup)) { setupOpen = true },
+                        MetroKey(10, stringResource(R.string.metro_key_quit), onBack),
+                    ),
+                )
+            }
         },
         topBar = {
             MetroTopBar(
@@ -221,6 +236,8 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                                 track = track,
                                 addedBy = if (tab is MusicTab.Member) null else namesById[track.createdByUserId],
                                 size = track.audioSize?.let { Formatter.formatShortFileSize(context, it) },
+                                current = track.id == now.trackId,
+                                onPlay = { play(track) },
                             )
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         }
@@ -366,11 +383,13 @@ private fun MusicTabStrip(
 
 /** One track: its name, its artist and who added it, and what it lacks. */
 @Composable
-private fun MusicTrackRow(track: SidecarTrack, addedBy: String?, size: String?) {
+private fun MusicTrackRow(track: SidecarTrack, addedBy: String?, size: String?, current: Boolean, onPlay: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(if (current) colors.secondaryContainer else Color.Transparent)
+            .clickable(enabled = track.hasAudio, role = Role.Button, onClick = onPlay)
             .alpha(if (track.hasAudio) 1f else 0.55f)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -380,7 +399,7 @@ private fun MusicTrackRow(track: SidecarTrack, addedBy: String?, size: String?) 
                 track.title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = colors.onSurface,
+                color = if (current) colors.onSecondaryContainer else colors.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )

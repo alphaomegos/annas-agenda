@@ -85,6 +85,20 @@ class SidecarSessionTest {
     }
 
     @Test
+    fun theCookieGoesToTheServerAndNowhereElse() {
+        val server = "https://oursidecar.com"
+
+        assertTrue(sidecarIsServerUrl("https://oursidecar.com/api/tracks/t1/audio", server))
+        assertTrue(sidecarIsServerUrl("https://OurSidecar.com/api/tracks/t1/audio", server))
+        assertFalse(sidecarIsServerUrl("https://oursidecar.com.example.org/api/tracks/t1/audio", server))
+        assertFalse(sidecarIsServerUrl("https://oursidecar.com@example.org/api/tracks/t1/audio", server))
+        assertFalse(sidecarIsServerUrl("http://oursidecar.com/api/tracks/t1/audio", server))
+        assertFalse(sidecarIsServerUrl("https://oursidecar.com:8443/api/tracks/t1/audio", server))
+        assertFalse(sidecarIsServerUrl("content://media/external/audio/media/7", server))
+        assertFalse(sidecarIsServerUrl("https://oursidecar.com/x", "http://oursidecar.com"))
+    }
+
+    @Test
     fun anAnswerSaysWhatWentWrong() {
         assertNull(sidecarFailureOf(200))
         assertNull(sidecarFailureOf(201))

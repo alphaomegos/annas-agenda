@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- The city map under the metro editor's picture (16.10): its tiles, and a place found by name. -->
+    <!-- The city map under the metro editor's picture (16.10): its tiles, and a place found by name.
+         oursidecar (16.10): signing in, the sidecar's tracks, and their music streamed. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Daily summaries and task reminders (0144). Asked for at the moment the
@@ -16,6 +17,12 @@
         android:maxSdkVersion="32" />
     <!-- Alarms do not survive a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Music playing on with the screen off and the app away (16.10): a media
+         playback service in the foreground, and the phone kept awake enough
+         to stream. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -68,6 +75,17 @@
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
+
+        <!-- The music of oursidecar (16.10): the player and its media session,
+             found by the shade, the lock screen, headsets and cars. -->
+        <service
+            android:name=".MusicPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
 
         <!-- Today's tasks on the home screen (0145). -->
         <receiver

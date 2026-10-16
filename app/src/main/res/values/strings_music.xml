@@ -47,4 +47,10 @@
     <string name="music_no_file">no file</string>
     <string name="music_empty">Nothing in this list yet.</string>
     <string name="music_retry">Try again</string>
+    <!-- The player (16.10) -->
+    <string name="music_channel">Music</string>
+    <string name="music_play">Play</string>
+    <string name="music_pause">Pause</string>
+    <string name="music_previous">Previous track</string>
+    <string name="music_next">Next track</string>
 </resources>

@@ -1123,4 +1123,10 @@
     <string name="music_no_file">без файла</string>
     <string name="music_empty">В этом списке пока ничего нет.</string>
     <string name="music_retry">Повторить</string>
+    <!-- Плеер (16.10) -->
+    <string name="music_channel">Музыка</string>
+    <string name="music_play">Играть</string>
+    <string name="music_pause">Пауза</string>
+    <string name="music_previous">Предыдущий трек</string>
+    <string name="music_next">Следующий трек</string>
 </resources>

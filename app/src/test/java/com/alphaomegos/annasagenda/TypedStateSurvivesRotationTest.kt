@@ -39,6 +39,10 @@ class TypedStateSurvivesRotationTest {
         "TodayTasksWidget.kt:data" to
             "the home-screen widget's copy of the state, reloaded from the app on every " +
                 "change; a widget does not rotate, and nothing typed or picked is in it",
+        "MusicPlayerBar.kt:controller" to
+            "the screen's connection to the playback service (16.10), made again after a " +
+                "rotation; the music plays on in the service meanwhile",
+        "MusicPlayerBar.kt:now" to "what the player says is playing, read from it again after a rotation",
         "SidecarAccountDialog.kt:password" to
             "a password is never put into the saved state, which outlives the process; " +
                 "turning the phone asks for it again (16.10)",

@@ -1057,4 +1057,10 @@
     <string name="music_no_file">bez fajla</string>
     <string name="music_empty">Na ovoj listi još nema ničega.</string>
     <string name="music_retry">Pokušaj ponovo</string>
+    <!-- Plejer (16.10) -->
+    <string name="music_channel">Muzika</string>
+    <string name="music_play">Pusti</string>
+    <string name="music_pause">Pauza</string>
+    <string name="music_previous">Prethodna pesma</string>
+    <string name="music_next">Sledeća pesma</string>
 </resources>
