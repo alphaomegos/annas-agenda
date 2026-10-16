@@ -806,6 +806,12 @@ private fun MetroLookDialog(
                 MetroMapTick(stringResource(R.string.metro_bundle_tracks), scheme.bundleTracks, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(bundleTracks = on) }
                 }
+                // As one line of several colours (16.10), or side by side.
+                if (scheme.bundleTracks) {
+                    MetroMapTick(stringResource(R.string.metro_bundle_striped), scheme.bundleStriped, Modifier.fillMaxWidth().padding(start = 24.dp)) { on ->
+                        onEdit { it.copy(bundleStriped = on) }
+                    }
+                }
                 // Names placing themselves (15.10): the user's to turn off.
                 MetroMapTick(stringResource(R.string.metro_names_auto), scheme.labelsAuto, Modifier.fillMaxWidth()) { on ->
                     onEdit { it.copy(labelsAuto = on) }

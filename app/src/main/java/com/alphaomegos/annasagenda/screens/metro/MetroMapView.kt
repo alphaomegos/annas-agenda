@@ -82,6 +82,9 @@ import com.alphaomegos.annasagenda.support.metroGuided
 import com.alphaomegos.annasagenda.support.metroTrackBundles
 import com.alphaomegos.annasagenda.support.metroSideOffset
 import com.alphaomegos.annasagenda.support.metroOffsetPolyline
+import com.alphaomegos.annasagenda.support.metroBundleGroups
+import com.alphaomegos.annasagenda.support.metroBandWidth
+import com.alphaomegos.annasagenda.support.metroStripeOffsets
 import com.alphaomegos.annasagenda.support.metroEraColor
 import kotlin.math.cos
 import kotlin.math.sin
@@ -315,6 +318,12 @@ internal fun MetroMapView(
     val bundles = remember(scheme.lines, scheme.transfers, scheme.bundleTracks) {
         if (scheme.bundleTracks) metroTrackBundles(scheme) else emptyMap()
     }
+    // Track run together as one striped line (16.10): each leader with its band's tracks,
+    // and every track drawn in a band rather than on its own.
+    val bandGroups = remember(bundles, scheme.bundleStriped) {
+        if (!scheme.bundleStriped || bundles.isEmpty()) emptyMap() else metroBundleGroups(bundles)
+    }
+    val inBand = remember(bandGroups) { bandGroups.values.flatMap { g -> g.map { it.first } }.toSet() }
     // What a finger may bend (15.10): a follower's own bends are not drawn, so not touched either.
     val bendable = remember(editable, bundles) {
         if (bundles.isEmpty()) editable
@@ -730,6 +739,8 @@ internal fun MetroMapView(
                 if (ghost && !ghostHidden) return@forEach
                 val color = lineColors[lineId] ?: Color(0xFF888888)
                 val drawn = ofLine.mapNotNull { (_, s, t) ->
+                    // A track of a striped band is drawn with the band (16.10).
+                    if (MetroTrack(s, t) in inBand) return@mapNotNull null
                     val pts = trackPoints(s, t) ?: return@mapNotNull null
                     val lit = !fade || (s to t) in routePairs || lineId in highlightLines
                     Triple(pts, lit, if (fade && lit) lineWidth * 1.5f else lineWidth)
@@ -743,6 +754,45 @@ internal fun MetroMapView(
                 drawn.forEach { (pts, lit, width) -> drawTrack(pts, color.copy(alpha = alphaOf(lit)), width) }
                 if (bendMode && !ghost && lineId !in lockedLines) markable.forEach { pts ->
                     pts.subList(1, pts.size - 1).forEach { drawCircle(markColor, radius = 4.dp.toPx(), center = it) }
+                }
+            }
+            // Track run together as one line of several colours (16.10): a band a little
+            // wider than a line along the leader's bends, centred among its tracks, a
+            // stripe of each in the order their stations stand across it. Hidden lines
+            // are left out of it, or drawn faintly with their ghosts.
+            bandGroups.forEach { (leader, members) ->
+                val la = mapAt(leader.a) ?: return@forEach
+                val lz = mapAt(leader.b) ?: return@forEach
+                val shown = members.mapNotNull { (track, sameWay) ->
+                    val lineId = lineOf[track.a] ?: return@mapNotNull null
+                    val ghost = lineId in hiddenLines
+                    if (ghost && !ghostHidden) return@mapNotNull null
+                    val pa = mapAt(track.a) ?: return@mapNotNull null
+                    val pb = mapAt(track.b) ?: return@mapNotNull null
+                    val near = if (sameWay) pa else pb
+                    val far = if (sameWay) pb else pa
+                    val side = (metroSideOffset(la, lz, near) + metroSideOffset(la, lz, far)) / 2
+                    val lit = !fade || (minOf(track.a, track.b) to maxOf(track.a, track.b)) in routePairs || lineId in highlightLines
+                    BandMember(lineId, near, far, side, lit, ghost)
+                }.sortedBy { it.side }
+                if (shown.isEmpty()) return@forEach
+                val mean = shown.map { it.side }.average().toFloat()
+                val start = MetroPoint(shown.map { it.near.x }.average().toFloat(), shown.map { it.near.y }.average().toFloat())
+                val end = MetroPoint(shown.map { it.far.x }.average().toFloat(), shown.map { it.far.y }.average().toFloat())
+                val inner = metroOffsetPolyline(listOf(la) + bendsNow(leader) + lz, mean).drop(1).dropLast(1)
+                val centre = (listOf(start) + inner + end).map { toScreen(it) }.map { MetroPoint(it.x, it.y) }
+                val n = shown.size
+                val anyLit = shown.any { it.lit }
+                val total = metroBandWidth(lineWidth, n) * (if (fade && anyLit) 1.5f else 1f)
+                val offsets = metroStripeOffsets(n, total)
+                val bandAlpha = if (shown.all { it.ghost }) GHOST_ALPHA else if (anyLit) 1f else 0.25f
+                if (scheme.lineCasing && shown.none { it.ghost }) {
+                    drawTrack(centre.map { Offset(it.x, it.y) }, ringFill.copy(alpha = bandAlpha), total * (1f + 2 * METRO_CASING))
+                }
+                shown.forEachIndexed { i, m ->
+                    val stripe = metroOffsetPolyline(centre, offsets[i]).map { Offset(it.x, it.y) }
+                    val alpha = if (m.ghost) GHOST_ALPHA else if (m.lit) 1f else 0.25f
+                    drawTrack(stripe, (lineColors[m.lineId] ?: Color(0xFF888888)).copy(alpha = alpha), total / n)
                 }
             }
             // Guides (08.10): where the station dragged stands level with, or under, one
@@ -980,6 +1030,16 @@ private fun metroDropSnap(
 
 /** How strongly a hidden line shows when its ghosts are shown (14.10). */
 private const val GHOST_ALPHA = 0.15f
+
+/** One track of a striped band as drawn (16.10): its line, its two ends the leader's way, how far across, and how lit. */
+private data class BandMember(
+    val lineId: Long,
+    val near: MetroPoint,
+    val far: MetroPoint,
+    val side: Float,
+    val lit: Boolean,
+    val ghost: Boolean,
+)
 
 /**
  * Where a dragged bend point lands (14.10): with the scheme's angles of 45°,

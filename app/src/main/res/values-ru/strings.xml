@@ -937,6 +937,7 @@
     <string name="metro_figure_polygon">Правильный многоугольник</string>
     <string name="metro_figure_around">Вокруг одной в центре</string>
     <string name="metro_bundle_tracks">Совмещать параллельные перегоны между одними пересадками</string>
+    <string name="metro_bundle_striped">Одной линией, полосами их цветов</string>
     <string name="metro_style_era_colors">Цвета линий из палитры эпохи</string>
     <string name="metro_key_map">Схема</string>
     <string name="metro_key_swap">Обмен</string>

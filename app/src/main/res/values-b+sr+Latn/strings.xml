@@ -871,6 +871,7 @@
     <string name="metro_figure_polygon">Pravilan mnogougao</string>
     <string name="metro_figure_around">Oko jedne u sredini</string>
     <string name="metro_bundle_tracks">Spoji paralelne deonice između istih presedanja</string>
+    <string name="metro_bundle_striped">Kao jedna linija, u prugama njihovih boja</string>
     <string name="metro_style_era_colors">Boje linija iz palete epohe</string>
     <string name="metro_key_map">Šema</string>
     <string name="metro_key_swap">Zamena</string>

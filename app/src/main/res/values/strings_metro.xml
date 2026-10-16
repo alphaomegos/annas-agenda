@@ -131,6 +131,7 @@
     <string name="metro_figure_polygon">A regular polygon</string>
     <string name="metro_figure_around">Round one in the middle</string>
     <string name="metro_bundle_tracks">Lines between the same interchanges run together</string>
+    <string name="metro_bundle_striped">As one line, striped in their colours</string>
     <string name="metro_style_era_colors">Lines in the colours of the era</string>
     <string name="metro_key_map">Map</string>
     <string name="metro_key_swap">Swap</string>

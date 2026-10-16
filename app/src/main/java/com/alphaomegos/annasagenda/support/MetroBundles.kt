@@ -86,3 +86,34 @@ fun metroOffsetPolyline(points: List<MetroPoint>, d: Float): List<MetroPoint> {
         if (n == null) p else MetroPoint(p.x + n.first * d, p.y + n.second * d)
     }
 }
+
+/*
+ * One line of several colours (16.10, Eduard): rather than the tracks of a
+ * bundle side by side, one band along the leader's bends — a little wider
+ * than a line — split along its length into a stripe of each line's colour,
+ * in the order their stations stand across it.
+ */
+
+/**
+ * Each leader with all its bundle's tracks (16.10): the leader first, then
+ * its followers by their stations; each with whether it runs the leader's way.
+ */
+fun metroBundleGroups(bundles: Map<MetroTrack, MetroBundled>): Map<MetroTrack, List<Pair<MetroTrack, Boolean>>> =
+    bundles.entries
+        .groupBy { it.value.leader }
+        .mapValues { (leader, followers) ->
+            listOf(leader to true) + followers
+                .sortedWith(compareBy({ it.key.a }, { it.key.b }))
+                .map { it.key to it.value.sameWay }
+        }
+
+/** How wide the band of [n] lines is (16.10): a line's [lineWidth], and a third of it more for each line past the first. */
+fun metroBandWidth(lineWidth: Float, n: Int): Float = lineWidth * (1f + 0.35f * (n - 1).coerceAtLeast(0))
+
+/**
+ * How far to the left of the band's middle each of its [n] stripes runs
+ * (16.10), for a band [width] across: side by side, touching, the first
+ * furthest to the right.
+ */
+fun metroStripeOffsets(n: Int, width: Float): List<Float> =
+    if (n <= 0) emptyList() else (0 until n).map { (it + 0.5f - n / 2f) * width / n }

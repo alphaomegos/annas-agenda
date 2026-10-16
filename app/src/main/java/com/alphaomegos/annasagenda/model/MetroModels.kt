@@ -78,6 +78,9 @@ data class MetroScheme(
     // Two lines between the same two interchanges run together (15.10): one
     // bends, the other follows side by side. A setting.
     val bundleTracks: Boolean = false,
+    // Track run together drawn as one line of several colours (16.10) —
+    // or, off, the lines side by side as before. A setting.
+    val bundleStriped: Boolean = true,
     // The editor's grid (15.10): nodes to a step between stations — one, two
     // (as before) or four. A setting.
     val gridDivisions: Int = 2,

@@ -754,6 +754,7 @@ internal fun MetroScheme.toDto(): MetroSchemeDto = MetroSchemeDto(
     labelsAuto = labelsAuto,
     labelsAvoidCrowd = labelsAvoidCrowd,
     bundleTracks = bundleTracks,
+    bundleStriped = bundleStriped,
     labelsWrap = labelsWrap,
     bends = bends.map { b -> MetroBendDto(b.aStationId, b.bStationId, b.points.map { it.x }, b.points.map { it.y }) },
 )
@@ -830,6 +831,7 @@ internal fun MetroSchemeDto.toDomain(): MetroScheme {
         labelsAuto = labelsAuto,
         labelsAvoidCrowd = labelsAvoidCrowd,
         bundleTracks = bundleTracks,
+        bundleStriped = bundleStriped,
         labelsWrap = labelsWrap,
         // Glue at 8 or 12 points; anything else is off.
         glue = glue.takeIf { it == 8 || it == 12 } ?: 0,
