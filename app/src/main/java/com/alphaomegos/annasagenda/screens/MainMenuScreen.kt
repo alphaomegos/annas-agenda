@@ -151,6 +151,7 @@ fun MainMenuScreen(
     onMetro: () -> Unit = {},
     onTravel: () -> Unit = {},
     onMusic: () -> Unit = {},
+    onSidecarBackups: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -284,6 +285,7 @@ fun MainMenuScreen(
         sidecarAvatar = rememberSidecarAvatar(sidecarStatus),
         onSidecar = openSidecar,
         onUndone = onUndone,
+        onSidecarBackups = onSidecarBackups,
         onExport = {
             scope.launch {
                 val ok = if (Build.VERSION.SDK_INT < 29) {
@@ -418,6 +420,8 @@ internal fun MainMenuContent(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onResetConfirmed: () -> Unit,
+    // The backups in oursidecar (16.10); defaulted, as onSettings.
+    onSidecarBackups: () -> Unit = {},
 ) {
     var dataMenuExpanded by remember { mutableStateOf(false) }
     var reorderMode by rememberSaveable { mutableStateOf(false) }
@@ -488,6 +492,10 @@ internal fun MainMenuContent(
                 onImport = {
                     dataMenuExpanded = false
                     onImport()
+                },
+                onSidecarBackups = {
+                    dataMenuExpanded = false
+                    onSidecarBackups()
                 },
                 onReset = {
                     dataMenuExpanded = false
@@ -656,6 +664,7 @@ private fun MainMenuTopBar(
     onSettings: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    onSidecarBackups: () -> Unit,
     onReset: () -> Unit,
     onShowAll: () -> Unit,
     onFinishReorder: () -> Unit,
@@ -743,6 +752,10 @@ private fun MainMenuTopBar(
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.import_backup_json)) },
                         onClick = onImport
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.sidecar_backups_menu)) },
+                        onClick = onSidecarBackups
                     )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.reset_data_menu)) },

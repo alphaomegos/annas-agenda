@@ -46,6 +46,14 @@ class TypedStateSurvivesRotationTest {
         "MusicPlayerPanel.kt:position" to "the track's clock, read from the player twice a second",
         "MusicPlayerPanel.kt:duration" to "as position",
         "MusicPlayerPanel.kt:dragged" to "where a finger holds the slider; a rotation lets go of it, as a drag",
+        "SidecarBackupsScreen.kt:restoring" to
+            "a backup being brought down and opened (16.10): it belongs to this composition " +
+                "and ends with it; what came down stays on the phone, so asking again goes on from there",
+        "SidecarBackupDialogs.kt:password" to
+            "a password is never put into the saved state, which outlives the process; " +
+                "turning the phone asks for it again (16.10)",
+        "SidecarBackupDialogs.kt:working" to
+            "a password being checked belongs to this composition and ends with it; the button is pressed again",
         "SidecarAccountDialog.kt:password" to
             "a password is never put into the saved state, which outlives the process; " +
                 "turning the phone asks for it again (16.10)",

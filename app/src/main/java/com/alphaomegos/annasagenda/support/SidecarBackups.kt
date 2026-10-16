@@ -212,3 +212,10 @@ fun backupKeyOf(text: String?): BackupKey? {
     val bytes = sidecarUnhex(parts[2]) ?: return null
     return runCatching { BackupKey(salt, iterations, bytes) }.getOrNull()
 }
+
+/** When a backup was made, as the list says it: the date and the time, in [zone] and the app's [locale]. */
+fun sidecarBackupMoment(epochSeconds: Long, zone: java.time.ZoneId, locale: java.util.Locale): String =
+    java.time.format.DateTimeFormatter
+        .ofLocalizedDateTime(java.time.format.FormatStyle.MEDIUM, java.time.format.FormatStyle.SHORT)
+        .withLocale(locale)
+        .format(java.time.Instant.ofEpochSecond(epochSeconds).atZone(zone))

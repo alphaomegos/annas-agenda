@@ -93,8 +93,11 @@ internal class SidecarBackupWorker(context: Context, params: WorkerParameters) :
             return writeBackupZipFile(file, store.encodeToJson(state), resolveStoredCoverFiles(context.applicationContext, state))
         }
 
-        /** A backup by hand now, with [note], in place of [replace] when the server asked which goes. */
-        fun startManual(context: Context, note: String?, replace: String?) {
+        /**
+         * A backup by hand now, with [note], in place of [replace] when the
+         * server asked which goes. The work's id, to know its end by.
+         */
+        fun startManual(context: Context, note: String?, replace: String?): java.util.UUID {
             val request = OneTimeWorkRequestBuilder<SidecarBackupWorker>()
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .setInputData(
@@ -107,6 +110,7 @@ internal class SidecarBackupWorker(context: Context, params: WorkerParameters) :
                 )
                 .build()
             WorkManager.getInstance(context).enqueueUniqueWork(WORK_MANUAL, ExistingWorkPolicy.REPLACE, request)
+            return request.id
         }
 
         fun cancelManual(context: Context) {

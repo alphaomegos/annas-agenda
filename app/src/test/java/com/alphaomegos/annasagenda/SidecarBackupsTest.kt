@@ -160,4 +160,14 @@ class SidecarBackupsTest {
         assertNull(sidecarUnhex("0g"))
         assertTrue(sidecarUnhex("00ff10")!!.contentEquals(byteArrayOf(0, -1, 16)))
     }
+
+    @Test
+    fun aBackupsMomentIsTheDateAndTimeWhereThePhoneIs() {
+        val moment = 1_792_163_520L // 16.10.2026 15:12 UTC
+        val belgrade = sidecarBackupMoment(moment, java.time.ZoneId.of("Europe/Belgrade"), java.util.Locale.ENGLISH)
+        val moscow = sidecarBackupMoment(moment, java.time.ZoneId.of("Europe/Moscow"), java.util.Locale.ENGLISH)
+
+        assertTrue(belgrade, belgrade.contains("2026") && belgrade.contains("5:12"))
+        assertTrue(moscow, moscow.contains("6:12"))
+    }
 }

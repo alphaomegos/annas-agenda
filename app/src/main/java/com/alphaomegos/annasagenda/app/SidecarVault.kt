@@ -178,3 +178,17 @@ internal suspend fun sidecarSignOut(context: Context) {
     SidecarAvatarStores.of(context).forget()
     musicPlayerMemoryFile(context).forget()
 }
+
+/** The way back of a backup (16.10), its downloads in the no-backup folder until the import has them. */
+internal object SidecarBackupRestorers {
+    @Volatile
+    private var instance: SidecarBackupRestorer? = null
+
+    fun of(context: Context): SidecarBackupRestorer = instance ?: synchronized(this) {
+        instance ?: SidecarBackupRestorer(
+            dir = File(File(context.applicationContext.noBackupFilesDir, "sidecar"), "restore"),
+            account = SidecarBackupAccounts.of(context),
+            client = SidecarBackupsClient(SidecarBackupUrlConnection),
+        ).also { instance = it }
+    }
+}
