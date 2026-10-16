@@ -26,4 +26,25 @@
     <string name="sidecar_failure_too_many">Too many attempts. Try again in %1$d min.</string>
     <string name="sidecar_failure_server">The server is not answering properly. Try again later.</string>
     <string name="sidecar_failure_unexpected">The server answered something unexpected.</string>
+    <!-- The music section (16.10) -->
+    <string name="menu_music">Music</string>
+    <string name="menu_music_sign_in">Sign in to oursidecar</string>
+    <string name="music_tab_all">All songs</string>
+    <string name="music_tab_artist">By artist</string>
+    <string name="music_refresh">Refresh</string>
+    <string name="music_sort">Order</string>
+    <string name="music_sort_newest">Newest first</string>
+    <string name="music_sort_oldest">Oldest first</string>
+    <string name="music_sort_az">A to Z</string>
+    <string name="music_sort_za">Z to A</string>
+    <string name="music_settings">Music settings</string>
+    <string name="music_pref_artist_tab">The "By artist" list</string>
+    <string name="music_artist">Artist</string>
+    <string name="music_no_artists">No artists yet</string>
+    <string name="music_unknown_artist">Unknown artist</string>
+    <string name="music_added_by">from %1$s</string>
+    <string name="music_waiting">waiting for approval</string>
+    <string name="music_no_file">no file</string>
+    <string name="music_empty">Nothing in this list yet.</string>
+    <string name="music_retry">Try again</string>
 </resources>

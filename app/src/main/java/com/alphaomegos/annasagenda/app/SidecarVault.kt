@@ -72,3 +72,13 @@ internal object SidecarConnections {
         ).also { instance = it }
     }
 }
+
+/** The music of the process (16.10), asked through its one sign-in. */
+internal object MusicLibraries {
+    @Volatile
+    private var instance: MusicLibrary? = null
+
+    fun of(context: Context): MusicLibrary = instance ?: synchronized(this) {
+        instance ?: MusicLibrary(SidecarConnections.of(context)).also { instance = it }
+    }
+}

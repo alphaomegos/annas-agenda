@@ -127,6 +127,9 @@ internal data class MenuEntry(
     // A section that exists only as a promise: grey, "Coming soon", a tap
     // does nothing. It can still be moved and hidden like any other.
     val comingSoon: Boolean = false,
+    // What a grey one says under its name instead of "Coming soon" — music
+    // before signing in (16.10): its tap asks to sign in.
+    val greyNoteRes: Int? = null,
 )
 
 @Composable
@@ -146,6 +149,7 @@ fun MainMenuScreen(
     onSettings: () -> Unit,
     onMetro: () -> Unit = {},
     onTravel: () -> Unit = {},
+    onMusic: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -225,6 +229,8 @@ fun MainMenuScreen(
     val sidecar = remember(context) { SidecarConnections.of(context) }
     val sidecarStatus by sidecar.status.collectAsStateWithLifecycle()
     var sidecarDialogOpen by rememberSaveable { mutableStateOf(false) }
+    // One instance, so the menu's entries are not built anew on every redraw for it.
+    val openSidecar = remember { { sidecarDialogOpen = true } }
 
     // The lamp reads the same debts as the Undone screen, so it needs the same
     // horizon materialised. Without this it only went red for days the calendar
@@ -255,6 +261,10 @@ fun MainMenuScreen(
         onMediaLibrary = onMediaLibrary,
         onMetro = onMetro,
         onTravel = onTravel,
+        // Music opens only signed in to oursidecar (16.10); grey before, and a tap asks to sign in.
+        musicOpen = sidecarStatus.signIn(System.currentTimeMillis()) == SidecarSignInState.SIGNED_IN,
+        onMusic = onMusic,
+        onMusicClosed = openSidecar,
     )
 
     MainMenuContent(
@@ -270,7 +280,7 @@ fun MainMenuScreen(
         onLanguage = onLanguage,
         onSettings = onSettings,
         sidecarState = sidecarStatus.signIn(System.currentTimeMillis()),
-        onSidecar = { sidecarDialogOpen = true },
+        onSidecar = openSidecar,
         onUndone = onUndone,
         onExport = {
             scope.launch {
@@ -336,6 +346,9 @@ private fun rememberMainMenuEntries(
     onMediaLibrary: () -> Unit,
     onMetro: () -> Unit,
     onTravel: () -> Unit,
+    musicOpen: Boolean,
+    onMusic: () -> Unit,
+    onMusicClosed: () -> Unit,
 ): List<MenuEntry> {
     return remember(
         onCalendar,
@@ -349,6 +362,9 @@ private fun rememberMainMenuEntries(
         onMediaLibrary,
         onMetro,
         onTravel,
+        musicOpen,
+        onMusic,
+        onMusicClosed,
     ) {
         listOf(
             MenuEntry("calendar", R.drawable.ic_menu_calendar, R.string.calendar, onCalendar),
@@ -362,6 +378,15 @@ private fun rememberMainMenuEntries(
             MenuEntry("reading", R.drawable.ic_menu_reading, R.string.menu_reading, onMediaLibrary),
             MenuEntry("metro", R.drawable.ic_menu_metro, R.string.menu_metro, onMetro),
             MenuEntry("travel", R.drawable.ic_menu_travel, R.string.menu_travel, onTravel),
+            // Eduard's drawing is to come; the "soon" picture stands in.
+            MenuEntry(
+                "music",
+                R.drawable.ic_menu_soon,
+                R.string.menu_music,
+                if (musicOpen) onMusic else onMusicClosed,
+                comingSoon = !musicOpen,
+                greyNoteRes = R.string.menu_music_sign_in,
+            ),
         )
     }
 }
@@ -964,6 +989,7 @@ private fun MainMenuList(
                     iconRes = item.iconRes,
                     title = stringResource(item.titleRes),
                     comingSoon = item.comingSoon,
+                    greyNote = item.greyNoteRes?.let { stringResource(it) },
                     reorderMode = reorderMode,
                     isDragging = isDragging,
                     canMoveUp = index > 0,
@@ -1017,6 +1043,7 @@ private fun MenuRowCard(
     iconRes: Int,
     title: String,
     comingSoon: Boolean,
+    greyNote: String?,
     reorderMode: Boolean,
     isDragging: Boolean,
     canMoveUp: Boolean,
@@ -1064,7 +1091,7 @@ private fun MenuRowCard(
                 )
                 if (comingSoon) {
                     Text(
-                        text = stringResource(R.string.menu_coming_soon),
+                        text = greyNote ?: stringResource(R.string.menu_coming_soon),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -35,6 +35,7 @@ import com.alphaomegos.annasagenda.screens.metro.MetroSchemeEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroStationEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroThemed
+import com.alphaomegos.annasagenda.screens.music.MusicScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightAchievementsScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightEditScreen
 import com.alphaomegos.annasagenda.screens.travel.FlightProfileScreen
@@ -70,6 +71,7 @@ private object Route {
     const val METRO_STATION = "metro_station"
     const val METRO_MAP = "metro_map"
     const val TRAVEL = "travel"
+    const val MUSIC = "music"
     const val TRAVEL_COUNTRY = "travel_country"
     const val FLIGHTS = "flights"
     const val FLIGHT_EDIT = "flight_edit"
@@ -130,6 +132,7 @@ fun AppNav(
                 onMediaLibrary = { nav.navigate(Route.READING) },
                 onMetro = { nav.navigate(Route.METRO) },
                 onTravel = { nav.navigate(Route.TRAVEL) },
+                onMusic = { nav.navigate(Route.MUSIC) },
                 onUndone = { nav.navigate(Route.UNDONE) },
                 onSettings = { nav.navigate(Route.SETTINGS) },
             )
@@ -212,6 +215,11 @@ fun AppNav(
                 vm = vm,
                 onBack = { nav.popBackStack() }
             )
+        }
+
+        // The music of oursidecar (16.10), in its own style.
+        composable(Route.MUSIC) {
+            MusicScreen(vm = vm, onBack = { nav.popBackStack() })
         }
 
         composable(Route.METRO) {

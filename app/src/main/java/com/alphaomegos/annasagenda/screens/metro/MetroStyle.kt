@@ -495,7 +495,8 @@ internal fun MetroStyleDialog(
     eraColors: Boolean,
     onPick: (MetroStyle) -> Unit,
     onDetails: (Boolean) -> Unit,
-    onEraColors: (Boolean) -> Unit,
+    // Null where there are no lines to colour (the music section, 16.10): the tick is not shown.
+    onEraColors: ((Boolean) -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     MetroDialog(
@@ -528,15 +529,17 @@ internal fun MetroStyleDialog(
                     Text(stringResource(R.string.metro_style_details), style = MaterialTheme.typography.bodyMedium)
                 }
                 // The era's colours for the lines, or each line its own.
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = current != MetroStyle.MODERN, role = Role.Checkbox) { onEraColors(!eraColors) }
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    MetroCheckbox(checked = eraColors, onCheckedChange = onEraColors, enabled = current != MetroStyle.MODERN)
-                    Text(stringResource(R.string.metro_style_era_colors), style = MaterialTheme.typography.bodyMedium)
+                if (onEraColors != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = current != MetroStyle.MODERN, role = Role.Checkbox) { onEraColors(!eraColors) }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        MetroCheckbox(checked = eraColors, onCheckedChange = onEraColors, enabled = current != MetroStyle.MODERN)
+                        Text(stringResource(R.string.metro_style_era_colors), style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         },

@@ -75,6 +75,8 @@ internal fun MenuTile(
     label: MenuTileLabel = MenuTileLabel.Regular,
     onLongClick: (() -> Unit)? = null,
     comingSoon: Boolean = false,
+    // Said under a grey tile's name; "Coming soon" when none is given.
+    greyNote: String? = null,
 ) {
     val small = label == MenuTileLabel.Small
 
@@ -132,7 +134,7 @@ internal fun MenuTile(
             )
             if (comingSoon) {
                 Text(
-                    text = stringResource(R.string.menu_coming_soon),
+                    text = greyNote ?: stringResource(R.string.menu_coming_soon),
                     style = MaterialTheme.typography.labelSmall,
                     textAlign = TextAlign.Center,
                     maxLines = 1,

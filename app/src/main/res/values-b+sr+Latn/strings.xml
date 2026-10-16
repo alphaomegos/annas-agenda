@@ -1036,4 +1036,25 @@
     <string name="sidecar_failure_too_many">Previše pokušaja. Pokušajte ponovo za %1$d min.</string>
     <string name="sidecar_failure_server">Server ne odgovara kako treba. Pokušajte kasnije.</string>
     <string name="sidecar_failure_unexpected">Server je odgovorio nešto neočekivano.</string>
+    <!-- Muzika (16.10) -->
+    <string name="menu_music">Muzika</string>
+    <string name="menu_music_sign_in">Prijavite se na oursidecar</string>
+    <string name="music_tab_all">Sve pesme</string>
+    <string name="music_tab_artist">Po izvođaču</string>
+    <string name="music_refresh">Osveži</string>
+    <string name="music_sort">Redosled</string>
+    <string name="music_sort_newest">Prvo najnovije</string>
+    <string name="music_sort_oldest">Prvo najstarije</string>
+    <string name="music_sort_az">Od A do Ž</string>
+    <string name="music_sort_za">Od Ž do A</string>
+    <string name="music_settings">Podešavanja muzike</string>
+    <string name="music_pref_artist_tab">Lista „Po izvođaču“</string>
+    <string name="music_artist">Izvođač</string>
+    <string name="music_no_artists">Još nema izvođača</string>
+    <string name="music_unknown_artist">Nepoznat izvođač</string>
+    <string name="music_added_by">od %1$s</string>
+    <string name="music_waiting">čeka odobrenje</string>
+    <string name="music_no_file">bez fajla</string>
+    <string name="music_empty">Na ovoj listi još nema ničega.</string>
+    <string name="music_retry">Pokušaj ponovo</string>
 </resources>

@@ -1102,4 +1102,25 @@
     <string name="sidecar_failure_too_many">Слишком много попыток. Попробуйте через %1$d мин.</string>
     <string name="sidecar_failure_server">Сервер отвечает с ошибкой. Попробуйте позже.</string>
     <string name="sidecar_failure_unexpected">Сервер ответил что-то неожиданное.</string>
+    <!-- Музыка (16.10) -->
+    <string name="menu_music">Музыка</string>
+    <string name="menu_music_sign_in">Войдите в oursidecar</string>
+    <string name="music_tab_all">Все песни</string>
+    <string name="music_tab_artist">По исполнителю</string>
+    <string name="music_refresh">Обновить</string>
+    <string name="music_sort">Порядок</string>
+    <string name="music_sort_newest">Сначала новые</string>
+    <string name="music_sort_oldest">Сначала старые</string>
+    <string name="music_sort_az">От А до Я</string>
+    <string name="music_sort_za">От Я до А</string>
+    <string name="music_settings">Настройки музыки</string>
+    <string name="music_pref_artist_tab">Вкладка «По исполнителю»</string>
+    <string name="music_artist">Исполнитель</string>
+    <string name="music_no_artists">Исполнителей пока нет</string>
+    <string name="music_unknown_artist">Неизвестный исполнитель</string>
+    <string name="music_added_by">от %1$s</string>
+    <string name="music_waiting">ждёт одобрения</string>
+    <string name="music_no_file">без файла</string>
+    <string name="music_empty">В этом списке пока ничего нет.</string>
+    <string name="music_retry">Повторить</string>
 </resources>
