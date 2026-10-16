@@ -276,6 +276,8 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
             onSignOut = {
                 connection.signOut()
                 SidecarAvatarStores.of(context).forget()
+                // The queue was this person's.
+                musicPlayerMemoryFile(context).forget()
             },
             onRefresh = { connection.refreshAccount() },
             onChooseSpace = { id -> scope.launch { connection.chooseSpace(id) } },

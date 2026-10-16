@@ -26,6 +26,14 @@ import com.alphaomegos.annasagenda.app.musicPlayerMemoryFile
 import com.alphaomegos.annasagenda.app.musicRepeatOf
 import com.alphaomegos.annasagenda.model.MusicPlayerMemory
 import com.alphaomegos.annasagenda.support.sidecarIsServerUrl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -44,6 +52,7 @@ class MusicPlaybackService : MediaSessionService() {
 
     private var session: MediaSession? = null
     private val handler = Handler(Looper.getMainLooper())
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     // Where the player is, written down while it plays — every few seconds,
     // and at every change of track, queue or way of going on — so that the
@@ -99,11 +108,25 @@ class MusicPlaybackService : MediaSessionService() {
                 .build()
                 .apply { setSmallIcon(R.drawable.ic_music_note) },
         )
+        // Signed out, or another person in (16.10): the music stops and its queue is forgotten —
+        // the files are fetched with a session there no longer is, and the queue was someone's.
+        scope.launch {
+            connection.status
+                .map { it.account?.userId }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect {
+                    player.stop()
+                    player.clearMediaItems()
+                    musicPlayerMemoryFile(this@MusicPlaybackService).forget()
+                }
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onDestroy() {
+        scope.cancel()
         handler.removeCallbacks(rememberTick)
         session?.run {
             remember(player)
