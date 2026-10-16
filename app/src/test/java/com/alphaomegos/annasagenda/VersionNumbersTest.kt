@@ -20,11 +20,15 @@ import com.alphaomegos.annasagenda.app.*
  * From 21.4 / 22 onwards they move together: one step each, every release.
  * The offset between them is a historical accident being frozen rather than a
  * law of anything, which is exactly why it needs a test and not a convention.
+ *
+ * A new main version starts its minor part at 0 again while the code goes on
+ * up by one (16.10: 21.6 was 24, 22.0 is 25), so each main version has its
+ * own offset, written down here when it begins.
  */
 class VersionNumbersTest {
 
-    /** The gap between versionCode and the minor part of versionName. */
-    private val agreedOffset = 18
+    /** The gap between versionCode and the minor part of versionName, by main version. */
+    private val agreedOffsets = mapOf(21 to 18, 22 to 25)
 
     /**
      * And the built file says which of them it is.
@@ -61,15 +65,51 @@ class VersionNumbersTest {
         requireNotNull(code) { "no versionCode in app/build.gradle.kts" }
         requireNotNull(name) { "no versionName in app/build.gradle.kts" }
 
+        val major = name.substringBefore('.').toIntOrNull()
         val minor = name.substringAfter('.', "").toIntOrNull()
+        requireNotNull(major) { "versionName is not major.minor: $name" }
         requireNotNull(minor) { "versionName is not major.minor: $name" }
+        val offset = agreedOffsets[major]
+        requireNotNull(offset) {
+            "versionName $name begins a main version with no offset here: " +
+                "add it, as the code of its .0 — one above the last release's"
+        }
 
         assertEquals(
             "versionName $name and versionCode $code have drifted apart. " +
                 "Raise both, one step each, or change the offset here on purpose.",
-            agreedOffset + minor,
+            offset + minor,
             code,
         )
+    }
+
+    /** Each main version starts one code above where the one before it ended, never on top of it. */
+    @Test
+    fun eachMainVersionStartsAboveTheOneBefore() {
+        val starts = agreedOffsets.toSortedMap()
+        starts.entries.zipWithNext().forEach { (before, after) ->
+            assertTrue(
+                "${after.key}.0 (code ${after.value}) does not come after ${before.key}.x (code ${before.value} and on)",
+                after.value > before.value,
+            )
+        }
+    }
+
+    /**
+     * The app names itself to the servers it asks — oursidecar, the map's
+     * tiles — with its version, written out by hand there (16.10: both
+     * still said 21.6 at 22.0). The version there is the one here.
+     */
+    @Test
+    fun theAppNamesItsOwnVersionToServers() {
+        val name = Regex("""versionName\s*=\s*"([^"]+)"""").find(buildFile().readText())!!.groupValues[1]
+        val agents = mainSourceFiles()
+            .flatMap { file -> Regex("""AnnasAgenda/([0-9][0-9.]*)""").findAll(file.readText()).map { file.name to it.groupValues[1] } }
+            .toList()
+        assertTrue("no AnnasAgenda/<version> found in the sources", agents.isNotEmpty())
+        agents.forEach { (file, version) ->
+            assertEquals("$file names the app as AnnasAgenda/$version", name, version)
+        }
     }
 
     @Test
@@ -172,6 +212,13 @@ class VersionNumbersTest {
             )
         }
     }
+
+    private fun mainSourceFiles(): List<File> =
+        listOf("src/main/java", "app/src/main/java", "../app/src/main/java")
+            .map { File(it) }
+            .firstOrNull { it.isDirectory }
+            ?.walkTopDown()?.filter { it.isFile && it.name.endsWith(".kt") }?.toList()
+            ?: error("Cannot find src/main/java from ${File("").absolutePath}")
 
     private fun buildFile(): File =
         listOf("build.gradle.kts", "app/build.gradle.kts", "../app/build.gradle.kts")

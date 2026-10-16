@@ -32,7 +32,7 @@ import java.net.URLEncoder
  */
 
 /** How the app names itself to the map's servers. */
-private const val METRO_HTTP_AGENT = "AnnasAgenda/21.6 (Android; personal use)"
+private const val METRO_HTTP_AGENT = "AnnasAgenda/22.0 (Android; personal use)"
 
 /** Tiles kept in memory: a screen and a half of them, twice over. */
 private const val MEMORY_TILES = 160

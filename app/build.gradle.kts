@@ -68,15 +68,17 @@ android {
         minSdk = 24
         targetSdk = 36
         // The two used to disagree: versionCode said this was the 18th build,
-        // versionName said 21.3. Nobody remembers how. From here they move
-        // together, one step each per release — 21.7 will be versionCode 25 —
-        // and VersionNumbersTest holds them to it.
+        // versionName said 21.3. Nobody remembers how. From then they moved
+        // together, one step each per release, and VersionNumbersTest holds
+        // them to it. 22.0 (16.10, Eduard: the music, oursidecar and its
+        // backups make a new main version) is versionCode 25, and 22.1 will
+        // be 26.
         //
         // versionCode only ever goes up: Android refuses an update whose code
         // is lower than the one installed, so matching it down to 21 was not
         // an option.
-        versionCode = 24
-        versionName = "21.6"
+        versionCode = 25
+        versionName = "22.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
