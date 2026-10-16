@@ -183,6 +183,12 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         value = withContext(Dispatchers.IO) { MusicCache.keptIds(context, lib.tracks) }
     }
     val keptBytes by produceState(0L, cacheRevision) { value = withContext(Dispatchers.IO) { MusicCache.bytes(context) } }
+    // Files of the phone's standing for tracks (16.10); one that can no longer be read plays from the sidecar.
+    val localStore = remember(context) { MusicLocalFileStores.of(context) }
+    val localFiles by localStore.files.collectAsStateWithLifecycle()
+    val unreadable by produceState(emptySet<String>(), localFiles) {
+        value = withContext(Dispatchers.IO) { localFiles.filterValues { !musicFileReadable(context, it.uri) }.keys }
+    }
     val upstream = remember(context) { musicUpstreamFactory(context, connection) }
     // "Save all" for the list shown (16.10): what it would fetch, and how it is going.
     val saveAll by remember(context) { MusicSaveAllWorker.progress(context) }.collectAsStateWithLifecycle(initialValue = null)
@@ -196,12 +202,6 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         if (lib.loaded && !lib.fromPhone) MusicCache.dropStale(context, lib.tracks, localFiles.keys - unreadable)
     }
 
-    // Files of the phone's standing for tracks (16.10); one that can no longer be read plays from the sidecar.
-    val localStore = remember(context) { MusicLocalFileStores.of(context) }
-    val localFiles by localStore.files.collectAsStateWithLifecycle()
-    val unreadable by produceState(emptySet<String>(), localFiles) {
-        value = withContext(Dispatchers.IO) { localFiles.filterValues { !musicFileReadable(context, it.uri) }.keys }
-    }
     val localOf: (SidecarTrack) -> MusicLocalFile? = { track -> localFiles[track.id]?.takeIf { track.id !in unreadable } }
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val trackId = pickingFor
