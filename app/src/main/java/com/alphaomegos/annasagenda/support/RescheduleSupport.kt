@@ -40,6 +40,13 @@ fun nextTaskOrderOn(tasks: List<Task>, date: LocalDate?): Int =
  * Moving a task to Someday takes its time away: a time names a moment on a
  * day, and Someday has no day. Moving it to another day keeps the time.
  *
+ * A template's own first day is a day of its series too (17.10). Moving that
+ * row used to change the template's date — the day the whole series counts
+ * from — and nothing else: the days already drawn stayed where they were, and
+ * the series began drawing new ones beside them. Given [newId], it now moves
+ * as an occurrence does: a copy of that day goes, the series stays, and the
+ * day it left is tombstoned (see [stateAfterMovingTemplateDay]).
+ *
  * Returns everything unchanged if [taskId] names nothing.
  */
 fun stateAfterReschedulingTask(
@@ -48,11 +55,15 @@ fun stateAfterReschedulingTask(
     suppressedRecurrences: Set<String>,
     taskId: Long,
     newDate: LocalDate?,
+    newId: (() -> Long)? = null,
 ): RescheduleResult {
     val victim = tasks.firstOrNull { it.id == taskId }
         ?: return RescheduleResult(tasks, subtasks, suppressedRecurrences)
 
     val oldDate = victim.date
+    if (newId != null && victim.originTaskId == null && victim.repeatRule != null && oldDate != null && oldDate != newDate) {
+        return stateAfterMovingTemplateDay(tasks, subtasks, suppressedRecurrences, victim, newDate, newId)
+    }
     val newOrder =
         if (oldDate == newDate) victim.order else nextTaskOrderOn(tasks, newDate)
 
@@ -103,5 +114,44 @@ fun stateAfterReschedulingTask(
         tasks = movedTasks,
         subtasks = movedSubtasks,
         suppressedRecurrences = suppressedRecurrences + tombstones,
+    )
+}
+
+/**
+ * The first day of a series moved on its own (17.10): the template stays
+ * where it is, the day its rule counts from; its own row there is tombstoned,
+ * as a deleted first day is; and a copy of that day — done or not, its time,
+ * its parts and theirs — goes to [newDate], a task of its own with no series,
+ * as a moved occurrence becomes. To Someday it loses its time.
+ *
+ * [newId] is called once for the copy and once per part, in that order.
+ */
+fun stateAfterMovingTemplateDay(
+    tasks: List<Task>,
+    subtasks: List<Subtask>,
+    suppressedRecurrences: Set<String>,
+    template: Task,
+    newDate: LocalDate?,
+    newId: () -> Long,
+): RescheduleResult {
+    val oldDate = template.date ?: return RescheduleResult(tasks, subtasks, suppressedRecurrences)
+    val copyId = newId()
+    val copy = template.copy(
+        id = copyId,
+        date = newDate,
+        time = if (newDate == null) null else template.time,
+        order = nextTaskOrderOn(tasks, newDate),
+        repeatRule = null,
+        originTaskId = null,
+    )
+    val copiedSubtasks = subtasks
+        .filter { it.taskId == template.id }
+        .sortedWith(compareBy({ it.order }, { it.id }))
+        .map { s -> s.copy(id = newId(), taskId = copyId, repeatRule = null, originSubtaskId = null) }
+
+    return RescheduleResult(
+        tasks = tasks + copy,
+        subtasks = subtasks + copiedSubtasks,
+        suppressedRecurrences = suppressedRecurrences + taskSuppressionKey(template.id, oldDate),
     )
 }

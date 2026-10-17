@@ -321,4 +321,58 @@ class RescheduleSupportTest {
 
         assertEquals(5, nextTaskOrderOn(tasks, null))
     }
+
+    /* ---------- a series' first day moved alone (17.10) ---------- */
+
+    private var idCursor = 5000L
+
+    private fun moveAlone(tasks: List<Task>, subtasks: List<Subtask> = emptyList(), taskId: Long, to: LocalDate?) =
+        stateAfterReschedulingTask(tasks, subtasks, emptySet(), taskId, to, newId = { idCursor++ })
+
+    /**
+     * The template's own row is the series' first day. Moved alone, it used to
+     * take the series' anchor with it: the days already drawn stayed, and the
+     * series began drawing new ones beside them — the task twice a day.
+     */
+    @Test
+    fun aSeriesFirstDayMovedAloneLeavesTheSeriesWhereItWas() {
+        val everyTwoDays = daily.copy(interval = 2)
+        val drawn = generateRecurrencesInRange(
+            tasks = listOf(template().copy(repeatRule = everyTwoDays, time = java.time.LocalTime.of(9, 0))),
+            subtasks = listOf(Subtask(id = 7L, taskId = 1L, description = "part", isDone = true)),
+            suppressedRecurrences = emptySet(),
+            start = monday, end = monday.plusDays(6), nextId = 1000L, defaultWeekStart = weekStart,
+        )
+
+        val after = moveAlone(drawn.tasks, drawn.subtasks, taskId = 1L, to = monday.plusDays(1))
+        val redrawn = generateRecurrencesInRange(
+            after.tasks, after.subtasks, after.suppressedRecurrences,
+            monday, monday.plusDays(6), 2000L, weekStart,
+        )
+        val shown = { d: LocalDate ->
+            redrawn.tasks.filter { it.date == d }.filterNot { isSuppressedTemplateTaskOnItsDate(it, after.suppressedRecurrences) }
+        }
+
+        val series = redrawn.tasks.single { it.id == 1L }
+        assertEquals(monday, series.date)
+        assertEquals(everyTwoDays, series.repeatRule)
+        assertTrue(shown(monday).isEmpty())
+        val moved = shown(monday.plusDays(1)).single()
+        assertNull(moved.originTaskId)
+        assertNull(moved.repeatRule)
+        assertEquals(java.time.LocalTime.of(9, 0), moved.time)
+        assertEquals(listOf("part" to true), redrawn.subtasks.filter { it.taskId == moved.id }.map { it.description to it.isDone })
+        listOf(2L, 4L, 6L).forEach { assertEquals(1, shown(monday.plusDays(it)).size) }
+        listOf(3L, 5L).forEach { assertTrue(shown(monday.plusDays(it)).isEmpty()) }
+    }
+
+    @Test
+    fun aSeriesFirstDayMovedToSomedayGoesThereWithoutItsTimeAndTheSeriesStays() {
+        val after = moveAlone(listOf(template().copy(time = java.time.LocalTime.of(9, 0))), taskId = 1L, to = null)
+
+        val someday = after.tasks.single { it.date == null }
+        assertNull(someday.time)
+        assertEquals(monday, after.tasks.single { it.id == 1L }.date)
+        assertTrue(isSuppressedTemplateTaskOnItsDate(after.tasks.single { it.id == 1L }, after.suppressedRecurrences))
+    }
 }

@@ -257,7 +257,7 @@ class SeriesShiftSupportTest {
         assertTrue(canShiftSeries(tasks, missed.id, tuesday))
         assertFalse(canShiftSeries(tasks, missed.id, null))       // Someday
         assertFalse(canShiftSeries(tasks, missed.id, monday))     // the same day
-        assertFalse(canShiftSeries(tasks, 1L, tuesday))           // the template's own day
+        assertTrue(canShiftSeries(tasks, 1L, tuesday))            // the template's own day is a day of it too (17.10)
         assertFalse(canShiftSeries(tasks, plain.id, tuesday))     // no series
         assertFalse(canShiftSeries(tasks, 999_999L, tuesday))     // nothing
     }
@@ -265,7 +265,53 @@ class SeriesShiftSupportTest {
     @Test
     fun withNothingToAskAboutNothingChanges() {
         val before = plants()
+        val missed = occurrenceOn(before, monday)
 
-        assertSame(before.tasks, shift(before, 1L, tuesday).tasks)
+        assertSame(before.tasks, shift(before, missed.id, monday).tasks)
+        val withPlain = before.copy(tasks = before.tasks + Task(id = 500, date = monday, description = "просто задача"))
+        assertSame(withPlain.tasks, shift(withPlain, 500L, tuesday).tasks)
+    }
+
+    /* ---------------- a series shifted again (17.10, Eduard's video) ---------------- */
+
+    /**
+     * A shift leaves the new series' template on its first day, hidden behind
+     * the moved occurrence there. Shifting that day again split the series
+     * there: the old template stayed on that day as a task of its own, and the
+     * tombstone that hid it went on with the rest — so the task stayed where
+     * it was as well as going where it was sent.
+     */
+    @Test
+    fun aSeriesShiftedTwiceLeavesNothingOnTheDayItLeft() {
+        val wednesday = tuesday.plusDays(1)
+        val once = drawn(shift(plants(), occurrenceOn(plants(), monday).id, tuesday), from = tuesday)
+        val again = drawn(shift(once, occurrenceOn(once, tuesday).id, wednesday), from = monday)
+
+        assertTrue(shownOn(again, tuesday).isEmpty())
+        assertEquals(1, shownOn(again, wednesday).size)
+        assertEquals(freshSeriesDays(everyTwoDays, wednesday), days(again, wednesday))
+        days(again, monday.minusDays(6)).forEach { assertEquals("$it", 1, shownOn(again, it).size) }
+    }
+
+    /** The first day of a series moved: the whole series moves, the days already drawn with it. */
+    @Test
+    fun theTemplatesOwnDayMovesTheWholeSeriesAndWhatWasDrawn() {
+        val before = plants(start = monday)
+        val after = drawn(shift(before, 1L, tuesday), from = monday)
+
+        assertTrue(shownOn(after, monday).isEmpty())
+        assertEquals(freshSeriesDays(everyTwoDays, tuesday), days(after, monday))
+        days(after, monday).forEach { assertEquals("$it", 1, shownOn(after, it).size) }
+        assertEquals(tuesday, after.tasks.single { it.id == 1L }.date)
+    }
+
+    /** Shifted back, the series starts earlier, with nothing twice. */
+    @Test
+    fun theTemplatesOwnDayMovedBackMovesTheSeriesBack() {
+        val before = plants(start = tuesday)
+        val after = drawn(shift(before, 1L, monday), from = monday)
+
+        assertEquals(freshSeriesDays(everyTwoDays, monday), days(after, monday))
+        days(after, monday).forEach { assertEquals("$it", 1, shownOn(after, it).size) }
     }
 }

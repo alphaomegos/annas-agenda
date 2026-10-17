@@ -1502,20 +1502,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun rescheduleTaskToDate(taskId: Long, newDate: LocalDate?) {
-        _state.update { cur ->
-            val after = stateAfterReschedulingTask(
-                tasks = cur.tasks,
-                subtasks = cur.subtasks,
-                suppressedRecurrences = cur.suppressedRecurrences,
-                taskId = taskId,
-                newDate = newDate,
-            )
-            cur.copy(
-                tasks = after.tasks,
-                subtasks = after.subtasks,
-                suppressedRecurrences = after.suppressedRecurrences,
-            )
-        }
+        // Read and write rather than update {}: a series' first day moved
+        // alone becomes a copy, and newId() must not run twice.
+        val cur = _state.value
+        val after = stateAfterReschedulingTask(
+            tasks = cur.tasks,
+            subtasks = cur.subtasks,
+            suppressedRecurrences = cur.suppressedRecurrences,
+            taskId = taskId,
+            newDate = newDate,
+            newId = ::newId,
+        )
+        _state.value = cur.copy(
+            tasks = withHasSubtasksRefreshed(after.tasks, after.subtasks),
+            subtasks = after.subtasks,
+            suppressedRecurrences = after.suppressedRecurrences,
+        )
     }
 
     /**
