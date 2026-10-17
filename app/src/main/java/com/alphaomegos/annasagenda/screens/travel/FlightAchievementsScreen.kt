@@ -65,6 +65,7 @@ import com.alphaomegos.annasagenda.util.appLocale
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.alphaomegos.annasagenda.components.WayHomeButton
 
 private val AchievementGold = Color(0xFFF2A900)
 
@@ -94,7 +95,12 @@ fun FlightAchievementsScreen(vm: AppViewModel, onBack: () -> Unit) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.flights_achievements)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
+                navigationIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        WayHomeButton()
+                    }
+                },
             )
         },
     ) { inner ->

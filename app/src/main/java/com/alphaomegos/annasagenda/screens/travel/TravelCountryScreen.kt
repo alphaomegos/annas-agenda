@@ -45,6 +45,9 @@ import com.alphaomegos.annasagenda.support.travelVisited
 import com.alphaomegos.annasagenda.util.appLocale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
+import com.alphaomegos.annasagenda.components.WayHomeButton
 
 /**
  * A country's card (05.10): the piece of the map around it, its outline
@@ -85,7 +88,12 @@ fun TravelCountryScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(names.nameOf(countryId)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
+                navigationIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        WayHomeButton()
+                    }
+                },
             )
         },
     ) { inner ->

@@ -92,6 +92,7 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.alphaomegos.annasagenda.components.WayHomeButton
 
 /**
  * Flights (06.10), from the travel screen: the world map with every route
@@ -157,7 +158,12 @@ fun FlightsScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.flights_title)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
+                navigationIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        WayHomeButton()
+                    }
+                },
                 actions = {
                     // Signed in to oursidecar, the person's own picture from it (16.10); else the silhouette.
                     IconButton(onClick = onProfile) {

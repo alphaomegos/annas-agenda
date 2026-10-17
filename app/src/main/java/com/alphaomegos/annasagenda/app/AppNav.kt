@@ -1,14 +1,21 @@
 package com.alphaomegos.annasagenda.app
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.alphaomegos.annasagenda.components.LocalWayHome
 import com.alphaomegos.annasagenda.components.PendingReadingSessionDialog
 import com.alphaomegos.annasagenda.screens.AnthropometryScreen
 import com.alphaomegos.annasagenda.screens.media.BookDetailsScreen
@@ -94,6 +101,41 @@ private object Route {
     fun readingSession(bookId: Long) = "$READING_SESSION/$bookId"
 }
 
+/** Where a screen keeps how many steps from the main menu it was opened (17.10). */
+private const val STEPS_FROM_MENU = "way_home_steps"
+
+/**
+ * A screen of the graph, given the way home (components/WayHome.kt, 17.10)
+ * when it is two or more steps from the main menu.
+ *
+ * The steps are counted as the screen opens — one more than the screen it
+ * opened over — and kept in its own saved state: the screens under one
+ * stay as they are for as long as it is there, and the count outlives a
+ * turn of the phone or the app being put away by Android.
+ */
+private fun NavGraphBuilder.screen(
+    nav: NavHostController,
+    route: String,
+    arguments: List<NamedNavArgument> = emptyList(),
+    content: @Composable (NavBackStackEntry) -> Unit,
+) {
+    composable(route, arguments) { entry ->
+        val home = remember(entry) {
+            val kept = entry.savedStateHandle.get<Int>(STEPS_FROM_MENU)
+            val steps = kept ?: when {
+                entry.destination.route == Route.MENU -> 0
+                // Opened just now, over the screen now under it.
+                nav.currentBackStackEntry == entry -> nav.previousBackStackEntry
+                    ?.let { (it.savedStateHandle.get<Int>(STEPS_FROM_MENU) ?: 1) + 1 }
+                    ?: 1
+                else -> null
+            }?.also { entry.savedStateHandle[STEPS_FROM_MENU] = it }
+            if (steps != null && steps >= 2) ({ nav.popBackStack(Route.MENU, inclusive = false); Unit }) else null
+        }
+        CompositionLocalProvider(LocalWayHome provides home) { content(entry) }
+    }
+}
+
 @Composable
 fun AppNav(
     vm: AppViewModel,
@@ -119,7 +161,7 @@ fun AppNav(
 
     NavHost(navController = nav, startDestination = Route.MENU) {
 
-        composable(Route.MENU) {
+        screen(nav, Route.MENU) {
             MainMenuScreen(
                 vm = vm,
                 onLanguage = { nav.navigate(Route.LANGUAGE) },
@@ -141,25 +183,25 @@ fun AppNav(
             )
         }
 
-        composable(Route.RECURRING) {
+        screen(nav, Route.RECURRING) {
             RecurringTasksScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
             )
         }
 
-        composable(Route.ANTHROPOMETRY) {
+        screen(nav, Route.ANTHROPOMETRY) {
             AnthropometryScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
             )
         }
 
-        composable(Route.LANGUAGE) {
+        screen(nav, Route.LANGUAGE) {
             LanguageScreen(onBack = { nav.popBackStack() })
         }
 
-        composable(Route.CALENDAR) {
+        screen(nav, Route.CALENDAR) {
             CalendarMonthRoute(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -168,7 +210,7 @@ fun AppNav(
             )
         }
 
-        composable("${Route.CALENDAR_DAY}/{epochDay}") { backStackEntry ->
+        screen(nav, "${Route.CALENDAR_DAY}/{epochDay}") { backStackEntry ->
             val epochDay = backStackEntry.arguments
                 ?.getString("epochDay")
                 ?.toLongOrNull()
@@ -182,7 +224,7 @@ fun AppNav(
             )
         }
 
-        composable(Route.CALORIMETER) {
+        screen(nav, Route.CALORIMETER) {
             CalorimeterRoute(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -190,7 +232,7 @@ fun AppNav(
             )
         }
 
-        composable(Route.SETTINGS) {
+        screen(nav, Route.SETTINGS) {
             SettingsScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -199,21 +241,21 @@ fun AppNav(
             )
         }
 
-        composable(Route.DIET) {
+        screen(nav, Route.DIET) {
             DietRoute(
                 vm = vm,
                 onBack = { nav.popBackStack() },
             )
         }
 
-        composable(Route.RUNNING) {
+        screen(nav, Route.RUNNING) {
             RunningPlanScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
             )
         }
 
-        composable(Route.COUNTERS) {
+        screen(nav, Route.COUNTERS) {
             CountersScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
@@ -221,14 +263,14 @@ fun AppNav(
         }
 
         // The music of oursidecar (16.10), in its own style.
-        composable(Route.MUSIC) {
+        screen(nav, Route.MUSIC) {
             MusicScreen(vm = vm, onBack = { nav.popBackStack() })
         }
-        composable(Route.SIDECAR_BACKUPS) {
+        screen(nav, Route.SIDECAR_BACKUPS) {
             SidecarBackupsScreen(vm = vm, onBack = { nav.popBackStack() })
         }
 
-        composable(Route.METRO) {
+        screen(nav, Route.METRO) {
             // In the style chosen for the metro section (15.10).
             MetroThemed(vm) {
                 MetroScreen(
@@ -239,7 +281,7 @@ fun AppNav(
             }
         }
 
-        composable("${Route.METRO_SCHEME}/{schemeId}") { entry ->
+        screen(nav, "${Route.METRO_SCHEME}/{schemeId}") { entry ->
             val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
             // In the style chosen for the metro section (15.10).
             MetroThemed(vm) {
@@ -253,7 +295,7 @@ fun AppNav(
             }
         }
 
-        composable("${Route.METRO_MAP}/{schemeId}") { entry ->
+        screen(nav, "${Route.METRO_MAP}/{schemeId}") { entry ->
             // In the style chosen for the metro section (15.10).
             MetroThemed(vm) {
                 MetroMapEditorScreen(
@@ -264,7 +306,7 @@ fun AppNav(
             }
         }
 
-        composable("${Route.METRO_LINE}/{schemeId}/{lineId}") { entry ->
+        screen(nav, "${Route.METRO_LINE}/{schemeId}/{lineId}") { entry ->
             val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
             val lineId = entry.arguments?.getString("lineId")?.toLongOrNull() ?: -1L
             // In the style chosen for the metro section (15.10).
@@ -279,7 +321,7 @@ fun AppNav(
             }
         }
 
-        composable("${Route.METRO_STATION}/{schemeId}/{stationId}") { entry ->
+        screen(nav, "${Route.METRO_STATION}/{schemeId}/{stationId}") { entry ->
             val schemeId = entry.arguments?.getString("schemeId")?.toLongOrNull() ?: -1L
             val stationId = entry.arguments?.getString("stationId")?.toLongOrNull() ?: -1L
             // In the style chosen for the metro section (15.10).
@@ -293,7 +335,7 @@ fun AppNav(
             }
         }
 
-        composable(Route.TRAVEL) {
+        screen(nav, Route.TRAVEL) {
             TravelScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -303,7 +345,7 @@ fun AppNav(
             )
         }
 
-        composable(Route.FLIGHTS) {
+        screen(nav, Route.FLIGHTS) {
             FlightsScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -313,7 +355,7 @@ fun AppNav(
             )
         }
 
-        composable(Route.FLIGHT_PROFILE) {
+        screen(nav, Route.FLIGHT_PROFILE) {
             FlightProfileScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -321,11 +363,11 @@ fun AppNav(
             )
         }
 
-        composable(Route.FLIGHT_ACHIEVEMENTS) {
+        screen(nav, Route.FLIGHT_ACHIEVEMENTS) {
             FlightAchievementsScreen(vm = vm, onBack = { nav.popBackStack() })
         }
 
-        composable("${Route.FLIGHT_EDIT}/{flightId}") { entry ->
+        screen(nav, "${Route.FLIGHT_EDIT}/{flightId}") { entry ->
             FlightEditScreen(
                 vm = vm,
                 flightId = entry.arguments?.getString("flightId")?.toLongOrNull() ?: -1L,
@@ -333,7 +375,7 @@ fun AppNav(
             )
         }
 
-        composable("${Route.TRAVEL_COUNTRY}/{countryId}") { entry ->
+        screen(nav, "${Route.TRAVEL_COUNTRY}/{countryId}") { entry ->
             TravelCountryScreen(
                 vm = vm,
                 countryId = entry.arguments?.getString("countryId").orEmpty(),
@@ -341,7 +383,7 @@ fun AppNav(
             )
         }
 
-        composable(Route.UNDONE) {
+        screen(nav, Route.UNDONE) {
             UndoneTasksScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
@@ -349,7 +391,7 @@ fun AppNav(
         }
 
 
-        composable(Route.READING) {
+        screen(nav, Route.READING) {
             MediaLibraryScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -360,7 +402,8 @@ fun AppNav(
             )
         }
 
-        composable(
+        screen(
+            nav,
             route = "${Route.READING_BOOK}/{bookId}",
             arguments = listOf(navArgument("bookId") { type = NavType.LongType })
         ) { backStackEntry ->
@@ -372,7 +415,8 @@ fun AppNav(
             )
         }
 
-        composable(
+        screen(
+            nav,
             route = "${Route.READING_MOVIE}/{movieId}",
             arguments = listOf(navArgument("movieId") { type = NavType.LongType })
         ) { backStackEntry ->
@@ -384,7 +428,8 @@ fun AppNav(
             )
         }
 
-        composable(
+        screen(
+            nav,
             route = "${Route.READING_SERIES}/{seriesId}",
             arguments = listOf(navArgument("seriesId") { type = NavType.LongType })
         ) { backStackEntry ->
@@ -396,7 +441,8 @@ fun AppNav(
             )
         }
 
-        composable(
+        screen(
+            nav,
             route = "${Route.READING_SESSION}/{bookId}",
             arguments = listOf(navArgument("bookId") { type = NavType.LongType })
         ) { backStackEntry ->
@@ -408,7 +454,8 @@ fun AppNav(
             )
         }
 
-        composable(
+        screen(
+            nav,
             route = "${Route.NEW_TASK_DATE}/{epochDay}",
             arguments = listOf(navArgument("epochDay") { type = NavType.LongType })
         ) { backStackEntry ->
@@ -421,7 +468,7 @@ fun AppNav(
             )
         }
 
-        composable(Route.NEW_TASK) {
+        screen(nav, Route.NEW_TASK) {
             NewTaskScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() }
@@ -432,7 +479,7 @@ fun AppNav(
         // -1 as the epoch day, which is a real date — the 31st of December
         // 1969 — so tapping any day before 1970 in the calendar opened this
         // screen with no date instead of that one.
-        composable(Route.NEW_TASK_SOMEDAY) {
+        screen(nav, Route.NEW_TASK_SOMEDAY) {
             NewTaskScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },
@@ -440,7 +487,7 @@ fun AppNav(
             )
         }
 
-        composable(Route.SOMEDAY) {
+        screen(nav, Route.SOMEDAY) {
             SomedayScreen(
                 vm = vm,
                 onBack = { nav.popBackStack() },

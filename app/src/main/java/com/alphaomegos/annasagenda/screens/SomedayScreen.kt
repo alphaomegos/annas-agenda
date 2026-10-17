@@ -26,6 +26,8 @@ import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.DateTasksBlock
 import com.alphaomegos.annasagenda.support.isSuppressedTemplateTaskOnItsDate
+import androidx.compose.foundation.layout.Row
+import com.alphaomegos.annasagenda.components.WayHomeFootButton
 
 @Composable
 fun SomedayScreen(
@@ -85,8 +87,11 @@ fun SomedayScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.back))
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = onBack, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.back))
+            }
+            WayHomeFootButton()
         }
     }
 }

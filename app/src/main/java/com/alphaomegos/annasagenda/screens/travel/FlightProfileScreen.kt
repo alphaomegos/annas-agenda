@@ -56,6 +56,7 @@ import java.time.Instant
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.alphaomegos.annasagenda.components.WayHomeButton
 
 /** "2 764 400": a big number with the language's grouping. */
 internal fun flightNumber(n: Long, userLocale: Locale): String = String.format(userLocale, "%,d", n)
@@ -86,7 +87,12 @@ fun FlightProfileScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.flights_profile)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
+                navigationIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        WayHomeButton()
+                    }
+                },
             )
         },
     ) { inner ->

@@ -11,6 +11,7 @@
     <string name="delete">Удалить</string>
     <string name="remove">Убрать</string>
     <string name="back">Назад</string>
+    <string name="to_main_menu">В главное меню</string>
     <string name="pick_date">Выбрать дату</string>
     <string name="invalid_number">Неверное число</string>
 

@@ -11,6 +11,7 @@
     <string name="delete">Delete</string>
     <string name="remove">Remove</string>
     <string name="back">Back</string>
+    <string name="to_main_menu">To the main menu</string>
     <string name="pick_date">Pick date</string>
     <string name="invalid_number">Invalid number</string>
 

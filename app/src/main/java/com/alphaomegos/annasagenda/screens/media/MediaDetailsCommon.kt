@@ -39,6 +39,7 @@ import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.model.ReadingShelf
 import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
+import com.alphaomegos.annasagenda.components.WayHomeButton
 
 @Composable
 fun mediaDetailsShelfLabel(shelf: ReadingShelf): String {
@@ -79,11 +80,14 @@ fun MediaDetailsNotFoundScaffold(
             TopAppBar(
                 title = { Text(stringResource(titleRes)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
+                        }
+                        WayHomeButton()
                     }
                 }
             )

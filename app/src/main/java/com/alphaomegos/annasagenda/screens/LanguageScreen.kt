@@ -24,6 +24,8 @@ import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.components.MenuTile
 import com.alphaomegos.annasagenda.app.findActivity
 import com.alphaomegos.annasagenda.app.setAppLanguage
+import androidx.compose.ui.Alignment
+import com.alphaomegos.annasagenda.components.WayHomeButton
 
 object AppLanguages {
     @Suppress("SpellCheckingInspection")
@@ -41,11 +43,14 @@ fun LanguageScreen(onBack: () -> Unit) {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.choose_language)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
+                        }
+                        WayHomeButton()
                     }
                 }
             )

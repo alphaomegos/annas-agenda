@@ -43,6 +43,7 @@ import com.alphaomegos.annasagenda.model.AppState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.DateTasksBlock
+import com.alphaomegos.annasagenda.components.WayHomeFootButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -203,8 +204,11 @@ private fun CalendarDayContent(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.back))
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = onBack, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.back))
+            }
+            WayHomeFootButton()
         }
     }
 }

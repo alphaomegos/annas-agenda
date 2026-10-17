@@ -83,6 +83,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.model.MetroStyle
+import com.alphaomegos.annasagenda.components.WayHomeButton
 
 /**
  * The metro section after an old program (15.10, Eduard: "an extra version
@@ -191,7 +192,12 @@ internal fun MetroTopBar(
     val style = LocalMetroStyle.current
     val details = LocalMetroStyleDetails.current
     if (style == MetroStyle.MODERN) {
-        val back: @Composable () -> Unit = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } }
+        val back: @Composable () -> Unit = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                WayHomeButton()
+            }
+        }
         val shown: @Composable () -> Unit = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         if (centered) CenterAlignedTopAppBar(title = shown, navigationIcon = back, actions = actions)
         else TopAppBar(title = shown, navigationIcon = back, actions = actions)
@@ -223,8 +229,12 @@ internal fun MetroTopBar(
             }
         },
         navigationIcon = {
-            TextButton(onClick = onBack, colors = ButtonDefaults.textButtonColors(contentColor = ink)) {
-                Text(stringResource(R.string.back))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onBack, colors = ButtonDefaults.textButtonColors(contentColor = ink)) {
+                    Text(stringResource(R.string.back))
+                }
+                // The way home (17.10), in the bar's own ink.
+                WayHomeButton()
             }
         },
         actions = {

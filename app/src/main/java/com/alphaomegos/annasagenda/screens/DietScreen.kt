@@ -63,6 +63,7 @@ import com.alphaomegos.annasagenda.util.appLocale
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
+import com.alphaomegos.annasagenda.components.WayHomeButton
 
 /**
  * 6.2: the day's dishes in the calorimeter, each with a box to tick.
@@ -168,7 +169,10 @@ private fun DietContent(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.diet_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        WayHomeButton()
+                    }
                 },
             )
         },
