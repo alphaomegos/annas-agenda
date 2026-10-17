@@ -75,6 +75,8 @@ import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Map
 import com.alphaomegos.annasagenda.app.MetroTileLoader
+import com.alphaomegos.annasagenda.app.metroCartoKey
+import com.alphaomegos.annasagenda.support.metroTileSourceDrawn
 import com.alphaomegos.annasagenda.model.MetroUnderlay
 import com.alphaomegos.annasagenda.support.metroUnderlayMoved
 import com.alphaomegos.annasagenda.support.metroLayoutBounds
@@ -223,7 +225,7 @@ fun MetroMapEditorScreen(
     val tiles = remember { MetroTileLoader(context, scope) }
     val underlayNow = draft ?: scheme?.underlay
     val underlayLayer = if (scheme != null && underlayNow != null && (scheme.underlayShown || aligning)) {
-        MetroUnderlayLayer(underlayNow, scheme.underlaySource, scheme.underlayOpacity, tiles)
+        MetroUnderlayLayer(underlayNow, metroTileSourceDrawn(scheme.underlaySource, metroCartoKey.isNotBlank()), scheme.underlayOpacity, tiles)
     } else {
         null
     }

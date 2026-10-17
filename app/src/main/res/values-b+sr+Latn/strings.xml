@@ -885,6 +885,7 @@
     <string name="metro_underlay_source_carto_light">CARTO, svetla — mirna ispod šeme</string>
     <string name="metro_underlay_source_carto_dark">CARTO, tamna</string>
     <string name="metro_underlay_source_osm">OpenStreetMap</string>
+    <string name="metro_underlay_carto_needs_key">Mapama CARTO sada treba ključ, a ova verzija ga nema — zato je mapa od OpenStreetMap-a. Ključ je besplatan za ličnu upotrebu i dodaje se pri pravljenju aplikacije.</string>
     <string name="metro_underlay_opacity">Koliko je mapa uočljiva</string>
     <string name="metro_underlay_align">Podesi prstima</string>
     <string name="metro_underlay_remove">Ukloni mapu</string>

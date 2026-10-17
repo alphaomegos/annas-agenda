@@ -130,12 +130,45 @@ fun metroTileMaxZoom(source: MetroTileSource): Int = when (source) {
     MetroTileSource.CARTO_LIGHT, MetroTileSource.CARTO_DARK -> 20
 }
 
-/** Where tile [x], [y] at zoom [z] of [source] is fetched from. */
-fun metroTileUrl(source: MetroTileSource, z: Int, x: Int, y: Int): String = when (source) {
+/**
+ * Where tile [x], [y] at zoom [z] of [source] is fetched from. CARTO's
+ * (17.10) are asked for with [cartoKey], as CARTO has wanted since late
+ * August 2026; without it they come back reading "API key required".
+ */
+fun metroTileUrl(source: MetroTileSource, z: Int, x: Int, y: Int, cartoKey: String = ""): String = when (source) {
     MetroTileSource.OSM -> "https://tile.openstreetmap.org/$z/$x/$y.png"
-    MetroTileSource.CARTO_LIGHT -> "https://${"abcd"[(x + y).mod(4)]}.basemaps.cartocdn.com/light_all/$z/$x/$y.png"
-    MetroTileSource.CARTO_DARK -> "https://${"abcd"[(x + y).mod(4)]}.basemaps.cartocdn.com/dark_all/$z/$x/$y.png"
+    MetroTileSource.CARTO_LIGHT -> "https://basemaps.cartocdn.com/rastertiles/light_all/$z/$x/$y.png" + metroCartoKeyQuery(cartoKey)
+    MetroTileSource.CARTO_DARK -> "https://basemaps.cartocdn.com/rastertiles/dark_all/$z/$x/$y.png" + metroCartoKeyQuery(cartoKey)
 }
+
+private fun metroCartoKeyQuery(key: String): String =
+    if (key.isBlank()) "" else "?key=" + java.net.URLEncoder.encode(key.trim(), "UTF-8")
+
+/** Whether [source] needs CARTO's key to be drawn. */
+fun metroTileSourceNeedsKey(source: MetroTileSource): Boolean = source != MetroTileSource.OSM
+
+/**
+ * The map drawn for the [chosen] one (17.10): CARTO's only with a key in the
+ * build ([hasCartoKey]), OpenStreetMap otherwise — a map rather than tiles
+ * that say a key is missing. The choice itself is kept as it was, for a build
+ * with the key.
+ */
+fun metroTileSourceDrawn(chosen: MetroTileSource, hasCartoKey: Boolean): MetroTileSource =
+    if (metroTileSourceNeedsKey(chosen) && !hasCartoKey) MetroTileSource.OSM else chosen
+
+/**
+ * The folder of the phone's tile cache [source]'s tiles are kept in (17.10).
+ * CARTO's moved to new ones with the key: those kept before are the
+ * placeholders that ask for it ([METRO_TILE_FOLDERS_GONE]).
+ */
+fun metroTileFolder(source: MetroTileSource): String = when (source) {
+    MetroTileSource.OSM -> "OSM"
+    MetroTileSource.CARTO_LIGHT -> "carto-light"
+    MetroTileSource.CARTO_DARK -> "carto-dark"
+}
+
+/** Folders of the tile cache no longer read, deleted when the map is next opened (17.10). */
+val METRO_TILE_FOLDERS_GONE = listOf("CARTO_LIGHT", "CARTO_DARK")
 
 /** The words each source asks to be named by, under its map. */
 fun metroTileCredit(source: MetroTileSource): String = when (source) {

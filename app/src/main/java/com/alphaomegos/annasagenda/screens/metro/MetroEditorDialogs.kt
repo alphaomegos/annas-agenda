@@ -38,6 +38,7 @@ import java.util.Locale
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.Slider
 import kotlinx.coroutines.launch
+import com.alphaomegos.annasagenda.app.metroCartoKey
 import com.alphaomegos.annasagenda.app.metroGeocode
 import com.alphaomegos.annasagenda.model.MetroUnderlay
 import com.alphaomegos.annasagenda.model.MetroTileSource
@@ -45,6 +46,8 @@ import com.alphaomegos.annasagenda.support.MetroPoint
 import com.alphaomegos.annasagenda.support.METRO_UNDERLAY_DEFAULT_METERS
 import com.alphaomegos.annasagenda.support.METRO_UNDERLAY_MIN_OPACITY
 import com.alphaomegos.annasagenda.support.metroCityCentre
+import com.alphaomegos.annasagenda.support.metroTileSourceDrawn
+import com.alphaomegos.annasagenda.support.metroTileSourceNeedsKey
 import com.alphaomegos.annasagenda.support.metroParseLatLon
 import com.alphaomegos.annasagenda.model.MetroHintTarget
 import com.alphaomegos.annasagenda.model.MetroLine
@@ -661,20 +664,34 @@ internal fun MetroUnderlayDialog(
                     )
                 }
                 Text(stringResource(R.string.metro_underlay_source), style = MaterialTheme.typography.labelLarge)
+                // CARTO's maps only with its key in the build (17.10); without it, what is drawn is marked.
+                val hasCartoKey = metroCartoKey.isNotBlank()
+                val drawn = metroTileSourceDrawn(scheme.underlaySource, hasCartoKey)
                 Column(Modifier.selectableGroup()) {
                     listOf(
                         MetroTileSource.CARTO_LIGHT to R.string.metro_underlay_source_carto_light,
                         MetroTileSource.CARTO_DARK to R.string.metro_underlay_source_carto_dark,
                         MetroTileSource.OSM to R.string.metro_underlay_source_osm,
                     ).forEach { (source, words) ->
+                        val can = hasCartoKey || !metroTileSourceNeedsKey(source)
                         Row(
-                            modifier = Modifier.fillMaxWidth().clickable { onEdit { it.copy(underlaySource = source) } },
+                            modifier = Modifier.fillMaxWidth().clickable(enabled = can) { onEdit { it.copy(underlaySource = source) } },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            MetroRadio(selected = scheme.underlaySource == source, onClick = { onEdit { it.copy(underlaySource = source) } })
-                            Text(stringResource(words))
+                            MetroRadio(selected = drawn == source, onClick = { onEdit { it.copy(underlaySource = source) } }, enabled = can)
+                            Text(
+                                stringResource(words),
+                                color = if (can) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            )
                         }
                     }
+                }
+                if (!hasCartoKey) {
+                    Text(
+                        stringResource(R.string.metro_underlay_carto_needs_key),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 Text(stringResource(R.string.metro_underlay_opacity), style = MaterialTheme.typography.labelLarge)
                 Slider(

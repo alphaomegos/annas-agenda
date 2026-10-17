@@ -135,8 +135,37 @@ class MetroUnderlayTest {
     @Test
     fun tileAddressesAndCredits() {
         assertEquals("https://tile.openstreetmap.org/12/2476/1280.png", metroTileUrl(MetroTileSource.OSM, 12, 2476, 1280))
-        assertTrue(metroTileUrl(MetroTileSource.CARTO_LIGHT, 3, 1, 2).matches(Regex("https://[abcd]\\.basemaps\\.cartocdn\\.com/light_all/3/1/2\\.png")))
         assertTrue(metroTileCredit(MetroTileSource.CARTO_DARK).contains("OpenStreetMap"))
+    }
+
+    @Test
+    fun cartoIsAskedWithItsKeyAndWithoutOneTheMapIsOpenStreetMaps() {
+        // 17.10: CARTO's tiles want a key; without one they only say so.
+        assertEquals(
+            "https://basemaps.cartocdn.com/rastertiles/light_all/3/1/2.png?key=k1",
+            metroTileUrl(MetroTileSource.CARTO_LIGHT, 3, 1, 2, "k1"),
+        )
+        assertEquals(
+            "https://basemaps.cartocdn.com/rastertiles/dark_all/3/1/2.png?key=a+b%26c",
+            metroTileUrl(MetroTileSource.CARTO_DARK, 3, 1, 2, " a b&c "),
+        )
+        assertEquals("https://basemaps.cartocdn.com/rastertiles/light_all/3/1/2.png", metroTileUrl(MetroTileSource.CARTO_LIGHT, 3, 1, 2))
+        // OpenStreetMap's are its own and have no key to give away.
+        assertEquals("https://tile.openstreetmap.org/3/1/2.png", metroTileUrl(MetroTileSource.OSM, 3, 1, 2, "k1"))
+
+        assertEquals(MetroTileSource.OSM, metroTileSourceDrawn(MetroTileSource.CARTO_LIGHT, hasCartoKey = false))
+        assertEquals(MetroTileSource.OSM, metroTileSourceDrawn(MetroTileSource.CARTO_DARK, hasCartoKey = false))
+        assertEquals(MetroTileSource.CARTO_DARK, metroTileSourceDrawn(MetroTileSource.CARTO_DARK, hasCartoKey = true))
+        assertEquals(MetroTileSource.OSM, metroTileSourceDrawn(MetroTileSource.OSM, hasCartoKey = true))
+    }
+
+    @Test
+    fun thePlaceholdersKeptBeforeTheKeyAreNeverReadAgain() {
+        // 17.10: CARTO's tiles kept without a key are pictures of "API key required", for a month.
+        val folders = MetroTileSource.entries.map { metroTileFolder(it) }
+        assertEquals(folders.size, folders.toSet().size)
+        assertTrue(folders.none { it in METRO_TILE_FOLDERS_GONE })
+        assertEquals("OSM", metroTileFolder(MetroTileSource.OSM))
     }
 
     @Test

@@ -57,6 +57,26 @@ val releaseKeystore = releaseStorePath
     ?.let { rootProject.file(it) }
     ?.takeIf { it.isFile }
 
+/**
+ * The key to CARTO's map tiles under the metro scheme (17.10).
+ *
+ * Since late August 2026 CARTO serves its basemaps only with a key; without
+ * one every tile is a placeholder reading "API key required". The key is
+ * free for non-commercial use, asked for at https://carto.com/basemaps/apikey
+ * — and it is CARTO's to the person who asked, not for anyone who reads this
+ * public repository, so it lives with the release key: in local.properties
+ * as cartoKey=..., or in ANNAS_AGENDA_CARTO_KEY.
+ *
+ * Without it the app still builds, and the metro map draws OpenStreetMap.
+ * The key does end up inside the APK — every map key in an app does — but
+ * not in git.
+ */
+val cartoKey = requiredSetting("cartoKey", "ANNAS_AGENDA_CARTO_KEY")?.trim().orEmpty()
+
+/** A string as Java source writes it, for BuildConfig. */
+fun javaString(value: String): String =
+    "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
 android {
     namespace = "com.alphaomegos.annasagenda"
     compileSdk {
@@ -81,6 +101,8 @@ android {
         versionName = "22.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "CARTO_KEY", javaString(cartoKey))
     }
 
     signingConfigs {
@@ -128,6 +150,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // For CARTO_KEY (17.10).
+        buildConfig = true
     }
 
     testOptions {
@@ -269,6 +293,14 @@ dependencies {
  * Said once, at the end of configuration, so that an unsigned release APK is
  * never a surprise discovered on the phone.
  */
+if (cartoKey.isEmpty()) {
+    logger.lifecycle(
+        "Anna's Agenda: no CARTO key configured, so the metro map draws " +
+            "OpenStreetMap only. Set cartoKey in local.properties to have " +
+            "CARTO's maps too (free key: https://carto.com/basemaps/apikey)."
+    )
+}
+
 if (releaseKeystore == null) {
     logger.lifecycle(
         "Anna's Agenda: no release key configured, so `assembleRelease` " +

@@ -145,6 +145,7 @@
     <string name="metro_underlay_source_carto_light">CARTO, light — quiet under a scheme</string>
     <string name="metro_underlay_source_carto_dark">CARTO, dark</string>
     <string name="metro_underlay_source_osm">OpenStreetMap</string>
+    <string name="metro_underlay_carto_needs_key">CARTO\'s maps now need a key, and this build has none — so the map is OpenStreetMap\'s. The key is free for personal use; it is added when the app is built.</string>
     <string name="metro_underlay_opacity">How strong the map is</string>
     <string name="metro_underlay_align">Lay it by hand</string>
     <string name="metro_underlay_remove">Take the map away</string>

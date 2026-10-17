@@ -951,6 +951,7 @@
     <string name="metro_underlay_source_carto_light">CARTO, светлая — спокойная под схемой</string>
     <string name="metro_underlay_source_carto_dark">CARTO, тёмная</string>
     <string name="metro_underlay_source_osm">OpenStreetMap</string>
+    <string name="metro_underlay_carto_needs_key">Картам CARTO теперь нужен ключ, а в этой сборке его нет — поэтому карта от OpenStreetMap. Ключ бесплатный для личного использования и добавляется при сборке приложения.</string>
     <string name="metro_underlay_opacity">Насколько заметна карта</string>
     <string name="metro_underlay_align">Подогнать пальцами</string>
     <string name="metro_underlay_remove">Убрать карту</string>

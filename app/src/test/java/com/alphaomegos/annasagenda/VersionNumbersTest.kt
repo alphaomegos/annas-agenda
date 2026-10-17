@@ -213,6 +213,23 @@ class VersionNumbersTest {
         }
     }
 
+    /**
+     * CARTO's key (17.10) is read like the release key — from
+     * local.properties or the environment — and never written down here: the
+     * repository is public, and the key is CARTO's to the one who asked.
+     */
+    @Test
+    fun theCartoKeyIsReadFromLocalPropertiesAndNeverWrittenDown() {
+        val build = buildFile().readText()
+        val line = build.lines().firstOrNull { it.contains(""""cartoKey"""") && it.contains("=") }
+        requireNotNull(line) { "cartoKey is not read at all" }
+        assertTrue("cartoKey is not read from the settings: $line", line.contains("requiredSetting(\"cartoKey\""))
+
+        val written = Regex("""[?&]key=[A-Za-z0-9_-]{6,}""")
+        val found = (mainSourceFiles() + buildFile()).filter { written.containsMatchIn(it.readText()) }.map { it.name }
+        assertTrue("a CARTO key is written into $found", found.isEmpty())
+    }
+
     private fun mainSourceFiles(): List<File> =
         listOf("src/main/java", "app/src/main/java", "../app/src/main/java")
             .map { File(it) }

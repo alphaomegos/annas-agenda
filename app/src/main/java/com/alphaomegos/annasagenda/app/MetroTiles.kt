@@ -9,8 +9,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import com.alphaomegos.annasagenda.BuildConfig
 import com.alphaomegos.annasagenda.model.MetroTileSource
+import com.alphaomegos.annasagenda.support.METRO_TILE_FOLDERS_GONE
 import com.alphaomegos.annasagenda.support.MetroTile
+import com.alphaomegos.annasagenda.support.metroTileFolder
 import com.alphaomegos.annasagenda.support.metroTileUrl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +41,12 @@ import java.util.concurrent.atomic.AtomicInteger
  * and where to learn of it — as OpenStreetMap's tile policy asks (17.10).
  */
 private const val METRO_HTTP_AGENT = "AnnasAgenda/22.0 (Android; +https://github.com/alphaomegos/annas-agenda)"
+
+/**
+ * CARTO's key, from the build (17.10): local.properties' cartoKey, never git.
+ * Blank in a build without it, and then the map is OpenStreetMap's.
+ */
+internal val metroCartoKey: String get() = BuildConfig.CARTO_KEY
 
 /** Tiles kept in memory: a screen and a half of them, twice over. */
 private const val MEMORY_TILES = 160
@@ -71,6 +80,13 @@ internal class MetroTileLoader(context: Context, private val scope: CoroutineSco
     /** Bumped each time a tile comes, or will not. */
     var arrived by mutableIntStateOf(0)
         private set
+
+    init {
+        // CARTO's tiles kept before the key are placeholders asking for it (17.10).
+        scope.launch(Dispatchers.IO) {
+            METRO_TILE_FOLDERS_GONE.forEach { runCatching { File(dir, it).deleteRecursively() } }
+        }
+    }
 
     /** A drawing begins: the tiles it asks for are those wanted now. */
     fun newView() {
@@ -120,10 +136,10 @@ internal class MetroTileLoader(context: Context, private val scope: CoroutineSco
     }
 
     private fun load(source: MetroTileSource, t: MetroTile): ImageBitmap? {
-        val file = File(dir, "${source.name}/${t.z}/${t.x}/${t.y}.png")
+        val file = File(dir, "${metroTileFolder(source)}/${t.z}/${t.x}/${t.y}.png")
         val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() < KEEP_MILLIS
         if (fresh) BitmapFactory.decodeFile(file.path)?.let { return it.asImageBitmap() }
-        val bytes = metroHttpGet(metroTileUrl(source, t.z, t.x, t.y))
+        val bytes = metroHttpGet(metroTileUrl(source, t.z, t.x, t.y, metroCartoKey))
         if (bytes == null) {
             // Offline: an old tile is better than none.
             return if (file.exists()) BitmapFactory.decodeFile(file.path)?.asImageBitmap() else null
