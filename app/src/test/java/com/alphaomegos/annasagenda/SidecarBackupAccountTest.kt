@@ -228,4 +228,20 @@ class SidecarBackupAccountTest {
         assertNull(account.keyFor(BackupCipherHeader(10, ByteArray(16), ByteArray(16), 32)))
         assertNull(account.keyFor(BackupCipherHeader(11, key.salt, ByteArray(16), 32)))
     }
+
+    @Test
+    fun anAccountLetInLaterIsSignedInWhenThePasswordIsGivenAgain() = runBlocking {
+        answer = { _, _ -> SidecarBackupReply(403, """{"error":"No","code":"backups_not_enabled"}""") }
+        val account = account()
+        account.signedIn(server, "anna@example.org", "pw")
+        assertTrue(account.status.value.notEnabled)
+
+        // The server's list now has the address (17.10: two more for a test).
+        signsIn(token = "osb_anna")
+        account.signedIn(server, "anna@example.org", "pw")
+
+        assertFalse(account.status.value.notEnabled)
+        assertTrue(account.status.value.signedIn)
+        assertEquals(server to "osb_anna", account.credentials())
+    }
 }

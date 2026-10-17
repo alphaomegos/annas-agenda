@@ -220,7 +220,11 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
                     }
                 }
                 status.notEnabled -> item {
-                    BackupNotice(stringResource(R.string.sidecar_backups_not_enabled), null) {}
+                    // The server's list of who may keep backups changes (17.10, two more for a test):
+                    // the password once more asks it again.
+                    BackupNotice(stringResource(R.string.sidecar_backups_not_enabled), stringResource(R.string.sidecar_backups_check_again)) {
+                        if (sidecar.account != null) signInPasswordOpen = true else accountOpen = true
+                    }
                 }
                 !status.signedIn -> item {
                     // Signed in to the music before backups were there, or revoked since: the password

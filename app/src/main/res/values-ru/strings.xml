@@ -1171,6 +1171,7 @@
     <string name="sidecar_backups_sign_in_first">Войдите в oursidecar, чтобы хранить там бэкапы.</string>
     <string name="sidecar_backups_sign_in">Войти</string>
     <string name="sidecar_backups_password_needed">Введите пароль oursidecar один раз — и этот телефон будет хранить там бэкапы.</string>
+    <string name="sidecar_backups_check_again">Проверить снова</string>
     <string name="sidecar_backups_sign_in_again">Этот телефон вышел из бэкапов — на сайте или по решению сервера. Войдите снова, чтобы продолжить.</string>
     <string name="sidecar_backups_not_enabled">Этот аккаунт oursidecar не хранит бэкапы.</string>
     <string name="sidecar_backups_counts">Ручные %1$d из %2$d · Еженедельный %3$d из %4$d · каждый до %5$s</string>
