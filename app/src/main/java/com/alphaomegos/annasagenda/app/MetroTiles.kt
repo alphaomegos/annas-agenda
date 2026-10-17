@@ -23,6 +23,8 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 /*
  * The city map's network side (16.10): the only place the app goes online.
@@ -31,8 +33,11 @@ import java.net.URLEncoder
  * cache for a month, as OpenStreetMap asks of those who use its tiles.
  */
 
-/** How the app names itself to the map's servers. */
-private const val METRO_HTTP_AGENT = "AnnasAgenda/22.0 (Android; personal use)"
+/**
+ * How the app names itself to the map's servers: its own name and version,
+ * and where to learn of it — as OpenStreetMap's tile policy asks (17.10).
+ */
+private const val METRO_HTTP_AGENT = "AnnasAgenda/22.0 (Android; +https://github.com/alphaomegos/annas-agenda)"
 
 /** Tiles kept in memory: a screen and a half of them, twice over. */
 private const val MEMORY_TILES = 160
@@ -48,6 +53,11 @@ private const val RETRY_MILLIS = 60_000L
  * while drawing: it hands back what is here and sends for what is not, and
  * the drawing — which reads [arrived] through it — is redone as tiles come.
  * Everything but the fetching itself runs on the main thread.
+ *
+ * Each drawing begins with [newView] (17.10): a tile sent for that the
+ * latest view no longer shows is given up before it is fetched, so that
+ * after a quick zoom through several scales the tiles now in sight are not
+ * kept waiting behind those of the scales passed.
  */
 internal class MetroTileLoader(context: Context, private val scope: CoroutineScope) {
     private val dir = File(context.applicationContext.cacheDir, "metro_tiles")
@@ -55,25 +65,49 @@ internal class MetroTileLoader(context: Context, private val scope: CoroutineSco
     private val pending = HashSet<String>()
     private val failedAt = HashMap<String, Long>()
     private val gate = Semaphore(2)
+    private val view = AtomicInteger(0)
+    private val askedIn = ConcurrentHashMap<String, Int>()
 
     /** Bumped each time a tile comes, or will not. */
     var arrived by mutableIntStateOf(0)
         private set
 
+    /** A drawing begins: the tiles it asks for are those wanted now. */
+    fun newView() {
+        view.incrementAndGet()
+    }
+
+    /** The tile if it is in memory, without sending for it — to stand in for a finer one still coming. */
+    fun kept(source: MetroTileSource, t: MetroTile): ImageBitmap? = memory.get(keyOf(source, t))
+
+    private fun keyOf(source: MetroTileSource, t: MetroTile) = "${source.name}/${t.z}/${t.x}/${t.y}"
+
     fun tile(source: MetroTileSource, t: MetroTile): ImageBitmap? {
         // Read, so that whoever draws draws again when a tile comes.
         @Suppress("UNUSED_VARIABLE") val seen = arrived
-        val key = "${source.name}/${t.z}/${t.x}/${t.y}"
+        val key = keyOf(source, t)
         memory.get(key)?.let { return it }
-        if (key in pending) return null
         val failed = failedAt[key]
         if (failed != null && SystemClock.elapsedRealtime() - failed < RETRY_MILLIS) return null
+        askedIn[key] = view.get()
+        if (key in pending) return null
         pending += key
         scope.launch {
+            var stale = false
             val image = withContext(Dispatchers.IO) {
-                gate.withPermit { runCatching { load(source, t) }.getOrNull() }
+                gate.withPermit {
+                    // Out of sight by now: left for when it is in sight again.
+                    stale = askedIn[key] != view.get()
+                    if (stale) null else runCatching { load(source, t) }.getOrNull()
+                }
             }
             pending -= key
+            // Given up just as a drawing asked for it again: drawn again, and so sent for again.
+            val again = askedIn.remove(key) == view.get()
+            if (stale) {
+                if (again) arrived++
+                return@launch
+            }
             if (image != null) {
                 memory.put(key, image)
                 failedAt.remove(key)

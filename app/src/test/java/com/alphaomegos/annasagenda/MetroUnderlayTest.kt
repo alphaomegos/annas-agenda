@@ -91,6 +91,48 @@ class MetroUnderlayTest {
     }
 
     @Test
+    fun aViewNeedingTooManyTilesTakesCoarserOnesRatherThanNone() {
+        // 17.10: 12 × 12 tiles at zoom 10 is past the limit — white, before; at 9 it is 6 × 6.
+        val tile = METRO_MERCATOR_WORLD / 1024
+        val box = doubleArrayOf(tile * 100.0, tile * 200.0, tile * 111.5, tile * 211.5)
+        assertTrue(metroTilesCovering(10, box[0], box[1], box[2], box[3]).isEmpty())
+        val (z, tiles) = metroTilesForView(10, box[0], box[1], box[2], box[3])
+        assertEquals(9, z)
+        assertEquals(36, tiles.size)
+        assertTrue(tiles.all { it.z == 9 })
+        // What fits is taken at the zoom asked.
+        assertEquals(10, metroTilesForView(10, box[0], box[1], tile * 102.5, tile * 202.5).first)
+        // Never more than so many zooms coarser, nor past the whole world.
+        val world = metroTilesForView(18, 0.0, 0.0, METRO_MERCATOR_WORLD, METRO_MERCATOR_WORLD)
+        assertEquals(18 - METRO_UNDERLAY_COARSER_STEPS, world.first)
+        assertTrue(world.second.isEmpty())
+        assertEquals(0 to listOf(MetroTile(0, 0, 0)), metroTilesForView(1, 0.0, 0.0, METRO_MERCATOR_WORLD - 1, METRO_MERCATOR_WORLD - 1, limit = 1))
+    }
+
+    @Test
+    fun aTileCornerIsCountedFromThePinScaledAndTurned() {
+        val (x, y) = metroTileScreenCorner(100.0, 200.0, 256.0, -512.0, 2.0, 0.0)
+        assertEquals(612.0, x, 1e-9)
+        assertEquals(-824.0, y, 1e-9)
+        // Turned a quarter clockwise with y down: to the right becomes downwards.
+        val (tx, ty) = metroTileScreenCorner(100.0, 200.0, 256.0, 0.0, 2.0, 90.0)
+        assertEquals(100.0, tx, 1e-9)
+        assertEquals(712.0, ty, 1e-9)
+        // Deep in, far from the pin: still exact to the pixel.
+        val (fx, _) = metroTileScreenCorner(0.0, 0.0, 3.0e7 + 0.25, 0.0, 1.0, 0.0)
+        assertEquals(3.0e7 + 0.25, fx, 1e-6)
+    }
+
+    @Test
+    fun aCoarserTileStandsInForOneStillComing() {
+        // 17.10: tile 13, 22 at zoom 5 lies in 3, 5 at zoom 3 — of its 4 × 4 squares the one in column 1, row 2.
+        assertEquals(MetroTilePart(MetroTile(3, 3, 5), 1, 2, 4), metroTileStandIn(MetroTile(5, 13, 22), 2))
+        assertEquals(MetroTilePart(MetroTile(0, 0, 0), 1, 0, 2), metroTileStandIn(MetroTile(1, 1, 0), 1))
+        // Wrapped round the date line, it is the wrapped tile's.
+        assertEquals(MetroTile(3, 0, 1), metroTileStandIn(MetroTile(4, 1, 3, at = 17), 1).tile)
+    }
+
+    @Test
     fun tileAddressesAndCredits() {
         assertEquals("https://tile.openstreetmap.org/12/2476/1280.png", metroTileUrl(MetroTileSource.OSM, 12, 2476, 1280))
         assertTrue(metroTileUrl(MetroTileSource.CARTO_LIGHT, 3, 1, 2).matches(Regex("https://[abcd]\\.basemaps\\.cartocdn\\.com/light_all/3/1/2\\.png")))

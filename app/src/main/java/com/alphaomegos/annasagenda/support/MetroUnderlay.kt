@@ -33,8 +33,11 @@ const val METRO_UNDERLAY_MIN_OPACITY = 0.15f
 /** A step of a fresh map's scale (16.10): about as far as two stations of a city's metro stand. */
 const val METRO_UNDERLAY_DEFAULT_METERS = 1500f
 
-/** How many tiles a view may ask for at once; past that it waits for a nearer look. */
+/** How many tiles a view may ask for at once; past that it takes coarser ones (metroTilesForView). */
 const val METRO_UNDERLAY_MAX_TILES = 64
+
+/** How many zooms coarser than the sharpest a view may take to keep within [METRO_UNDERLAY_MAX_TILES]. */
+const val METRO_UNDERLAY_COARSER_STEPS = 4
 
 fun metroMercatorX(lon: Double): Double = (lon + 180.0) / 360.0 * METRO_MERCATOR_WORLD
 
@@ -163,6 +166,64 @@ fun metroTilesCovering(z: Int, minX: Double, minY: Double, maxX: Double, maxY: D
     return (y0..y1).flatMap { ty -> (x0..x1).map { tx -> tx to ty } }
         .sortedBy { (tx, ty) -> (tx - midX) * (tx - midX) + (ty - midY) * (ty - midY) }
         .map { (tx, ty) -> MetroTile(z, tx.mod(n), ty, tx) }
+}
+
+/**
+ * The tiles to draw for the Mercator box (17.10): those of the sharpest zoom
+ * [z] that keeps within [limit], going up to [METRO_UNDERLAY_COARSER_STEPS]
+ * zooms coarser, each a quarter as many — and the zoom they are of.
+ *
+ * At the sharpest zoom a tall screen — the Fold's open one, a turned map —
+ * could need well over the limit, and then nothing was drawn at all: the
+ * white Eduard saw at some scales (17.10). A map a little blurred is a map.
+ */
+fun metroTilesForView(
+    z: Int,
+    minX: Double,
+    minY: Double,
+    maxX: Double,
+    maxY: Double,
+    limit: Int = METRO_UNDERLAY_MAX_TILES,
+): Pair<Int, List<MetroTile>> {
+    var zoom = z
+    while (true) {
+        val tiles = metroTilesCovering(zoom, minX, minY, maxX, maxY, limit)
+        if (tiles.isNotEmpty() || zoom == 0 || zoom <= z - METRO_UNDERLAY_COARSER_STEPS) return zoom to tiles
+        zoom--
+    }
+}
+
+/**
+ * Where a tile's top left falls on the screen (17.10), counted in doubles:
+ * [pinX], [pinY] the pinned place on the screen, [lx], [ly] the tile's
+ * corner from it in tile pixels, made [zoomBy] times as large and turned
+ * [turnDeg] as the drawing turns (clockwise, y down).
+ *
+ * Each tile is drawn from its own corner, so that in its place a part of a
+ * coarser one can stand while it comes (metroTileStandIn).
+ */
+fun metroTileScreenCorner(pinX: Double, pinY: Double, lx: Double, ly: Double, zoomBy: Double, turnDeg: Double): Pair<Double, Double> {
+    val t = turnDeg * PI / 180.0
+    val x = lx * zoomBy
+    val y = ly * zoomBy
+    return (pinX + x * cos(t) - y * sin(t)) to (pinY + x * sin(t) + y * cos(t))
+}
+
+/** How many zooms coarser a tile kept in memory may be to stand in for one still coming (17.10). */
+const val METRO_UNDERLAY_STAND_IN_STEPS = 4
+
+/** A part of a coarser [tile]: of its [across] × [across] squares, the one in column [col], row [row]. */
+data class MetroTilePart(val tile: MetroTile, val col: Int, val row: Int, val across: Int)
+
+/**
+ * Where tile [t] lies in the one [up] zooms coarser (17.10): that tile, and
+ * the square of it [t] covers — what is drawn, enlarged, in [t]'s place
+ * while [t] itself is still on its way, rather than white.
+ */
+fun metroTileStandIn(t: MetroTile, up: Int): MetroTilePart {
+    require(up in 1..t.z) { "up $up for zoom ${t.z}" }
+    val n = 1 shl up
+    return MetroTilePart(MetroTile(t.z - up, t.x shr up, t.y shr up), t.x and (n - 1), t.y and (n - 1), n)
 }
 
 /**
