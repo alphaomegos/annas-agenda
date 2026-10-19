@@ -22,6 +22,7 @@ import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.app.AppViewModel
 import com.alphaomegos.annasagenda.awaitWorkingStore
 import com.alphaomegos.annasagenda.clearAppStateStoreFile
+import com.alphaomegos.annasagenda.TestViewModels
 import com.alphaomegos.annasagenda.model.TravelView
 import com.alphaomegos.annasagenda.screens.metro.MetroLineEditorScreen
 import com.alphaomegos.annasagenda.screens.metro.MetroMapEditorScreen
@@ -74,6 +75,7 @@ class ScreenWiringTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private lateinit var app: Application
+    private val viewModels = TestViewModels()
     private lateinit var vm: AppViewModel
 
     @Before
@@ -83,13 +85,15 @@ class ScreenWiringTest {
         Dispatchers.setMain(Dispatchers.Unconfined)
         app = ApplicationProvider.getApplicationContext()
         clearAppStateStoreFile(app)
-        vm = AppViewModel(app)
+        vm = viewModels.appViewModel(app)
         runBlocking { awaitWorkingStore(vm) }
         vm.resetAllData()
     }
 
     @After
     fun tearDown() {
+        // Before resetMain: see TestViewModels.
+        viewModels.clear()
         clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }

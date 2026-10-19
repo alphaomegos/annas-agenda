@@ -34,6 +34,7 @@ import com.alphaomegos.annasagenda.app.*
 class AppViewModelCounterLinkTest {
 
     private lateinit var app: Application
+    private val viewModels = TestViewModels()
 
     @Before
     fun setUp() {
@@ -47,13 +48,15 @@ class AppViewModelCounterLinkTest {
 
     @After
     fun tearDown() {
+        // Before resetMain: see TestViewModels.
+        viewModels.clear()
         clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
 
     @Test
     fun deletingTheLastUnfinishedSubtaskCostsTheCounterItsOne() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -87,7 +90,7 @@ class AppViewModelCounterLinkTest {
 
     @Test
     fun movingTheLastUnfinishedSubtaskAwayCostsTheCounterItsOne() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -113,7 +116,7 @@ class AppViewModelCounterLinkTest {
 
     @Test
     fun anOrdinaryTickAndUntickLeaveTheBalanceWhereItStarted() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 

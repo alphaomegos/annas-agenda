@@ -34,6 +34,7 @@ import com.alphaomegos.annasagenda.app.*
 class RunningPlanTaskLinkTest {
 
     private lateinit var app: Application
+    private val viewModels = TestViewModels()
 
     private val date: LocalDate = LocalDate.now().plusDays(3)
 
@@ -49,13 +50,15 @@ class RunningPlanTaskLinkTest {
 
     @After
     fun tearDown() {
+        // Before resetMain: see TestViewModels.
+        viewModels.clear()
         clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
 
     @Test
     fun deletingTheTaskFromTheCalendarUnlinksThePlanRow() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -77,7 +80,7 @@ class RunningPlanTaskLinkTest {
      */
     @Test
     fun noPlanRowNamesATaskThatIsGone() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -96,7 +99,7 @@ class RunningPlanTaskLinkTest {
     /** A row whose task was deleted used to be stuck: no rename, no new task. */
     @Test
     fun editingARowWhoseTaskWasDeletedGivesItANewTask() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 

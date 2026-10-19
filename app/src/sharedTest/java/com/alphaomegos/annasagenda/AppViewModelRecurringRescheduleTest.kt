@@ -62,6 +62,7 @@ import com.alphaomegos.annasagenda.app.*
 class AppViewModelRecurringRescheduleTest {
 
     private lateinit var app: Application
+    private val viewModels = TestViewModels()
 
     @Before
     fun setUp() {
@@ -72,13 +73,15 @@ class AppViewModelRecurringRescheduleTest {
 
     @After
     fun tearDown() {
+        // Before resetMain: see TestViewModels.
+        viewModels.clear()
         clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
 
     @Test
     fun rescheduleGeneratedWeeklyOccurrence_movesOnlyThatOccurrence_andSuppressesOriginalDate() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -171,7 +174,7 @@ class AppViewModelRecurringRescheduleTest {
      */
     @Test
     fun deletedOccurrenceOfATaskWithARepeatingSubtaskDoesNotComeBack() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 

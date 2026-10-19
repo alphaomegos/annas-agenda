@@ -34,6 +34,7 @@ import com.alphaomegos.annasagenda.app.*
 class AppViewModelStaleStateTest {
 
     private lateinit var app: Application
+    private val viewModels = TestViewModels()
 
     @Before
     fun setUp() {
@@ -47,6 +48,8 @@ class AppViewModelStaleStateTest {
 
     @After
     fun tearDown() {
+        // Before resetMain: see TestViewModels.
+        viewModels.clear()
         clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
@@ -59,7 +62,7 @@ class AppViewModelStaleStateTest {
      */
     @Test
     fun deleteGeneratedRecurringSubtask_keepsTombstone_soItIsNotRegenerated() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -118,7 +121,7 @@ class AppViewModelStaleStateTest {
      */
     @Test
     fun pruningExpiredRunningPlanEntry_alsoRemovesItsTask() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -152,7 +155,7 @@ class AppViewModelStaleStateTest {
      */
     @Test
     fun pruningExpiredRunningPlanEntry_leavesUnrelatedTasksAlone() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 

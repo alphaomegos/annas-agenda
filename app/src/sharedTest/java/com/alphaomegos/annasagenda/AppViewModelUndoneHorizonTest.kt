@@ -33,6 +33,7 @@ import com.alphaomegos.annasagenda.app.*
 class AppViewModelUndoneHorizonTest {
 
     private lateinit var app: Application
+    private val viewModels = TestViewModels()
 
     @Before
     fun setUp() {
@@ -46,13 +47,15 @@ class AppViewModelUndoneHorizonTest {
 
     @After
     fun tearDown() {
+        // Before resetMain: see TestViewModels.
+        viewModels.clear()
         clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
 
     @Test
     fun aRepeatingTaskIsOwedEvenIfItsMonthWasNeverOpened() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -87,7 +90,7 @@ class AppViewModelUndoneHorizonTest {
 
     @Test
     fun theLampAgreesWithTheScreenWithoutAnyCalendarVisit() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -110,7 +113,7 @@ class AppViewModelUndoneHorizonTest {
 
     @Test
     fun theHorizonBoundsWhatIsOwed() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -141,7 +144,7 @@ class AppViewModelUndoneHorizonTest {
 
     @Test
     fun generatingTheHorizonTwiceChangesNothing() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -164,7 +167,7 @@ class AppViewModelUndoneHorizonTest {
 
     @Test
     fun nothingIsGeneratedWhenNothingRepeats() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 

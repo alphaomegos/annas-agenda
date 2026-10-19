@@ -33,6 +33,7 @@ import com.alphaomegos.annasagenda.app.*
 class ReadingSessionPersistenceTest {
 
     private lateinit var app: Application
+    private val viewModels = TestViewModels()
 
     private val startedAt = 1_700_000_000_000L
 
@@ -48,24 +49,26 @@ class ReadingSessionPersistenceTest {
 
     @After
     fun tearDown() {
+        // Before resetMain: see TestViewModels.
+        viewModels.clear()
         clearAppStateStoreFile(app)
         Dispatchers.resetMain()
     }
 
     @Test
     fun aSessionInProgressSurvivesTheViewModelBeingRecreated() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
         val bookId = addBook(vm)
         assertTrue(vm.beginReading(bookId, startedAtEpochMillis = startedAt))
 
-        awaitAutoSave()
+        awaitAutoSave("the session in progress") { it.activeReading?.bookId == bookId }
 
         // A new view model over the same store is what the user comes back to
         // after the process has been reclaimed.
-        val revived = AppViewModel(app)
+        val revived = viewModels.appViewModel(app)
         awaitWorkingStore(revived)
 
         val active = revived.activeReading.value
@@ -85,7 +88,7 @@ class ReadingSessionPersistenceTest {
      */
     @Test
     fun openingTheSameBookAgainDoesNotRestartTheClock() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -99,7 +102,7 @@ class ReadingSessionPersistenceTest {
 
     @Test
     fun finishingASessionWritesItDownAndClearsIt() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -115,7 +118,7 @@ class ReadingSessionPersistenceTest {
 
     @Test
     fun deletingTheBookEndsItsSession() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -135,7 +138,7 @@ class ReadingSessionPersistenceTest {
      */
     @Test
     fun aQuestionAboutAnInterruptedSessionSurvivesTheViewModelBeingRecreated() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -147,9 +150,9 @@ class ReadingSessionPersistenceTest {
         assertNull("the session ended", vm.activeReading.value)
         assertNotNull("but it was not thrown away", vm.state.value.pendingReadingSession)
 
-        awaitAutoSave()
+        awaitAutoSave("the question") { it.pendingReadingSession?.bookId == bookId }
 
-        val revived = AppViewModel(app)
+        val revived = viewModels.appViewModel(app)
         awaitWorkingStore(revived)
 
         val asked = revived.pendingReadingPrompt.value
@@ -161,7 +164,7 @@ class ReadingSessionPersistenceTest {
 
     @Test
     fun keepingTheSessionWritesItIntoTheHistory() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -178,7 +181,7 @@ class ReadingSessionPersistenceTest {
 
     @Test
     fun discardingTheSessionLeavesTheHistoryAlone() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -195,7 +198,7 @@ class ReadingSessionPersistenceTest {
     /** Once the user has said to stop asking, nothing is asked again. */
     @Test
     fun sayingAlwaysRecordsTheNextOneWithoutAsking() = runBlocking {
-        val vm = AppViewModel(app)
+        val vm = viewModels.appViewModel(app)
         awaitWorkingStore(vm)
         vm.resetAllData()
 
@@ -229,16 +232,12 @@ class ReadingSessionPersistenceTest {
      * Robolectric that advances the virtual clock past the four hundred
      * milliseconds without anybody actually waiting. The write that follows is
      * a real file on a real thread, and no amount of virtual time makes it
-     * land — hence the second, real wait. See AwaitLoaded for the longer
-     * version of why these are not the same thing.
-     *
-     * This is hardening rather than a fix: the test passed with only the first
-     * half, because the write usually beats it. Usually is the problem.
+     * land — so the second half asks the file itself until it holds [what]
+     * (awaitStored). It used to be a fixed real half second, which was usually
+     * enough; 0270's build was the time it was not.
      */
-    private suspend fun awaitAutoSave() {
+    private suspend fun awaitAutoSave(what: String, saved: (AppState) -> Boolean) {
         delay(1500)
-
-        @Suppress("BlockingMethodInNonBlockingContext")
-        Thread.sleep(500)
+        awaitStored(app, what, saved)
     }
 }

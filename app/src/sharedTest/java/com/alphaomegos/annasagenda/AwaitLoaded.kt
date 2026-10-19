@@ -78,3 +78,28 @@ internal suspend fun awaitWorkingStore(vm: AppViewModel) {
     val failure = vm.storageFailure.value
     check(failure == null) { "AppViewModel loaded into a storage failure: $failure" }
 }
+
+/**
+ * Waits until the saved state — the file, read back as the next launch would
+ * read it — satisfies [saved]; [what] names it if it never does.
+ *
+ * Autosave is a debounce and then a write on a real thread, and a test that
+ * then builds a second view model to read the file back used to give the write
+ * a fixed half second (0157). Under `clean test assembleRelease` that was not
+ * always enough: «the session must still be there» (0270, 17.10), the revived
+ * view model reading a file the write had not reached yet. Asking the file
+ * itself until it says so takes as long as the write takes, and no longer.
+ *
+ * Real sleeps between looks, for the reason [awaitLoaded] gives at length.
+ */
+internal suspend fun awaitStored(app: android.app.Application, what: String, saved: (AppState) -> Boolean) {
+    val store = AppStateStore(app)
+    repeat(WAIT_STEPS) {
+        val state = (store.load() as? AppStateLoadResult.Loaded)?.state
+        if (state != null && saved(state)) return
+
+        @Suppress("BlockingMethodInNonBlockingContext")
+        Thread.sleep(WAIT_STEP_MILLIS)
+    }
+    error("Not saved within ${WAIT_STEPS * WAIT_STEP_MILLIS}ms of real time: $what")
+}
