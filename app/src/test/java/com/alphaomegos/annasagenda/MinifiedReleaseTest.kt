@@ -41,6 +41,30 @@ class MinifiedReleaseTest {
         )
     }
 
+    /**
+     * Resource shrinking (0286). Only R8 can do it, so it is worth nothing
+     * without minification, and nothing fails when it is switched off — the
+     * APK is simply heavier again.
+     */
+    @Test
+    fun theReleaseBuildStillShrinksResources() {
+        assertTrue(
+            "isShrinkResources is not true in app/build.gradle.kts",
+            Regex("""isShrinkResources\s*=\s*true""").containsMatchIn(buildFile),
+        )
+    }
+
+    /**
+     * Shrinking keeps what code refers to through R. A resource looked up by
+     * its name would look unused and go, and only a screen opening on a phone
+     * would say so.
+     */
+    @Test
+    fun noResourceIsLookedUpByName() {
+        val byName = mainSourceFiles().filter { it.readText().contains("getIdentifier(") }.map { it.name }
+        assertTrue("these look a resource up by name; keep it in res/raw/keep.xml: $byName", byName.isEmpty())
+    }
+
     @Test
     fun theReleaseBuildStillReadsThisAppsRules() {
         assertTrue(

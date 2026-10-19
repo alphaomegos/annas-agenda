@@ -137,6 +137,12 @@ android {
             // checked by installing the release APK and looking, which is why
             // the version number deliberately does not move with it.
             isMinifyEnabled = true
+            // On since 0286 (19.10, making the app lighter): R8 drops the
+            // resources nothing refers to — mostly the libraries' own. AGP 9
+            // shrinks them in R8's optimised pass on its own once this is on.
+            // The app reads none of its resources by name (no getIdentifier),
+            // so nothing it uses can look unused. Undone in this one line.
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
