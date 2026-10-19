@@ -56,6 +56,38 @@ class MetroLibraryFileTest {
         }
     }
 
+    /**
+     * Moscow ships (19.10): Eduard's own scheme from his backup, under the
+     * name he gave it, in place of «Москва Тест». A file gone or emptied is
+     * a library without its one city, and nothing else would notice.
+     */
+    @Test
+    fun moscowShips() {
+        val file = libraryFiles().singleOrNull { it.name == "moscow.json" }
+        assertNotNull("assets/metro/moscow.json is gone", file)
+        val scheme = decodeMetroLibraryScheme(file!!.readText(), "moscow")!!
+        assertEquals("Moscow", scheme.city)
+        assertTrue("Moscow has ${scheme.lines.size} lines", scheme.lines.size >= 20)
+        assertTrue("Moscow has ${scheme.stations.size} stations", scheme.stations.size >= 400)
+        assertTrue("Moscow has ${scheme.transfers.size} transfers", scheme.transfers.size >= 150)
+    }
+
+    /**
+     * What ships is everybody's (19.10, Eduard): the lines, the stations, the
+     * transfers and where to sit for them — not anybody's own way out to
+     * their office or their house. A library scheme has no exits, so no hint
+     * can lead to one either.
+     */
+    @Test
+    fun noLibrarySchemeShipsSomebodysExits() {
+        libraryFiles().forEach { file ->
+            val dto = appStateStoreJson.decodeFromString<MetroSchemeDto>(file.readText())
+            assertTrue("${file.name}: exits ${dto.exits.map { it.name }}", dto.exits.isEmpty())
+            val scheme = dto.toDomain()
+            assertTrue("${file.name}: a hint leads to an exit", scheme.hints.all { it.target is MetroHintTarget.Transfer })
+        }
+    }
+
     @Test
     fun aSchemeTakenOutOfABackupReadsBackTheSame() {
         val scheme = MetroScheme(
