@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.travel
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -89,7 +90,7 @@ fun FlightProfileScreen(
                 title = { Text(stringResource(R.string.flights_profile)) },
                 navigationIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        TopBarBack(onBack)
                         WayHomeButton()
                     }
                 },

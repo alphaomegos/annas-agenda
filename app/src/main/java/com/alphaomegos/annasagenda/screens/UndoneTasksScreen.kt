@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -131,12 +132,7 @@ fun UndoneTasksScreen(
                         }
                     }
 
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
+                    TopBarBack(onBack = onBack)
                 }
             )
         }

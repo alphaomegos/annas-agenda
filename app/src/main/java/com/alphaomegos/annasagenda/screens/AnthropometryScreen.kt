@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import android.graphics.Paint
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
@@ -245,12 +246,7 @@ fun AnthropometryScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.anthropometry_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
+                    TopBarBack(onBack = onBack)
                 },
                 actions = {
                     IconButton(onClick = { showSettings.value = true }) {

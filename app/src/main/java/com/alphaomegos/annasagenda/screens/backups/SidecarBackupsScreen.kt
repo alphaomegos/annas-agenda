@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.backups
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import android.net.Uri
 import android.text.format.Formatter
 import android.widget.Toast
@@ -196,7 +197,7 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.sidecar_backups_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                    TopBarBack(onBack)
                 },
             )
         },

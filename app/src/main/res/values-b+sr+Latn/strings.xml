@@ -282,6 +282,10 @@
     <string name="palette_classic">Klasične</string>
     <string name="palette_green">Zelene, u jednoj gami</string>
     <string name="palette_wallpaper">Po pozadini</string>
+    <string name="back_style_menu">Dugme «Nazad»</string>
+    <string name="back_style_title">Dugme «Nazad»</string>
+    <string name="back_style_arrow">Strelicom</string>
+    <string name="back_style_word">Rečju «Nazad»</string>
 
     <!-- Countdown on a date counter -->
     <plurals name="counter_remaining_years">

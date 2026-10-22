@@ -46,6 +46,7 @@ private val DarkColors = darkColorScheme(
 fun AnnaAgendaTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     palette: AppPalette = AppPalette.GREEN,
+    backStyle: BackStyle = BackStyle.ARROW,
     content: @Composable () -> Unit
 ) {
     val dark = isDarkTheme(themeMode, isSystemInDarkTheme())
@@ -65,6 +66,7 @@ fun AnnaAgendaTheme(
     CompositionLocalProvider(
         LocalAppExtraColors provides extraColorsFor(dark),
         LocalAppDarkTheme provides dark,
+        LocalBackStyle provides backStyle,
     ) {
         MaterialTheme(
             colorScheme = colors,
@@ -92,3 +94,6 @@ val appIsDarkTheme: Boolean
     @Composable
     @ReadOnlyComposable
     get() = LocalAppDarkTheme.current
+
+/** How Back looks in top bars, the user's choice (Settings → Back); read by TopBarBack. */
+val LocalBackStyle = staticCompositionLocalOf { BackStyle.ARROW }

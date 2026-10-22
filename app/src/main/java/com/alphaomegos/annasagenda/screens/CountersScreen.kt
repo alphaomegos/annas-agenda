@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -69,12 +70,7 @@ fun CountersScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.counters_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
+                    TopBarBack(onBack = onBack)
                 }
             )
         },

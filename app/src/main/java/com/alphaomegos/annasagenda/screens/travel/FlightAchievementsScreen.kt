@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.travel
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.background
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.aspectRatio
@@ -97,7 +98,7 @@ fun FlightAchievementsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 title = { Text(stringResource(R.string.flights_achievements)) },
                 navigationIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        TopBarBack(onBack)
                         WayHomeButton()
                     }
                 },

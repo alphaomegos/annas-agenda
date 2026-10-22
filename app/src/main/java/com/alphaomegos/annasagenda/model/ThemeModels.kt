@@ -74,3 +74,23 @@ enum class AppPalette {
  */
 fun parseAppPalette(raw: String): AppPalette =
     runCatching { AppPalette.valueOf(raw) }.getOrElse { AppPalette.GREEN }
+
+/**
+ * How Back looks in a screen's top bar (19.10).
+ *
+ * [ARROW], the default: the arrow Material and Apple both put there, which
+ * TalkBack still reads as «Back». Half the app's screens had it already and
+ * half had the word, so the same button looked like two different things.
+ *
+ * [WORD] is the word «Back» as a text button, the way most of the app's
+ * screens drew it until now — a tap away for whoever prefers it (Eduard: a
+ * new look comes on at once, the old one stays a choice).
+ */
+enum class BackStyle {
+    ARROW,
+    WORD,
+}
+
+/** Reads a stored style; one this version does not know is the default, the arrow. */
+fun parseBackStyle(raw: String): BackStyle =
+    runCatching { BackStyle.valueOf(raw) }.getOrElse { BackStyle.ARROW }

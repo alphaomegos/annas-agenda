@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -170,7 +171,7 @@ private fun DietContent(
                 title = { Text(stringResource(R.string.diet_title)) },
                 navigationIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        TopBarBack(onBack)
                         WayHomeButton()
                     }
                 },

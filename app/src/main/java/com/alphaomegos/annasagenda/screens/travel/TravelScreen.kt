@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.travel
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -127,7 +128,7 @@ fun TravelScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.menu_travel)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
+                navigationIcon = { TopBarBack(onBack) },
                 actions = {
                     IconButton(onClick = onOpenFlights) {
                         Icon(Icons.Default.Flight, contentDescription = stringResource(R.string.flights_open))

@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.media
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -85,12 +86,7 @@ fun ReadingSessionScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.reading_session_title)) },
                 navigationIcon = {
-                    IconButton(onClick = { goBackCancel() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
+                    TopBarBack(onBack = { goBackCancel() })
                 }
             )
         }

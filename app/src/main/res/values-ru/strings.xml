@@ -366,6 +366,10 @@
     <string name="palette_classic">Классические</string>
     <string name="palette_green">Зелёные, в одной гамме</string>
     <string name="palette_wallpaper">По обоям</string>
+    <string name="back_style_menu">Кнопка «Назад»</string>
+    <string name="back_style_title">Кнопка «Назад»</string>
+    <string name="back_style_arrow">Стрелкой</string>
+    <string name="back_style_word">Словом «Назад»</string>
 
     <!-- Countdown on a date counter -->
     <plurals name="counter_remaining_years">

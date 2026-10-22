@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,7 +38,9 @@ import com.alphaomegos.annasagenda.support.MetroSelection
 import com.alphaomegos.annasagenda.support.UNDONE_HORIZON_CHOICES
 import com.alphaomegos.annasagenda.support.metroShown
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
+import com.alphaomegos.annasagenda.components.BackStyleDialog
 import com.alphaomegos.annasagenda.components.PaletteDialog
+import com.alphaomegos.annasagenda.components.backStyleLabelRes
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.components.paletteLabelRes
 import com.alphaomegos.annasagenda.components.WidgetStyleDialog
@@ -74,7 +77,7 @@ fun SettingsScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                    TopBarBack(onBack)
                 },
             )
         },
@@ -97,6 +100,12 @@ fun SettingsScreen(
                     stringResource(R.string.palette_menu),
                     stringResource(paletteLabelRes(state.palette)),
                 ) { open = SETTINGS_PALETTE }
+            }
+            item {
+                SettingsRow(
+                    stringResource(R.string.back_style_menu),
+                    stringResource(backStyleLabelRes(state.backStyle)),
+                ) { open = SETTINGS_BACK }
             }
             item {
                 SettingsRow(
@@ -170,6 +179,12 @@ fun SettingsScreen(
         SETTINGS_THEME -> ThemeModeDialog(
             current = state.themeMode,
             onPick = vm::setThemeMode,
+            onDismiss = close,
+        )
+
+        SETTINGS_BACK -> BackStyleDialog(
+            current = state.backStyle,
+            onPick = vm::setBackStyle,
             onDismiss = close,
         )
 
@@ -289,6 +304,7 @@ fun SettingsScreen(
 
 private const val SETTINGS_THEME = "theme"
 private const val SETTINGS_PALETTE = "palette"
+private const val SETTINGS_BACK = "back"
 private const val SETTINGS_NOTIFICATIONS = "notifications"
 private const val SETTINGS_WIDGET = "widget"
 private const val SETTINGS_CALENDAR = "calendar"

@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.travel
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -160,7 +161,7 @@ fun FlightsScreen(
                 title = { Text(stringResource(R.string.flights_title)) },
                 navigationIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        TopBarBack(onBack)
                         WayHomeButton()
                     }
                 },

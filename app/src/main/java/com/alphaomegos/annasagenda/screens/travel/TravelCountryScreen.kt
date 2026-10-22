@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.travel
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -90,7 +91,7 @@ fun TravelCountryScreen(
                 title = { Text(names.nameOf(countryId)) },
                 navigationIcon = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                        TopBarBack(onBack)
                         WayHomeButton()
                     }
                 },

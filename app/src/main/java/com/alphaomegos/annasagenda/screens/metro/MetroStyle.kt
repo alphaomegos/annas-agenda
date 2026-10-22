@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.metro
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.Canvas
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.animateFloat
@@ -194,7 +195,7 @@ internal fun MetroTopBar(
     if (style == MetroStyle.MODERN) {
         val back: @Composable () -> Unit = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                TopBarBack(onBack)
                 WayHomeButton()
             }
         }

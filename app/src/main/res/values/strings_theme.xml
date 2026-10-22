@@ -11,4 +11,8 @@
     <string name="palette_classic">Classic</string>
     <string name="palette_green">Green, all of a piece</string>
     <string name="palette_wallpaper">From the wallpaper</string>
+    <string name="back_style_menu">Back button</string>
+    <string name="back_style_title">Back button</string>
+    <string name="back_style_arrow">An arrow</string>
+    <string name="back_style_word">The word “Back”</string>
 </resources>

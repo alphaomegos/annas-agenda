@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import android.media.AudioAttributes
 import android.media.SoundPool
 import androidx.compose.foundation.layout.Arrangement
@@ -247,7 +248,7 @@ private fun CalorimeterContent(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.calorimeter_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                    TopBarBack(onBack)
                 },
                 actions = {
                     IconButton(onClick = { showDisplaySettings.value = true }) {

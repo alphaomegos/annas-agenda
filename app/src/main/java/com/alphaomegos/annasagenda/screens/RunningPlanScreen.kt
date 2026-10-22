@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -90,9 +91,7 @@ fun RunningPlanScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.running_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
+                    TopBarBack(onBack = onBack)
                 },
                 actions = {
                     // Approving and resetting are about the plan. In the other

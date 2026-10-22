@@ -1249,6 +1249,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     val palette: StateFlow<AppPalette> = stateSlice { it.palette }
 
+    val backStyle: StateFlow<BackStyle> = stateSlice { it.backStyle }
+
+    fun setBackStyle(style: BackStyle) {
+        if (_state.value.backStyle == style) return
+        _state.value = _state.value.copy(backStyle = style)
+    }
+
     fun setPalette(palette: AppPalette) {
         if (_state.value.palette == palette) return
         _state.value = _state.value.copy(palette = palette)

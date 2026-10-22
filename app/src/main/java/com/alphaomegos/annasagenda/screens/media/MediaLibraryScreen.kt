@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens.media
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
@@ -244,12 +245,7 @@ private fun MediaLibraryTopBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.back)
-                )
-            }
+            TopBarBack(onBack = onBack)
         },
         actions = {
             IconButton(onClick = onAdd) {

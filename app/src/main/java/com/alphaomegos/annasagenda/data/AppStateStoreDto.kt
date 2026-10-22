@@ -54,6 +54,7 @@ internal data class AppStateDto(
     // Additive with a default; no migration needed.
     val themeMode: String = "SYSTEM",
     val palette: String = "GREEN",
+    val backStyle: String = "ARROW",
 
     // Additive with a default. A payload from before this existed decodes to
     // zero, which makes nextIdFor fall back to counting what is there — the

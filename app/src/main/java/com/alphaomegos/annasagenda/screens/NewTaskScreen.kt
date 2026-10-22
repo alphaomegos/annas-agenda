@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -219,7 +220,7 @@ fun NewTaskScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.new_task_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
+                    TopBarBack(onBack)
                 },
                 actions = {
                     TextButton(onClick = { save() }, enabled = canSave) {

@@ -18,6 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.model.AppPalette
+import com.alphaomegos.annasagenda.model.BackStyle
 import com.alphaomegos.annasagenda.model.AppThemeMode
 import com.alphaomegos.annasagenda.R
 
@@ -25,6 +26,11 @@ internal fun themeModeLabelRes(mode: AppThemeMode): Int = when (mode) {
     AppThemeMode.SYSTEM -> R.string.theme_mode_system
     AppThemeMode.LIGHT -> R.string.theme_mode_light
     AppThemeMode.DARK -> R.string.theme_mode_dark
+}
+
+internal fun backStyleLabelRes(style: BackStyle): Int = when (style) {
+    BackStyle.ARROW -> R.string.back_style_arrow
+    BackStyle.WORD -> R.string.back_style_word
 }
 
 internal fun paletteLabelRes(palette: AppPalette): Int = when (palette) {
@@ -60,6 +66,14 @@ fun PaletteDialog(
     onPick: (AppPalette) -> Unit,
     onDismiss: () -> Unit,
 ) = OneOfDialog(R.string.palette_title, AppPalette.entries, current, ::paletteLabelRes, onPick, onDismiss)
+
+/** Back in the top bars: the arrow, or the word (19.10). */
+@Composable
+fun BackStyleDialog(
+    current: BackStyle,
+    onPick: (BackStyle) -> Unit,
+    onDismiss: () -> Unit,
+) = OneOfDialog(R.string.back_style_title, BackStyle.entries, current, ::backStyleLabelRes, onPick, onDismiss)
 
 @Composable
 private fun <T> OneOfDialog(
