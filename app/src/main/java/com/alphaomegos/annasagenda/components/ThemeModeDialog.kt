@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.alphaomegos.annasagenda.model.AppPalette
 import com.alphaomegos.annasagenda.model.AppThemeMode
 import com.alphaomegos.annasagenda.R
 
@@ -24,6 +25,12 @@ internal fun themeModeLabelRes(mode: AppThemeMode): Int = when (mode) {
     AppThemeMode.SYSTEM -> R.string.theme_mode_system
     AppThemeMode.LIGHT -> R.string.theme_mode_light
     AppThemeMode.DARK -> R.string.theme_mode_dark
+}
+
+internal fun paletteLabelRes(palette: AppPalette): Int = when (palette) {
+    AppPalette.CLASSIC -> R.string.palette_classic
+    AppPalette.GREEN -> R.string.palette_green
+    AppPalette.WALLPAPER -> R.string.palette_wallpaper
 }
 
 /**
@@ -41,16 +48,37 @@ fun ThemeModeDialog(
     current: AppThemeMode,
     onPick: (AppThemeMode) -> Unit,
     onDismiss: () -> Unit,
+) = OneOfDialog(R.string.theme_mode_title, AppThemeMode.entries, current, ::themeModeLabelRes, onPick, onDismiss)
+
+/**
+ * The colours (19.10), the same kind of choice as light or dark and made the
+ * same way: it shows at once behind the dialog, and picking again undoes it.
+ */
+@Composable
+fun PaletteDialog(
+    current: AppPalette,
+    onPick: (AppPalette) -> Unit,
+    onDismiss: () -> Unit,
+) = OneOfDialog(R.string.palette_title, AppPalette.entries, current, ::paletteLabelRes, onPick, onDismiss)
+
+@Composable
+private fun <T> OneOfDialog(
+    titleRes: Int,
+    choices: List<T>,
+    current: T,
+    labelRes: (T) -> Int,
+    onPick: (T) -> Unit,
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.theme_mode_title)) },
+        title = { Text(stringResource(titleRes)) },
         text = {
             Column(
                 modifier = Modifier.selectableGroup(),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                AppThemeMode.entries.forEach { mode ->
+                choices.forEach { mode ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -66,7 +94,7 @@ fun ThemeModeDialog(
                         // not: two targets for one choice reads as two controls
                         // to anything stepping through them.
                         RadioButton(selected = mode == current, onClick = null)
-                        Text(stringResource(themeModeLabelRes(mode)))
+                        Text(stringResource(labelRes(mode)))
                     }
                 }
             }

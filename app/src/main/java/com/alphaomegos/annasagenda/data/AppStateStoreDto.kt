@@ -53,6 +53,7 @@ internal data class AppStateDto(
     // that reordering the enum cannot silently change what the payload means.
     // Additive with a default; no migration needed.
     val themeMode: String = "SYSTEM",
+    val palette: String = "CLASSIC",
 
     // Additive with a default. A payload from before this existed decodes to
     // zero, which makes nextIdFor fall back to counting what is there — the

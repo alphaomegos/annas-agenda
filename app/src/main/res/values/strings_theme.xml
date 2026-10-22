@@ -6,4 +6,9 @@
     <string name="theme_mode_system">Follow the phone</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
+    <string name="palette_menu">Colours</string>
+    <string name="palette_title">Colours</string>
+    <string name="palette_classic">Classic</string>
+    <string name="palette_green">Green, all of a piece</string>
+    <string name="palette_wallpaper">From the wallpaper</string>
 </resources>

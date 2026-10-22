@@ -361,6 +361,11 @@
     <string name="theme_mode_system">Как на телефоне</string>
     <string name="theme_mode_light">Светлое</string>
     <string name="theme_mode_dark">Тёмное</string>
+    <string name="palette_menu">Цвета</string>
+    <string name="palette_title">Цвета</string>
+    <string name="palette_classic">Классические</string>
+    <string name="palette_green">Зелёные, в одной гамме</string>
+    <string name="palette_wallpaper">По обоям</string>
 
     <!-- Countdown on a date counter -->
     <plurals name="counter_remaining_years">

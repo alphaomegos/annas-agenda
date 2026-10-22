@@ -53,8 +53,9 @@ class MainActivity : AppCompatActivity() {
             val loaded by vm.isLoaded.collectAsState()
             val storageFailure by vm.storageFailure.collectAsState()
             val themeMode by vm.themeMode.collectAsState()
+            val palette by vm.palette.collectAsState()
 
-            AnnaAgendaTheme(themeMode = themeMode) {
+            AnnaAgendaTheme(themeMode = themeMode, palette = palette) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val failure = storageFailure
                     when {

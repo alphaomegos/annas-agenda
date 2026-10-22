@@ -1247,6 +1247,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      */
     val themeMode: StateFlow<AppThemeMode> = stateSlice { it.themeMode }
 
+    val palette: StateFlow<AppPalette> = stateSlice { it.palette }
+
+    fun setPalette(palette: AppPalette) {
+        if (_state.value.palette == palette) return
+        _state.value = _state.value.copy(palette = palette)
+    }
+
     fun setThemeMode(mode: AppThemeMode) {
         if (_state.value.themeMode == mode) return
         _state.value = _state.value.copy(themeMode = mode)

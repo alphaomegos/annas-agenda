@@ -32,6 +32,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     doneSubtasksLast = doneSubtasksLast,
     undoneHorizonDays = undoneHorizonDays,
     themeMode = themeMode.name,
+    palette = palette.name,
     idHighWater = idHighWater,
     readingBooks = readingBooks.map { it.toDto() },
     readingMovies = readingMovies.map { it.toDto() },
@@ -147,6 +148,7 @@ internal fun AppStateDto.toDomain(): AppState {
         doneSubtasksLast = doneSubtasksLast,
         undoneHorizonDays = normalizeUndoneHorizonDays(undoneHorizonDays),
         themeMode = parseAppThemeMode(themeMode),
+        palette = parseAppPalette(palette),
         // Never below zero: a payload claiming a negative mark would make
         // nextIdFor no safer than counting, but it must not make it worse.
         idHighWater = idHighWater.coerceAtLeast(0L),

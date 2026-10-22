@@ -144,6 +144,7 @@ class AppStateWholeRoundTripTest {
         mainMenuOrder = listOf("reading", "calendar", "new_task", "running"),
         mainMenuHiddenIds = setOf("someday", "counters"),
         themeMode = AppThemeMode.DARK,
+        palette = AppPalette.GREEN,
         idHighWater = 900L,
         undoneLampMuted = true,
         doneTasksLast = true,
@@ -464,7 +465,7 @@ class AppStateWholeRoundTripTest {
         listOf(
             "tasks", "subtasks", "suppressedRecurrences", "anthropometry",
             "calorieGoalChanges", "foodLog", "runningPlanEntries", "counters",
-            "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "idHighWater",
+            "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "palette", "idHighWater",
             "readingBooks", "readingMovies", "readingSeries", "readingSessions",
             "activeReading", "pendingReadingSession", "autoRecordInterruptedReading",
             "runningMode", "runningWorkouts",

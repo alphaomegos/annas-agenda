@@ -1,14 +1,19 @@
 package com.alphaomegos.annasagenda.app
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import com.alphaomegos.annasagenda.*
 import com.alphaomegos.annasagenda.model.*
 import com.alphaomegos.annasagenda.support.*
@@ -40,16 +45,29 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun AnnaAgendaTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+    palette: AppPalette = AppPalette.CLASSIC,
     content: @Composable () -> Unit
 ) {
     val dark = isDarkTheme(themeMode, isSystemInDarkTheme())
+    val context = LocalContext.current
+    val colors: ColorScheme = when (palette) {
+        AppPalette.CLASSIC -> if (dark) DarkColors else LightColors
+        AppPalette.GREEN -> if (dark) GreenDarkColors else GreenLightColors
+        // The wallpaper's colours exist from Android 12 (API 31); before it
+        // the nearest thing is the app's own family rather than the stock one.
+        AppPalette.WALLPAPER -> when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+                if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            else -> if (dark) GreenDarkColors else GreenLightColors
+        }
+    }
 
     CompositionLocalProvider(
         LocalAppExtraColors provides extraColorsFor(dark),
         LocalAppDarkTheme provides dark,
     ) {
         MaterialTheme(
-            colorScheme = if (dark) DarkColors else LightColors,
+            colorScheme = colors,
             content = content
         )
     }

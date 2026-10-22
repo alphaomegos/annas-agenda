@@ -58,6 +58,7 @@ data class AppState(
 
     // Light, dark, or whatever the phone is doing.
     val themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+    val palette: AppPalette = AppPalette.CLASSIC,
 
     // The lowest id never yet handed out. Only ever goes up, so that an id
     // belonging to something deleted is never given to something new — see

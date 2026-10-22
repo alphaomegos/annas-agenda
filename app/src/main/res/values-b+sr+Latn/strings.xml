@@ -277,6 +277,11 @@
     <string name="theme_mode_system">Kao na telefonu</string>
     <string name="theme_mode_light">Svetlo</string>
     <string name="theme_mode_dark">Tamno</string>
+    <string name="palette_menu">Boje</string>
+    <string name="palette_title">Boje</string>
+    <string name="palette_classic">Klasične</string>
+    <string name="palette_green">Zelene, u jednoj gami</string>
+    <string name="palette_wallpaper">Po pozadini</string>
 
     <!-- Countdown on a date counter -->
     <plurals name="counter_remaining_years">

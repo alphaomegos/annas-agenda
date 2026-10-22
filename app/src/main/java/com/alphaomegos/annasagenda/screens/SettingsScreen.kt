@@ -37,7 +37,9 @@ import com.alphaomegos.annasagenda.support.MetroSelection
 import com.alphaomegos.annasagenda.support.UNDONE_HORIZON_CHOICES
 import com.alphaomegos.annasagenda.support.metroShown
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
+import com.alphaomegos.annasagenda.components.PaletteDialog
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
+import com.alphaomegos.annasagenda.components.paletteLabelRes
 import com.alphaomegos.annasagenda.components.WidgetStyleDialog
 import com.alphaomegos.annasagenda.components.themeModeLabelRes
 
@@ -89,6 +91,12 @@ fun SettingsScreen(
                     stringResource(R.string.theme_mode_menu),
                     stringResource(themeModeLabelRes(state.themeMode)),
                 ) { open = SETTINGS_THEME }
+            }
+            item {
+                SettingsRow(
+                    stringResource(R.string.palette_menu),
+                    stringResource(paletteLabelRes(state.palette)),
+                ) { open = SETTINGS_PALETTE }
             }
             item {
                 SettingsRow(
@@ -162,6 +170,12 @@ fun SettingsScreen(
         SETTINGS_THEME -> ThemeModeDialog(
             current = state.themeMode,
             onPick = vm::setThemeMode,
+            onDismiss = close,
+        )
+
+        SETTINGS_PALETTE -> PaletteDialog(
+            current = state.palette,
+            onPick = vm::setPalette,
             onDismiss = close,
         )
 
@@ -274,6 +288,7 @@ fun SettingsScreen(
 }
 
 private const val SETTINGS_THEME = "theme"
+private const val SETTINGS_PALETTE = "palette"
 private const val SETTINGS_NOTIFICATIONS = "notifications"
 private const val SETTINGS_WIDGET = "widget"
 private const val SETTINGS_CALENDAR = "calendar"
