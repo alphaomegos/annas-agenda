@@ -4,6 +4,11 @@ import com.alphaomegos.annasagenda.components.TopBarBack
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Switch
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -87,7 +92,11 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(inner),
         ) {
-            item { SettingsSection(stringResource(R.string.settings_section_general)) }
+            // Three groups, by what a setting is about (19.10): how the app
+            // looks, how tasks behave, and each section's own. A choice
+            // between several opens its dialog and shows what it is now; one
+            // that is only on or off is a switch, and the row is the switch.
+            item { SettingsSection(stringResource(R.string.settings_section_appearance)) }
             item { SettingsRow(stringResource(R.string.choose_language), null, onLanguage) }
             item {
                 SettingsRow(
@@ -109,6 +118,36 @@ fun SettingsScreen(
             }
             item {
                 SettingsRow(
+                    stringResource(R.string.widget_style_menu),
+                    stringResource(R.string.widget_style_background, state.widgetStyle.backgroundPercent),
+                ) { open = SETTINGS_WIDGET }
+            }
+
+            item { SettingsSection(stringResource(R.string.settings_section_tasks)) }
+            // Done tasks at the bottom of their day (06.10), done subtasks at
+            // the bottom of their task (16.10): each a setting of its own.
+            item {
+                SettingsSwitchRow(
+                    stringResource(R.string.settings_done_tasks_last),
+                    checked = state.doneTasksLast,
+                    onChange = vm::setDoneTasksLast,
+                )
+            }
+            item {
+                SettingsSwitchRow(
+                    stringResource(R.string.settings_done_subtasks_last),
+                    checked = state.doneSubtasksLast,
+                    onChange = vm::setDoneSubtasksLast,
+                )
+            }
+            item {
+                SettingsRow(
+                    stringResource(R.string.undone_title),
+                    undoneHorizonLabel(state.undoneHorizonDays),
+                ) { open = SETTINGS_UNDONE }
+            }
+            item {
+                SettingsRow(
                     stringResource(R.string.notif_settings_menu),
                     stringResource(
                         if (state.notifications.summaryMinutes.isEmpty() &&
@@ -116,26 +155,6 @@ fun SettingsScreen(
                         ) R.string.settings_off else R.string.settings_on
                     ),
                 ) { open = SETTINGS_NOTIFICATIONS }
-            }
-            // Done tasks at the bottom of their day (06.10): a tap turns it on or off.
-            item {
-                SettingsRow(
-                    stringResource(R.string.settings_done_tasks_last),
-                    stringResource(if (state.doneTasksLast) R.string.settings_on else R.string.settings_off),
-                ) { vm.setDoneTasksLast(!state.doneTasksLast) }
-            }
-            // Done subtasks at the bottom of their task (16.10), a setting of its own.
-            item {
-                SettingsRow(
-                    stringResource(R.string.settings_done_subtasks_last),
-                    stringResource(if (state.doneSubtasksLast) R.string.settings_on else R.string.settings_off),
-                ) { vm.setDoneSubtasksLast(!state.doneSubtasksLast) }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.widget_style_menu),
-                    stringResource(R.string.widget_style_background, state.widgetStyle.backgroundPercent),
-                ) { open = SETTINGS_WIDGET }
             }
 
             item { SettingsSection(stringResource(R.string.settings_section_screens)) }
@@ -156,12 +175,6 @@ fun SettingsScreen(
                     stringResource(R.string.anthropometry_title),
                     stringResource(R.string.settings_anthropometry_hint),
                 ) { open = SETTINGS_ANTHROPOMETRY }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.undone_title),
-                    undoneHorizonLabel(state.undoneHorizonDays),
-                ) { open = SETTINGS_UNDONE }
             }
             // The metro's city (04.10), and where another city's map is started (05.10).
             item {
@@ -324,14 +337,22 @@ private fun SettingsSection(title: String) {
     )
 }
 
-/** A setting: what it is, and underneath what it is set to now. */
+/**
+ * A setting: what it is, and underneath what it is set to now.
+ *
+ * No line under each row any more (19.10): the section headings already say
+ * where one group ends, and a rule under every row is a grid of lines to read
+ * past. At least 56 dp tall, Material's one-line list item.
+ */
 @Composable
 private fun SettingsRow(title: String, summary: String?, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 56.dp)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
         if (summary != null) {
@@ -342,7 +363,27 @@ private fun SettingsRow(title: String, summary: String?, onClick: () -> Unit) {
             )
         }
     }
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+}
+
+/**
+ * A setting that is only on or off (19.10): a switch, not a row that opens
+ * nothing and says «On» underneath. The whole row is the switch — one target,
+ * read by TalkBack as a switch with its state.
+ */
+@Composable
+private fun SettingsSwitchRow(title: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = null)
+    }
 }
 
 /** The Undone screen's period, as radio buttons: the same choices its menu offers. */

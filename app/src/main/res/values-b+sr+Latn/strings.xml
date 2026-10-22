@@ -272,11 +272,11 @@
     <string name="reading_movie_field_translation">Prevodi</string>
 
     <!-- Appearance -->
-    <string name="theme_mode_menu">Izgled</string>
-    <string name="theme_mode_title">Izgled</string>
+    <string name="theme_mode_menu">Tema</string>
+    <string name="theme_mode_title">Tema</string>
     <string name="theme_mode_system">Kao na telefonu</string>
-    <string name="theme_mode_light">Svetlo</string>
-    <string name="theme_mode_dark">Tamno</string>
+    <string name="theme_mode_light">Svetla</string>
+    <string name="theme_mode_dark">Tamna</string>
     <string name="palette_menu">Boje</string>
     <string name="palette_title">Boje</string>
     <string name="palette_classic">Klasične</string>
@@ -460,7 +460,8 @@
     <string name="new_task_add_subtask_short">+ Dodaj</string>
     <!-- Settings screen (0154) -->
     <string name="settings_title">Podešavanja</string>
-    <string name="settings_section_general">Opšte</string>
+    <string name="settings_section_appearance">Izgled</string>
+    <string name="settings_section_tasks">Zadaci</string>
     <string name="settings_section_screens">Odeljci</string>
     <string name="settings_on">Uključena</string>
     <string name="settings_off">Isključena</string>

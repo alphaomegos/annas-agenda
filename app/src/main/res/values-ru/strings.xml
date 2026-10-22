@@ -356,11 +356,11 @@
     <string name="undone_horizon_all">Всё время</string>
 
     <!-- Appearance -->
-    <string name="theme_mode_menu">Оформление</string>
-    <string name="theme_mode_title">Оформление</string>
+    <string name="theme_mode_menu">Тема</string>
+    <string name="theme_mode_title">Тема</string>
     <string name="theme_mode_system">Как на телефоне</string>
-    <string name="theme_mode_light">Светлое</string>
-    <string name="theme_mode_dark">Тёмное</string>
+    <string name="theme_mode_light">Светлая</string>
+    <string name="theme_mode_dark">Тёмная</string>
     <string name="palette_menu">Цвета</string>
     <string name="palette_title">Цвета</string>
     <string name="palette_classic">Классические</string>
@@ -601,7 +601,8 @@
     <string name="new_task_add_subtask_short">+ Добавить</string>
     <!-- Settings screen (0154) -->
     <string name="settings_title">Настройки</string>
-    <string name="settings_section_general">Общие</string>
+    <string name="settings_section_appearance">Внешний вид</string>
+    <string name="settings_section_tasks">Задачи</string>
     <string name="settings_section_screens">Разделы</string>
     <string name="settings_on">Включены</string>
     <string name="settings_off">Выключены</string>

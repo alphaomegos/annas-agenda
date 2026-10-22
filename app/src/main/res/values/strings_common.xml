@@ -23,7 +23,8 @@
     <string name="reading_item_actions">Actions for this item</string>
     <!-- Settings screen (0154) -->
     <string name="settings_title">Settings</string>
-    <string name="settings_section_general">General</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_tasks">Tasks</string>
     <string name="settings_section_screens">Sections</string>
     <string name="settings_on">On</string>
     <string name="settings_off">Off</string>
