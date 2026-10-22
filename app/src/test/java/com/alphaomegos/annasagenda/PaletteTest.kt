@@ -13,26 +13,35 @@ import com.alphaomegos.annasagenda.app.*
 /**
  * The colours the app is drawn in (0289, 19.10).
  *
- * The one promise worth pinning is the one Eduard made the condition of any
- * new look: nobody gets it without choosing it. An update, an old backup, a
- * payload from a later version — each of them has to come out Classic.
+ * The promise worth pinning is the one Eduard made the rule for every new
+ * look (19.10): it comes on at once — after an update, from an old backup,
+ * from a later version's payload — and the old one stays a choice away,
+ * kept by name, so a later change of default never moves anybody who chose.
  */
 class PaletteTest {
 
     @Test
-    fun nobodyIsMovedOffClassicWithoutChoosing() {
-        assertEquals(AppPalette.CLASSIC, AppState().palette)
+    fun theNewLookComesOnAtOnce() {
+        assertEquals(AppPalette.GREEN, AppState().palette)
 
         val withoutTheField = """{"v":$CURRENT_SCHEMA_VERSION,"tasks":[],"subtasks":[]}"""
         val restored = appStateStoreJson.decodeFromString<AppStateDto>(withoutTheField).toDomain()
-        assertEquals(AppPalette.CLASSIC, restored.palette)
+        assertEquals(AppPalette.GREEN, restored.palette)
     }
 
     @Test
-    fun anUnknownPaletteIsClassic() {
-        assertEquals(AppPalette.CLASSIC, parseAppPalette("SEPIA"))
-        assertEquals(AppPalette.CLASSIC, parseAppPalette(""))
-        assertEquals(AppPalette.CLASSIC, parseAppPalette("green"))
+    fun anUnknownPaletteIsTheDefault() {
+        assertEquals(AppPalette.GREEN, parseAppPalette("SEPIA"))
+        assertEquals(AppPalette.GREEN, parseAppPalette(""))
+        assertEquals(AppPalette.GREEN, parseAppPalette("classic"))
+    }
+
+    /** The old look, once chosen, is written down and read back as chosen. */
+    @Test
+    fun choosingTheOldLookSticks() {
+        val json = appStateStoreJson.encodeToString(AppState(palette = AppPalette.CLASSIC).toDto())
+        assertTrue(json, json.contains("\"palette\":\"CLASSIC\""))
+        assertEquals(AppPalette.CLASSIC, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().palette)
     }
 
     @Test

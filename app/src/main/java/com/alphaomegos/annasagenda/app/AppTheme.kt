@@ -45,7 +45,7 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun AnnaAgendaTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
-    palette: AppPalette = AppPalette.CLASSIC,
+    palette: AppPalette = AppPalette.GREEN,
     content: @Composable () -> Unit
 ) {
     val dark = isDarkTheme(themeMode, isSystemInDarkTheme())

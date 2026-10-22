@@ -48,15 +48,15 @@ fun isDarkTheme(mode: AppThemeMode, systemInDarkTheme: Boolean): Boolean = when 
  * Which colours the app is drawn in (19.10) — beside light or dark, not
  * instead of it.
  *
- * [CLASSIC] is the app as it has always been: its own green on the buttons,
- * and every other colour Material's stock one — the lavender surfaces and
- * containers that go with a purple app, not with this one. It stays the
- * default, so an update changes nothing until the user asks (Eduard: the user
- * always has the choice; a new look is never pushed on anyone).
- *
- * [GREEN] is the whole scheme grown from the same green the way Material 3
+ * [GREEN] is the whole scheme grown from the app's green the way Material 3
  * does it (a tonal palette, Material Color Utilities' TonalSpot): surfaces,
- * containers, outlines and the third colour all from one family.
+ * containers, outlines and the third colour all from one family. It is the
+ * default, for a phone updating as for a new one (Eduard, 19.10: a new look
+ * comes on at once, and the old one stays a tap away).
+ *
+ * [CLASSIC] is that old one, the app as it was until 0289: its own green on
+ * the buttons, and every other colour Material's stock one — the lavender
+ * surfaces and containers that go with a purple app, not with this one.
  *
  * [WALLPAPER] takes the colours Android 12 and later draw from the
  * wallpaper. A phone before Android 12 has none to give, and gets [GREEN].
@@ -67,6 +67,10 @@ enum class AppPalette {
     WALLPAPER,
 }
 
-/** Reads a stored palette; a name this version does not know is [AppPalette.CLASSIC], the look nobody had to choose. */
+/**
+ * Reads a stored palette. A name this version does not know (a later
+ * version's palette, restored here) is [AppPalette.GREEN], the default —
+ * the look of this version, not the one it replaced.
+ */
 fun parseAppPalette(raw: String): AppPalette =
-    runCatching { AppPalette.valueOf(raw) }.getOrElse { AppPalette.CLASSIC }
+    runCatching { AppPalette.valueOf(raw) }.getOrElse { AppPalette.GREEN }

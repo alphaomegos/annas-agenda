@@ -144,7 +144,7 @@ class AppStateWholeRoundTripTest {
         mainMenuOrder = listOf("reading", "calendar", "new_task", "running"),
         mainMenuHiddenIds = setOf("someday", "counters"),
         themeMode = AppThemeMode.DARK,
-        palette = AppPalette.GREEN,
+        palette = AppPalette.CLASSIC,
         idHighWater = 900L,
         undoneLampMuted = true,
         doneTasksLast = true,
