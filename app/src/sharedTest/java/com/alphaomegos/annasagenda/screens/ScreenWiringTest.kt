@@ -355,11 +355,15 @@ class ScreenWiringTest {
             MaterialTheme { SettingsScreen(vm, onBack = {}, onLanguage = {}, onOpenDiet = {}) }
         }
 
-        composeRule.onNodeWithText(word(R.string.settings_done_tasks_last)).performClick()
+        // In «Tasks», below «Appearance» (0292): off the test's small screen
+        // until the list is scrolled to it.
+        val row = word(R.string.settings_done_tasks_last)
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText(row))
+        composeRule.onNodeWithText(row).performClick()
         composeRule.waitForIdle()
         assertTrue("not turned on", vm.state.value.doneTasksLast)
 
-        composeRule.onNodeWithText(word(R.string.settings_done_tasks_last)).performClick()
+        composeRule.onNodeWithText(row).performClick()
         composeRule.waitForIdle()
         assertEquals(false, vm.state.value.doneTasksLast)
     }
