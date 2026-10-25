@@ -55,4 +55,13 @@ class StepsStoreTest {
         assertEquals(true, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().calendarShowSteps)
         assertEquals(false, roundTrip(AppState(calendarShowSteps = false)).calendarShowSteps)
     }
+
+    /** Bars unless a line was chosen (0302); a style this version does not know is bars. */
+    @Test
+    fun theChartIsBarsUnlessALineWasChosen() {
+        assertEquals(StepsChartStyle.BARS, AppState().stepsChartStyle)
+        assertEquals(StepsChartStyle.LINE, roundTrip(AppState(stepsChartStyle = StepsChartStyle.LINE)).stepsChartStyle)
+        val json = """{"v":$CURRENT_SCHEMA_VERSION,"stepsChartStyle":"PIE"}"""
+        assertEquals(StepsChartStyle.BARS, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().stepsChartStyle)
+    }
 }

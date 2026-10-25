@@ -95,6 +95,7 @@ internal data class AppStateDto(
     val stepsCustomFromEpochDay: Long? = null,
     val stepsCustomToEpochDay: Long? = null,
     val calendarShowSteps: Boolean = true,
+    val stepsChartStyle: String = "BARS",
     val anthropometryCustomFromEpochDay: Long? = null,
     val anthropometryCustomToEpochDay: Long? = null,
     val calorimeterShowDailyGoal: Boolean = true,

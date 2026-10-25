@@ -1209,4 +1209,8 @@
     <string name="steps_import_done">Dana u fajlu: %1$s, od %2$s do %3$s.\nDodato: %4$s. Ažurirano: %5$s. Ostavljeno kako je bilo: %6$s — za te dane već postoje podaci iz Health Connect ili upisani ručno.</string>
     <string name="steps_import_not_export">Ovo nije izvoz koraka iz Samsung Health: fajl nema kolone day_time i count.</string>
     <string name="steps_import_failed">Fajl nije mogao da se pročita: %1$s</string>
+    <string name="steps_chart_bars">Stubići</string>
+    <string name="steps_chart_line">Linija</string>
+    <string name="steps_record">Rekord: %1$s — %2$s</string>
+    <string name="steps_import_pick">Izaberi fajl</string>
 </resources>

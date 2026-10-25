@@ -1275,4 +1275,8 @@
     <string name="steps_import_done">Дней в файле: %1$s, с %2$s по %3$s.\nДобавлено: %4$s. Обновлено: %5$s. Не тронуто: %6$s — в эти дни уже есть данные Health Connect или вписанные вручную.</string>
     <string name="steps_import_not_export">Это не выгрузка шагов Samsung Health: в файле нет столбцов day_time и count.</string>
     <string name="steps_import_failed">Файл не прочитался: %1$s</string>
+    <string name="steps_chart_bars">Столбцы</string>
+    <string name="steps_chart_line">Линия</string>
+    <string name="steps_record">Рекорд: %1$s — %2$s</string>
+    <string name="steps_import_pick">Выбрать файл</string>
 </resources>

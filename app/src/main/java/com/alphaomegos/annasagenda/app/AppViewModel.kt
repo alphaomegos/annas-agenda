@@ -1964,6 +1964,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** 6.3: which marks the calendar puts on its days. */
+    fun setStepsChartStyle(style: StepsChartStyle) {
+        _state.update { cur -> if (cur.stepsChartStyle == style) cur else cur.copy(stepsChartStyle = style) }
+    }
+
     fun setCalendarShowSteps(show: Boolean) {
         _state.update { cur -> if (cur.calendarShowSteps == show) cur else cur.copy(calendarShowSteps = show) }
     }

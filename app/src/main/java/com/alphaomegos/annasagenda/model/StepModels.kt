@@ -27,3 +27,6 @@ data class StepDay(
     val steps: Int,
     val source: StepSource,
 )
+
+/** How the Steps tab draws its days (19.10): a bar a day, or a line through them, as anthropometry does. */
+enum class StepsChartStyle { BARS, LINE }

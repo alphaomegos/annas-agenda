@@ -1,5 +1,11 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import com.alphaomegos.annasagenda.app.AppIcons
 import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -78,6 +84,7 @@ fun RunningPlanScreen(
     // A year of dates, built once rather than on every keystroke in the
     // distance field. Keyed on today as well, so it still moves at midnight.
     val today = LocalDate.now()
+    var stepsImportAsked by rememberSaveable { mutableStateOf(false) }
     val rows: List<LocalDate> = remember(approved, today, state.runningPlanEntries) {
         if (!approved) {
             (0L..364L).map { today.plusDays(it) }
@@ -94,6 +101,14 @@ fun RunningPlanScreen(
                     TopBarBack(onBack = onBack)
                 },
                 actions = {
+                    // Steps (19.10): the import from Samsung Health, once in a
+                    // while, so a small icon in the corner rather than a button
+                    // over the days.
+                    if (state.runningMode == RunningMode.STEPS) {
+                        IconButton(onClick = { stepsImportAsked = true }) {
+                            Icon(AppIcons.stepsImport, contentDescription = stringResource(R.string.steps_import_button))
+                        }
+                    }
                     // Approving and resetting are about the plan. In the other
                     // mode there is no plan to approve, and the reset phrase
                     // would delete one the user cannot see.
@@ -142,7 +157,14 @@ fun RunningPlanScreen(
             )
 
             if (state.runningMode == RunningMode.STEPS) {
-                StepsContent(vm = vm, state = state, today = today, modifier = Modifier.fillMaxSize())
+                StepsContent(
+                    vm = vm,
+                    state = state,
+                    today = today,
+                    importAsked = stepsImportAsked,
+                    onImportAskDone = { stepsImportAsked = false },
+                    modifier = Modifier.fillMaxSize(),
+                )
             } else if (state.runningMode == RunningMode.BETWEEN) {
                 RunningWorkoutsContent(
                     workouts = state.runningWorkouts,

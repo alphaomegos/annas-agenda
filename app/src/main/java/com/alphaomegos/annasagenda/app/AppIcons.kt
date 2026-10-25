@@ -1,6 +1,9 @@
 package com.alphaomegos.annasagenda.app
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.BreakfastDining
 import androidx.compose.material.icons.filled.Cake
@@ -33,6 +36,13 @@ internal object AppIcons {
 
     /** Steps (19.10): on the month under a day, and beside its switch in the calendar's settings. */
     val steps: ImageVector = Icons.AutoMirrored.Filled.DirectionsWalk
+
+    /** The Samsung Health import (19.10): a file to open, in the Steps tab's corner. */
+    val stepsImport: ImageVector = Icons.Filled.FolderOpen
+
+    /** The Steps chart drawn as bars, or as a line (19.10). */
+    val stepsChartBars: ImageVector = Icons.Filled.BarChart
+    val stepsChartLine: ImageVector = Icons.AutoMirrored.Filled.ShowChart
 
     fun calendarBadge(badge: CalendarBadge): ImageVector = when (badge) {
         CalendarBadge.ANTHROPOMETRY -> Icons.Filled.Straighten

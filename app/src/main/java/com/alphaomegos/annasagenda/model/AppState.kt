@@ -125,6 +125,7 @@ data class AppState(
     val stepsCustomRange: DateWindow? = null,
     // A day's steps on the month, under its number (19.10); on unless turned off.
     val calendarShowSteps: Boolean = true,
+    val stepsChartStyle: StepsChartStyle = StepsChartStyle.BARS,
 
     // Calorimeter (6.1).
     val calorimeterShowDailyGoal: Boolean = true,

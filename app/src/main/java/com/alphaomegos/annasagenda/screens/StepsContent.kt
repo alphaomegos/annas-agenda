@@ -1,5 +1,12 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.model.StepsChartStyle
+import com.alphaomegos.annasagenda.app.AppIcons
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.material3.IconToggleButton
 import com.alphaomegos.annasagenda.support.StepsImportResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.ActivityNotFoundException
@@ -90,6 +97,8 @@ internal fun StepsContent(
     vm: AppViewModel,
     state: AppState,
     today: LocalDate,
+    importAsked: Boolean = false,
+    onImportAskDone: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val availability by vm.stepsAvailability.collectAsState()
@@ -138,15 +147,32 @@ internal fun StepsContent(
         }
         item {
             val shown = listDays.map { byDate[it]?.steps ?: 0 }.reversed()
-            StepsChart(shown)
+            StepsChart(shown, state.stepsChartStyle)
             val total = shown.sumOf { it.toLong() }
             val average = if (shown.isEmpty()) 0L else total / shown.size
-            Text(
-                text = stringResource(R.string.steps_total_average, count.format(total), count.format(average)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+            Row(
+                modifier = Modifier.padding(start = 16.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.steps_total_average, count.format(total), count.format(average)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                // Bars or a line (19.10), as anthropometry offers: the choice is kept.
+                StepsChartStyle.entries.forEach { style ->
+                    IconToggleButton(checked = state.stepsChartStyle == style, onCheckedChange = { vm.setStepsChartStyle(style) }) {
+                        Icon(
+                            imageVector = if (style == StepsChartStyle.BARS) AppIcons.stepsChartBars else AppIcons.stepsChartLine,
+                            contentDescription = stringResource(
+                                if (style == StepsChartStyle.BARS) R.string.steps_chart_bars else R.string.steps_chart_line
+                            ),
+                            tint = if (state.stepsChartStyle == style) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
         report?.let { r -> item { StepsReportLine(r) } }
         item {
@@ -157,17 +183,14 @@ internal fun StepsContent(
                     else stringResource(R.string.steps_height_unset)
                 )
             }
-        }
-        item {
-            Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                // Any file: a phone's file manager names a CSV's type in more ways than one.
-                FilledTonalButton(onClick = { importer.launch(arrayOf("*/*")) }) {
-                    Text(stringResource(R.string.steps_import_button))
-                }
+            // The best day of all (19.10), up here beside the height: the gold
+            // medal's day, whatever range is shown.
+            records.firstOrNull()?.let { best ->
+                val dates = remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
                 Text(
-                    stringResource(R.string.steps_import_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "🥇 " + stringResource(R.string.steps_record, count.format(best.steps), dates.format(best.date)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
         }
@@ -206,6 +229,22 @@ internal fun StepsContent(
                 editing = null
             },
             onDismiss = { editing = null },
+        )
+    }
+
+    if (importAsked) {
+        AlertDialog(
+            onDismissRequest = onImportAskDone,
+            title = { Text(stringResource(R.string.steps_import_button)) },
+            text = { Text(stringResource(R.string.steps_import_hint)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onImportAskDone()
+                    // Any file: a phone's file manager names a CSV's type in more ways than one.
+                    importer.launch(arrayOf("*/*"))
+                }) { Text(stringResource(R.string.steps_import_pick)) }
+            },
+            dismissButton = { TextButton(onClick = onImportAskDone) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -346,7 +385,7 @@ private fun StepsReportLine(report: StepsReadReport) {
 
 /** A bar a day, oldest on the left; the tallest day fills the height. */
 @Composable
-private fun StepsChart(steps: List<Int>) {
+private fun StepsChart(steps: List<Int>, style: StepsChartStyle) {
     val bar = MaterialTheme.colorScheme.primary
     val description = stringResource(R.string.steps_chart_description)
     Surface(
@@ -366,6 +405,17 @@ private fun StepsChart(steps: List<Int>) {
             val top = steps.maxOrNull() ?: 0
             if (steps.isEmpty() || top <= 0) return@Canvas
             val slot = size.width / steps.size
+            if (style == StepsChartStyle.LINE) {
+                // A line through each day's middle; a day of nothing is on the floor.
+                val path = Path()
+                steps.forEachIndexed { i, n ->
+                    val x = i * slot + slot / 2
+                    val y = size.height - size.height * n / top
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                drawPath(path, color = bar, style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round, cap = StrokeCap.Round))
+                return@Canvas
+            }
             val gap = if (slot > 6f) slot * 0.2f else 0f
             steps.forEachIndexed { i, n ->
                 if (n <= 0) return@forEachIndexed
