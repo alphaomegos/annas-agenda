@@ -26,7 +26,7 @@ class SettingsGroupsTest {
             .forEach { assertTrue("$it belongs to Appearance", at(it) in appearance..tasks) }
         listOf("R.string.settings_done_tasks_last", "R.string.settings_done_subtasks_last", "R.string.undone_title", "R.string.notif_settings_menu")
             .forEach { assertTrue("$it belongs to Tasks", at(it) in tasks..sections) }
-        listOf("R.string.calendar_title", "R.string.calorimeter_title", "R.string.anthropometry_title", "R.string.metro_settings_scheme")
+        listOf("R.string.calendar_title", "R.string.calorimeter_title", "R.string.anthropometry_title", "R.string.metro_settings_scheme", "R.string.steps_together_menu")
             .forEach { assertTrue("$it belongs to the sections", at(it) > sections) }
     }
 

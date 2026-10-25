@@ -72,6 +72,7 @@ fun SettingsScreen(
     onOpenDiet: () -> Unit,
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val together by com.alphaomegos.annasagenda.app.StepsTogether.of(androidx.compose.ui.platform.LocalContext.current).collectAsStateWithLifecycle()
     var open by rememberSaveable { mutableStateOf<String?>(null) }
     val askNotificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -158,6 +159,18 @@ fun SettingsScreen(
             }
 
             item { SettingsSection(stringResource(R.string.settings_section_screens)) }
+            // Steps together (25.10): sharing steps with friends through oursidecar.
+            item {
+                val sharing = together.sharing
+                SettingsRow(
+                    stringResource(R.string.steps_together_menu),
+                    when {
+                        sharing == null -> null
+                        sharing.enabled -> stringResource(R.string.steps_together_summary_on, together.friends.size)
+                        else -> stringResource(R.string.steps_together_summary_off)
+                    },
+                ) { open = SETTINGS_STEPS_TOGETHER }
+            }
             item {
                 SettingsRow(
                     stringResource(R.string.calendar_title),
@@ -194,6 +207,8 @@ fun SettingsScreen(
             onPick = vm::setThemeMode,
             onDismiss = close,
         )
+
+        SETTINGS_STEPS_TOGETHER -> StepsTogetherDialog(onDismiss = close)
 
         SETTINGS_BACK -> BackStyleDialog(
             current = state.backStyle,
@@ -320,6 +335,7 @@ fun SettingsScreen(
 private const val SETTINGS_THEME = "theme"
 private const val SETTINGS_PALETTE = "palette"
 private const val SETTINGS_BACK = "back"
+private const val SETTINGS_STEPS_TOGETHER = "steps-together"
 private const val SETTINGS_NOTIFICATIONS = "notifications"
 private const val SETTINGS_WIDGET = "widget"
 private const val SETTINGS_CALENDAR = "calendar"
