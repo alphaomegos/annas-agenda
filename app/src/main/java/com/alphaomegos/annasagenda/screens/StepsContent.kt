@@ -1,5 +1,12 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.app.StepsTogether
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.rememberUpdatedState
 import com.alphaomegos.annasagenda.support.*
 import androidx.compose.runtime.mutableIntStateOf
@@ -114,6 +121,8 @@ internal fun StepsContent(
     modifier: Modifier = Modifier,
 ) {
     val availability by vm.stepsAvailability.collectAsState()
+    val context = LocalContext.current
+    val together by StepsTogether.of(context).collectAsState()
     val allowed by vm.stepsAllowed.collectAsState()
     val report by vm.stepsReport.collectAsState()
     val imported by vm.stepsImport.collectAsState()
@@ -170,17 +179,36 @@ internal fun StepsContent(
         item {
             // The whole period on the chart, days still to come empty; the
             // total and the average over the days that have been.
-            val shown = stepsChartDays(if (state.stepsRange == AnthropometryRange.ALL) DateWindow(window.from, today) else window)
-                .map { byDate[it]?.steps ?: 0 }
-            val ceiling = niceStepsCeiling(shown.maxOrNull() ?: 0)
+            val chartDays = stepsChartDays(if (state.stepsRange == AnthropometryRange.ALL) DateWindow(window.from, today) else window)
+            // The user and each friend shown (25.10), each in their colour;
+            // a friend's days reach back thirty days, older pages are the user's alone.
+            val own = StepsSeries(chartDays.map { byDate[it]?.steps ?: 0 }, MaterialTheme.colorScheme.primary)
+            val friendsShown = together.friends.mapNotNull { f ->
+                val pref = together.prefs[f.id] ?: StepFriendPref(0)
+                if (!pref.shown) null else StepsSeries(chartDays.map { f.days[it] ?: 0 }, STEP_FRIEND_COLORS[pref.color.coerceIn(0, 3)])
+            }
+            val series = (if (together.selfShown || together.friends.isEmpty()) listOf(own) else emptyList()) + friendsShown
+            val ceiling = niceStepsCeiling(series.flatMap { it.values }.maxOrNull() ?: 0)
             StepsChart(
-                steps = shown,
+                series = series,
                 style = state.stepsChartStyle,
                 ceiling = ceiling,
                 labels = listOf(0, ceiling / 2, ceiling).map { count.format(it) },
                 onSwipeBack = { if (canBack) page -= 1 },
                 onSwipeForward = { if (canForward) page += 1 },
             )
+            if (together.friends.isNotEmpty()) {
+                StepsLegend(
+                    me = stringResource(R.string.steps_legend_me),
+                    meShown = together.selfShown,
+                    meColor = MaterialTheme.colorScheme.primary,
+                    friends = together.friends.map { f ->
+                        val pref = together.prefs[f.id] ?: StepFriendPref(0)
+                        Triple(f, pref.shown, STEP_FRIEND_COLORS[pref.color.coerceIn(0, 3)])
+                    },
+                    onToggle = { id, shown -> StepsTogether.setShown(context, id, shown) },
+                )
+            }
             if (state.stepsRange != AnthropometryRange.ALL) {
                 StepsPager(
                     title = stepsPageTitle(state.stepsRange, window, locale),
@@ -435,14 +463,13 @@ private const val STEPS_SWIPE_DP = 48
  */
 @Composable
 private fun StepsChart(
-    steps: List<Int>,
+    series: List<StepsSeries>,
     style: StepsChartStyle,
     ceiling: Int,
     labels: List<String>,
     onSwipeBack: () -> Unit,
     onSwipeForward: () -> Unit,
 ) {
-    val bar = MaterialTheme.colorScheme.primary
     val grid = MaterialTheme.colorScheme.outlineVariant
     val labelArgb = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
     val description = stringResource(R.string.steps_chart_description)
@@ -491,29 +518,66 @@ private fun StepsChart(
                 drawLine(grid, Offset(left, y), Offset(size.width, y), strokeWidth = 1f)
                 labels.getOrNull(i)?.let { drawContext.canvas.nativeCanvas.drawText(it, 0f, y + 3.dp.toPx(), paint) }
             }
-            if (steps.isEmpty() || ceiling <= 0) return@Canvas
-            val slot = plotWidth / steps.size
+            val days = series.firstOrNull()?.values?.size ?: 0
+            if (days == 0 || ceiling <= 0) return@Canvas
+            val slot = plotWidth / days
             if (style == StepsChartStyle.LINE) {
-                // A line through each day's middle; a day of nothing is on the floor.
-                val path = Path()
-                steps.forEachIndexed { i, n ->
-                    val x = left + i * slot + slot / 2
-                    val y = size.height - plotHeight * n / ceiling
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                // A line through each day's middle for each person; a day of nothing is on the floor.
+                series.forEach { s ->
+                    val path = Path()
+                    s.values.forEachIndexed { i, n ->
+                        val x = left + i * slot + slot / 2
+                        val y = size.height - plotHeight * n / ceiling
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    drawPath(path, color = s.color, style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round, cap = StrokeCap.Round))
                 }
-                drawPath(path, color = bar, style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round, cap = StrokeCap.Round))
                 return@Canvas
             }
-            val gap = if (slot > 6f) slot * 0.2f else 0f
-            steps.forEachIndexed { i, n ->
-                if (n <= 0) return@forEachIndexed
-                val h = plotHeight * n / ceiling
-                drawRect(
-                    color = bar,
-                    topLeft = Offset(left + i * slot + gap / 2, size.height - h),
-                    size = Size((slot - gap).coerceAtLeast(1f), h),
-                )
+            // Bars: the people side by side within each day.
+            series.forEachIndexed { k, s ->
+                s.values.forEachIndexed { i, n ->
+                    if (n <= 0) return@forEachIndexed
+                    val (x, w) = stepsSubBar(left + i * slot, slot, k, series.size)
+                    val h = plotHeight * n / ceiling
+                    drawRect(color = s.color, topLeft = Offset(x, size.height - h), size = Size(w, h))
+                }
             }
+        }
+    }
+}
+
+/** One person's days on the chart, in their colour. */
+internal data class StepsSeries(val values: List<Int>, val color: androidx.compose.ui.graphics.Color)
+
+/**
+ * Who is on the chart (25.10): the user and each friend, a chip each with
+ * their colour; a tap shows or hides them, and the choice is kept.
+ */
+@Composable
+private fun StepsLegend(
+    me: String,
+    meShown: Boolean,
+    meColor: androidx.compose.ui.graphics.Color,
+    friends: List<Triple<com.alphaomegos.annasagenda.model.StepFriend, Boolean, androidx.compose.ui.graphics.Color>>,
+    onToggle: (String?, Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        val people = listOf(Triple<String?, String, Pair<Boolean, androidx.compose.ui.graphics.Color>>(null, me, meShown to meColor)) +
+            friends.map { (f, shown, color) -> Triple(f.id, f.name, shown to color) }
+        people.forEach { (id, name, look) ->
+            FilterChip(
+                selected = look.first,
+                onClick = { onToggle(id, !look.first) },
+                label = { Text(name) },
+                leadingIcon = { Box(modifier = Modifier.size(10.dp).background(look.second, CircleShape)) },
+            )
         }
     }
 }

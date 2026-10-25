@@ -1312,4 +1312,5 @@
     <string name="steps_together_failed_gone">Этого приглашения уже нет.</string>
     <string name="steps_together_failed_rejected">Сервер не принял — проверьте адрес или имя.</string>
     <string name="steps_together_failed_other">Что-то пошло не так на сервере. Попробуйте позже.</string>
+    <string name="steps_legend_me">Я</string>
 </resources>

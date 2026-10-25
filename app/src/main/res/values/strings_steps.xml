@@ -78,4 +78,5 @@
     <string name="steps_together_failed_gone">This invitation is no longer there.</string>
     <string name="steps_together_failed_rejected">The server did not take it — check the address or the name.</string>
     <string name="steps_together_failed_other">Something went wrong on the server. Try later.</string>
+    <string name="steps_legend_me">Me</string>
 </resources>

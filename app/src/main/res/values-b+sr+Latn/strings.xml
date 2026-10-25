@@ -1246,4 +1246,5 @@
     <string name="steps_together_failed_gone">Ovaj poziv više ne postoji.</string>
     <string name="steps_together_failed_rejected">Server nije prihvatio — proverite adresu ili ime.</string>
     <string name="steps_together_failed_other">Nešto nije u redu na serveru. Pokušajte kasnije.</string>
+    <string name="steps_legend_me">Ja</string>
 </resources>

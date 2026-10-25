@@ -222,3 +222,14 @@ fun niceStepsCeiling(top: Int): Int {
     val ceiling = listOf(1L, 2L, 5L, 10L).map { it * unit }.first { it >= top }
     return ceiling.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 }
+
+/**
+ * Where the [index]th of [count] bars stands in a day's slot (25.10: two to
+ * five people side by side): its left edge and its width, the bars sharing
+ * the slot less a fifth of it kept as the gap between days.
+ */
+fun stepsSubBar(slotLeft: Float, slotWidth: Float, index: Int, count: Int): Pair<Float, Float> {
+    val gap = if (slotWidth > 6f) slotWidth * 0.2f else 0f
+    val width = ((slotWidth - gap) / count.coerceAtLeast(1)).coerceAtLeast(1f)
+    return (slotLeft + gap / 2 + index * width) to width
+}
