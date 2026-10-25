@@ -46,4 +46,7 @@
     <string name="steps_record">Record: %1$s on %2$s</string>
     <string name="steps_import_pick">Pick the file</string>
     <string name="steps_quarter">Q%1$d %2$d</string>
+    <string name="steps_together_channel">Steps together</string>
+    <string name="steps_together_invited">%1$s invites you to share steps</string>
+    <string name="steps_together_invited_text">Open Settings → Steps together to accept or decline.</string>
 </resources>

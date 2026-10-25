@@ -59,6 +59,8 @@ class MainActivity : AppCompatActivity() {
 
             // The first read of steps waits for the saved days to be loaded.
             LaunchedEffect(loaded) { if (loaded) vm.refreshSteps() }
+            // Steps together (25.10): the background round every six hours.
+            LaunchedEffect(Unit) { com.alphaomegos.annasagenda.app.StepsTogether.plan(applicationContext) }
 
             AnnaAgendaTheme(themeMode = themeMode, palette = palette, backStyle = backStyle) {
                 Surface(modifier = Modifier.fillMaxSize()) {

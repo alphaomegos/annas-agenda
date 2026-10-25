@@ -1352,6 +1352,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     applyReadSteps(read.days)
                     _stepsReport.value = stepsReadReport(LocalDateTime.now(), read.days, read.sources)
                 }
+                // Steps together (25.10): the freshest days go up, friends come down.
+                runCatching { StepsTogether.sync(context, _state.value.stepDays) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {

@@ -1280,4 +1280,7 @@
     <string name="steps_record">Рекорд: %1$s — %2$s</string>
     <string name="steps_import_pick">Выбрать файл</string>
     <string name="steps_quarter">%1$d-й квартал %2$d</string>
+    <string name="steps_together_channel">Шаги вместе</string>
+    <string name="steps_together_invited">%1$s приглашает вас делиться шагами</string>
+    <string name="steps_together_invited_text">Откройте Настройки → «Шаги вместе», чтобы принять или отклонить.</string>
 </resources>
