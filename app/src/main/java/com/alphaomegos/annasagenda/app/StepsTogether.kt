@@ -17,6 +17,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.canPostNotifications
 import com.alphaomegos.annasagenda.data.AppStateLoadResult
 import com.alphaomegos.annasagenda.data.AppStateStore
 import com.alphaomegos.annasagenda.data.StepsTogetherFileDto
