@@ -142,4 +142,37 @@ class StepsSupportTest {
         assertEquals(10.0, stepsThousands(9_960), 0.0)
         assertEquals(0.4, stepsThousands(420), 0.0)
     }
+
+    @Test
+    fun pagesAreTheCalendarsOwnPeriods() {
+        // 19 October 2026 is a Monday.
+        assertEquals(DateWindow(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31)), stepsPage(AnthropometryRange.MONTH, day, null, emptyList(), 0))
+        assertEquals(DateWindow(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30)), stepsPage(AnthropometryRange.MONTH, day, null, emptyList(), -1))
+        assertEquals(DateWindow(LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 18)), stepsPage(AnthropometryRange.WEEK, day, null, emptyList(), -1))
+        assertEquals(DateWindow(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 9, 30)), stepsPage(AnthropometryRange.QUARTER, day, null, emptyList(), -1))
+        assertEquals(DateWindow(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 12, 31)), stepsPage(AnthropometryRange.YEAR, day, null, emptyList(), -1))
+        val own = DateWindow(day.minusDays(9), day)
+        assertEquals(DateWindow(day.minusDays(19), day.minusDays(10)), stepsPage(AnthropometryRange.CUSTOM, day, own, emptyList(), -1))
+        assertEquals(3, stepsQuarterOf(DateWindow(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 9, 30))))
+        assertEquals(31, stepsChartDays(stepsPage(AnthropometryRange.MONTH, day, null, emptyList(), 0)).size)
+    }
+
+    @Test
+    fun pagingStopsWhereTheStepsDoAndAtToday() {
+        val month = stepsPage(AnthropometryRange.MONTH, day, null, emptyList(), 0)
+        assertEquals(false, canPageStepsBack(AnthropometryRange.MONTH, month, listOf(read(day, 5))))
+        assertEquals(true, canPageStepsBack(AnthropometryRange.MONTH, month, listOf(read(day.minusDays(40), 5))))
+        assertEquals(false, canPageStepsForward(AnthropometryRange.MONTH, 0))
+        assertEquals(true, canPageStepsForward(AnthropometryRange.MONTH, -1))
+        assertEquals(false, canPageStepsBack(AnthropometryRange.ALL, month, listOf(read(day.minusDays(40), 5))))
+    }
+
+    @Test
+    fun theScaleTopsAtARoundNumber() {
+        assertEquals(20_000, niceStepsCeiling(19_002))
+        assertEquals(10_000, niceStepsCeiling(8_304))
+        assertEquals(2_000, niceStepsCeiling(1_492))
+        assertEquals(10_000, niceStepsCeiling(10_000))
+        assertEquals(0, niceStepsCeiling(0))
+    }
 }

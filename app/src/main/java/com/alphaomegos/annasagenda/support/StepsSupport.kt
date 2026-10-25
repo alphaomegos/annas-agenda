@@ -159,3 +159,66 @@ fun stepsSourceKind(packageName: String): StepsSourceKind = when {
 
 /** A count in thousands to one decimal, for the month's narrow cells: 12 345 is 12.3. */
 fun stepsThousands(steps: Int): Double = Math.round(steps / 100.0) / 10.0
+
+/**
+ * The page of days the Steps tab shows (19.10, Eduard: «выбран месяц, под
+ * графиком "октябрь 2026", листаешь влево — "сентябрь 2026"»): the calendar's
+ * own periods, not the last so many days — the week from Monday, the month,
+ * the quarter, the year — [page] 0 being the one with [today] in it, −1 the
+ * one before, and so on back. «All» has no pages; one's own range pages by its
+ * own length, so its pages meet with no day missing or shown twice.
+ */
+fun stepsPage(range: AnthropometryRange, today: LocalDate, custom: DateWindow?, days: List<StepDay>, page: Int): DateWindow {
+    val back = minOf(page, 0).toLong()
+    return when (range) {
+        AnthropometryRange.ALL -> stepsWindowFor(range, today, custom, days)
+        AnthropometryRange.WEEK -> {
+            val monday = today.with(java.time.DayOfWeek.MONDAY).plusWeeks(back)
+            DateWindow(monday, monday.plusDays(6))
+        }
+        AnthropometryRange.MONTH -> {
+            val first = today.withDayOfMonth(1).plusMonths(back)
+            DateWindow(first, first.plusMonths(1).minusDays(1))
+        }
+        AnthropometryRange.QUARTER -> {
+            val first = today.withDayOfMonth(1).withMonth((today.monthValue - 1) / 3 * 3 + 1).plusMonths(3 * back)
+            DateWindow(first, first.plusMonths(3).minusDays(1))
+        }
+        AnthropometryRange.YEAR -> {
+            val first = today.withDayOfYear(1).plusYears(back)
+            DateWindow(first, first.plusYears(1).minusDays(1))
+        }
+        AnthropometryRange.CUSTOM -> {
+            val own = custom ?: DateWindow(today.minusDays(29), today)
+            val length = java.time.temporal.ChronoUnit.DAYS.between(own.from, own.to) + 1
+            DateWindow(own.from.plusDays(back * length), own.to.plusDays(back * length))
+        }
+    }
+}
+
+/** Back is worth a page while there are steps before it; forward, up to the page with today. */
+fun canPageStepsBack(range: AnthropometryRange, window: DateWindow, days: List<StepDay>): Boolean =
+    range != AnthropometryRange.ALL && days.any { it.date < window.from }
+
+fun canPageStepsForward(range: AnthropometryRange, page: Int): Boolean =
+    range != AnthropometryRange.ALL && page < 0
+
+/** Every day of [window], oldest first: the chart's days, the ones still to come included, empty. */
+fun stepsChartDays(window: DateWindow): List<LocalDate> =
+    generateSequence(window.from) { it.plusDays(1) }.takeWhile { !it.isAfter(window.to) }.toList()
+
+/** The quarter a page is, 1 to 4, for its title. */
+fun stepsQuarterOf(window: DateWindow): Int = (window.from.monthValue - 1) / 3 + 1
+
+/**
+ * The top of the chart's scale for a tallest day of [top] steps: the next
+ * round number — 1, 2 or 5 times a power of ten — so the lines across read
+ * 0, a half, and a round top (19 002 gets 20 000; 8 304, 10 000).
+ */
+fun niceStepsCeiling(top: Int): Int {
+    if (top <= 0) return 0
+    var unit = 1L
+    while (unit * 10 <= top) unit *= 10
+    val ceiling = listOf(1L, 2L, 5L, 10L).map { it * unit }.first { it >= top }
+    return ceiling.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+}

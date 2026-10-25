@@ -45,4 +45,5 @@
     <string name="steps_chart_line">Line</string>
     <string name="steps_record">Record: %1$s on %2$s</string>
     <string name="steps_import_pick">Pick the file</string>
+    <string name="steps_quarter">Q%1$d %2$d</string>
 </resources>

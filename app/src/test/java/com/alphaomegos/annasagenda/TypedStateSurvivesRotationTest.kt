@@ -36,6 +36,9 @@ class TypedStateSurvivesRotationTest {
      * number stops being true the next time somebody adds a line above it.
      */
     private val mayBeLostOnRotation = mapOf(
+        "StepsContent.kt:travelled" to
+            "how far a finger has moved across the steps chart in one swipe (19.10), " +
+                "reset at the start of every swipe; a rotation ends the swipe anyway",
         "TodayTasksWidget.kt:data" to
             "the home-screen widget's copy of the state, reloaded from the app on every " +
                 "change; a widget does not rotate, and nothing typed or picked is in it",

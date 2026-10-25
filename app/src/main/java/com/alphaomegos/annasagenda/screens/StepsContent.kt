@@ -1,5 +1,17 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.runtime.rememberUpdatedState
+import com.alphaomegos.annasagenda.support.*
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import android.graphics.Paint
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import com.alphaomegos.annasagenda.model.StepsChartStyle
 import com.alphaomegos.annasagenda.app.AppIcons
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -114,8 +126,12 @@ internal fun StepsContent(
     // the app may read, and the latest days.
     LaunchedEffect(Unit) { vm.refreshSteps() }
 
-    val window = stepsWindowFor(state.stepsRange, today, state.stepsCustomRange, state.stepDays)
+    // The page of the range shown (19.10): 0 holds today, −1 the period before.
+    var page by rememberSaveable { mutableIntStateOf(0) }
+    val window = stepsPage(state.stepsRange, today, state.stepsCustomRange, state.stepDays, page)
     val listDays = stepsListDays(window, today)
+    val canBack = canPageStepsBack(state.stepsRange, window, state.stepDays)
+    val canForward = canPageStepsForward(state.stepsRange, page)
     val byDate = remember(state.stepDays) { state.stepDays.associateBy { it.date } }
     val records = remember(state.stepDays) { stepRecords(state.stepDays) }
 
@@ -140,16 +156,42 @@ internal fun StepsContent(
             AnthropometryRangeBar(
                 selected = state.stepsRange,
                 custom = state.stepsCustomRange,
-                onSelect = { vm.setStepsRange(it, null) },
-                onCustomPicked = { vm.setStepsRange(AnthropometryRange.CUSTOM, it) },
+                onSelect = {
+                    page = 0
+                    vm.setStepsRange(it, null)
+                },
+                onCustomPicked = {
+                    page = 0
+                    vm.setStepsRange(AnthropometryRange.CUSTOM, it)
+                },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }
         item {
-            val shown = listDays.map { byDate[it]?.steps ?: 0 }.reversed()
-            StepsChart(shown, state.stepsChartStyle)
-            val total = shown.sumOf { it.toLong() }
-            val average = if (shown.isEmpty()) 0L else total / shown.size
+            // The whole period on the chart, days still to come empty; the
+            // total and the average over the days that have been.
+            val shown = stepsChartDays(if (state.stepsRange == AnthropometryRange.ALL) DateWindow(window.from, today) else window)
+                .map { byDate[it]?.steps ?: 0 }
+            val ceiling = niceStepsCeiling(shown.maxOrNull() ?: 0)
+            StepsChart(
+                steps = shown,
+                style = state.stepsChartStyle,
+                ceiling = ceiling,
+                labels = listOf(0, ceiling / 2, ceiling).map { count.format(it) },
+                onSwipeBack = { if (canBack) page -= 1 },
+                onSwipeForward = { if (canForward) page += 1 },
+            )
+            if (state.stepsRange != AnthropometryRange.ALL) {
+                StepsPager(
+                    title = stepsPageTitle(state.stepsRange, window, locale),
+                    canBack = canBack,
+                    canForward = canForward,
+                    onBack = { page -= 1 },
+                    onForward = { page += 1 },
+                )
+            }
+            val total = listDays.sumOf { (byDate[it]?.steps ?: 0).toLong() }
+            val average = if (listDays.isEmpty()) 0L else total / listDays.size
             Row(
                 modifier = Modifier.padding(start = 16.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -383,11 +425,31 @@ private fun StepsReportLine(report: StepsReadReport) {
     }
 }
 
-/** A bar a day, oldest on the left; the tallest day fills the height. */
+/** How far a finger travels sideways on the chart to turn a page, as on anthropometry's. */
+private const val STEPS_SWIPE_DP = 48
+
+/**
+ * A bar a day, or a line through them, oldest on the left, over a scale of
+ * three round values (19.10): 0, half the top, the top. A swipe to the right
+ * goes back a page, the way a calendar pages — what was before is to the left.
+ */
 @Composable
-private fun StepsChart(steps: List<Int>, style: StepsChartStyle) {
+private fun StepsChart(
+    steps: List<Int>,
+    style: StepsChartStyle,
+    ceiling: Int,
+    labels: List<String>,
+    onSwipeBack: () -> Unit,
+    onSwipeForward: () -> Unit,
+) {
     val bar = MaterialTheme.colorScheme.primary
+    val grid = MaterialTheme.colorScheme.outlineVariant
+    val labelArgb = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
     val description = stringResource(R.string.steps_chart_description)
+    var travelled by remember { mutableStateOf(0f) }
+    // The gesture is set up once; what a swipe does is read when it ends.
+    val back by rememberUpdatedState(onSwipeBack)
+    val forward by rememberUpdatedState(onSwipeForward)
     Surface(
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(16.dp),
@@ -398,19 +460,45 @@ private fun StepsChart(steps: List<Int>, style: StepsChartStyle) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(160.dp)
+                .height(180.dp)
                 .padding(12.dp)
-                .semantics { contentDescription = description },
+                .semantics { contentDescription = description }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { travelled = 0f },
+                        onDragEnd = {
+                            val enough = STEPS_SWIPE_DP.dp.toPx()
+                            when {
+                                travelled > enough -> back()
+                                travelled < -enough -> forward()
+                            }
+                        },
+                    ) { _, delta -> travelled += delta }
+                },
         ) {
-            val top = steps.maxOrNull() ?: 0
-            if (steps.isEmpty() || top <= 0) return@Canvas
-            val slot = size.width / steps.size
+            val paint = Paint().apply {
+                isAntiAlias = true
+                textSize = 10.dp.toPx()
+                color = labelArgb
+            }
+            // The scale's labels on the left, as wide as the widest of them.
+            val left = (labels.maxOfOrNull { paint.measureText(it) } ?: 0f) + 6.dp.toPx()
+            val top = 6.dp.toPx()
+            val plotHeight = size.height - top
+            val plotWidth = size.width - left
+            listOf(0f, 0.5f, 1f).forEachIndexed { i, t ->
+                val y = size.height - t * plotHeight
+                drawLine(grid, Offset(left, y), Offset(size.width, y), strokeWidth = 1f)
+                labels.getOrNull(i)?.let { drawContext.canvas.nativeCanvas.drawText(it, 0f, y + 3.dp.toPx(), paint) }
+            }
+            if (steps.isEmpty() || ceiling <= 0) return@Canvas
+            val slot = plotWidth / steps.size
             if (style == StepsChartStyle.LINE) {
                 // A line through each day's middle; a day of nothing is on the floor.
                 val path = Path()
                 steps.forEachIndexed { i, n ->
-                    val x = i * slot + slot / 2
-                    val y = size.height - size.height * n / top
+                    val x = left + i * slot + slot / 2
+                    val y = size.height - plotHeight * n / ceiling
                     if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
                 }
                 drawPath(path, color = bar, style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round, cap = StrokeCap.Round))
@@ -419,15 +507,47 @@ private fun StepsChart(steps: List<Int>, style: StepsChartStyle) {
             val gap = if (slot > 6f) slot * 0.2f else 0f
             steps.forEachIndexed { i, n ->
                 if (n <= 0) return@forEachIndexed
-                val h = size.height * n / top
+                val h = plotHeight * n / ceiling
                 drawRect(
                     color = bar,
-                    topLeft = Offset(i * slot + gap / 2, size.height - h),
+                    topLeft = Offset(left + i * slot + gap / 2, size.height - h),
                     size = Size((slot - gap).coerceAtLeast(1f), h),
                 )
             }
         }
     }
+}
+
+/** The page's name under the chart, with the arrows to the one before and after. */
+@Composable
+private fun StepsPager(title: String, canBack: Boolean, canForward: Boolean, onBack: () -> Unit, onForward: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack, enabled = canBack) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.anthro_page_back))
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onForward, enabled = canForward) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.anthro_page_forward))
+        }
+    }
+}
+
+/** «октябрь 2026», «2026», «4-й квартал 2026»; a week or one's own range by its first and last day. */
+@Composable
+private fun stepsPageTitle(range: AnthropometryRange, window: DateWindow, locale: java.util.Locale): String = when (range) {
+    AnthropometryRange.MONTH -> DateTimeFormatter.ofPattern("LLLL yyyy", locale).format(window.from)
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    AnthropometryRange.YEAR -> window.from.year.toString()
+    AnthropometryRange.QUARTER -> stringResource(R.string.steps_quarter, stepsQuarterOf(window), window.from.year)
+    else -> stringResource(R.string.anthro_page_window, formatShortDate(window.from, locale), formatShortDate(window.to, locale))
 }
 
 @Composable

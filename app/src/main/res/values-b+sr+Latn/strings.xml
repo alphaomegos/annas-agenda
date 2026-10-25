@@ -1213,4 +1213,5 @@
     <string name="steps_chart_line">Linija</string>
     <string name="steps_record">Rekord: %1$s — %2$s</string>
     <string name="steps_import_pick">Izaberi fajl</string>
+    <string name="steps_quarter">%1$d. kvartal %2$d</string>
 </resources>
