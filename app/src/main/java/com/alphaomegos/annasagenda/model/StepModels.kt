@@ -30,3 +30,31 @@ data class StepDay(
 
 /** How the Steps tab draws its days (19.10): a bar a day, or a line through them, as anthropometry does. */
 enum class StepsChartStyle { BARS, LINE }
+
+/**
+ * A friend whose steps the app may show (25.10, «Steps together» through
+ * oursidecar): the server's id for them, the name they go by there, whether
+ * they share at the moment, and their days — the last thirty, at most.
+ */
+data class StepFriend(
+    val id: String,
+    val name: String,
+    val sharing: Boolean,
+    val days: Map<LocalDate, Int>,
+)
+
+/** An invitation to share steps, to this account ([incoming]) or from it. */
+data class StepInvitation(
+    val id: String,
+    val name: String,
+    val incoming: Boolean,
+    val createdAt: String,
+)
+
+/** Sharing as the server has it for this account: on or off, and the name friends see. */
+data class StepSharing(
+    val enabled: Boolean,
+    val displayName: String,
+    val accountName: String,
+    val customName: Boolean,
+)
