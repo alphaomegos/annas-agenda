@@ -1194,4 +1194,10 @@
     <string name="steps_edit_title">Koraci za %1$s</string>
     <string name="steps_edit_label">Koraci</string>
     <string name="steps_take_back">Vrati podatke iz Health Connect</string>
+    <string name="steps_read_found">Pročitano u %1$s: koraci za %2$d od %3$d dana. Izvori: %4$s.</string>
+    <string name="steps_read_no_sources">nema</string>
+    <string name="steps_read_failed">Čitanje u %1$s nije uspelo: %2$s</string>
+    <string name="steps_read_empty_hint">U Health Connect postoji samo ono što su aplikacije upisale. Uključite upis koraka u Samsung Health (Podešavanja → Health Connect) ili u drugom brojaču koraka. Sam telefon počinje da broji korake u Health Connect od trenutka povezivanja, bez prethodnih dana.</string>
+    <string name="steps_source_samsung">Samsung Health</string>
+    <string name="steps_source_phone">ovaj telefon</string>
 </resources>

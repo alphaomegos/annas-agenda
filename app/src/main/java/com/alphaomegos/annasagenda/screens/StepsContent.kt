@@ -58,6 +58,9 @@ import com.alphaomegos.annasagenda.model.StepDay
 import com.alphaomegos.annasagenda.model.StepSource
 import com.alphaomegos.annasagenda.support.AnthropometryRange
 import com.alphaomegos.annasagenda.support.STEPS_HEIGHT_RANGE_CM
+import com.alphaomegos.annasagenda.support.StepsReadReport
+import com.alphaomegos.annasagenda.support.StepsSourceKind
+import com.alphaomegos.annasagenda.support.stepsSourceKind
 import com.alphaomegos.annasagenda.support.stepMedal
 import com.alphaomegos.annasagenda.support.stepRecords
 import com.alphaomegos.annasagenda.support.stepsDistanceKm
@@ -68,6 +71,7 @@ import com.alphaomegos.annasagenda.support.weightOn
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import kotlin.math.roundToInt
 
 /**
@@ -88,6 +92,7 @@ internal fun StepsContent(
 ) {
     val availability by vm.stepsAvailability.collectAsState()
     val allowed by vm.stepsAllowed.collectAsState()
+    val report by vm.stepsReport.collectAsState()
 
     // Opening the tab reads again: whether Health Connect is there, whether
     // the app may read, and the latest days.
@@ -136,6 +141,7 @@ internal fun StepsContent(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }
+        report?.let { r -> item { StepsReportLine(r) } }
         item {
             val height = state.stepsHeightCm
             TextButton(onClick = { heightOpen = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -234,6 +240,58 @@ private fun StepsSourceCard(availability: StepsAvailability, onAllowed: () -> Un
                 StepsAvailability.NONE ->
                     Text(stringResource(R.string.steps_none_here), style = MaterialTheme.typography.bodyMedium)
             }
+        }
+    }
+}
+
+/**
+ * What the last read from Health Connect found — when, on how many days, from
+ * which apps — or what stopped it (19.10: a read that found nothing looked
+ * exactly like one that failed). Found nothing, it says where steps get into
+ * Health Connect in the first place.
+ */
+@Composable
+private fun StepsReportLine(report: StepsReadReport) {
+    val locale = LocalConfiguration.current.locales[0]
+    val time = remember(locale) { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale) }.format(report.at)
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (report.error != null) {
+            Text(
+                stringResource(R.string.steps_read_failed, time, report.error),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            return@Column
+        }
+        val names = report.sources.map { pkg ->
+            when (stepsSourceKind(pkg)) {
+                StepsSourceKind.SAMSUNG_HEALTH -> stringResource(R.string.steps_source_samsung)
+                StepsSourceKind.THIS_PHONE -> stringResource(R.string.steps_source_phone)
+                StepsSourceKind.FITBIT -> "Fitbit"
+                StepsSourceKind.GOOGLE_FIT -> "Google Fit"
+                StepsSourceKind.OTHER -> pkg
+            }
+        }
+        Text(
+            stringResource(
+                R.string.steps_read_found,
+                time,
+                report.daysWithSteps,
+                report.daysRead,
+                if (names.isEmpty()) stringResource(R.string.steps_read_no_sources) else names.joinToString(", "),
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (report.daysWithSteps == 0) {
+            Text(
+                stringResource(R.string.steps_read_empty_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

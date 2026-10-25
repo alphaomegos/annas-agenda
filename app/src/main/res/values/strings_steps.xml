@@ -26,4 +26,10 @@
     <string name="steps_edit_title">Steps on %1$s</string>
     <string name="steps_edit_label">Steps</string>
     <string name="steps_take_back">Return Health Connect’s count</string>
+    <string name="steps_read_found">Read at %1$s: steps on %2$d of %3$d days. From: %4$s.</string>
+    <string name="steps_read_no_sources">no app</string>
+    <string name="steps_read_failed">Reading at %1$s failed: %2$s</string>
+    <string name="steps_read_empty_hint">Health Connect holds only what apps write into it. Turn on steps in Samsung Health (Settings → Health Connect) or in another step-counting app. The phone itself starts counting into Health Connect from the moment it was connected, without the days before.</string>
+    <string name="steps_source_samsung">Samsung Health</string>
+    <string name="steps_source_phone">this phone</string>
 </resources>

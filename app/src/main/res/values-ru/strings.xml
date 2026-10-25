@@ -1260,4 +1260,10 @@
     <string name="steps_edit_title">Шаги за %1$s</string>
     <string name="steps_edit_label">Шаги</string>
     <string name="steps_take_back">Вернуть данные Health Connect</string>
+    <string name="steps_read_found">Прочитано в %1$s: шаги нашлись за %2$d из %3$d дней. Источники: %4$s.</string>
+    <string name="steps_read_no_sources">нет</string>
+    <string name="steps_read_failed">Не удалось прочитать в %1$s: %2$s</string>
+    <string name="steps_read_empty_hint">В Health Connect есть только то, что в него записали приложения. Включите запись шагов в Samsung Health (Настройки → Health Connect) или в другом шагомере. Сам телефон начинает считать шаги в Health Connect с момента подключения, без прошлых дней.</string>
+    <string name="steps_source_samsung">Samsung Health</string>
+    <string name="steps_source_phone">этот телефон</string>
 </resources>

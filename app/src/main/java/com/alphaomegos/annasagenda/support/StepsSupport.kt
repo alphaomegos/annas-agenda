@@ -4,6 +4,7 @@ import com.alphaomegos.annasagenda.model.AnthropometryEntry
 import com.alphaomegos.annasagenda.model.StepDay
 import com.alphaomegos.annasagenda.model.StepSource
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /*
  * Steps (19.10): the days kept, what a read from Health Connect changes in
@@ -121,4 +122,37 @@ fun stepsListDays(window: DateWindow, today: LocalDate): List<LocalDate> {
     val last = if (window.to.isAfter(today)) today else window.to
     if (last.isBefore(window.from)) return emptyList()
     return generateSequence(last) { it.minusDays(1) }.takeWhile { !it.isBefore(window.from) }.toList()
+}
+
+/**
+ * What one read from Health Connect found (19.10), for the line under the
+ * chart: when, how many of the days read had steps, from which apps — or, if
+ * it failed, what stopped it. A read that finds nothing must not look like a
+ * read that failed, nor like one that never happened.
+ */
+data class StepsReadReport(
+    val at: LocalDateTime,
+    val daysRead: Int,
+    val daysWithSteps: Int,
+    val sources: List<String>,
+    val error: String? = null,
+)
+
+fun stepsReadReport(at: LocalDateTime, days: Map<LocalDate, Int>, sources: Set<String>): StepsReadReport =
+    StepsReadReport(at, days.size, days.values.count { it > 0 }, sources.sorted())
+
+/** The apps steps come from, as the user knows them. */
+enum class StepsSourceKind { SAMSUNG_HEALTH, THIS_PHONE, FITBIT, GOOGLE_FIT, OTHER }
+
+/**
+ * Which app a Health Connect source is. The phone's own steps come as
+ * «android» and, from Health Connect's June 2026 update, under a made-up
+ * package name of its own (com.android.healthconnect.phone.…).
+ */
+fun stepsSourceKind(packageName: String): StepsSourceKind = when {
+    packageName == "com.sec.android.app.shealth" -> StepsSourceKind.SAMSUNG_HEALTH
+    packageName == "android" || packageName.startsWith("com.android.healthconnect.phone") -> StepsSourceKind.THIS_PHONE
+    packageName == "com.fitbit.FitbitMobile" -> StepsSourceKind.FITBIT
+    packageName == "com.google.android.apps.fitness" -> StepsSourceKind.GOOGLE_FIT
+    else -> StepsSourceKind.OTHER
 }

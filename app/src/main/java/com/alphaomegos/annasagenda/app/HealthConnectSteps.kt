@@ -12,6 +12,9 @@ import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.LocalDate
 import java.time.Period
 
+/** What one read from Health Connect brought: each day's total, and the apps it came from. */
+internal data class StepsRead(val days: Map<LocalDate, Int>, val sources: Set<String>)
+
 /** Whether this phone has a Health Connect to read steps from (19.10). */
 enum class StepsAvailability {
     /** Android 8 and older, or a work profile: there is none. */
@@ -69,9 +72,11 @@ internal object HealthConnectSteps {
 
     /**
      * The total of each of the [days] days up to [today], by the phone's own
-     * calendar: every day of them, a day Health Connect has nothing for as 0.
+     * calendar — every day of them, a day Health Connect has nothing for as 0
+     * — and the apps the steps came from (19.10: shown under the chart, so a
+     * read that found nothing says so, and says from where).
      */
-    suspend fun readDays(context: Context, today: LocalDate, days: Int): Map<LocalDate, Int> {
+    suspend fun readDays(context: Context, today: LocalDate, days: Int): StepsRead {
         val from = today.minusDays(days - 1L)
         val rows = HealthConnectClient.getOrCreate(context).aggregateGroupByPeriod(
             AggregateGroupByPeriodRequest(
@@ -81,9 +86,11 @@ internal object HealthConnectSteps {
             )
         )
         val byDay = rows.associate { it.startTime.toLocalDate() to (it.result[StepsRecord.COUNT_TOTAL] ?: 0L) }
-        return (0 until days).associate { i ->
+        val counts = (0 until days).associate { i ->
             val day = from.plusDays(i.toLong())
             day to (byDay[day] ?: 0L).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
         }
+        val sources = rows.flatMap { row -> row.result.dataOrigins.map { it.packageName } }.toSet()
+        return StepsRead(counts, sources)
     }
 }

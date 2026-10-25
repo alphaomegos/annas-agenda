@@ -115,4 +115,24 @@ class StepsSupportTest {
         val days = listOf(read(day.minusDays(40), 10), read(day.minusDays(2), 20))
         assertEquals(DateWindow(day.minusDays(40), day), stepsWindowFor(AnthropometryRange.ALL, day, null, days))
     }
+
+    @Test
+    fun aReadSaysWhatItFoundAndFromWhom() {
+        val at = day.atTime(13, 40)
+        val report = stepsReadReport(at, mapOf(day to 0, day.minusDays(1) to 5_000, day.minusDays(2) to 0), setOf("com.sec.android.app.shealth", "android"))
+        assertEquals(3, report.daysRead)
+        assertEquals(1, report.daysWithSteps)
+        assertEquals(listOf("android", "com.sec.android.app.shealth"), report.sources)
+        assertNull(report.error)
+    }
+
+    @Test
+    fun theSourcesAreTheAppsTheUserKnows() {
+        assertEquals(StepsSourceKind.SAMSUNG_HEALTH, stepsSourceKind("com.sec.android.app.shealth"))
+        assertEquals(StepsSourceKind.THIS_PHONE, stepsSourceKind("android"))
+        // Health Connect's June 2026 attribution for the phone's own steps.
+        assertEquals(StepsSourceKind.THIS_PHONE, stepsSourceKind("com.android.healthconnect.phone.jd5bdd37e1a8d3667a05d0abebfc4a89e"))
+        assertEquals(StepsSourceKind.FITBIT, stepsSourceKind("com.fitbit.FitbitMobile"))
+        assertEquals(StepsSourceKind.OTHER, stepsSourceKind("com.example.pedometer"))
+    }
 }

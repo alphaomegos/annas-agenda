@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import com.alphaomegos.annasagenda.*
 import com.alphaomegos.annasagenda.model.*
@@ -1281,6 +1282,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Whether this phone has a Health Connect, as of the last look. */
     val stepsAvailability: StateFlow<StepsAvailability> = _stepsAvailability.asStateFlow()
 
+    private val _stepsReport = MutableStateFlow<StepsReadReport?>(null)
+    /** What the last read found, or what stopped it; null before any read this session. */
+    val stepsReport: StateFlow<StepsReadReport?> = _stepsReport.asStateFlow()
+
     private val _stepsAllowed = MutableStateFlow(false)
     /** Whether the app may read steps, as of the last look. */
     val stepsAllowed: StateFlow<Boolean> = _stepsAllowed.asStateFlow()
@@ -1297,7 +1302,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshSteps() {
         if (!_isLoaded.value) return
         viewModelScope.launch(Dispatchers.IO) {
-            runCatching {
+            try {
                 val context = appContext
                 val availability = HealthConnectSteps.availability(context)
                 _stepsAvailability.value = availability
@@ -1305,8 +1310,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 _stepsAllowed.value = allowed
                 if (allowed) {
                     val read = HealthConnectSteps.readDays(context, LocalDate.now(), STEPS_READ_DAYS)
-                    applyReadSteps(read)
+                    applyReadSteps(read.days)
+                    _stepsReport.value = stepsReadReport(LocalDateTime.now(), read.days, read.sources)
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                // Said on the tab, not swallowed (19.10: a read that found
+                // nothing and a read that failed looked the same).
+                android.util.Log.w("AnnaSteps", "reading steps from Health Connect failed", e)
+                _stepsReport.value = StepsReadReport(LocalDateTime.now(), 0, 0, emptyList(), "${e.javaClass.simpleName}: ${e.message}")
             }
         }
     }
