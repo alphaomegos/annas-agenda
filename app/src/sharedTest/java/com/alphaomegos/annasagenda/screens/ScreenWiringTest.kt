@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -359,8 +360,9 @@ class ScreenWiringTest {
         val todayText = java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM", locale).format(today)
 
         // Today is the first row of days; with no steps yet it reads «—», and any day can be
-        // written in. Under the import (0299) it is past the test's small screen: scrolled to.
-        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText(todayText))
+        // written in. Under the import (0299) it is past the test's small screen: scrolled to —
+        // in the list, the one scroller that goes by index; the range chips scroll sideways too.
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(todayText))
         composeRule.onNodeWithText(todayText).performClick()
         field(word(R.string.steps_edit_label)).performTextInput("12345")
         composeRule.onNodeWithText(word(R.string.save)).performClick()
