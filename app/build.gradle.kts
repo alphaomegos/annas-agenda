@@ -257,6 +257,11 @@ dependencies {
     // Not used directly: overrides the WorkManager Glance would bring (see
     // libs.versions.toml, "work").
     implementation(libs.androidx.work.runtime.ktx)
+    // Steps (19.10): read from Health Connect, where Samsung Health, the
+    // watch and the phone itself put them. Its minSdk is 26, the app's 24:
+    // the manifest overrides it, and nothing touches it below Android 9,
+    // where Health Connect does not exist (HealthConnectSteps).
+    implementation(libs.androidx.health.connect.client)
     implementation(libs.kotlinx.serialization.json)
 
     // The music of oursidecar (16.10): the player, and the media session that

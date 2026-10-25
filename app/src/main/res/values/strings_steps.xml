@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Steps (19.10): the page Health Connect opens from its permission screen. -->
+    <string name="steps_privacy_title">Steps and Health Connect</string>
+    <string name="steps_privacy_body">Anna\'s Agenda reads one thing from Health Connect: how many steps you took each day, as your phone, your watch and Samsung Health counted them. It writes nothing there. The steps are kept in the app, which works out distance and calories from them; they go into the app\'s backups and leave the phone only encrypted on it. They are shared with no one. You can take the access back at any time in Health Connect\'s settings.</string>
+    <string name="steps_privacy_close">Close</string>
+</resources>

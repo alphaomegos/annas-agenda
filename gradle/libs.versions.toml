@@ -26,6 +26,8 @@ glance = "1.1.1"
 # by name, and WorkManager starts before any activity. Named here to win over
 # the one Glance asks for; 2.8+ carries the R8 rules and the Android 14 fixes.
 work = "2.10.1"
+# Steps from Health Connect (19.10): the first stable line, October 2025.
+healthConnect = "1.1.0"
 
 # Robolectric runs Android's own framework classes on the JVM, so tests that
 # need a Context no longer need a device. 4.17 ships images up to Android 17,
@@ -48,6 +50,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+androidx-health-connect-client = { group = "androidx.health.connect", name = "connect-client", version.ref = "healthConnect" }
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }

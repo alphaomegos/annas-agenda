@@ -1169,4 +1169,8 @@
     <string name="sidecar_backups_failure_gone">Ove rezervne kopije više nema na serveru.</string>
     <string name="sidecar_backups_failure_no_key">Ponovo se prijavite na oursidecar: ključa za šifrovanje nema na ovom telefonu.</string>
     <string name="sidecar_backups_failure_not_chosen">Prvo izaberite da li da se kopije šifruju.</string>
+    <!-- Steps (19.10) -->
+    <string name="steps_privacy_title">Koraci i Health Connect</string>
+    <string name="steps_privacy_body">Anna\'s Agenda iz Health Connect čita samo jedno: koliko ste koraka prešli svakog dana, onako kako su ih izbrojali telefon, sat i Samsung Health. Tamo ništa ne upisuje. Koraci se čuvaju u aplikaciji, koja iz njih računa razdaljinu i kalorije; ulaze u rezervne kopije aplikacije i telefon napuštaju samo šifrovani na njemu. Ni sa kim se ne dele. Pristup možete opozvati u svakom trenutku u podešavanjima Health Connect.</string>
+    <string name="steps_privacy_close">Zatvori</string>
 </resources>

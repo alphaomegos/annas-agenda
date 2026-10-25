@@ -1251,6 +1251,66 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     val backStyle: StateFlow<BackStyle> = stateSlice { it.backStyle }
 
+    /* ---------------- steps (19.10) ---------------- */
+
+    /** What a read from Health Connect brought: each day of it, a day with nothing as 0. */
+    fun applyReadSteps(read: Map<LocalDate, Int>) {
+        _state.update { cur -> cur.copy(stepDays = stepDaysAfterRead(cur.stepDays, read)) }
+    }
+
+    /** A day's steps typed in by hand; no later read replaces them. */
+    fun typeSteps(date: LocalDate, steps: Int) {
+        _state.update { cur -> cur.copy(stepDays = stepDaysWithTyped(cur.stepDays, date, steps)) }
+    }
+
+    /** A typed-in day taken back: Health Connect's count returns with the next read. */
+    fun untypeSteps(date: LocalDate) {
+        _state.update { cur -> cur.copy(stepDays = stepDaysWithoutTyped(cur.stepDays, date)) }
+        refreshSteps()
+    }
+
+    fun setStepsHeight(heightCm: Int?) {
+        _state.update { cur -> cur.copy(stepsHeightCm = heightCm?.takeIf { it in STEPS_HEIGHT_RANGE_CM }) }
+    }
+
+    fun setStepsRange(range: AnthropometryRange, custom: DateWindow?) {
+        _state.update { cur -> cur.copy(stepsRange = range, stepsCustomRange = custom ?: cur.stepsCustomRange) }
+    }
+
+    private val _stepsAvailability = MutableStateFlow(StepsAvailability.NONE)
+    /** Whether this phone has a Health Connect, as of the last look. */
+    val stepsAvailability: StateFlow<StepsAvailability> = _stepsAvailability.asStateFlow()
+
+    private val _stepsAllowed = MutableStateFlow(false)
+    /** Whether the app may read steps, as of the last look. */
+    val stepsAllowed: StateFlow<Boolean> = _stepsAllowed.asStateFlow()
+
+    /**
+     * Looks at Health Connect and, if the app may read steps, reads the last
+     * [STEPS_READ_DAYS] days into the kept ones. Called when the app comes
+     * back to the front and when the user has just let it read: the watch
+     * reaches the phone in its own time, so the latest days keep growing.
+     * Not before the saved state is loaded — a read laid over the empty state
+     * would be overwritten by the load. Any failure leaves the days as they
+     * are; the next return to the app tries again.
+     */
+    fun refreshSteps() {
+        if (!_isLoaded.value) return
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val context = appContext
+                val availability = HealthConnectSteps.availability(context)
+                _stepsAvailability.value = availability
+                val allowed = availability == StepsAvailability.READY && HealthConnectSteps.isAllowed(context)
+                _stepsAllowed.value = allowed
+                if (allowed) {
+                    val read = HealthConnectSteps.readDays(context, LocalDate.now(), STEPS_READ_DAYS)
+                    applyReadSteps(read)
+                }
+            }
+        }
+    }
+
     fun setBackStyle(style: BackStyle) {
         if (_state.value.backStyle == style) return
         _state.value = _state.value.copy(backStyle = style)

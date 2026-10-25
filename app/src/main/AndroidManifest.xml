@@ -24,6 +24,17 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Steps (19.10): read from Health Connect, never written. Its library
+         wants Android 8; the app runs from 7 and keeps away from it below 9,
+         where there is no Health Connect to talk to (HealthConnectSteps). -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-sdk tools:overrideLibrary="androidx.health.connect.client" />
+
+    <queries>
+        <!-- Health Connect as an app, Android 13 and older. -->
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -46,6 +57,29 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- What the app reads from Health Connect and why: Health Connect
+             opens this from its permission screen (Android 13 and older)… -->
+        <activity
+            android:name=".StepsPrivacyActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AnnasAgenda">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+
+        <!-- …and this way from Android 14, where it is part of the system. -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+            android:targetActivity=".StepsPrivacyActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- AppCompat keeps the app's own language across processes only with this
              (Android 12 and older; from 13 the system keeps it). Without it, a

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +57,9 @@ class MainActivity : AppCompatActivity() {
             val palette by vm.palette.collectAsState()
             val backStyle by vm.backStyle.collectAsState()
 
+            // The first read of steps waits for the saved days to be loaded.
+            LaunchedEffect(loaded) { if (loaded) vm.refreshSteps() }
+
             AnnaAgendaTheme(themeMode = themeMode, palette = palette, backStyle = backStyle) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val failure = storageFailure
@@ -89,6 +93,13 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         takeOpenDayRequest(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Steps (19.10): back at the front, the latest days are read again —
+        // the watch reaches the phone in its own time.
+        if (::vm.isInitialized) vm.refreshSteps()
     }
 
     override fun onStop() {

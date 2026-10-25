@@ -1235,4 +1235,8 @@
     <string name="sidecar_backups_failure_gone">Этого бэкапа на сервере больше нет.</string>
     <string name="sidecar_backups_failure_no_key">Войдите в oursidecar снова: ключа шифрования на этом телефоне нет.</string>
     <string name="sidecar_backups_failure_not_chosen">Сначала выберите, шифровать ли бэкапы.</string>
+    <!-- Steps (19.10) -->
+    <string name="steps_privacy_title">Шаги и Health Connect</string>
+    <string name="steps_privacy_body">Anna\'s Agenda читает из Health Connect только одно: сколько шагов вы прошли за каждый день — так, как их посчитали телефон, часы и Samsung Health. Ничего туда не записывает. Шаги хранятся в приложении, оно считает по ним дистанцию и калории; они попадают в резервные копии приложения и покидают телефон только зашифрованными на нём. Никому они не передаются. Доступ можно отозвать в любой момент в настройках Health Connect.</string>
+    <string name="steps_privacy_close">Закрыть</string>
 </resources>
