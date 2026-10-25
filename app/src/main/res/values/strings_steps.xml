@@ -35,4 +35,10 @@
     <string name="calendar_steps_option">Steps, as a number</string>
     <string name="steps_thousands">%1$sk</string>
     <string name="steps_calendar_description">Steps: %1$s</string>
+    <string name="steps_import_button">Import from Samsung Health</string>
+    <string name="steps_import_hint">In Samsung Health: Settings → Download personal data. Then pick the file com.samsung.shealth.step_daily_trend… in Download/Samsung Health.</string>
+    <string name="steps_import_title">Samsung Health</string>
+    <string name="steps_import_done">Days in the file: %1$s, from %2$s to %3$s.\nAdded: %4$s. Updated: %5$s. Left as they were: %6$s — those days already have Health Connect’s count or one typed in.</string>
+    <string name="steps_import_not_export">This is not a Samsung Health steps export: the file has no day_time and count columns.</string>
+    <string name="steps_import_failed">The file could not be read: %1$s</string>
 </resources>

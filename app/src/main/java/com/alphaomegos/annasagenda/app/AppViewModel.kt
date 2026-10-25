@@ -1282,6 +1282,45 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Whether this phone has a Health Connect, as of the last look. */
     val stepsAvailability: StateFlow<StepsAvailability> = _stepsAvailability.asStateFlow()
 
+    private val _stepsImport = MutableStateFlow<StepsImportResult?>(null)
+    /** How the last import from a Samsung Health export ended, until its dialog is closed. */
+    val stepsImport: StateFlow<StepsImportResult?> = _stepsImport.asStateFlow()
+
+    fun dismissStepsImport() {
+        _stepsImport.value = null
+    }
+
+    /**
+     * The days of a Samsung Health export (19.10), from the file the user
+     * picked: empty days filled, an earlier import's days renewed, days from
+     * Health Connect or typed in left alone (stepDaysAfterImport).
+     */
+    fun importSamsungSteps(uri: android.net.Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = try {
+                val text = appContext.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }.orEmpty()
+                val read = parseSamsungStepDailyTrend(text)
+                if (read.isEmpty()) {
+                    StepsImportResult.NotAnExport
+                } else {
+                    var outcome: StepsImportOutcome? = null
+                    _state.update { cur ->
+                        val next = stepDaysAfterImport(cur.stepDays, read)
+                        outcome = next
+                        cur.copy(stepDays = next.days)
+                    }
+                    StepsImportResult.Done(checkNotNull(outcome))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                android.util.Log.w("AnnaSteps", "importing a Samsung Health export failed", e)
+                StepsImportResult.Failed("${e.javaClass.simpleName}: ${e.message}")
+            }
+            _stepsImport.value = result
+        }
+    }
+
     private val _stepsReport = MutableStateFlow<StepsReadReport?>(null)
     /** What the last read found, or what stopped it; null before any read this session. */
     val stepsReport: StateFlow<StepsReadReport?> = _stepsReport.asStateFlow()

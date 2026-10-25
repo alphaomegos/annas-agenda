@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.support.StepsImportResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
@@ -93,6 +95,11 @@ internal fun StepsContent(
     val availability by vm.stepsAvailability.collectAsState()
     val allowed by vm.stepsAllowed.collectAsState()
     val report by vm.stepsReport.collectAsState()
+    val imported by vm.stepsImport.collectAsState()
+    // Samsung Health's export (19.10): the file is picked, the view model reads it.
+    val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) vm.importSamsungSteps(uri)
+    }
 
     // Opening the tab reads again: whether Health Connect is there, whether
     // the app may read, and the latest days.
@@ -151,6 +158,19 @@ internal fun StepsContent(
                 )
             }
         }
+        item {
+            Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Any file: a phone's file manager names a CSV's type in more ways than one.
+                FilledTonalButton(onClick = { importer.launch(arrayOf("*/*")) }) {
+                    Text(stringResource(R.string.steps_import_button))
+                }
+                Text(
+                    stringResource(R.string.steps_import_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         items(listDays, key = { it.toEpochDay() }) { date ->
             val day = byDate[date]
             StepsDayRow(
@@ -186,6 +206,34 @@ internal fun StepsContent(
                 editing = null
             },
             onDismiss = { editing = null },
+        )
+    }
+
+    imported?.let { result ->
+        val dates = remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
+        AlertDialog(
+            onDismissRequest = vm::dismissStepsImport,
+            title = { Text(stringResource(R.string.steps_import_title)) },
+            text = {
+                Text(
+                    when (result) {
+                        is StepsImportResult.Done -> with(result.outcome) {
+                            stringResource(
+                                R.string.steps_import_done,
+                                count.format(inFile),
+                                first?.let(dates::format).orEmpty(),
+                                last?.let(dates::format).orEmpty(),
+                                count.format(added),
+                                count.format(updated),
+                                count.format(leftAlone),
+                            )
+                        }
+                        StepsImportResult.NotAnExport -> stringResource(R.string.steps_import_not_export)
+                        is StepsImportResult.Failed -> stringResource(R.string.steps_import_failed, result.reason)
+                    }
+                )
+            },
+            confirmButton = { TextButton(onClick = vm::dismissStepsImport) { Text(stringResource(R.string.ok)) } },
         )
     }
 

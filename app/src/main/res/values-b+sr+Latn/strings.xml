@@ -1203,4 +1203,10 @@
     <string name="calendar_steps_option">Koraci — brojem</string>
     <string name="steps_thousands">%1$sk</string>
     <string name="steps_calendar_description">Koraci: %1$s</string>
+    <string name="steps_import_button">Uvoz iz Samsung Health</string>
+    <string name="steps_import_hint">U Samsung Health: Podešavanja → «Preuzmi lične podatke». Zatim izaberite fajl com.samsung.shealth.step_daily_trend… u fascikli Download/Samsung Health.</string>
+    <string name="steps_import_title">Samsung Health</string>
+    <string name="steps_import_done">Dana u fajlu: %1$s, od %2$s do %3$s.\nDodato: %4$s. Ažurirano: %5$s. Ostavljeno kako je bilo: %6$s — za te dane već postoje podaci iz Health Connect ili upisani ručno.</string>
+    <string name="steps_import_not_export">Ovo nije izvoz koraka iz Samsung Health: fajl nema kolone day_time i count.</string>
+    <string name="steps_import_failed">Fajl nije mogao da se pročita: %1$s</string>
 </resources>

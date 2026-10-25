@@ -1269,4 +1269,10 @@
     <string name="calendar_steps_option">Шаги — числом</string>
     <string name="steps_thousands">%1$sк</string>
     <string name="steps_calendar_description">Шаги: %1$s</string>
+    <string name="steps_import_button">Импорт из Samsung Health</string>
+    <string name="steps_import_hint">В Samsung Health: Настройки → «Загрузить личные данные». Затем выберите файл com.samsung.shealth.step_daily_trend… в папке Download/Samsung Health.</string>
+    <string name="steps_import_title">Samsung Health</string>
+    <string name="steps_import_done">Дней в файле: %1$s, с %2$s по %3$s.\nДобавлено: %4$s. Обновлено: %5$s. Не тронуто: %6$s — в эти дни уже есть данные Health Connect или вписанные вручную.</string>
+    <string name="steps_import_not_export">Это не выгрузка шагов Samsung Health: в файле нет столбцов day_time и count.</string>
+    <string name="steps_import_failed">Файл не прочитался: %1$s</string>
 </resources>
