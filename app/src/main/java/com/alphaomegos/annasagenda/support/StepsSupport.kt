@@ -99,3 +99,26 @@ fun weightOn(date: LocalDate, anthropometry: List<AnthropometryEntry>): Double? 
     val weighed = anthropometry.filter { it.weightKg != null }.sortedBy { it.date }
     return (weighed.lastOrNull { !it.date.isAfter(date) } ?: weighed.firstOrNull())?.weightKg
 }
+
+/**
+ * The stretch of days the Steps tab shows for [range]: as the anthropometry
+ * chart's, except «all», which here runs from the first day with steps — or
+ * just today, before there are any.
+ */
+fun stepsWindowFor(range: AnthropometryRange, today: LocalDate, custom: DateWindow?, days: List<StepDay>): DateWindow =
+    if (range == AnthropometryRange.ALL) {
+        DateWindow(days.minOfOrNull { it.date }?.takeIf { it.isBefore(today) } ?: today, today)
+    } else {
+        anthropometryWindowFor(range, today, custom)
+    }
+
+/**
+ * Every day of [window], newest first, never past [today]: the list under the
+ * chart shows the empty days too, so that any of them can be written in by
+ * hand (Eduard, 19.10).
+ */
+fun stepsListDays(window: DateWindow, today: LocalDate): List<LocalDate> {
+    val last = if (window.to.isAfter(today)) today else window.to
+    if (last.isBefore(window.from)) return emptyList()
+    return generateSequence(last) { it.minusDays(1) }.takeWhile { !it.isBefore(window.from) }.toList()
+}

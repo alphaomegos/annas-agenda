@@ -347,6 +347,29 @@ class ScreenWiringTest {
         assertTrue("the achievements did not open", opened)
     }
 
+    /* ---------------- steps (19.10) ---------------- */
+
+    @Test
+    fun aDayOfSteps_isTypedInFromTheStepsTab() {
+        val today = java.time.LocalDate.now()
+        composeRule.setContent {
+            MaterialTheme { StepsContent(vm = vm, state = vm.state.value, today = today) }
+        }
+        val locale = composeRule.activity.resources.configuration.locales[0]
+        val todayText = java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM", locale).format(today)
+
+        // Today is the first row; with no steps yet it reads «—», and any day can be written in.
+        composeRule.onNodeWithText(todayText).performClick()
+        field(word(R.string.steps_edit_label)).performTextInput("12345")
+        composeRule.onNodeWithText(word(R.string.save)).performClick()
+        composeRule.waitForIdle()
+
+        val day = vm.state.value.stepDays.single()
+        assertEquals(today, day.date)
+        assertEquals(12_345, day.steps)
+        assertEquals(com.alphaomegos.annasagenda.model.StepSource.MANUAL, day.source)
+    }
+
     /* ---------------- tasks (06.10) ---------------- */
 
     @Test

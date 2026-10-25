@@ -1,0 +1,399 @@
+package com.alphaomegos.annasagenda.screens
+
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import com.alphaomegos.annasagenda.R
+import com.alphaomegos.annasagenda.app.AppViewModel
+import com.alphaomegos.annasagenda.app.HealthConnectSteps
+import com.alphaomegos.annasagenda.app.StepsAvailability
+import com.alphaomegos.annasagenda.model.AppState
+import com.alphaomegos.annasagenda.model.StepDay
+import com.alphaomegos.annasagenda.model.StepSource
+import com.alphaomegos.annasagenda.support.AnthropometryRange
+import com.alphaomegos.annasagenda.support.STEPS_HEIGHT_RANGE_CM
+import com.alphaomegos.annasagenda.support.stepMedal
+import com.alphaomegos.annasagenda.support.stepRecords
+import com.alphaomegos.annasagenda.support.stepsDistanceKm
+import com.alphaomegos.annasagenda.support.stepsKcal
+import com.alphaomegos.annasagenda.support.stepsListDays
+import com.alphaomegos.annasagenda.support.stepsWindowFor
+import com.alphaomegos.annasagenda.support.weightOn
+import java.text.NumberFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import kotlin.math.roundToInt
+
+/**
+ * The Steps tab of «On the run» (19.10), laid out like anthropometry: the
+ * range, the chart, and every day of the range under it, newest first.
+ *
+ * A day can be written over by hand (it is marked so, and the mark taken
+ * back returns Health Connect's count); the three best days of all wear gold,
+ * silver and bronze. With a height, each day also shows its distance; with a
+ * height and a weight from anthropometry, the calories walking burned.
+ */
+@Composable
+internal fun StepsContent(
+    vm: AppViewModel,
+    state: AppState,
+    today: LocalDate,
+    modifier: Modifier = Modifier,
+) {
+    val availability by vm.stepsAvailability.collectAsState()
+    val allowed by vm.stepsAllowed.collectAsState()
+
+    // Opening the tab reads again: whether Health Connect is there, whether
+    // the app may read, and the latest days.
+    LaunchedEffect(Unit) { vm.refreshSteps() }
+
+    val window = stepsWindowFor(state.stepsRange, today, state.stepsCustomRange, state.stepDays)
+    val listDays = stepsListDays(window, today)
+    val byDate = remember(state.stepDays) { state.stepDays.associateBy { it.date } }
+    val records = remember(state.stepDays) { stepRecords(state.stepDays) }
+
+    val locale = LocalConfiguration.current.locales[0]
+    val count = remember(locale) { NumberFormat.getIntegerInstance(locale) }
+    val dateFmt = remember(locale) { DateTimeFormatter.ofPattern("EEE, d MMM", locale) }
+    val kmFmt = remember(locale) {
+        NumberFormat.getNumberInstance(locale).apply {
+            minimumFractionDigits = 1
+            maximumFractionDigits = 1
+        }
+    }
+
+    var editing by rememberSaveable { mutableStateOf<Long?>(null) }
+    var heightOpen by rememberSaveable { mutableStateOf(false) }
+
+    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = 24.dp)) {
+        if (!allowed) {
+            item { StepsSourceCard(availability = availability, onAllowed = vm::refreshSteps) }
+        }
+        item {
+            AnthropometryRangeBar(
+                selected = state.stepsRange,
+                custom = state.stepsCustomRange,
+                onSelect = { vm.setStepsRange(it, null) },
+                onCustomPicked = { vm.setStepsRange(AnthropometryRange.CUSTOM, it) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+        item {
+            val shown = listDays.map { byDate[it]?.steps ?: 0 }.reversed()
+            StepsChart(shown)
+            val total = shown.sumOf { it.toLong() }
+            val average = if (shown.isEmpty()) 0L else total / shown.size
+            Text(
+                text = stringResource(R.string.steps_total_average, count.format(total), count.format(average)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+        item {
+            val height = state.stepsHeightCm
+            TextButton(onClick = { heightOpen = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                Text(
+                    if (height != null) stringResource(R.string.steps_height_value, height)
+                    else stringResource(R.string.steps_height_unset)
+                )
+            }
+        }
+        items(listDays, key = { it.toEpochDay() }) { date ->
+            val day = byDate[date]
+            StepsDayRow(
+                date = date,
+                day = day,
+                medal = day?.let { stepMedal(it, records) },
+                dateText = dateFmt.format(date),
+                countText = day?.let { count.format(it.steps) },
+                distanceText = day?.takeIf { it.steps > 0 }?.let { d ->
+                    val height = state.stepsHeightCm ?: return@let null
+                    val km = kmFmt.format(stepsDistanceKm(d.steps, height))
+                    val kcal = weightOn(date, state.anthropometry)?.let { stepsKcal(d.steps, height, it).roundToInt() }
+                    if (kcal != null) stringResource(R.string.steps_km_kcal, km, kcal) else stringResource(R.string.steps_km, km)
+                },
+                onClick = { editing = date.toEpochDay() },
+            )
+        }
+    }
+
+    editing?.let { epochDay ->
+        val date = LocalDate.ofEpochDay(epochDay)
+        val day = byDate[date]
+        StepsEditDialog(
+            title = stringResource(R.string.steps_edit_title, dateFmt.format(date)),
+            initial = day?.steps,
+            typed = day?.source == StepSource.MANUAL,
+            onSave = { steps ->
+                vm.typeSteps(date, steps)
+                editing = null
+            },
+            onTakeBack = {
+                vm.untypeSteps(date)
+                editing = null
+            },
+            onDismiss = { editing = null },
+        )
+    }
+
+    if (heightOpen) {
+        StepsHeightDialog(
+            initial = state.stepsHeightCm,
+            onSave = {
+                vm.setStepsHeight(it)
+                heightOpen = false
+            },
+            onDismiss = { heightOpen = false },
+        )
+    }
+}
+
+/**
+ * Where the steps would come from, while the app may not read them yet:
+ * Health Connect's own permission screen, the store if it is missing, or —
+ * on a phone without it — the plain fact that days can still be typed in.
+ */
+@Composable
+private fun StepsSourceCard(availability: StepsAvailability, onAllowed: () -> Unit) {
+    Surface(
+        tonalElevation = 1.dp,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            when (availability) {
+                StepsAvailability.READY -> {
+                    Text(stringResource(R.string.steps_connect_body), style = MaterialTheme.typography.bodyMedium)
+                    // Composed only where Health Connect is there, so the
+                    // library is never reached below Android 9.
+                    val ask = rememberLauncherForActivityResult(HealthConnectSteps.permissionContract()) { onAllowed() }
+                    Button(onClick = { ask.launch(setOf(HealthConnectSteps.readPermission)) }) {
+                        Text(stringResource(R.string.steps_connect_button))
+                    }
+                }
+                StepsAvailability.NEEDS_INSTALL -> {
+                    val context = LocalContext.current
+                    Text(stringResource(R.string.steps_install_body), style = MaterialTheme.typography.bodyMedium)
+                    FilledTonalButton(onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(HealthConnectSteps.STORE_LINK)))
+                        } catch (_: ActivityNotFoundException) {
+                            // No store on this phone: nothing to open, the text says what is missing.
+                        }
+                    }) { Text(stringResource(R.string.steps_install_button)) }
+                }
+                StepsAvailability.NONE ->
+                    Text(stringResource(R.string.steps_none_here), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+/** A bar a day, oldest on the left; the tallest day fills the height. */
+@Composable
+private fun StepsChart(steps: List<Int>) {
+    val bar = MaterialTheme.colorScheme.primary
+    val description = stringResource(R.string.steps_chart_description)
+    Surface(
+        tonalElevation = 1.dp,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+    ) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .padding(12.dp)
+                .semantics { contentDescription = description },
+        ) {
+            val top = steps.maxOrNull() ?: 0
+            if (steps.isEmpty() || top <= 0) return@Canvas
+            val slot = size.width / steps.size
+            val gap = if (slot > 6f) slot * 0.2f else 0f
+            steps.forEachIndexed { i, n ->
+                if (n <= 0) return@forEachIndexed
+                val h = size.height * n / top
+                drawRect(
+                    color = bar,
+                    topLeft = Offset(i * slot + gap / 2, size.height - h),
+                    size = Size((slot - gap).coerceAtLeast(1f), h),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StepsDayRow(
+    date: LocalDate,
+    day: StepDay?,
+    medal: Int?,
+    dateText: String,
+    countText: String?,
+    distanceText: String?,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(dateText, style = MaterialTheme.typography.bodyLarge)
+            if (distanceText != null) {
+                Text(
+                    text = distanceText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (medal != null) {
+            val medalName = stringResource(
+                when (medal) {
+                    1 -> R.string.steps_medal_gold
+                    2 -> R.string.steps_medal_silver
+                    else -> R.string.steps_medal_bronze
+                }
+            )
+            Text(
+                text = when (medal) { 1 -> "🥇"; 2 -> "🥈"; else -> "🥉" },
+                modifier = Modifier.semantics { contentDescription = medalName },
+            )
+        }
+        if (day?.source == StepSource.MANUAL) {
+            Icon(
+                Icons.Filled.Edit,
+                contentDescription = stringResource(R.string.steps_typed_mark),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        Text(
+            text = countText ?: "—",
+            style = MaterialTheme.typography.titleMedium,
+            color = if (countText == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+/** A day's steps by hand; for a day already typed in, also the way back to Health Connect's count. */
+@Composable
+private fun StepsEditDialog(
+    title: String,
+    initial: Int?,
+    typed: Boolean,
+    onSave: (Int) -> Unit,
+    onTakeBack: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf(initial?.toString() ?: "") }
+    val value = text.filter { it.isDigit() }.take(7).toIntOrNull()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it.filter { c -> c.isDigit() }.take(7) },
+                    label = { Text(stringResource(R.string.steps_edit_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+                if (typed) {
+                    TextButton(onClick = onTakeBack) { Text(stringResource(R.string.steps_take_back)) }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { value?.let(onSave) }, enabled = value != null) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+/** The walker's height, for the distance and the calories; empty takes it away. */
+@Composable
+private fun StepsHeightDialog(initial: Int?, onSave: (Int?) -> Unit, onDismiss: () -> Unit) {
+    var text by rememberSaveable { mutableStateOf(initial?.toString() ?: "") }
+    val value = text.toIntOrNull()
+    val valid = text.isEmpty() || (value != null && value in STEPS_HEIGHT_RANGE_CM)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.steps_height_title)) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.filter { c -> c.isDigit() }.take(3) },
+                label = { Text(stringResource(R.string.steps_height_label)) },
+                singleLine = true,
+                isError = !valid,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(value) }, enabled = valid) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}

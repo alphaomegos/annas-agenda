@@ -2,7 +2,9 @@ package com.alphaomegos.annasagenda.app
 
 import android.content.Context
 import android.os.Build
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
@@ -39,6 +41,17 @@ internal object HealthConnectSteps {
 
     val readPermission: String
         get() = HealthPermission.getReadPermission(StepsRecord::class)
+
+    /**
+     * Health Connect's own screen asking the user to let the app read steps;
+     * what comes back is the set of permissions granted. Only where
+     * [availability] is READY.
+     */
+    fun permissionContract(): ActivityResultContract<Set<String>, Set<String>> =
+        PermissionController.createRequestPermissionResultContract()
+
+    /** Health Connect in the store, for Android 9–13 without it or with an old one. */
+    const val STORE_LINK = "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding"
 
     fun availability(context: Context): StepsAvailability {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return StepsAvailability.NONE

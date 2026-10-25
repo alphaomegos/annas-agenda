@@ -141,7 +141,9 @@ fun RunningPlanScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
-            if (state.runningMode == RunningMode.BETWEEN) {
+            if (state.runningMode == RunningMode.STEPS) {
+                StepsContent(vm = vm, state = state, today = today, modifier = Modifier.fillMaxSize())
+            } else if (state.runningMode == RunningMode.BETWEEN) {
                 RunningWorkoutsContent(
                     workouts = state.runningWorkouts,
                     today = today,

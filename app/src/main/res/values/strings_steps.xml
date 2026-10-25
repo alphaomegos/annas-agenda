@@ -4,4 +4,26 @@
     <string name="steps_privacy_title">Steps and Health Connect</string>
     <string name="steps_privacy_body">Anna\'s Agenda reads one thing from Health Connect: how many steps you took each day, as your phone, your watch and Samsung Health counted them. It writes nothing there. The steps are kept in the app, which works out distance and calories from them; they go into the app\'s backups and leave the phone only encrypted on it. They are shared with no one. You can take the access back at any time in Health Connect\'s settings.</string>
     <string name="steps_privacy_close">Close</string>
+    <!-- Steps tab -->
+    <string name="running_mode_steps">Steps</string>
+    <string name="steps_total_average">In all: %1$s · %2$s a day on average</string>
+    <string name="steps_height_value">Height %1$d cm — for distance and calories</string>
+    <string name="steps_height_unset">Set your height to see distance and calories</string>
+    <string name="steps_height_title">Your height</string>
+    <string name="steps_height_label">Height, cm</string>
+    <string name="steps_connect_body">Steps can come from Health Connect: what Samsung Health, your watch and the phone itself counted. The app only reads them, and keeps each day.</string>
+    <string name="steps_connect_button">Connect Health Connect</string>
+    <string name="steps_install_body">Health Connect is not on this phone yet, or is too old. Install or update it, and come back.</string>
+    <string name="steps_install_button">Open the store</string>
+    <string name="steps_none_here">This phone has no Health Connect. Any day’s steps can still be typed in by hand.</string>
+    <string name="steps_chart_description">Steps per day</string>
+    <string name="steps_km">%1$s km</string>
+    <string name="steps_km_kcal">%1$s km · %2$d kcal</string>
+    <string name="steps_medal_gold">Gold: the best day of all</string>
+    <string name="steps_medal_silver">Silver: the second best day</string>
+    <string name="steps_medal_bronze">Bronze: the third best day</string>
+    <string name="steps_typed_mark">Typed in by hand</string>
+    <string name="steps_edit_title">Steps on %1$s</string>
+    <string name="steps_edit_label">Steps</string>
+    <string name="steps_take_back">Return Health Connect’s count</string>
 </resources>

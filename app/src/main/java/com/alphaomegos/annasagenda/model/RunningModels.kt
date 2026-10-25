@@ -29,6 +29,9 @@ enum class RunningMode {
 
     /** Between races: nothing is planned, runs are written down after. */
     BETWEEN,
+
+    /** Every day's steps (19.10): from Health Connect, or typed in. */
+    STEPS,
 }
 
 /**

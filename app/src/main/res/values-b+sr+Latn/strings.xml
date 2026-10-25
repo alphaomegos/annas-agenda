@@ -1173,4 +1173,25 @@
     <string name="steps_privacy_title">Koraci i Health Connect</string>
     <string name="steps_privacy_body">Anna\'s Agenda iz Health Connect čita samo jedno: koliko ste koraka prešli svakog dana, onako kako su ih izbrojali telefon, sat i Samsung Health. Tamo ništa ne upisuje. Koraci se čuvaju u aplikaciji, koja iz njih računa razdaljinu i kalorije; ulaze u rezervne kopije aplikacije i telefon napuštaju samo šifrovani na njemu. Ni sa kim se ne dele. Pristup možete opozvati u svakom trenutku u podešavanjima Health Connect.</string>
     <string name="steps_privacy_close">Zatvori</string>
+    <string name="running_mode_steps">Koraci</string>
+    <string name="steps_total_average">Ukupno: %1$s · u proseku %2$s dnevno</string>
+    <string name="steps_height_value">Visina %1$d cm — za razdaljinu i kalorije</string>
+    <string name="steps_height_unset">Unesite visinu da biste videli razdaljinu i kalorije</string>
+    <string name="steps_height_title">Vaša visina</string>
+    <string name="steps_height_label">Visina, cm</string>
+    <string name="steps_connect_body">Koraci mogu da stižu iz Health Connect: ono što su izbrojali Samsung Health, sat i sam telefon. Aplikacija ih samo čita i čuva svaki dan kod sebe.</string>
+    <string name="steps_connect_button">Poveži Health Connect</string>
+    <string name="steps_install_body">Health Connect još nije na ovom telefonu ili je zastareo. Instalirajte ga ili ažurirajte, pa se vratite.</string>
+    <string name="steps_install_button">Otvori prodavnicu</string>
+    <string name="steps_none_here">Ovaj telefon nema Health Connect. Korake za bilo koji dan možete upisati ručno.</string>
+    <string name="steps_chart_description">Koraci po danima</string>
+    <string name="steps_km">%1$s km</string>
+    <string name="steps_km_kcal">%1$s km · %2$d kcal</string>
+    <string name="steps_medal_gold">Zlato: najbolji dan</string>
+    <string name="steps_medal_silver">Srebro: drugi najbolji dan</string>
+    <string name="steps_medal_bronze">Bronza: treći najbolji dan</string>
+    <string name="steps_typed_mark">Upisano ručno</string>
+    <string name="steps_edit_title">Koraci za %1$s</string>
+    <string name="steps_edit_label">Koraci</string>
+    <string name="steps_take_back">Vrati podatke iz Health Connect</string>
 </resources>

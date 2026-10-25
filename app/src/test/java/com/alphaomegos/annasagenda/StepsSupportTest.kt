@@ -99,4 +99,20 @@ class StepsSupportTest {
         assertEquals(64.0, weightOn(day.minusDays(30), log)!!, 0.0)
         assertNull(weightOn(day, listOf(AnthropometryEntry(date = day, waistCm = 70.0))))
     }
+
+    @Test
+    fun theTabShowsEveryDayOfItsWindow_newestFirst_neverTomorrow() {
+        val week = stepsWindowFor(AnthropometryRange.WEEK, day, null, emptyList())
+        assertEquals(7, stepsListDays(week, day).size)
+        assertEquals(day, stepsListDays(week, day).first())
+        assertEquals(listOf(day, day.minusDays(1)), stepsListDays(DateWindow(day.minusDays(1), day.plusDays(3)), day))
+        assertEquals(emptyList<LocalDate>(), stepsListDays(DateWindow(day.plusDays(1), day.plusDays(2)), day))
+    }
+
+    @Test
+    fun allRunsFromTheFirstDayWithSteps() {
+        assertEquals(DateWindow(day, day), stepsWindowFor(AnthropometryRange.ALL, day, null, emptyList()))
+        val days = listOf(read(day.minusDays(40), 10), read(day.minusDays(2), 20))
+        assertEquals(DateWindow(day.minusDays(40), day), stepsWindowFor(AnthropometryRange.ALL, day, null, days))
+    }
 }
