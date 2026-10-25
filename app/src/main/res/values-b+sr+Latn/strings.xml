@@ -1247,4 +1247,9 @@
     <string name="steps_together_failed_rejected">Server nije prihvatio — proverite adresu ili ime.</string>
     <string name="steps_together_failed_other">Nešto nije u redu na serveru. Pokušajte kasnije.</string>
     <string name="steps_legend_me">Ja</string>
+    <string name="steps_widget_label">Koraci</string>
+    <string name="steps_widget_description">Koraci za danas, juče i rekord</string>
+    <string name="steps_widget_title">Koraci danas</string>
+    <string name="steps_widget_yesterday">Juče: %1$s</string>
+    <string name="steps_widget_record">Rekord: %1$s</string>
 </resources>

@@ -1313,4 +1313,9 @@
     <string name="steps_together_failed_rejected">Сервер не принял — проверьте адрес или имя.</string>
     <string name="steps_together_failed_other">Что-то пошло не так на сервере. Попробуйте позже.</string>
     <string name="steps_legend_me">Я</string>
+    <string name="steps_widget_label">Шаги</string>
+    <string name="steps_widget_description">Шаги за сегодня, вчера и рекорд</string>
+    <string name="steps_widget_title">Шаги сегодня</string>
+    <string name="steps_widget_yesterday">Вчера: %1$s</string>
+    <string name="steps_widget_record">Рекорд: %1$s</string>
 </resources>

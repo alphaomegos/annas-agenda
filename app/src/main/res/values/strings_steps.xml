@@ -79,4 +79,9 @@
     <string name="steps_together_failed_rejected">The server did not take it — check the address or the name.</string>
     <string name="steps_together_failed_other">Something went wrong on the server. Try later.</string>
     <string name="steps_legend_me">Me</string>
+    <string name="steps_widget_label">Steps</string>
+    <string name="steps_widget_description">Today’s steps, yesterday’s and the record</string>
+    <string name="steps_widget_title">Steps today</string>
+    <string name="steps_widget_yesterday">Yesterday: %1$s</string>
+    <string name="steps_widget_record">Record: %1$s</string>
 </resources>

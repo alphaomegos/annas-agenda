@@ -64,7 +64,7 @@ internal const val EXTRA_OPEN_EPOCH_DAY = "com.alphaomegos.annasagenda.OPEN_EPOC
 private val WidgetTaskKey = ActionParameters.Key<String>("task_key")
 
 /** The state as the app has it now: the live view model's, or what is on disk. */
-private suspend fun currentStateFor(context: Context): AppState? {
+internal suspend fun currentStateFor(context: Context): AppState? {
     LiveAppState.viewModel()?.let { vm ->
         return withContext(Dispatchers.Main) { vm.state.value }
     }
@@ -134,13 +134,13 @@ class TodayTasksWidget : GlanceAppWidget() {
 }
 
 /** Light words on a dark backing, dark on a light one; the theme's pair for SYSTEM. */
-private fun widgetTextColor(style: WidgetStyle): ColorProvider = when (style.textColor) {
+internal fun widgetTextColor(style: WidgetStyle): ColorProvider = when (style.textColor) {
     WidgetTextColor.WHITE -> ColorProvider(Color.White)
     WidgetTextColor.BLACK -> ColorProvider(Color.Black)
     WidgetTextColor.SYSTEM -> DayNightColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5))
 }
 
-private fun widgetBackground(style: WidgetStyle): ColorProvider {
+internal fun widgetBackground(style: WidgetStyle): ColorProvider {
     val alpha = style.backgroundPercent / 100f
     val dark = Color(0xFF1C1B1F).copy(alpha = alpha)
     val light = Color(0xFFFFFBFE).copy(alpha = alpha)
@@ -234,6 +234,8 @@ class TodayTasksWidgetReceiver : GlanceAppWidgetReceiver() {
 
 /** Redraws every widget placed; called by the app when today's tasks may have changed. */
 internal suspend fun refreshTodayWidgets(context: Context) {
+    // The steps widget (25.10) shares the redraw: the same state, the same style.
+    runCatching { StepsWidget().updateAll(context) }
     TodayWidgetRefresh.bump()
     runCatching { TodayTasksWidget().updateAll(context) }
 }

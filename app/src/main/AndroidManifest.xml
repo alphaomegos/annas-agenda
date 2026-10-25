@@ -133,6 +133,19 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/today_tasks_widget_info" />
         </receiver>
+
+        <!-- Today's steps on the home screen (25.10). -->
+        <receiver
+            android:name=".StepsWidgetReceiver"
+            android:exported="true"
+            android:label="@string/steps_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/steps_widget_info" />
+        </receiver>
     </application>
 
 </manifest>
