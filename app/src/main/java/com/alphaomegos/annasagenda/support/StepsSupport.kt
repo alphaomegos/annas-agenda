@@ -156,3 +156,6 @@ fun stepsSourceKind(packageName: String): StepsSourceKind = when {
     packageName == "com.google.android.apps.fitness" -> StepsSourceKind.GOOGLE_FIT
     else -> StepsSourceKind.OTHER
 }
+
+/** A count in thousands to one decimal, for the month's narrow cells: 12 345 is 12.3. */
+fun stepsThousands(steps: Int): Double = Math.round(steps / 100.0) / 10.0

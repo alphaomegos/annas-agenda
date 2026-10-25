@@ -1,5 +1,12 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.support.stepsThousands
+import java.text.NumberFormat
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -52,6 +59,7 @@ fun CalendarMonthRoute(
         locale = locale,
         ensureGeneratedInRange = vm::ensureGeneratedInRange,
         onSetBadges = vm::setCalendarBadges,
+        onSetShowSteps = vm::setCalendarShowSteps,
         onBack = onBack,
         onOpenDay = onOpenDay,
         onOpenSomeday = onOpenSomeday,
@@ -65,6 +73,7 @@ private fun CalendarMonthContent(
     locale: Locale,
     ensureGeneratedInRange: (LocalDate, LocalDate) -> Unit,
     onSetBadges: (Set<CalendarBadge>) -> Unit,
+    onSetShowSteps: (Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenDay: (Long) -> Unit,
     onOpenSomeday: () -> Unit,
@@ -110,6 +119,9 @@ private fun CalendarMonthContent(
         val b = firstDow.value
         ((a - b) + 7) % 7
     }
+
+    // 19.10: each day's steps, for the line under its number.
+    val stepsByDate = remember(state.stepDays) { state.stepDays.associate { it.date to it.steps } }
 
     // 6.3: the marks switched on, day by day.
     val badgesByDate = remember(
@@ -236,6 +248,7 @@ private fun CalendarMonthContent(
                         val count = itemCountByDate[date] ?: 0
                         val isToday = date == today
                         val marks = badgesByDate[date].orEmpty()
+                        val steps = if (state.calendarShowSteps) stepsByDate[date] ?: 0 else 0
 
                         Surface(
                             tonalElevation = if (isToday) 4.dp else 0.dp,
@@ -259,6 +272,7 @@ private fun CalendarMonthContent(
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                 }
+                                if (steps > 0) CalendarStepsLine(steps, locale)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -312,9 +326,11 @@ private fun CalendarMonthContent(
     if (showBadgeSettings) {
         CalendarBadgesDialog(
             initial = state.calendarBadges,
+            initialSteps = state.calendarShowSteps,
             onDismiss = { showBadgeSettings = false },
-            onSave = {
-                onSetBadges(it)
+            onSave = { badges, steps ->
+                onSetBadges(badges)
+                onSetShowSteps(steps)
                 showBadgeSettings = false
             },
         )
@@ -325,9 +341,11 @@ private fun CalendarMonthContent(
 @Composable
 internal fun CalendarBadgesDialog(
     initial: Set<CalendarBadge>,
+    initialSteps: Boolean,
     onDismiss: () -> Unit,
-    onSave: (Set<CalendarBadge>) -> Unit,
+    onSave: (Set<CalendarBadge>, Boolean) -> Unit,
 ) {
+    var steps by rememberSaveable { mutableStateOf(initialSteps) }
     // Names joined into one string: a Bundle takes it as is.
     var pickedText by rememberSaveable { mutableStateOf(initial.joinToString(",") { it.name }) }
     val picked = pickedText.split(',').mapNotNull { n -> CalendarBadge.entries.firstOrNull { it.name == n } }.toSet()
@@ -366,13 +384,52 @@ internal fun CalendarBadgesDialog(
                         )
                     }
                 }
+                // Steps (19.10): a number rather than a mark, so a switch of its own.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { steps = !steps },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = steps, onCheckedChange = { steps = it })
+                    Icon(imageVector = AppIcons.steps, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.calendar_steps_option))
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(picked) }) { Text(stringResource(R.string.ok)) }
+            TextButton(onClick = { onSave(picked, steps) }) { Text(stringResource(R.string.ok)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
+}
+/**
+ * A day's steps under its number (19.10). Usually five digits, in a cell a
+ * seventh of the screen wide: the whole number where it fits, as the phone's
+ * language writes it (12 345, 12,345), and in thousands where it does not
+ * (12,3k) — measured, not guessed, so a wide Fold gets the whole number and
+ * its cover screen the short one.
+ */
+@Composable
+private fun CalendarStepsLine(steps: Int, locale: Locale) {
+    val style = MaterialTheme.typography.labelSmall
+    val measurer = rememberTextMeasurer()
+    val full = remember(steps, locale) { NumberFormat.getIntegerInstance(locale).format(steps) }
+    val thousands = remember(steps, locale) {
+        NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 1 }.format(stepsThousands(steps))
+    }
+    val short = stringResource(R.string.steps_thousands, thousands)
+    val spoken = stringResource(R.string.steps_calendar_description, full)
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = spoken }) {
+        val room = with(LocalDensity.current) { (maxWidth - 12.dp).toPx() }
+        val text = if (measurer.measure(full, style).size.width <= room) full else short
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(imageVector = AppIcons.steps, contentDescription = null, modifier = Modifier.size(10.dp))
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(text = text, style = style, maxLines = 1, softWrap = false)
+        }
+    }
 }

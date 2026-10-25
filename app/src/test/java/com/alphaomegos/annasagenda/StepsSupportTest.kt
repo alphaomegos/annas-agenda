@@ -135,4 +135,11 @@ class StepsSupportTest {
         assertEquals(StepsSourceKind.FITBIT, stepsSourceKind("com.fitbit.FitbitMobile"))
         assertEquals(StepsSourceKind.OTHER, stepsSourceKind("com.example.pedometer"))
     }
+
+    @Test
+    fun theMonthsShortFormIsThousandsToOneDecimal() {
+        assertEquals(12.3, stepsThousands(12_345), 0.0)
+        assertEquals(10.0, stepsThousands(9_960), 0.0)
+        assertEquals(0.4, stepsThousands(420), 0.0)
+    }
 }

@@ -1925,6 +1925,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** 6.3: which marks the calendar puts on its days. */
+    fun setCalendarShowSteps(show: Boolean) {
+        _state.update { cur -> if (cur.calendarShowSteps == show) cur else cur.copy(calendarShowSteps = show) }
+    }
+
     fun setCalendarBadges(badges: Set<CalendarBadge>) {
         val cur = _state.value
         if (cur.calendarBadges != badges) _state.value = cur.copy(calendarBadges = badges)

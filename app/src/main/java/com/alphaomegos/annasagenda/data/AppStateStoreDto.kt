@@ -94,6 +94,7 @@ internal data class AppStateDto(
     val stepsRange: String = "MONTH",
     val stepsCustomFromEpochDay: Long? = null,
     val stepsCustomToEpochDay: Long? = null,
+    val calendarShowSteps: Boolean = true,
     val anthropometryCustomFromEpochDay: Long? = null,
     val anthropometryCustomToEpochDay: Long? = null,
     val calorimeterShowDailyGoal: Boolean = true,

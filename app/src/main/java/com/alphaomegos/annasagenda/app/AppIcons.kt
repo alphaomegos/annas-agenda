@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda.app
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.BreakfastDining
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Category
@@ -29,6 +30,9 @@ import com.alphaomegos.annasagenda.data.*
  * guard test keeps it that way.
  */
 internal object AppIcons {
+
+    /** Steps (19.10): on the month under a day, and beside its switch in the calendar's settings. */
+    val steps: ImageVector = Icons.AutoMirrored.Filled.DirectionsWalk
 
     fun calendarBadge(badge: CalendarBadge): ImageVector = when (badge) {
         CalendarBadge.ANTHROPOMETRY -> Icons.Filled.Straighten

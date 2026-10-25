@@ -123,6 +123,8 @@ data class AppState(
     val stepsHeightCm: Int? = null,
     val stepsRange: AnthropometryRange = AnthropometryRange.MONTH,
     val stepsCustomRange: DateWindow? = null,
+    // A day's steps on the month, under its number (19.10); on unless turned off.
+    val calendarShowSteps: Boolean = true,
 
     // Calorimeter (6.1).
     val calorimeterShowDailyGoal: Boolean = true,

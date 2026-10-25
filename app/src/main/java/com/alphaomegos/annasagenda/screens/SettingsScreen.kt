@@ -232,9 +232,11 @@ fun SettingsScreen(
 
         SETTINGS_CALENDAR -> CalendarBadgesDialog(
             initial = state.calendarBadges,
+            initialSteps = state.calendarShowSteps,
             onDismiss = close,
-            onSave = {
-                vm.setCalendarBadges(it)
+            onSave = { badges, steps ->
+                vm.setCalendarBadges(badges)
+                vm.setCalendarShowSteps(steps)
                 close()
             },
         )

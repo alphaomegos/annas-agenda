@@ -1266,4 +1266,7 @@
     <string name="steps_read_empty_hint">В Health Connect есть только то, что в него записали приложения. Включите запись шагов в Samsung Health (Настройки → Health Connect) или в другом шагомере. Сам телефон начинает считать шаги в Health Connect с момента подключения, без прошлых дней.</string>
     <string name="steps_source_samsung">Samsung Health</string>
     <string name="steps_source_phone">этот телефон</string>
+    <string name="calendar_steps_option">Шаги — числом</string>
+    <string name="steps_thousands">%1$sк</string>
+    <string name="steps_calendar_description">Шаги: %1$s</string>
 </resources>

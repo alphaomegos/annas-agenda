@@ -47,4 +47,12 @@ class StepsStoreTest {
         assertNull(roundTrip(AppState(stepsHeightCm = 20)).stepsHeightCm)
         assertEquals(emptyList<StepDay>(), roundTrip(AppState()).stepDays)
     }
+
+    /** The month shows steps unless turned off — on for a phone updating too, whose saved state has no such field. */
+    @Test
+    fun theMonthShowsStepsUnlessTurnedOff() {
+        val json = """{"v":$CURRENT_SCHEMA_VERSION}"""
+        assertEquals(true, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().calendarShowSteps)
+        assertEquals(false, roundTrip(AppState(calendarShowSteps = false)).calendarShowSteps)
+    }
 }
