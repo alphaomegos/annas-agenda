@@ -81,7 +81,14 @@
     <string name="steps_legend_me">Me</string>
     <string name="steps_widget_label">Steps</string>
     <string name="steps_widget_description">Today’s steps, yesterday’s and the record</string>
-    <string name="steps_widget_title">Steps today</string>
     <string name="steps_widget_yesterday">Yesterday: %1$s</string>
     <string name="steps_widget_record">Record: %1$s</string>
+    <string name="steps_widget_menu">Steps widget</string>
+    <string name="steps_widget_line_yesterday">Yesterday’s steps</string>
+    <string name="steps_widget_line_week">The week’s average</string>
+    <string name="steps_widget_line_goal">A bar towards the day’s goal</string>
+    <string name="steps_widget_line_none">Nothing</string>
+    <string name="steps_widget_goal">The day’s goal, steps</string>
+    <string name="steps_widget_show_record">Show the record</string>
+    <string name="steps_widget_week_average">Week’s average: %1$s</string>
 </resources>

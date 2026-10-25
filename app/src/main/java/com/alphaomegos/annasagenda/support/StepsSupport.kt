@@ -233,3 +233,20 @@ fun stepsSubBar(slotLeft: Float, slotWidth: Float, index: Int, count: Int): Pair
     val width = ((slotWidth - gap) / count.coerceAtLeast(1)).coerceAtLeast(1f)
     return (slotLeft + gap / 2 + index * width) to width
 }
+
+/** A day's goal the app will take (25.10): the widget's bar fills towards it. */
+val STEPS_GOAL_RANGE = 1_000..100_000
+
+/**
+ * The week's average for the widget: the seven whole days before [today] —
+ * today is not over, and would pull it down all morning — a day without
+ * steps counting as nothing, as a pedometer's week does.
+ */
+fun stepsWeekAverage(days: List<StepDay>, today: LocalDate): Int {
+    val byDate = days.associate { it.date to it.steps }
+    return ((1L..7L).sumOf { (byDate[today.minusDays(it)] ?: 0).toLong() } / 7).toInt()
+}
+
+/** How far towards [goal] the day's [steps] are, 0 to 1. */
+fun stepsGoalProgress(steps: Int, goal: Int): Float =
+    if (goal <= 0) 0f else (steps.toFloat() / goal).coerceIn(0f, 1f)

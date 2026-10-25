@@ -1315,7 +1315,14 @@
     <string name="steps_legend_me">Я</string>
     <string name="steps_widget_label">Шаги</string>
     <string name="steps_widget_description">Шаги за сегодня, вчера и рекорд</string>
-    <string name="steps_widget_title">Шаги сегодня</string>
     <string name="steps_widget_yesterday">Вчера: %1$s</string>
     <string name="steps_widget_record">Рекорд: %1$s</string>
+    <string name="steps_widget_menu">Виджет шагов</string>
+    <string name="steps_widget_line_yesterday">Вчерашние шаги</string>
+    <string name="steps_widget_line_week">Среднее за неделю</string>
+    <string name="steps_widget_line_goal">Полоса до цели на день</string>
+    <string name="steps_widget_line_none">Ничего</string>
+    <string name="steps_widget_goal">Цель на день, шагов</string>
+    <string name="steps_widget_show_record">Показывать рекорд</string>
+    <string name="steps_widget_week_average">Среднее за неделю: %1$s</string>
 </resources>

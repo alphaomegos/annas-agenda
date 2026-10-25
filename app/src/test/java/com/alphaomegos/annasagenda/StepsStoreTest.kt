@@ -64,4 +64,21 @@ class StepsStoreTest {
         val json = """{"v":$CURRENT_SCHEMA_VERSION,"stepsChartStyle":"PIE"}"""
         assertEquals(StepsChartStyle.BARS, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().stepsChartStyle)
     }
+
+    /** The widget's options (0310): yesterday, the record and 10 000 unless chosen otherwise; a goal out of range is brought in. */
+    @Test
+    fun theWidgetsOptions() {
+        val fresh = AppState()
+        assertEquals(StepsWidgetLine.YESTERDAY, fresh.stepsWidgetLine)
+        assertEquals(true, fresh.stepsWidgetRecord)
+        assertEquals(10_000, fresh.stepsGoal)
+        val back = roundTrip(AppState(stepsWidgetLine = StepsWidgetLine.GOAL_BAR, stepsWidgetRecord = false, stepsGoal = 12_000))
+        assertEquals(StepsWidgetLine.GOAL_BAR, back.stepsWidgetLine)
+        assertEquals(false, back.stepsWidgetRecord)
+        assertEquals(12_000, back.stepsGoal)
+        val json = """{"v":$CURRENT_SCHEMA_VERSION,"stepsWidgetLine":"RING","stepsGoal":5}"""
+        val odd = appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain()
+        assertEquals(StepsWidgetLine.YESTERDAY, odd.stepsWidgetLine)
+        assertEquals(1_000, odd.stepsGoal)
+    }
 }

@@ -58,3 +58,6 @@ data class StepSharing(
     val accountName: String,
     val customName: Boolean,
 )
+
+/** The steps widget's second line (25.10): yesterday, the week's average, a bar towards the day's goal, or nothing. */
+enum class StepsWidgetLine { YESTERDAY, WEEK_AVERAGE, GOAL_BAR, NONE }

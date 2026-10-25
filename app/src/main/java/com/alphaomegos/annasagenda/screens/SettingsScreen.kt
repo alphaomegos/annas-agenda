@@ -123,6 +123,9 @@ fun SettingsScreen(
                     stringResource(R.string.widget_style_background, state.widgetStyle.backgroundPercent),
                 ) { open = SETTINGS_WIDGET }
             }
+            item {
+                SettingsRow(stringResource(R.string.steps_widget_menu), null) { open = SETTINGS_STEPS_WIDGET }
+            }
 
             item { SettingsSection(stringResource(R.string.settings_section_tasks)) }
             // Done tasks at the bottom of their day (06.10), done subtasks at
@@ -209,6 +212,17 @@ fun SettingsScreen(
         )
 
         SETTINGS_STEPS_TOGETHER -> StepsTogetherDialog(onDismiss = close)
+
+        SETTINGS_STEPS_WIDGET -> StepsWidgetDialog(
+            line = state.stepsWidgetLine,
+            showRecord = state.stepsWidgetRecord,
+            goal = state.stepsGoal,
+            onSave = { line, record, goal ->
+                vm.setStepsWidget(line, record, goal)
+                close()
+            },
+            onDismiss = close,
+        )
 
         SETTINGS_BACK -> BackStyleDialog(
             current = state.backStyle,
@@ -336,6 +350,7 @@ private const val SETTINGS_THEME = "theme"
 private const val SETTINGS_PALETTE = "palette"
 private const val SETTINGS_BACK = "back"
 private const val SETTINGS_STEPS_TOGETHER = "steps-together"
+private const val SETTINGS_STEPS_WIDGET = "steps-widget"
 private const val SETTINGS_NOTIFICATIONS = "notifications"
 private const val SETTINGS_WIDGET = "widget"
 private const val SETTINGS_CALENDAR = "calendar"

@@ -1249,7 +1249,14 @@
     <string name="steps_legend_me">Ja</string>
     <string name="steps_widget_label">Koraci</string>
     <string name="steps_widget_description">Koraci za danas, juče i rekord</string>
-    <string name="steps_widget_title">Koraci danas</string>
     <string name="steps_widget_yesterday">Juče: %1$s</string>
     <string name="steps_widget_record">Rekord: %1$s</string>
+    <string name="steps_widget_menu">Vidžet koraka</string>
+    <string name="steps_widget_line_yesterday">Jučerašnji koraci</string>
+    <string name="steps_widget_line_week">Prosek za nedelju</string>
+    <string name="steps_widget_line_goal">Traka do dnevnog cilja</string>
+    <string name="steps_widget_line_none">Ništa</string>
+    <string name="steps_widget_goal">Dnevni cilj, koraka</string>
+    <string name="steps_widget_show_record">Prikaži rekord</string>
+    <string name="steps_widget_week_average">Prosek za nedelju: %1$s</string>
 </resources>

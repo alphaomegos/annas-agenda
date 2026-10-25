@@ -1,5 +1,8 @@
 package com.alphaomegos.annasagenda
 
+import androidx.glance.unit.ColorProvider
+import androidx.glance.layout.fillMaxWidth
+import androidx.glance.appwidget.LinearProgressIndicator
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.LaunchedEffect
@@ -33,9 +36,11 @@ import java.time.LocalDate
 
 /** What the steps widget shows: today's steps, yesterday's, the record, in the tasks widget's style. */
 private data class StepsWidgetData(
-    val title: String,
     val today: String,
-    val yesterday: String,
+    // The second line as chosen: yesterday's or the week's average as text,
+    // or a bar towards the goal, or nothing.
+    val line: String?,
+    val progress: Float?,
     val record: String?,
     val style: WidgetStyle,
 )
@@ -48,11 +53,17 @@ private suspend fun loadStepsWidget(context: Context): StepsWidgetData {
     val day = LocalDate.now()
     val days = state?.stepDays.orEmpty().associate { it.date to it.steps }
     val best = stepRecords(state?.stepDays.orEmpty()).firstOrNull()
+    val todaySteps = days[day] ?: 0
+    val line = state?.stepsWidgetLine ?: StepsWidgetLine.YESTERDAY
     return StepsWidgetData(
-        title = words.getString(R.string.steps_widget_title),
-        today = count.format(days[day] ?: 0),
-        yesterday = words.getString(R.string.steps_widget_yesterday, count.format(days[day.minusDays(1)] ?: 0)),
-        record = best?.let { words.getString(R.string.steps_widget_record, count.format(it.steps)) },
+        today = count.format(todaySteps),
+        line = when (line) {
+            StepsWidgetLine.YESTERDAY -> words.getString(R.string.steps_widget_yesterday, count.format(days[day.minusDays(1)] ?: 0))
+            StepsWidgetLine.WEEK_AVERAGE -> words.getString(R.string.steps_widget_week_average, count.format(stepsWeekAverage(state?.stepDays.orEmpty(), day)))
+            StepsWidgetLine.GOAL_BAR, StepsWidgetLine.NONE -> null
+        },
+        progress = if (line == StepsWidgetLine.GOAL_BAR) stepsGoalProgress(todaySteps, state?.stepsGoal ?: 10_000) else null,
+        record = if (state?.stepsWidgetRecord != false) best?.let { words.getString(R.string.steps_widget_record, count.format(it.steps)) } else null,
         style = state?.widgetStyle ?: WidgetStyle(),
     )
 }
@@ -82,15 +93,26 @@ class StepsWidget : GlanceAppWidget() {
                         .padding(12.dp)
                         .clickable(actionStartActivity(open)),
                 ) {
-                    Text(text = "🚶 " + data.title, style = TextStyle(color = text, fontSize = 13.sp))
-                    Text(text = data.today, style = TextStyle(color = text, fontSize = 30.sp, fontWeight = FontWeight.Bold))
-                    Text(text = data.yesterday, style = TextStyle(color = text, fontSize = 12.sp))
+                    // No title (25.10, Eduard): the figure and the number say what it is.
+                    Text(text = "🚶 " + data.today, style = TextStyle(color = text, fontSize = 30.sp, fontWeight = FontWeight.Bold))
+                    data.line?.let { Text(text = it, style = TextStyle(color = text, fontSize = 12.sp)) }
+                    data.progress?.let { p ->
+                        LinearProgressIndicator(
+                            progress = p,
+                            modifier = GlanceModifier.fillMaxWidth().padding(vertical = 4.dp),
+                            color = ColorProvider(GOAL_GREEN),
+                            backgroundColor = ColorProvider(GOAL_GREEN.copy(alpha = 0.25f)),
+                        )
+                    }
                     data.record?.let { Text(text = "🥇 $it", style = TextStyle(color = text, fontSize = 12.sp)) }
                 }
             }
         }
     }
 }
+
+/** The bar's green: the app's own, as on its buttons. */
+private val GOAL_GREEN = androidx.compose.ui.graphics.Color(0xFF43A047)
 
 class StepsWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = StepsWidget()

@@ -175,4 +175,15 @@ class StepsSupportTest {
         assertEquals(10_000, niceStepsCeiling(10_000))
         assertEquals(0, niceStepsCeiling(0))
     }
+
+    @Test
+    fun theWidgetsWeekAndGoal() {
+        val days = (1L..7L).map { read(day.minusDays(it), 7_000) } + read(day, 50_000)
+        // The seven whole days before today; today is not over.
+        assertEquals(7_000, stepsWeekAverage(days, day))
+        assertEquals(4_000, stepsWeekAverage(days.drop(3), day))
+        assertEquals(0.5f, stepsGoalProgress(5_000, 10_000), 0f)
+        assertEquals(1f, stepsGoalProgress(25_000, 10_000), 0f)
+        assertEquals(0f, stepsGoalProgress(5_000, 0), 0f)
+    }
 }
