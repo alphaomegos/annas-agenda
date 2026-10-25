@@ -358,7 +358,9 @@ class ScreenWiringTest {
         val locale = composeRule.activity.resources.configuration.locales[0]
         val todayText = java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM", locale).format(today)
 
-        // Today is the first row; with no steps yet it reads «—», and any day can be written in.
+        // Today is the first row of days; with no steps yet it reads «—», and any day can be
+        // written in. Under the import (0299) it is past the test's small screen: scrolled to.
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText(todayText))
         composeRule.onNodeWithText(todayText).performClick()
         field(word(R.string.steps_edit_label)).performTextInput("12345")
         composeRule.onNodeWithText(word(R.string.save)).performClick()
