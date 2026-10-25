@@ -53,6 +53,11 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     anthropometryRange = anthropometryRange.name,
     anthropometryCustomFromEpochDay = anthropometryCustomRange?.from?.toEpochDay(),
     anthropometryCustomToEpochDay = anthropometryCustomRange?.to?.toEpochDay(),
+    stepDays = stepDays.map { StepDayDto(it.date.toEpochDay(), it.steps, it.source.name) },
+    stepsHeightCm = stepsHeightCm,
+    stepsRange = stepsRange.name,
+    stepsCustomFromEpochDay = stepsCustomRange?.from?.toEpochDay(),
+    stepsCustomToEpochDay = stepsCustomRange?.to?.toEpochDay(),
     calorimeterShowDailyGoal = calorimeterShowDailyGoal,
     calorimeterShowWeeklyGoal = calorimeterShowWeeklyGoal,
     calorimeterShowPotentialLoss = calorimeterShowPotentialLoss,
@@ -171,6 +176,18 @@ internal fun AppStateDto.toDomain(): AppState {
         anthropometryShowEntries = anthropometryShowEntries,
         anthropometryRange = anthropometryRangeFromName(anthropometryRange),
         anthropometryCustomRange = dateWindowFromEpochDays(anthropometryCustomFromEpochDay, anthropometryCustomToEpochDay),
+        stepDays = normalizedStepDays(
+            stepDays.map { dto ->
+                StepDay(
+                    date = LocalDate.ofEpochDay(dto.dateEpochDay),
+                    steps = dto.steps,
+                    source = runCatching { StepSource.valueOf(dto.source) }.getOrElse { StepSource.MANUAL },
+                )
+            }
+        ),
+        stepsHeightCm = stepsHeightCm?.takeIf { it in STEPS_HEIGHT_RANGE_CM },
+        stepsRange = anthropometryRangeFromName(stepsRange),
+        stepsCustomRange = dateWindowFromEpochDays(stepsCustomFromEpochDay, stepsCustomToEpochDay),
         calorimeterShowDailyGoal = calorimeterShowDailyGoal,
         calorimeterShowWeeklyGoal = calorimeterShowWeeklyGoal,
         calorimeterShowPotentialLoss = calorimeterShowPotentialLoss,

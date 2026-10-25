@@ -89,6 +89,11 @@ internal data class AppStateDto(
     val anthropometryShowForecast: Boolean = true,
     val anthropometryShowEntries: Boolean = false,
     val anthropometryRange: String = "MONTH",
+    val stepDays: List<StepDayDto> = emptyList(),
+    val stepsHeightCm: Int? = null,
+    val stepsRange: String = "MONTH",
+    val stepsCustomFromEpochDay: Long? = null,
+    val stepsCustomToEpochDay: Long? = null,
     val anthropometryCustomFromEpochDay: Long? = null,
     val anthropometryCustomToEpochDay: Long? = null,
     val calorimeterShowDailyGoal: Boolean = true,
@@ -601,4 +606,11 @@ internal data class ReadingSortDto(
 internal data class ReadingTabPrefsDto(
     val viewMode: String = "GRID",
     val sort: ReadingSortDto = ReadingSortDto(),
+)
+/** One day's steps (19.10); the source by name, an unknown one read as typed in, so nothing overwrites it. */
+@Serializable
+internal data class StepDayDto(
+    val dateEpochDay: Long,
+    val steps: Int,
+    val source: String = "HEALTH_CONNECT",
 )

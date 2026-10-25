@@ -117,6 +117,12 @@ data class AppState(
     val anthropometryShowEntries: Boolean = false,
     val anthropometryRange: AnthropometryRange = AnthropometryRange.MONTH,
     val anthropometryCustomRange: DateWindow? = null,
+    // Steps (19.10): the days kept, the walker's height for distance and
+    // energy, and the range the Steps tab last showed.
+    val stepDays: List<StepDay> = emptyList(),
+    val stepsHeightCm: Int? = null,
+    val stepsRange: AnthropometryRange = AnthropometryRange.MONTH,
+    val stepsCustomRange: DateWindow? = null,
 
     // Calorimeter (6.1).
     val calorimeterShowDailyGoal: Boolean = true,
