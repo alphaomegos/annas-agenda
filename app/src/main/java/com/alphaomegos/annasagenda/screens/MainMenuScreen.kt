@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.model.MainMenuNarrowStyle
+import com.alphaomegos.annasagenda.components.MenuTileLabel
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -276,6 +278,7 @@ fun MainMenuScreen(
         menuEntries = menuEntries,
         menuOrderIds = state.mainMenuOrder,
         menuHiddenIds = state.mainMenuHiddenIds,
+        narrowStyle = state.mainMenuNarrow,
         onMenuOrderChange = vm::setMainMenuOrder,
         onHideMenuItem = vm::hideMainMenuItem,
         onShowAllMenuItems = vm::showAllMainMenuItems,
@@ -408,6 +411,7 @@ internal fun MainMenuContent(
     menuOrderIds: List<String>,
     menuHiddenIds: Set<String>,
     onMenuOrderChange: (List<String>) -> Unit,
+    narrowStyle: MainMenuNarrowStyle = MainMenuNarrowStyle.LIST,
     onHideMenuItem: (String) -> Unit,
     onShowAllMenuItems: () -> Unit,
     onLanguage: () -> Unit,
@@ -528,7 +532,10 @@ internal fun MainMenuContent(
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                val columns = mainMenuColumns(maxWidth.value.toInt())
+                val wide = mainMenuColumns(maxWidth.value.toInt())
+                // A narrow screen as «mini buttons» (25.10): two to a row, pictures only.
+                val miniButtons = wide == 1 && narrowStyle == MainMenuNarrowStyle.ICONS
+                val columns = if (miniButtons) 2 else wide
 
                 // Rearranging stays in whichever shape the menu is in. Until
                 // 0130 the tiles handed over to the list for it, which on the
@@ -538,6 +545,7 @@ internal fun MainMenuContent(
                     MainMenuTiles(
                         items = items,
                         columns = columns,
+                        label = if (miniButtons) MenuTileLabel.IconOnly else MenuTileLabel.Small,
                         reorderMode = reorderMode,
                         canHideItems = items.size > 1,
                         draggingIndex = draggingIndex.intValue,

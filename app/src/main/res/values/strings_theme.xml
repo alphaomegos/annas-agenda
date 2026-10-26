@@ -15,4 +15,7 @@
     <string name="back_style_title">Back button</string>
     <string name="back_style_arrow">An arrow</string>
     <string name="back_style_word">The word “Back”</string>
+    <string name="main_menu_narrow_menu">Main menu on a narrow screen</string>
+    <string name="main_menu_narrow_list">As a list</string>
+    <string name="main_menu_narrow_icons">As mini buttons</string>
 </resources>

@@ -1367,6 +1367,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun setMainMenuNarrow(style: MainMenuNarrowStyle) {
+        _state.update { cur -> if (cur.mainMenuNarrow == style) cur else cur.copy(mainMenuNarrow = style) }
+    }
+
     fun setBackStyle(style: BackStyle) {
         if (_state.value.backStyle == style) return
         _state.value = _state.value.copy(backStyle = style)

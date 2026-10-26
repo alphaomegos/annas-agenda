@@ -55,6 +55,7 @@ internal data class AppStateDto(
     val themeMode: String = "SYSTEM",
     val palette: String = "GREEN",
     val backStyle: String = "ARROW",
+    val mainMenuNarrow: String = "LIST",
 
     // Additive with a default. A payload from before this existed decodes to
     // zero, which makes nextIdFor fall back to counting what is there — the

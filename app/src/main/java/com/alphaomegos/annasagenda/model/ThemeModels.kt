@@ -94,3 +94,13 @@ enum class BackStyle {
 /** Reads a stored style; one this version does not know is the default, the arrow. */
 fun parseBackStyle(raw: String): BackStyle =
     runCatching { BackStyle.valueOf(raw) }.getOrElse { BackStyle.ARROW }
+
+/**
+ * The main menu on a narrow screen (25.10) — the folded Fold, a Pixel: the
+ * list, as it always was, or «mini buttons», two to a row with pictures only,
+ * rearranged by holding as the unfolded Fold's tiles are.
+ */
+enum class MainMenuNarrowStyle { LIST, ICONS }
+
+fun parseMainMenuNarrowStyle(raw: String): MainMenuNarrowStyle =
+    runCatching { MainMenuNarrowStyle.valueOf(raw) }.getOrElse { MainMenuNarrowStyle.LIST }

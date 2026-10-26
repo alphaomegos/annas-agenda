@@ -27,4 +27,13 @@ class BackStyleTest {
         assertTrue(json, json.contains("\"backStyle\":\"WORD\""))
         assertEquals(BackStyle.WORD, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().backStyle)
     }
+
+    /** The main menu on a narrow screen (0314): the list unless «mini buttons» was chosen; kept by name. */
+    @Test
+    fun theNarrowMenuIsAListUnlessChosenOtherwise() {
+        assertEquals(MainMenuNarrowStyle.LIST, AppState().mainMenuNarrow)
+        assertEquals(MainMenuNarrowStyle.LIST, parseMainMenuNarrowStyle("CAROUSEL"))
+        val json = appStateStoreJson.encodeToString(AppState(mainMenuNarrow = MainMenuNarrowStyle.ICONS).toDto())
+        assertEquals(MainMenuNarrowStyle.ICONS, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().mainMenuNarrow)
+    }
 }

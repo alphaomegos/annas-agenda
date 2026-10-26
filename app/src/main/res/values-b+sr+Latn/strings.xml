@@ -1261,4 +1261,7 @@
     <string name="steps_widget_week_average">Prosek za nedelju: %1$s</string>
     <string name="steps_info">Poslednje čitanje</string>
     <string name="steps_info_none">Koraci ovog puta još nisu čitani.</string>
+    <string name="main_menu_narrow_menu">Glavni meni na uskom ekranu</string>
+    <string name="main_menu_narrow_list">Kao lista</string>
+    <string name="main_menu_narrow_icons">Kao mini dugmad</string>
 </resources>

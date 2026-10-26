@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.model.AppPalette
 import com.alphaomegos.annasagenda.model.BackStyle
+import com.alphaomegos.annasagenda.model.MainMenuNarrowStyle
 import com.alphaomegos.annasagenda.model.AppThemeMode
 import com.alphaomegos.annasagenda.R
 
@@ -26,6 +27,11 @@ internal fun themeModeLabelRes(mode: AppThemeMode): Int = when (mode) {
     AppThemeMode.SYSTEM -> R.string.theme_mode_system
     AppThemeMode.LIGHT -> R.string.theme_mode_light
     AppThemeMode.DARK -> R.string.theme_mode_dark
+}
+
+internal fun mainMenuNarrowLabelRes(style: MainMenuNarrowStyle): Int = when (style) {
+    MainMenuNarrowStyle.LIST -> R.string.main_menu_narrow_list
+    MainMenuNarrowStyle.ICONS -> R.string.main_menu_narrow_icons
 }
 
 internal fun backStyleLabelRes(style: BackStyle): Int = when (style) {
@@ -74,6 +80,14 @@ fun BackStyleDialog(
     onPick: (BackStyle) -> Unit,
     onDismiss: () -> Unit,
 ) = OneOfDialog(R.string.back_style_title, BackStyle.entries, current, ::backStyleLabelRes, onPick, onDismiss)
+
+/** The main menu on a narrow screen: the list, or «mini buttons» (25.10). */
+@Composable
+fun MainMenuNarrowDialog(
+    current: MainMenuNarrowStyle,
+    onPick: (MainMenuNarrowStyle) -> Unit,
+    onDismiss: () -> Unit,
+) = OneOfDialog(R.string.main_menu_narrow_menu, MainMenuNarrowStyle.entries, current, ::mainMenuNarrowLabelRes, onPick, onDismiss)
 
 @Composable
 private fun <T> OneOfDialog(

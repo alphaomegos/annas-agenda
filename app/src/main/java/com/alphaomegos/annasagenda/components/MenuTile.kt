@@ -44,7 +44,8 @@ import androidx.compose.ui.unit.dp
  * only there to confirm it — one line, small, and as little of the tile as a
  * word can take.
  */
-internal enum class MenuTileLabel { Regular, Small }
+/** Regular and Small carry the title under the picture; IconOnly (25.10, «mini buttons») shows the picture alone. */
+internal enum class MenuTileLabel { Regular, Small, IconOnly }
 
 /** A section not there yet: its picture in grey, a little faded. */
 internal val comingSoonIconFilter: ColorFilter =
@@ -78,7 +79,8 @@ internal fun MenuTile(
     // Said under a grey tile's name; "Coming soon" when none is given.
     greyNote: String? = null,
 ) {
-    val small = label == MenuTileLabel.Small
+    val small = label != MenuTileLabel.Regular
+    val titled = label != MenuTileLabel.IconOnly
 
     val shape = RoundedCornerShape(22.dp)
     val colorsEnabled = CardDefaults.elevatedCardColors(
@@ -107,7 +109,8 @@ internal fun MenuTile(
             ) {
                 Image(
                     painter = painterResource(iconRes),
-                    contentDescription = null,
+                    // Without a title under it, the picture says what it is to TalkBack.
+                    contentDescription = if (titled) null else title,
                     colorFilter = if (comingSoon) comingSoonIconFilter else null,
                     modifier = Modifier
                         .fillMaxSize()
@@ -117,9 +120,9 @@ internal fun MenuTile(
                 )
             }
 
-            Spacer(Modifier.height(if (small) 4.dp else 8.dp))
+            if (titled) Spacer(Modifier.height(if (small) 4.dp else 8.dp))
 
-            Text(
+            if (titled) Text(
                 text = title,
                 style = if (small) {
                     MaterialTheme.typography.labelMedium
@@ -132,7 +135,7 @@ internal fun MenuTile(
                 color = if (comingSoon) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (comingSoon) {
+            if (comingSoon && titled) {
                 Text(
                     text = greyNote ?: stringResource(R.string.menu_coming_soon),
                     style = MaterialTheme.typography.labelSmall,

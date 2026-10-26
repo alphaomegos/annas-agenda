@@ -89,6 +89,7 @@ internal fun MainMenuTiles(
     onHideItem: (String) -> Unit,
     onStopDragging: () -> Unit,
     modifier: Modifier = Modifier,
+    label: MenuTileLabel = MenuTileLabel.Small,
 ) {
     val haptics = LocalHapticFeedback.current
     val gridState = rememberLazyGridState()
@@ -207,7 +208,7 @@ internal fun MainMenuTiles(
                         onClick = if (reorderMode) null else item.onClick,
                         comingSoon = item.comingSoon,
                         greyNote = item.greyNoteRes?.let { stringResource(it) },
-                        label = MenuTileLabel.Small,
+                        label = label,
                         onLongClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             onStartReorder()

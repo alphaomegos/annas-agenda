@@ -44,6 +44,8 @@ import com.alphaomegos.annasagenda.support.UNDONE_HORIZON_CHOICES
 import com.alphaomegos.annasagenda.support.metroShown
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
 import com.alphaomegos.annasagenda.components.BackStyleDialog
+import com.alphaomegos.annasagenda.components.MainMenuNarrowDialog
+import com.alphaomegos.annasagenda.components.mainMenuNarrowLabelRes
 import com.alphaomegos.annasagenda.components.PaletteDialog
 import com.alphaomegos.annasagenda.components.backStyleLabelRes
 import com.alphaomegos.annasagenda.components.ThemeModeDialog
@@ -116,6 +118,12 @@ fun SettingsScreen(
                     stringResource(R.string.back_style_menu),
                     stringResource(backStyleLabelRes(state.backStyle)),
                 ) { open = SETTINGS_BACK }
+            }
+            item {
+                SettingsRow(
+                    stringResource(R.string.main_menu_narrow_menu),
+                    stringResource(mainMenuNarrowLabelRes(state.mainMenuNarrow)),
+                ) { open = SETTINGS_MENU_NARROW }
             }
             item {
                 SettingsRow(
@@ -221,6 +229,12 @@ fun SettingsScreen(
                 vm.setStepsWidget(line, record, goal)
                 close()
             },
+            onDismiss = close,
+        )
+
+        SETTINGS_MENU_NARROW -> MainMenuNarrowDialog(
+            current = state.mainMenuNarrow,
+            onPick = vm::setMainMenuNarrow,
             onDismiss = close,
         )
 
@@ -349,6 +363,7 @@ fun SettingsScreen(
 private const val SETTINGS_THEME = "theme"
 private const val SETTINGS_PALETTE = "palette"
 private const val SETTINGS_BACK = "back"
+private const val SETTINGS_MENU_NARROW = "menu-narrow"
 private const val SETTINGS_STEPS_TOGETHER = "steps-together"
 private const val SETTINGS_STEPS_WIDGET = "steps-widget"
 private const val SETTINGS_NOTIFICATIONS = "notifications"
