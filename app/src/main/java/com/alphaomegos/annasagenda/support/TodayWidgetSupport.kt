@@ -14,12 +14,42 @@ data class WidgetTaskRow(
     val title: String,
     val time: LocalTime?,
     val isDone: Boolean,
+    // A task with subtasks (25.10, Eduard): its progress, done of all, instead
+    // of a tick — the subtasks themselves are not rows in the widget.
+    val progress: Pair<Int, Int>? = null,
 )
 
-/** Today's tasks as the day screen orders them: timed ones by the clock, then the rest by hand. */
-fun todayWidgetRows(state: AppState, today: LocalDate, weekStart: DayOfWeek): List<WidgetTaskRow> =
-    tasksInDayOrder(tasksForNotifications(state, today, today, weekStart), state.doneTasksLast)
-        .map { WidgetTaskRow(notificationTaskKey(it), it.description, it.time, it.isDone) }
+/**
+ * Today's tasks as the day screen orders them: timed ones by the clock, then
+ * the rest by hand; done ones where the app puts them (doneTasksLast). Every
+ * one — the list scrolls (25.10, Eduard) — and subtasks never as rows of their
+ * own: a task with them shows its progress.
+ */
+fun todayWidgetRows(state: AppState, today: LocalDate, weekStart: DayOfWeek): List<WidgetTaskRow> {
+    val drawn = generateRecurrencesInRange(
+        tasks = state.tasks,
+        subtasks = state.subtasks,
+        suppressedRecurrences = state.suppressedRecurrences,
+        start = today,
+        end = today,
+        nextId = maxOf(nextIdFor(state), state.idHighWater) + 1_000_000L,
+        defaultWeekStart = weekStart,
+    )
+    val subtasksOf = drawn.subtasks.groupBy { it.taskId }
+    val todays = drawn.tasks.filter { t ->
+        t.date == today && !isSuppressedTemplateTaskOnItsDate(t, state.suppressedRecurrences)
+    }
+    return tasksInDayOrder(todays, state.doneTasksLast).map { task ->
+        val subs = subtasksOf[task.id].orEmpty()
+        WidgetTaskRow(
+            key = notificationTaskKey(task),
+            title = task.description,
+            time = task.time,
+            isDone = task.isDone,
+            progress = if (subs.isEmpty()) null else subs.count { it.isDone } to subs.size,
+        )
+    }
+}
 
 /** What a tick from the widget produced, and where the id counter now stands. */
 data class WidgetToggleResult(val state: AppState, val nextId: Long)

@@ -178,7 +178,19 @@ private fun WidgetContent(data: WidgetContentData, openToday: Intent) {
             LazyColumn {
                 items(data.rows, itemId = { it.key.hashCode().toLong() }) { row ->
                     val label = (row.time?.let { formatTaskTime(it) + "  " }.orEmpty()) + row.title
-                    CheckBox(
+                    val progress = row.progress
+                    // A task with subtasks: its progress, not a tick (25.10); its
+                    // subtasks are ticked in the app, which a tap opens.
+                    if (progress != null) {
+                        Text(
+                            text = "${progress.first}/${progress.second}   $label",
+                            style = TextStyle(color = text),
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp, horizontal = 4.dp)
+                                .clickable(actionStartActivity(openToday)),
+                        )
+                    } else CheckBox(
                         checked = row.isDone,
                         onCheckedChange = actionRunCallback<ToggleTaskFromWidget>(
                             actionParametersOf(WidgetTaskKey to row.key)

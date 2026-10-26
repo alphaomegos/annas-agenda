@@ -29,6 +29,22 @@ class TodayWidgetSupportTest {
 
     private val state = AppState(tasks = listOf(plain, timed, tomorrow, daily))
 
+    /** A task with subtasks shows its progress, not its subtasks as rows (0316, Eduard). */
+    @Test
+    fun aTaskWithSubtasksShowsItsProgress() {
+        val work = Task(id = 10, date = today, description = "Работа", order = 5, hasSubtasks = true)
+        val subs = listOf(
+            Subtask(id = 11, taskId = 10, description = "a", isDone = true),
+            Subtask(id = 12, taskId = 10, description = "b"),
+            Subtask(id = 13, taskId = 10, description = "c"),
+        )
+        val rows = todayWidgetRows(state.copy(tasks = state.tasks + work, subtasks = subs), today, weekStart)
+        assertEquals(1 to 3, rows.single { it.title == "Работа" }.progress)
+        assertEquals(null, rows.single { it.title == "Магазин" }.progress)
+        // No subtask is a row of its own.
+        assertTrue(rows.none { it.title in setOf("a", "b", "c") })
+    }
+
     @Test
     fun theWidgetShowsTodayInDayOrderRepeatsIncluded() {
         val rows = todayWidgetRows(state, today, weekStart)
@@ -103,4 +119,5 @@ class TodayWidgetLookTest {
         assertEquals(0, normalizedWidgetStyle(WidgetStyle(backgroundPercent = -20)).backgroundPercent)
         assertEquals(100, normalizedWidgetStyle(WidgetStyle(backgroundPercent = 140)).backgroundPercent)
     }
+
 }
