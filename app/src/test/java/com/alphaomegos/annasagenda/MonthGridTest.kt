@@ -16,4 +16,14 @@ class MonthGridTest {
         }
         assertEquals(0, monthCellHeightPx(10, 16, 6))
     }
+
+    /** The figure stays; the number goes beside it if it can, under it if not (0313). */
+    @Test
+    fun stepsSitBesideTheFigureOrUnderIt() {
+        val texts = listOf("12 345", "12,3k", "12k")
+        assertEquals(true to "12,3k", com.alphaomegos.annasagenda.support.stepsCellChoice(texts, { it.length <= 5 }, { true }))
+        assertEquals(false to "12 345", com.alphaomegos.annasagenda.support.stepsCellChoice(texts, { false }, { true }))
+        assertEquals(false to "12k", com.alphaomegos.annasagenda.support.stepsCellChoice(texts, { false }, { it.length <= 3 }))
+        assertEquals(false to "12k", com.alphaomegos.annasagenda.support.stepsCellChoice(texts, { false }, { false }))
+    }
 }

@@ -1,7 +1,12 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.filled.Check
 import com.alphaomegos.annasagenda.support.stepsThousands
 import com.alphaomegos.annasagenda.support.monthCellHeightPx
+import com.alphaomegos.annasagenda.support.stepsCellChoice
 import java.text.NumberFormat
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -266,9 +271,13 @@ private fun CalendarMonthContent(
                                 .border(1.dp, cellBorderColor, cellShape)
                                 .clickable { onOpenDay(date.toEpochDay()) }
                         ) {
+                            // The day's number at the top, its steps right under it — at
+                            // the same height in every cell, whatever is below (25.10) —
+                            // and the tasks and marks at the bottom.
                             Column(
-                                modifier = Modifier.padding(8.dp),
-                                verticalArrangement = Arrangement.SpaceBetween
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 6.dp, vertical = 8.dp),
                             ) {
                                 Box(
                                     modifier = Modifier.size(24.dp),
@@ -279,12 +288,23 @@ private fun CalendarMonthContent(
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                 }
-                                if (steps > 0) CalendarStepsLine(steps, locale)
+                                if (steps > 0) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    CalendarStepsLine(steps, locale)
+                                }
+                                Spacer(modifier = Modifier.weight(1f))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     if (count > 0) {
+                                        // A tick says what the number is (25.10): the day's tasks.
+                                        Icon(
+                                            imageVector = Icons.Filled.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(12.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
                                         Text(
                                             text = count.toString(),
                                             style = MaterialTheme.typography.labelMedium
@@ -431,22 +451,30 @@ private fun CalendarStepsLine(steps: Int, locale: Locale) {
     val short = stringResource(R.string.steps_thousands, thousands)
     val spoken = stringResource(R.string.steps_calendar_description, full)
     // What fits, best first (25.10: on the folded Fold 3 not even «12,3k» did
-    // beside the figure): the whole number with the figure, thousands with it,
-    // thousands alone, whole thousands alone.
+    // beside the figure): the whole number, thousands, whole thousands.
     val whole = stringResource(R.string.steps_thousands, Math.round(steps / 1000.0).toString())
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = spoken }) {
         val density = LocalDensity.current
         val room = with(density) { maxWidth.toPx() }
         val figure = with(density) { 12.dp.toPx() }
-        val (withFigure, text) = listOf(true to full, true to short, false to short, false to whole)
-            .firstOrNull { (fig, t) -> measurer.measure(t, style).size.width + (if (fig) figure else 0f) <= room }
-            ?: (false to whole)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (withFigure) {
+        // The figure always (25.10: without it nobody could tell what the number
+        // was): beside the number where both fit, above it where they do not.
+        val (beside, text) = stepsCellChoice(
+            listOf(full, short, whole),
+            fitsBeside = { measurer.measure(it, style).size.width + figure <= room },
+            fitsAlone = { measurer.measure(it, style).size.width <= room },
+        )
+        if (beside) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(imageVector = AppIcons.steps, contentDescription = null, modifier = Modifier.size(10.dp))
                 Spacer(modifier = Modifier.width(2.dp))
+                Text(text = text, style = style, maxLines = 1, softWrap = false)
             }
-            Text(text = text, style = style, maxLines = 1, softWrap = false)
+        } else {
+            Column {
+                Icon(imageVector = AppIcons.steps, contentDescription = null, modifier = Modifier.size(10.dp))
+                Text(text = text, style = style, maxLines = 1, softWrap = false)
+            }
         }
     }
 }
