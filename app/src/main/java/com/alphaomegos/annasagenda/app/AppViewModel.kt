@@ -1795,6 +1795,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    /* ---------- day counters (26.10) ---------- */
+
+    fun addDayTimer(title: String, startDate: LocalDate) {
+        val cleanTitle = normalizeCounterTitleOrNull(title) ?: return
+        _state.value = stateWithAddedCounter(_state.value, DayTimerCounter(id = newId(), title = cleanTitle, startDate = startDate))
+    }
+
+    fun updateDayTimer(counterId: Long, title: String, startDate: LocalDate, correction: Int) {
+        val cleanTitle = normalizeCounterTitleOrNull(title) ?: return
+        _state.update { cur ->
+            cur.copy(counters = cur.counters.map { c ->
+                if (c is DayTimerCounter && c.id == counterId) c.copy(title = cleanTitle, startDate = startDate, correction = correction) else c
+            })
+        }
+    }
+
+    /** A hand correction of [delta] (the card's − and +). */
+    fun adjustDayTimer(counterId: Long, delta: Int) {
+        _state.update { cur -> cur.copy(counters = countersWithDayTimerCorrection(cur.counters, counterId, delta)) }
+    }
+
+    /** «Start over»: from today, no correction. */
+    fun restartDayTimer(counterId: Long) {
+        _state.update { cur -> cur.copy(counters = countersWithDayTimerRestarted(cur.counters, counterId, LocalDate.now())) }
+    }
+
     fun addManualCounter(title: String, balance: Int) {
         val cleanTitle = normalizeCounterTitleOrNull(title) ?: return
         val cur = _state.value

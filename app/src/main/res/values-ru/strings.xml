@@ -1332,4 +1332,16 @@
     <string name="main_menu_narrow_icons">Мини-кнопками</string>
     <string name="widget_error_tasks">Не удалось показать задачи. Нажмите, чтобы открыть приложение.</string>
     <string name="widget_error_steps">Не удалось показать шаги. Нажмите, чтобы открыть приложение.</string>
+    <string name="counter_type_day_timer">Таймер (дни с даты)</string>
+    <string name="day_timer_first_day">Первый день.</string>
+    <string name="day_timer_elapsed">Прошло %1$s.</string>
+    <string name="day_timer_correction">Ручная корректировка %1$s.</string>
+    <string name="day_timer_correction_label">Ручная корректировка</string>
+    <string name="day_timer_restart">Начать заново с сегодня</string>
+    <plurals name="counter_elapsed_weeks">
+        <item quantity="one">%1$d неделя</item>
+        <item quantity="few">%1$d недели</item>
+        <item quantity="many">%1$d недель</item>
+        <item quantity="other">%1$d недели</item>
+    </plurals>
 </resources>

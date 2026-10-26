@@ -10,6 +10,7 @@ import com.alphaomegos.annasagenda.app.*
 
 /** Years, months or days, as a countdown says them. */
 enum class RemainingUnit {
+    WEEKS,
     YEARS,
     MONTHS,
     DAYS,
@@ -67,3 +68,33 @@ fun remainingFractionOf(start: LocalDate, end: LocalDate, today: LocalDate): Dou
 
     return (remainingDays.toDouble() / totalDays.toDouble()).coerceIn(0.0, 1.0)
 }
+
+/** A day counter's number (26.10): the days since its start, the start day being 1, plus the correction. */
+fun dayTimerValue(counter: DayTimerCounter, today: LocalDate): Int {
+    val days = if (today.isBefore(counter.startDate)) 0L else java.time.temporal.ChronoUnit.DAYS.between(counter.startDate, today) + 1
+    return (days + counter.correction).coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
+}
+
+/**
+ * How long ago a day counter started, as the calendar has it: years, months,
+ * weeks and days, the empty ones left out (26.10: «Прошло 2 месяца 1 неделя
+ * 2 дня»); the correction does not touch it. Nothing yet on its first day.
+ */
+fun dayTimerElapsedParts(start: LocalDate, today: LocalDate): List<RemainingPart> {
+    if (!today.isAfter(start)) return emptyList()
+    val period = java.time.Period.between(start, today)
+    return buildList {
+        if (period.years != 0) add(RemainingPart(RemainingUnit.YEARS, period.years))
+        if (period.months != 0) add(RemainingPart(RemainingUnit.MONTHS, period.months))
+        if (period.days / 7 != 0) add(RemainingPart(RemainingUnit.WEEKS, period.days / 7))
+        if (period.days % 7 != 0) add(RemainingPart(RemainingUnit.DAYS, period.days % 7))
+    }
+}
+
+/** The counters with one day counter's correction moved by [delta]. */
+fun countersWithDayTimerCorrection(counters: List<Counter>, counterId: Long, delta: Int): List<Counter> =
+    counters.map { c -> if (c is DayTimerCounter && c.id == counterId) c.copy(correction = c.correction + delta) else c }
+
+/** The counters with one day counter started over: from [today], no correction. */
+fun countersWithDayTimerRestarted(counters: List<Counter>, counterId: Long, today: LocalDate): List<Counter> =
+    counters.map { c -> if (c is DayTimerCounter && c.id == counterId) c.copy(startDate = today, correction = 0) else c }

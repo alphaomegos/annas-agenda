@@ -35,4 +35,14 @@
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
     </plurals>
+    <string name="counter_type_day_timer">Timer (days since a date)</string>
+    <string name="day_timer_first_day">The first day.</string>
+    <string name="day_timer_elapsed">%1$s have passed.</string>
+    <string name="day_timer_correction">Manual correction %1$s.</string>
+    <string name="day_timer_correction_label">Manual correction</string>
+    <string name="day_timer_restart">Start over from today</string>
+    <plurals name="counter_elapsed_weeks">
+        <item quantity="one">%1$d week</item>
+        <item quantity="other">%1$d weeks</item>
+    </plurals>
 </resources>

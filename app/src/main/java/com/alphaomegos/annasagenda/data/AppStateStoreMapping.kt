@@ -515,6 +515,16 @@ internal fun Counter.toDto(): CounterDto = when (this) {
         title = title,
         balance = balance,
     )
+
+    // The day counter's correction rides in balance; an older version, not
+    // knowing the kind, leaves the counter out rather than misreading it.
+    is DayTimerCounter -> CounterDto(
+        id = id,
+        kind = "DAY_TIMER",
+        title = title,
+        startEpochDay = startDate.toEpochDay(),
+        balance = correction,
+    )
 }
 
 internal fun CounterDto.toDomainOrNull(): Counter? = when (kind) {
@@ -534,6 +544,10 @@ internal fun CounterDto.toDomainOrNull(): Counter? = when (kind) {
         title = title,
         balance = balance ?: 0
     )
+
+    "DAY_TIMER" -> startEpochDay?.let { s ->
+        DayTimerCounter(id = id, title = title, startDate = LocalDate.ofEpochDay(s), correction = balance ?: 0)
+    }
 
     else -> null
 }

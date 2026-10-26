@@ -1,5 +1,9 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.support.dayTimerElapsedParts
+import com.alphaomegos.annasagenda.support.dayTimerValue
+import androidx.compose.foundation.layout.width
+import com.alphaomegos.annasagenda.model.DayTimerCounter
 import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -56,6 +60,10 @@ fun CountersScreen(
     // for editing. A counter is a running total the user has been keeping —
     // there is no undo, and nothing else on the card is destructive.
     val pendingDeleteId = rememberSaveable { mutableStateOf<Long?>(null) }
+    // Day counters (26.10): the one being created, and the one being edited.
+    val showCreateTimerDialog = rememberSaveable { mutableStateOf(false) }
+    val editTimerId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val editTimer = state.counters.filterIsInstance<DayTimerCounter>().firstOrNull { it.id == editTimerId.value }
 
     val editManual = state.counters
         .filterIsInstance<ManualCounter>()
@@ -111,12 +119,50 @@ fun CountersScreen(
                             onClick = { editDateRangeId.value = c.id },
                             onDelete = { pendingDeleteId.value = c.id }
                         )
+                        is DayTimerCounter -> DayTimerCard(
+                            counter = c,
+                            today = LocalDate.now(),
+                            onClick = { editTimerId.value = c.id },
+                            onAdjust = { delta -> vm.adjustDayTimer(c.id, delta) },
+                            onDelete = { pendingDeleteId.value = c.id },
+                        )
                     }
                 }
             }
         }
     }
 
+    if (showCreateTimerDialog.value) {
+        DayTimerDialog(
+            title = stringResource(R.string.counter_type_day_timer),
+            initialTitle = "",
+            initialStart = LocalDate.now(),
+            initialCorrection = null,
+            onDismiss = { showCreateTimerDialog.value = false },
+            onRestart = null,
+            onSave = { t, s, _ ->
+                vm.addDayTimer(t, s)
+                showCreateTimerDialog.value = false
+            },
+        )
+    }
+    editTimer?.let { c ->
+        DayTimerDialog(
+            title = c.title,
+            initialTitle = c.title,
+            initialStart = c.startDate,
+            initialCorrection = c.correction,
+            onDismiss = { editTimerId.value = null },
+            onRestart = {
+                vm.restartDayTimer(c.id)
+                editTimerId.value = null
+            },
+            onSave = { t, s, k ->
+                vm.updateDayTimer(c.id, t, s, k)
+                editTimerId.value = null
+            },
+        )
+    }
     if (showAddTypeDialog.value) {
         AlertDialog(
             onDismissRequest = { showAddTypeDialog.value = false },
@@ -127,6 +173,10 @@ fun CountersScreen(
                         showAddTypeDialog.value = false
                         showCreateDateDialog.value = true
                     }) { Text(stringResource(R.string.counter_type_date_range)) }
+                    TextButton(onClick = {
+                        showAddTypeDialog.value = false
+                        showCreateTimerDialog.value = true
+                    }) { Text(stringResource(R.string.counter_type_day_timer)) }
 
                     TextButton(onClick = {
                         showAddTypeDialog.value = false
@@ -216,6 +266,110 @@ fun CountersScreen(
             }
         )
     }
+}
+
+/**
+ * A day counter (26.10): its title and number, how long since it started,
+ * the hand correction if there is one, and − and + to correct it.
+ */
+@Composable
+private fun DayTimerCard(
+    counter: DayTimerCounter,
+    today: LocalDate,
+    onClick: () -> Unit,
+    onAdjust: (Int) -> Unit,
+    onDelete: () -> Unit,
+) {
+    val parts = dayTimerElapsedParts(counter.startDate, today)
+    val elapsed = if (parts.isEmpty()) stringResource(R.string.day_timer_first_day)
+    else stringResource(R.string.day_timer_elapsed, remainingText(parts))
+    val correction = if (counter.correction == 0) "" else " " + stringResource(
+        R.string.day_timer_correction, (if (counter.correction > 0) "+" else "") + counter.correction,
+    )
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(counter.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f, fill = false))
+                    Spacer(Modifier.width(8.dp))
+                    Text(dayTimerValue(counter, today).toString(), style = MaterialTheme.typography.titleLarge)
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(elapsed + correction, style = MaterialTheme.typography.bodyMedium)
+            }
+            IconButton(onClick = { onAdjust(-1) }) { Text("−", style = MaterialTheme.typography.titleLarge) }
+            IconButton(onClick = { onAdjust(1) }) { Text("+", style = MaterialTheme.typography.titleLarge) }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
+            }
+        }
+    }
+}
+
+/**
+ * A day counter's dialog (26.10): the title and the start date (today unless
+ * changed); when editing, the hand correction as a number and «Start over».
+ */
+@Composable
+private fun DayTimerDialog(
+    title: String,
+    initialTitle: String,
+    initialStart: LocalDate,
+    initialCorrection: Int?,
+    onDismiss: () -> Unit,
+    onRestart: (() -> Unit)?,
+    onSave: (String, LocalDate, Int) -> Unit,
+) {
+    var t by rememberSaveable { mutableStateOf(initialTitle) }
+    var startText by rememberSaveable { mutableStateOf(initialStart.toString()) }
+    var correctionText by rememberSaveable { mutableStateOf((initialCorrection ?: 0).toString()) }
+    val start = runCatching { LocalDate.parse(startText.trim()) }.getOrNull()
+    val correction = correctionText.trim().toIntOrNull()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = t,
+                    onValueChange = { t = it },
+                    label = { Text(stringResource(R.string.counter_title)) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = startText,
+                    onValueChange = { startText = it },
+                    label = { Text(stringResource(R.string.start_date_iso)) },
+                    singleLine = true,
+                    isError = start == null,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (initialCorrection != null) {
+                    OutlinedTextField(
+                        value = correctionText,
+                        onValueChange = { v -> correctionText = v.filterIndexed { i, ch -> ch.isDigit() || (i == 0 && ch == '-') }.take(7) },
+                        label = { Text(stringResource(R.string.day_timer_correction_label)) },
+                        singleLine = true,
+                        isError = correction == null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                if (onRestart != null) {
+                    TextButton(onClick = onRestart) { Text(stringResource(R.string.day_timer_restart)) }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(t, start!!, correction ?: 0) },
+                enabled = t.trim().isNotEmpty() && start != null && (initialCorrection == null || correction != null),
+            ) { Text(stringResource(R.string.ok)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable
@@ -317,6 +471,7 @@ private fun remainingText(parts: List<RemainingPart>): String {
 }
 
 private fun pluralResFor(unit: RemainingUnit): Int = when (unit) {
+    RemainingUnit.WEEKS -> R.plurals.counter_elapsed_weeks
     RemainingUnit.YEARS -> R.plurals.counter_remaining_years
     RemainingUnit.MONTHS -> R.plurals.counter_remaining_months
     RemainingUnit.DAYS -> R.plurals.counter_remaining_days
