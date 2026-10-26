@@ -79,3 +79,9 @@
 # written here as well, so that the next library to bring Room cannot do it
 # again.
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
+
+# The widgets (25.10): Glance finds a widget's ids by its class's name as it
+# once wrote it down, and R8 renaming or merging the two widget classes made
+# the steps widget's name find the tasks widget — which turned into steps.
+# Their names are kept, and the app redraws each by its receiver's ids anyway.
+-keep class * extends androidx.glance.appwidget.GlanceAppWidget { <init>(); }

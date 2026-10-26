@@ -32,7 +32,6 @@ import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
@@ -234,8 +233,21 @@ class TodayTasksWidgetReceiver : GlanceAppWidgetReceiver() {
 
 /** Redraws every widget placed; called by the app when today's tasks may have changed. */
 internal suspend fun refreshTodayWidgets(context: Context) {
-    // The steps widget (25.10) shares the redraw: the same state, the same style.
-    runCatching { StepsWidget().updateAll(context) }
     TodayWidgetRefresh.bump()
-    runCatching { TodayTasksWidget().updateAll(context) }
+    // Each widget redrawn by its own receiver's ids (25.10). updateAll finds a
+    // widget's ids by its class's name as Glance once wrote it down; in a release
+    // build R8 renamed — or merged — the two widget classes, so the steps widget's
+    // name found the tasks widget's ids, and the tasks widget turned into steps.
+    redrawWidgetsOf(context, TodayTasksWidgetReceiver::class.java, TodayTasksWidget())
+    // The steps widget (25.10) shares the redraw: the same state, the same style.
+    redrawWidgetsOf(context, StepsWidgetReceiver::class.java, StepsWidget())
+}
+
+/** Every widget placed through [receiver], redrawn by [widget] — by id, not by class name. */
+private suspend fun redrawWidgetsOf(context: Context, receiver: Class<*>, widget: GlanceAppWidget) {
+    val ids = runCatching {
+        android.appwidget.AppWidgetManager.getInstance(context).getAppWidgetIds(android.content.ComponentName(context, receiver))
+    }.getOrNull() ?: return
+    val glance = androidx.glance.appwidget.GlanceAppWidgetManager(context)
+    ids.forEach { id -> runCatching { widget.update(context, glance.getGlanceIdBy(id)) } }
 }
