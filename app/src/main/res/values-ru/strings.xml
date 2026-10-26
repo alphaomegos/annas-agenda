@@ -1330,4 +1330,6 @@
     <string name="main_menu_narrow_menu">Главная на узком экране</string>
     <string name="main_menu_narrow_list">Списком</string>
     <string name="main_menu_narrow_icons">Мини-кнопками</string>
+    <string name="widget_error_tasks">Не удалось показать задачи. Нажмите, чтобы открыть приложение.</string>
+    <string name="widget_error_steps">Не удалось показать шаги. Нажмите, чтобы открыть приложение.</string>
 </resources>

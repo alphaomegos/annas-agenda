@@ -40,4 +40,13 @@ class StepsWidgetTest {
         val rules = mainResRoot().absoluteFile.parentFile.parentFile.parentFile.resolve("proguard-rules.pro").readText()
         assertTrue(rules.contains("-keep class * extends androidx.glance.appwidget.GlanceAppWidget"))
     }
+
+    /** Both widgets say what failed instead of Glance's bare «Can't show content» (0317). */
+    @Test
+    fun bothWidgetsShowTheirOwnError() {
+        val tasks = mainSourceFiles().single { it.name == "TodayTasksWidget.kt" }.readText()
+        assertTrue(tasks.contains("override fun onCompositionError(") && tasks.contains("R.string.widget_error_tasks"))
+        assertTrue(widget.contains("override fun onCompositionError(") && widget.contains("R.string.widget_error_steps"))
+        assertTrue(mainResRoot().resolve("layout/widget_error.xml").isFile)
+    }
 }

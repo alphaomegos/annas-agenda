@@ -1264,4 +1264,6 @@
     <string name="main_menu_narrow_menu">Glavni meni na uskom ekranu</string>
     <string name="main_menu_narrow_list">Kao lista</string>
     <string name="main_menu_narrow_icons">Kao mini dugmad</string>
+    <string name="widget_error_tasks">Zadaci nisu mogle da se prikažu. Dodirnite da otvorite aplikaciju.</string>
+    <string name="widget_error_steps">Koraci nisu mogli da se prikažu. Dodirnite da otvorite aplikaciju.</string>
 </resources>

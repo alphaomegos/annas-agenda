@@ -97,3 +97,16 @@ fun stateAfterTogglingTaskFromWidget(
  */
 fun formatWidgetDay(date: LocalDate, locale: java.util.Locale): String =
     date.format(java.time.format.DateTimeFormatter.ofPattern("d MMMM", locale))
+
+/**
+ * What failed, short enough for a widget's corner (25.10: Anna's tasks widget
+ * showed only Glance's «Can't show content», and only her phone did it):
+ * the exception, its message, and where in the app it came from.
+ */
+fun widgetErrorDetail(throwable: Throwable): String {
+    val root = generateSequence(throwable) { it.cause }.last()
+    val ours = root.stackTrace.firstOrNull { it.className.startsWith("com.alphaomegos") }
+        ?: throwable.stackTrace.firstOrNull { it.className.startsWith("com.alphaomegos") }
+    val where = ours?.let { " @ ${it.className.substringAfterLast('.')}.${it.methodName}:${it.lineNumber}" }.orEmpty()
+    return ("${root.javaClass.simpleName}: ${root.message.orEmpty()}$where").take(300)
+}

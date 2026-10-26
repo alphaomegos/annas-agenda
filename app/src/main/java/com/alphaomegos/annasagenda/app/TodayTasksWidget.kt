@@ -110,6 +110,11 @@ private suspend fun loadWidgetContent(context: Context): WidgetContentData {
 }
 
 class TodayTasksWidget : GlanceAppWidget() {
+    // Drawing failed (25.10): say what failed and open the app on a tap, rather
+    // than Glance's bare «Can't show content»; logged too.
+    override fun onCompositionError(context: Context, glanceId: GlanceId, appWidgetId: Int, throwable: Throwable) =
+        showWidgetError(context, appWidgetId, throwable, R.string.widget_error_tasks)
+
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val first = loadWidgetContent(context)
@@ -262,4 +267,24 @@ private suspend fun redrawWidgetsOf(context: Context, receiver: Class<*>, widget
     }.getOrNull() ?: return
     val glance = androidx.glance.appwidget.GlanceAppWidgetManager(context)
     ids.forEach { id -> runCatching { widget.update(context, glance.getGlanceIdBy(id)) } }
+}
+
+/** A widget's own error face: what failed, and a tap that opens the app (which redraws the widgets). */
+internal fun showWidgetError(context: Context, appWidgetId: Int, throwable: Throwable, titleRes: Int) {
+    android.util.Log.e("AnnaWidget", "drawing widget $appWidgetId failed", throwable)
+    runCatching {
+        val rv = android.widget.RemoteViews(context.packageName, R.layout.widget_error)
+        rv.setTextViewText(R.id.widget_error_title, context.getString(titleRes))
+        rv.setTextViewText(R.id.widget_error_detail, widgetErrorDetail(throwable))
+        val open = Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        rv.setOnClickPendingIntent(
+            R.id.widget_error_root,
+            android.app.PendingIntent.getActivity(
+                context, appWidgetId, open,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+            ),
+        )
+        android.appwidget.AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, rv)
+    }
 }

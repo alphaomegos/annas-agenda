@@ -93,4 +93,6 @@
     <string name="steps_widget_week_average">Week’s average: %1$s</string>
     <string name="steps_info">The last read</string>
     <string name="steps_info_none">Steps have not been read yet this time.</string>
+    <string name="widget_error_tasks">Couldn’t show the tasks. Tap to open the app.</string>
+    <string name="widget_error_steps">Couldn’t show the steps. Tap to open the app.</string>
 </resources>

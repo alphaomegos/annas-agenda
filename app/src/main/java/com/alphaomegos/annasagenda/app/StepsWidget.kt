@@ -75,6 +75,9 @@ private suspend fun loadStepsWidget(context: Context): StepsWidgetData {
  * A tap opens the app. Redrawn with the tasks widget and every half hour.
  */
 class StepsWidget : GlanceAppWidget() {
+    override fun onCompositionError(context: Context, glanceId: GlanceId, appWidgetId: Int, throwable: Throwable) =
+        showWidgetError(context, appWidgetId, throwable, R.string.widget_error_steps)
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val first = loadStepsWidget(context)
         provideContent {

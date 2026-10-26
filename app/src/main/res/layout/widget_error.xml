@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What a widget shows when drawing it failed (25.10): instead of Glance's
+     bare «Can't show content», what failed, and a tap that opens the app —
+     which redraws the widgets. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_error_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/widget_error_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="#202020"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/widget_error_detail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:maxLines="6"
+        android:textColor="#707070"
+        android:textSize="10sp" />
+</LinearLayout>

@@ -45,6 +45,16 @@ class TodayWidgetSupportTest {
         assertTrue(rows.none { it.title in setOf("a", "b", "c") })
     }
 
+    /** A failed drawing says what failed (0317): the root cause, its message, where in the app. */
+    @Test
+    fun aWidgetErrorSaysWhatFailed() {
+        val cause = IllegalStateException("no rows")
+        val text = widgetErrorDetail(RuntimeException("outer", cause))
+        assertTrue(text, text.startsWith("IllegalStateException: no rows"))
+        assertTrue(text.length <= 300)
+        assertTrue(widgetErrorDetail(RuntimeException("x".repeat(1000))).length <= 300)
+    }
+
     @Test
     fun theWidgetShowsTodayInDayOrderRepeatsIncluded() {
         val rows = todayWidgetRows(state, today, weekStart)
