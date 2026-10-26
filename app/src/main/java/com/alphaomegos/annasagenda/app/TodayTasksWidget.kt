@@ -138,6 +138,9 @@ class TodayTasksWidget : GlanceAppWidget() {
 }
 
 /** Light words on a dark backing, dark on a light one; the theme's pair for SYSTEM. */
+/** The tick's colour when none is chosen: the app's green, lighter at night — fixed, never a resource. */
+internal val WIDGET_DEFAULT_TICK: ColorProvider = DayNightColorProvider(day = Color(0xFF2E7D32), night = Color(0xFF81C784))
+
 internal fun widgetTextColor(style: WidgetStyle): ColorProvider = when (style.textColor) {
     WidgetTextColor.WHITE -> ColorProvider(Color.White)
     WidgetTextColor.BLACK -> ColorProvider(Color.Black)
@@ -158,8 +161,12 @@ internal fun widgetBackground(style: WidgetStyle): ColorProvider {
 @Composable
 private fun WidgetContent(data: WidgetContentData, openToday: Intent) {
     val text = widgetTextColor(data.style)
+    // Fixed colours only (25.10, Anna's Pixel 9: «Cannot provide resource-backed
+    // ColorProviders to CheckBoxColors»): GlanceTheme's primary is the system's
+    // dynamic colour from Android 12, a resource, which a checkbox refuses —
+    // so with no tick colour chosen the whole widget failed to draw.
     val checked = data.style.checkColorArgb?.let { ColorProvider(Color(it.toInt())) }
-        ?: GlanceTheme.colors.primary
+        ?: WIDGET_DEFAULT_TICK
     val boxColors = CheckboxDefaults.colors(checkedColor = checked, uncheckedColor = text)
 
     Column(

@@ -49,4 +49,16 @@ class StepsWidgetTest {
         assertTrue(widget.contains("override fun onCompositionError(") && widget.contains("R.string.widget_error_steps"))
         assertTrue(mainResRoot().resolve("layout/widget_error.xml").isFile)
     }
+
+    /**
+     * A checkbox in a widget takes fixed colours only (0318): GlanceTheme's are
+     * the system's dynamic ones from Android 12, resources, and with one of them
+     * the tasks widget failed to draw at all on Anna's Pixel 9.
+     */
+    @Test
+    fun theTasksWidgetsTicksAreFixedColours() {
+        val tasks = mainSourceFiles().single { it.name == "TodayTasksWidget.kt" }.readText()
+        assertTrue("a GlanceTheme colour reaches CheckBoxColors", !tasks.contains("GlanceTheme.colors"))
+        assertTrue(tasks.contains("?: WIDGET_DEFAULT_TICK"))
+    }
 }
