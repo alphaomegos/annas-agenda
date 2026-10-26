@@ -1,6 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
 import com.alphaomegos.annasagenda.support.stepsThousands
+import com.alphaomegos.annasagenda.support.monthCellHeightPx
 import java.text.NumberFormat
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -218,8 +219,14 @@ private fun CalendarMonthContent(
             val rowCount = max(1, cells.size / 7)
 
             val availableHeight = this.maxHeight // make receiver usage explicit (kills the warning)
-            val usable = (availableHeight - spacing * (rowCount - 1)).coerceAtLeast(0.dp)
-            val cellHeightCandidate = usable / rowCount
+            // In whole pixels, rounded down (25.10): each cell and each gap is laid out
+            // in whole pixels, so a height in fractions of them rounded up six times
+            // over came to a few pixels more than the screen — the last week's lower
+            // edge cut off on the folded Fold 3.
+            val density = LocalDensity.current
+            val cellHeightCandidate = with(density) {
+                monthCellHeightPx(availableHeight.toPx().toInt(), spacing.roundToPx(), rowCount).toDp()
+            }
             val cellHeight = if (cellHeightCandidate < 44.dp) 44.dp else cellHeightCandidate
 
             val cellShape = MaterialTheme.shapes.medium
@@ -423,12 +430,22 @@ private fun CalendarStepsLine(steps: Int, locale: Locale) {
     }
     val short = stringResource(R.string.steps_thousands, thousands)
     val spoken = stringResource(R.string.steps_calendar_description, full)
+    // What fits, best first (25.10: on the folded Fold 3 not even «12,3k» did
+    // beside the figure): the whole number with the figure, thousands with it,
+    // thousands alone, whole thousands alone.
+    val whole = stringResource(R.string.steps_thousands, Math.round(steps / 1000.0).toString())
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = spoken }) {
-        val room = with(LocalDensity.current) { (maxWidth - 12.dp).toPx() }
-        val text = if (measurer.measure(full, style).size.width <= room) full else short
+        val density = LocalDensity.current
+        val room = with(density) { maxWidth.toPx() }
+        val figure = with(density) { 12.dp.toPx() }
+        val (withFigure, text) = listOf(true to full, true to short, false to short, false to whole)
+            .firstOrNull { (fig, t) -> measurer.measure(t, style).size.width + (if (fig) figure else 0f) <= room }
+            ?: (false to whole)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = AppIcons.steps, contentDescription = null, modifier = Modifier.size(10.dp))
-            Spacer(modifier = Modifier.width(2.dp))
+            if (withFigure) {
+                Icon(imageVector = AppIcons.steps, contentDescription = null, modifier = Modifier.size(10.dp))
+                Spacer(modifier = Modifier.width(2.dp))
+            }
             Text(text = text, style = style, maxLines = 1, softWrap = false)
         }
     }

@@ -93,8 +93,8 @@ class StepsWidget : GlanceAppWidget() {
                         .padding(12.dp)
                         .clickable(actionStartActivity(open)),
                 ) {
-                    // No title (25.10, Eduard): the figure and the number say what it is.
-                    Text(text = "🚶 " + data.today, style = TextStyle(color = text, fontSize = 30.sp, fontWeight = FontWeight.Bold))
+                    // No title and no figure (25.10, Eduard): the number alone, large.
+                    Text(text = data.today, style = TextStyle(color = text, fontSize = 30.sp, fontWeight = FontWeight.Bold))
                     data.line?.let { Text(text = it, style = TextStyle(color = text, fontSize = 12.sp)) }
                     data.progress?.let { p ->
                         LinearProgressIndicator(
