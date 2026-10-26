@@ -1325,4 +1325,6 @@
     <string name="steps_widget_goal">Цель на день, шагов</string>
     <string name="steps_widget_show_record">Показывать рекорд</string>
     <string name="steps_widget_week_average">Среднее за неделю: %1$s</string>
+    <string name="steps_info">Последнее чтение</string>
+    <string name="steps_info_none">В этот раз шаги ещё не читались.</string>
 </resources>

@@ -1259,4 +1259,6 @@
     <string name="steps_widget_goal">Dnevni cilj, koraka</string>
     <string name="steps_widget_show_record">Prikaži rekord</string>
     <string name="steps_widget_week_average">Prosek za nedelju: %1$s</string>
+    <string name="steps_info">Poslednje čitanje</string>
+    <string name="steps_info_none">Koraci ovog puta još nisu čitani.</string>
 </resources>

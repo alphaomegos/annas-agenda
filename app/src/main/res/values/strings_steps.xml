@@ -91,4 +91,6 @@
     <string name="steps_widget_goal">The day’s goal, steps</string>
     <string name="steps_widget_show_record">Show the record</string>
     <string name="steps_widget_week_average">Week’s average: %1$s</string>
+    <string name="steps_info">The last read</string>
+    <string name="steps_info_none">Steps have not been read yet this time.</string>
 </resources>

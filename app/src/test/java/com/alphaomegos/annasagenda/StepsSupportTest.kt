@@ -171,7 +171,10 @@ class StepsSupportTest {
     fun theScaleTopsAtARoundNumber() {
         assertEquals(20_000, niceStepsCeiling(19_002))
         assertEquals(10_000, niceStepsCeiling(8_304))
-        assertEquals(2_000, niceStepsCeiling(1_492))
+        assertEquals(1_500, niceStepsCeiling(1_492))
+        // Not 50 000 for a day of 21 000 (25.10).
+        assertEquals(25_000, niceStepsCeiling(21_000))
+        assertEquals(20_000, niceStepsCeiling(18_000))
         assertEquals(10_000, niceStepsCeiling(10_000))
         assertEquals(0, niceStepsCeiling(0))
     }
@@ -185,5 +188,18 @@ class StepsSupportTest {
         assertEquals(0.5f, stepsGoalProgress(5_000, 10_000), 0f)
         assertEquals(1f, stepsGoalProgress(25_000, 10_000), 0f)
         assertEquals(0f, stepsGoalProgress(5_000, 0), 0f)
+    }
+
+    @Test
+    fun theChartsLabelsUnderneath() {
+        val ru = java.util.Locale.forLanguageTag("ru")
+        val week = stepsChartDays(stepsPage(AnthropometryRange.WEEK, day, null, emptyList(), 0))
+        assertEquals("Пн", stepsAxisLabels(AnthropometryRange.WEEK, week, ru).first().second)
+        assertEquals(7, stepsAxisLabels(AnthropometryRange.WEEK, week, ru).size)
+        val month = stepsChartDays(stepsPage(AnthropometryRange.MONTH, day, null, emptyList(), 0))
+        assertEquals(listOf("1", "10", "20", "30"), stepsAxisLabels(AnthropometryRange.MONTH, month, ru).map { it.second })
+        assertEquals(listOf(0, 9, 19, 29), stepsAxisLabels(AnthropometryRange.MONTH, month, ru).map { it.first })
+        val year = stepsChartDays(stepsPage(AnthropometryRange.YEAR, day, null, emptyList(), 0))
+        assertEquals(12, stepsAxisLabels(AnthropometryRange.YEAR, year, ru).size)
     }
 }

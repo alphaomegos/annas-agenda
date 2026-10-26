@@ -219,7 +219,8 @@ fun niceStepsCeiling(top: Int): Int {
     if (top <= 0) return 0
     var unit = 1L
     while (unit * 10 <= top) unit *= 10
-    val ceiling = listOf(1L, 2L, 5L, 10L).map { it * unit }.first { it >= top }
+    // Finer than 1–2–5 (25.10): 21 000 jumped to 50 000, half the chart empty.
+    val ceiling = listOf(10L, 12L, 15L, 20L, 25L, 30L, 40L, 50L, 60L, 80L, 100L).map { it * unit / 10 }.first { it >= top }
     return ceiling.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 }
 
@@ -250,3 +251,24 @@ fun stepsWeekAverage(days: List<StepDay>, today: LocalDate): Int {
 /** How far towards [goal] the day's [steps] are, 0 to 1. */
 fun stepsGoalProgress(steps: Int, goal: Int): Float =
     if (goal <= 0) 0f else (steps.toFloat() / goal).coerceIn(0f, 1f)
+
+/**
+ * The labels under the chart (25.10), as (day's place, text): a week by its
+ * days' names, a month by its 1st, 10th, 20th and 30th, a quarter or a year by
+ * its months' first days, anything else by its first and last day.
+ */
+fun stepsAxisLabels(range: AnthropometryRange, days: List<LocalDate>, locale: java.util.Locale): List<Pair<Int, String>> {
+    if (days.isEmpty()) return emptyList()
+    fun cap(s: String) = s.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    return when (range) {
+        AnthropometryRange.WEEK -> days.mapIndexed { i, d -> i to cap(d.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale)) }
+        AnthropometryRange.MONTH -> days.mapIndexedNotNull { i, d -> if (d.dayOfMonth in setOf(1, 10, 20, 30)) i to d.dayOfMonth.toString() else null }
+        AnthropometryRange.QUARTER, AnthropometryRange.YEAR -> days.mapIndexedNotNull { i, d ->
+            if (d.dayOfMonth != 1) null
+            else i to cap(d.month.getDisplayName(
+                if (range == AnthropometryRange.YEAR) java.time.format.TextStyle.NARROW_STANDALONE else java.time.format.TextStyle.SHORT_STANDALONE, locale,
+            ))
+        }
+        else -> listOf(0 to formatShortDate(days.first(), locale), days.lastIndex to formatShortDate(days.last(), locale)).distinctBy { it.first }
+    }
+}

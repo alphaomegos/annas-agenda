@@ -36,6 +36,9 @@ class TypedStateSurvivesRotationTest {
      * number stops being true the next time somebody adds a line above it.
      */
     private val mayBeLostOnRotation = mapOf(
+        "StepsContent.kt:scrubbed" to
+            "the day a slide on the steps chart last passed (25.10), so each day is picked once " +
+                "while sliding; a rotation ends the slide",
         "StepsWidget.kt:data" to
             "the steps widget's copy of the state (25.10), reloaded on every redraw, as the " +
                 "tasks widget's is; a widget does not rotate",

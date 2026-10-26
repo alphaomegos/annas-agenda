@@ -1,5 +1,8 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import com.alphaomegos.annasagenda.app.StepsTogether
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
@@ -182,21 +185,32 @@ internal fun StepsContent(
             val chartDays = stepsChartDays(if (state.stepsRange == AnthropometryRange.ALL) DateWindow(window.from, today) else window)
             // The user and each friend shown (25.10), each in their colour;
             // a friend's days reach back thirty days, older pages are the user's alone.
-            val own = StepsSeries(chartDays.map { byDate[it]?.steps ?: 0 }, MaterialTheme.colorScheme.primary)
+            val own = StepsSeries(chartDays.map { byDate[it]?.steps ?: 0 }, MaterialTheme.colorScheme.primary, stringResource(R.string.steps_legend_me))
             val friendsShown = together.friends.mapNotNull { f ->
                 val pref = together.prefs[f.id] ?: StepFriendPref(0)
-                if (!pref.shown) null else StepsSeries(chartDays.map { f.days[it] ?: 0 }, STEP_FRIEND_COLORS[pref.color.coerceIn(0, 3)])
+                if (!pref.shown) null else StepsSeries(chartDays.map { f.days[it] ?: 0 }, STEP_FRIEND_COLORS[pref.color.coerceIn(0, 3)], f.name)
             }
             val series = (if (together.selfShown || together.friends.isEmpty()) listOf(own) else emptyList()) + friendsShown
             val ceiling = niceStepsCeiling(series.flatMap { it.values }.maxOrNull() ?: 0)
+            // The day picked on the chart (25.10): a tap, or a long press then a slide.
+            var picked by rememberSaveable(page, state.stepsRange) { mutableStateOf<Int?>(null) }
             StepsChart(
                 series = series,
+                axis = stepsAxisLabels(state.stepsRange, chartDays, locale),
+                // The period's best day of the user's own, marked across (not for «all»).
+                best = if (state.stepsRange == AnthropometryRange.ALL) null else own.values.maxOrNull()?.takeIf { it > 0 },
+                bestLabel = { count.format(it) },
+                picked = picked,
+                onPick = { picked = if (picked == it) null else it },
                 style = state.stepsChartStyle,
                 ceiling = ceiling,
                 labels = listOf(0, ceiling / 2, ceiling).map { count.format(it) },
                 onSwipeBack = { if (canBack) page -= 1 },
                 onSwipeForward = { if (canForward) page += 1 },
             )
+            picked?.let { i -> chartDays.getOrNull(i) }?.let { d ->
+                StepsLoupe(dateFmt.format(d), series.map { Triple(it.name, it.color, count.format(it.values.getOrElse(picked!!) { 0 })) })
+            }
             if (together.friends.isNotEmpty()) {
                 StepsLegend(
                     me = stringResource(R.string.steps_legend_me),
@@ -244,7 +258,6 @@ internal fun StepsContent(
                 }
             }
         }
-        report?.let { r -> item { StepsReportLine(r) } }
         item {
             val height = state.stepsHeightCm
             TextButton(onClick = { heightOpen = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
@@ -408,7 +421,7 @@ private fun StepsSourceCard(availability: StepsAvailability, onAllowed: () -> Un
  * Health Connect in the first place.
  */
 @Composable
-private fun StepsReportLine(report: StepsReadReport) {
+internal fun StepsReportLine(report: StepsReadReport) {
     val locale = LocalConfiguration.current.locales[0]
     val time = remember(locale) { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale) }.format(report.at)
     Column(
@@ -464,6 +477,11 @@ private const val STEPS_SWIPE_DP = 48
 @Composable
 private fun StepsChart(
     series: List<StepsSeries>,
+    axis: List<Pair<Int, String>>,
+    best: Int?,
+    bestLabel: (Int) -> String,
+    picked: Int?,
+    onPick: (Int) -> Unit,
     style: StepsChartStyle,
     ceiling: Int,
     labels: List<String>,
@@ -471,12 +489,27 @@ private fun StepsChart(
     onSwipeForward: () -> Unit,
 ) {
     val grid = MaterialTheme.colorScheme.outlineVariant
+    val bestColor = MaterialTheme.colorScheme.tertiary
     val labelArgb = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
     val description = stringResource(R.string.steps_chart_description)
     var travelled by remember { mutableStateOf(0f) }
     // The gesture is set up once; what a swipe does is read when it ends.
     val back by rememberUpdatedState(onSwipeBack)
     val forward by rememberUpdatedState(onSwipeForward)
+    val pickNow by rememberUpdatedState(onPick)
+    // A slide after a long press shows each day it passes, not toggles them.
+    var scrubbed by remember { mutableStateOf<Int?>(null) }
+    val scrubTo: androidx.compose.ui.input.pointer.PointerInputScope.(Float, Int) -> Unit = { x, days ->
+        val paint = Paint().apply { textSize = 10.dp.toPx() }
+        // The same edge the drawing keeps: the gestures sit inside the chart's padding too.
+        val left = (labels.maxOfOrNull { paint.measureText(it) } ?: 0f) + 6.dp.toPx()
+        val width = size.width - left
+        if (width > 0f) {
+            val i = ((x - left) / width * days).toInt().coerceIn(0, days - 1)
+            if (i != scrubbed && i != picked) pickNow(i)
+            scrubbed = i
+        }
+    }
     Surface(
         tonalElevation = 1.dp,
         shape = RoundedCornerShape(16.dp),
@@ -501,6 +534,25 @@ private fun StepsChart(
                             }
                         },
                     ) { _, delta -> travelled += delta }
+                }
+                .pointerInput(labels, series.firstOrNull()?.values?.size) {
+                    val days = series.firstOrNull()?.values?.size ?: 0
+                    fun dayAt(x: Float): Int? {
+                        if (days == 0) return null
+                        val paint = Paint().apply { textSize = 10.dp.toPx() }
+                        val left = (labels.maxOfOrNull { paint.measureText(it) } ?: 0f) + 6.dp.toPx()
+                        val width = size.width - left
+                        if (width <= 0f) return null
+                        return ((x - left) / width * days).toInt().coerceIn(0, days - 1)
+                    }
+                    detectTapGestures(onTap = { o -> dayAt(o.x)?.let(pickNow) })
+                }
+                .pointerInput(labels, series.firstOrNull()?.values?.size) {
+                    val days = series.firstOrNull()?.values?.size ?: 0
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { o -> if (days > 0) scrubTo(o.x, days) },
+                        onDrag = { change, _ -> if (days > 0) scrubTo(change.position.x, days) },
+                    )
                 },
         ) {
             val paint = Paint().apply {
@@ -511,23 +563,44 @@ private fun StepsChart(
             // The scale's labels on the left, as wide as the widest of them.
             val left = (labels.maxOfOrNull { paint.measureText(it) } ?: 0f) + 6.dp.toPx()
             val top = 6.dp.toPx()
-            val plotHeight = size.height - top
+            // A strip at the bottom for the days' labels.
+            val strip = if (axis.isEmpty()) 0f else 14.dp.toPx()
+            val floor = size.height - strip
+            val plotHeight = floor - top
             val plotWidth = size.width - left
             listOf(0f, 0.5f, 1f).forEachIndexed { i, t ->
-                val y = size.height - t * plotHeight
+                val y = floor - t * plotHeight
                 drawLine(grid, Offset(left, y), Offset(size.width, y), strokeWidth = 1f)
                 labels.getOrNull(i)?.let { drawContext.canvas.nativeCanvas.drawText(it, 0f, y + 3.dp.toPx(), paint) }
             }
             val days = series.firstOrNull()?.values?.size ?: 0
             if (days == 0 || ceiling <= 0) return@Canvas
             val slot = plotWidth / days
+            axis.forEach { (i, text) ->
+                val w = paint.measureText(text)
+                val x = (left + i * slot + slot / 2 - w / 2).coerceIn(left, size.width - w)
+                drawContext.canvas.nativeCanvas.drawText(text, x, size.height, paint)
+            }
+            picked?.takeIf { it in 0 until days }?.let { i ->
+                val x = left + i * slot + slot / 2
+                drawLine(grid, Offset(x, top), Offset(x, floor), strokeWidth = 2.dp.toPx())
+            }
+            best?.takeIf { it <= ceiling }?.let { b ->
+                val y = floor - plotHeight * b / ceiling
+                drawLine(
+                    bestColor, Offset(left, y), Offset(size.width, y), strokeWidth = 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx())),
+                )
+                val text = "🥇 " + bestLabel(b)
+                drawContext.canvas.nativeCanvas.drawText(text, size.width - paint.measureText(text), y - 3.dp.toPx(), paint)
+            }
             if (style == StepsChartStyle.LINE) {
                 // A line through each day's middle for each person; a day of nothing is on the floor.
                 series.forEach { s ->
                     val path = Path()
                     s.values.forEachIndexed { i, n ->
                         val x = left + i * slot + slot / 2
-                        val y = size.height - plotHeight * n / ceiling
+                        val y = floor - plotHeight * n / ceiling
                         if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
                     }
                     drawPath(path, color = s.color, style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round, cap = StrokeCap.Round))
@@ -540,15 +613,36 @@ private fun StepsChart(
                     if (n <= 0) return@forEachIndexed
                     val (x, w) = stepsSubBar(left + i * slot, slot, k, series.size)
                     val h = plotHeight * n / ceiling
-                    drawRect(color = s.color, topLeft = Offset(x, size.height - h), size = Size(w, h))
+                    drawRect(color = s.color, topLeft = Offset(x, floor - h), size = Size(w, h))
                 }
             }
         }
     }
 }
 
+/** The day picked on the chart (25.10): its date and each person's count, in their colour. */
+@Composable
+private fun StepsLoupe(date: String, values: List<Triple<String, androidx.compose.ui.graphics.Color, String>>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(date, style = MaterialTheme.typography.labelLarge)
+        values.forEach { (name, color, value) ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
+                Text(if (values.size > 1) "$name $value" else value, style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
 /** One person's days on the chart, in their colour. */
-internal data class StepsSeries(val values: List<Int>, val color: androidx.compose.ui.graphics.Color)
+internal data class StepsSeries(val values: List<Int>, val color: androidx.compose.ui.graphics.Color, val name: String = "")
 
 /**
  * Who is on the chart (25.10): the user and each friend, a chip each with

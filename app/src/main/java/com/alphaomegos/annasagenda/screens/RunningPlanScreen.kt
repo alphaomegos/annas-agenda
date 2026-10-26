@@ -1,5 +1,10 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.getValue
@@ -85,6 +90,19 @@ fun RunningPlanScreen(
     // distance field. Keyed on today as well, so it still moves at midnight.
     val today = LocalDate.now()
     var stepsImportAsked by rememberSaveable { mutableStateOf(false) }
+    var stepsInfoOpen by rememberSaveable { mutableStateOf(false) }
+    val stepsReport by vm.stepsReport.collectAsState()
+    if (stepsInfoOpen) {
+        AlertDialog(
+            onDismissRequest = { stepsInfoOpen = false },
+            title = { Text(stringResource(R.string.steps_info)) },
+            text = {
+                val r = stepsReport
+                if (r != null) StepsReportLine(r) else Text(stringResource(R.string.steps_info_none))
+            },
+            confirmButton = { TextButton(onClick = { stepsInfoOpen = false }) { Text(stringResource(R.string.ok)) } },
+        )
+    }
     val rows: List<LocalDate> = remember(approved, today, state.runningPlanEntries) {
         if (!approved) {
             (0L..364L).map { today.plusDays(it) }
@@ -105,6 +123,10 @@ fun RunningPlanScreen(
                     // while, so a small icon in the corner rather than a button
                     // over the days.
                     if (state.runningMode == RunningMode.STEPS) {
+                        // What the last read found (25.10): an «i» beside the import, not a line over the chart.
+                        IconButton(onClick = { stepsInfoOpen = true }) {
+                            Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.steps_info))
+                        }
                         IconButton(onClick = { stepsImportAsked = true }) {
                             Icon(AppIcons.stepsImport, contentDescription = stringResource(R.string.steps_import_button))
                         }
