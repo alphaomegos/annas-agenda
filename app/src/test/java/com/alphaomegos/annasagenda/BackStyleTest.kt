@@ -36,4 +36,13 @@ class BackStyleTest {
         val json = appStateStoreJson.encodeToString(AppState(mainMenuNarrow = MainMenuNarrowStyle.ICONS).toDto())
         assertEquals(MainMenuNarrowStyle.ICONS, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().mainMenuNarrow)
     }
+
+    /** The day screen (0320): «New» at once, «Summer 2025» a choice away; kept by name, an unknown name is new. */
+    @Test
+    fun theDayScreenIsNewUnlessSummer2025WasChosen() {
+        assertEquals(DayScreenStyle.NEW, AppState().dayScreenStyle)
+        assertEquals(DayScreenStyle.NEW, parseDayScreenStyle("WINTER_2027"))
+        val json = appStateStoreJson.encodeToString(AppState(dayScreenStyle = DayScreenStyle.SUMMER_2025).toDto())
+        assertEquals(DayScreenStyle.SUMMER_2025, appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain().dayScreenStyle)
+    }
 }

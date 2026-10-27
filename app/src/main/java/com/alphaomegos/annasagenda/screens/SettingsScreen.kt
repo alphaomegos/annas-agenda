@@ -45,6 +45,8 @@ import com.alphaomegos.annasagenda.support.metroShown
 import com.alphaomegos.annasagenda.components.NotificationSettingsDialog
 import com.alphaomegos.annasagenda.components.BackStyleDialog
 import com.alphaomegos.annasagenda.components.MainMenuNarrowDialog
+import com.alphaomegos.annasagenda.components.DayScreenStyleDialog
+import com.alphaomegos.annasagenda.components.dayScreenStyleLabelRes
 import com.alphaomegos.annasagenda.components.mainMenuNarrowLabelRes
 import com.alphaomegos.annasagenda.components.PaletteDialog
 import com.alphaomegos.annasagenda.components.backStyleLabelRes
@@ -124,6 +126,12 @@ fun SettingsScreen(
                     stringResource(R.string.main_menu_narrow_menu),
                     stringResource(mainMenuNarrowLabelRes(state.mainMenuNarrow)),
                 ) { open = SETTINGS_MENU_NARROW }
+            }
+            item {
+                SettingsRow(
+                    stringResource(R.string.day_screen_menu),
+                    stringResource(dayScreenStyleLabelRes(state.dayScreenStyle)),
+                ) { open = SETTINGS_DAY_SCREEN }
             }
             item {
                 SettingsRow(
@@ -229,6 +237,12 @@ fun SettingsScreen(
                 vm.setStepsWidget(line, record, goal)
                 close()
             },
+            onDismiss = close,
+        )
+
+        SETTINGS_DAY_SCREEN -> DayScreenStyleDialog(
+            current = state.dayScreenStyle,
+            onPick = vm::setDayScreenStyle,
             onDismiss = close,
         )
 
@@ -364,6 +378,7 @@ private const val SETTINGS_THEME = "theme"
 private const val SETTINGS_PALETTE = "palette"
 private const val SETTINGS_BACK = "back"
 private const val SETTINGS_MENU_NARROW = "menu-narrow"
+private const val SETTINGS_DAY_SCREEN = "day-screen"
 private const val SETTINGS_STEPS_TOGETHER = "steps-together"
 private const val SETTINGS_STEPS_WIDGET = "steps-widget"
 private const val SETTINGS_NOTIFICATIONS = "notifications"

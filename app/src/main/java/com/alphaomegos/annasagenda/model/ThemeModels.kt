@@ -104,3 +104,13 @@ enum class MainMenuNarrowStyle { LIST, ICONS }
 
 fun parseMainMenuNarrowStyle(raw: String): MainMenuNarrowStyle =
     runCatching { MainMenuNarrowStyle.valueOf(raw) }.getOrElse { MainMenuNarrowStyle.LIST }
+
+/**
+ * The day screen's look (27.10): NEW — the redesign, on at once, and the model
+ * for the other screens if it proves itself — or SUMMER_2025, the screen as it
+ * was, kept a choice away (Eduard named it).
+ */
+enum class DayScreenStyle { NEW, SUMMER_2025 }
+
+fun parseDayScreenStyle(raw: String): DayScreenStyle =
+    runCatching { DayScreenStyle.valueOf(raw) }.getOrElse { DayScreenStyle.NEW }

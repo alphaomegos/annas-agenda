@@ -35,6 +35,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     palette = palette.name,
     backStyle = backStyle.name,
     mainMenuNarrow = mainMenuNarrow.name,
+    dayScreenStyle = dayScreenStyle.name,
     idHighWater = idHighWater,
     readingBooks = readingBooks.map { it.toDto() },
     readingMovies = readingMovies.map { it.toDto() },
@@ -163,6 +164,7 @@ internal fun AppStateDto.toDomain(): AppState {
         palette = parseAppPalette(palette),
         backStyle = parseBackStyle(backStyle),
         mainMenuNarrow = parseMainMenuNarrowStyle(mainMenuNarrow),
+        dayScreenStyle = parseDayScreenStyle(dayScreenStyle),
         // Never below zero: a payload claiming a negative mark would make
         // nextIdFor no safer than counting, but it must not make it worse.
         idHighWater = idHighWater.coerceAtLeast(0L),

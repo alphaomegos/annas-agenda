@@ -1367,6 +1367,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun setDayScreenStyle(style: DayScreenStyle) {
+        _state.update { cur -> if (cur.dayScreenStyle == style) cur else cur.copy(dayScreenStyle = style) }
+    }
+
     fun setMainMenuNarrow(style: MainMenuNarrowStyle) {
         _state.update { cur -> if (cur.mainMenuNarrow == style) cur else cur.copy(mainMenuNarrow = style) }
     }

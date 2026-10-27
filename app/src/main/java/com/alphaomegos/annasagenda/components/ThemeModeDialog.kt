@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.model.AppPalette
 import com.alphaomegos.annasagenda.model.BackStyle
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 import com.alphaomegos.annasagenda.model.MainMenuNarrowStyle
 import com.alphaomegos.annasagenda.model.AppThemeMode
 import com.alphaomegos.annasagenda.R
@@ -27,6 +28,11 @@ internal fun themeModeLabelRes(mode: AppThemeMode): Int = when (mode) {
     AppThemeMode.SYSTEM -> R.string.theme_mode_system
     AppThemeMode.LIGHT -> R.string.theme_mode_light
     AppThemeMode.DARK -> R.string.theme_mode_dark
+}
+
+internal fun dayScreenStyleLabelRes(style: DayScreenStyle): Int = when (style) {
+    DayScreenStyle.NEW -> R.string.day_screen_new
+    DayScreenStyle.SUMMER_2025 -> R.string.day_screen_summer_2025
 }
 
 internal fun mainMenuNarrowLabelRes(style: MainMenuNarrowStyle): Int = when (style) {
@@ -80,6 +86,14 @@ fun BackStyleDialog(
     onPick: (BackStyle) -> Unit,
     onDismiss: () -> Unit,
 ) = OneOfDialog(R.string.back_style_title, BackStyle.entries, current, ::backStyleLabelRes, onPick, onDismiss)
+
+/** The day screen's look: «New», or «Summer 2025» as it was (27.10). */
+@Composable
+fun DayScreenStyleDialog(
+    current: DayScreenStyle,
+    onPick: (DayScreenStyle) -> Unit,
+    onDismiss: () -> Unit,
+) = OneOfDialog(R.string.day_screen_menu, DayScreenStyle.entries, current, ::dayScreenStyleLabelRes, onPick, onDismiss)
 
 /** The main menu on a narrow screen: the list, or «mini buttons» (25.10). */
 @Composable

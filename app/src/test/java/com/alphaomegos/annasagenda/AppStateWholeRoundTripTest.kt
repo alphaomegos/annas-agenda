@@ -147,6 +147,7 @@ class AppStateWholeRoundTripTest {
         palette = AppPalette.CLASSIC,
         backStyle = BackStyle.WORD,
         mainMenuNarrow = MainMenuNarrowStyle.ICONS,
+        dayScreenStyle = DayScreenStyle.SUMMER_2025,
         idHighWater = 900L,
         undoneLampMuted = true,
         doneTasksLast = true,
@@ -480,7 +481,7 @@ class AppStateWholeRoundTripTest {
         listOf(
             "tasks", "subtasks", "suppressedRecurrences", "anthropometry",
             "calorieGoalChanges", "foodLog", "runningPlanEntries", "counters",
-            "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "palette", "backStyle", "mainMenuNarrow", "idHighWater",
+            "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "palette", "backStyle", "mainMenuNarrow", "dayScreenStyle", "idHighWater",
             "readingBooks", "readingMovies", "readingSeries", "readingSessions",
             "activeReading", "pendingReadingSession", "autoRecordInterruptedReading",
             "runningMode", "runningWorkouts",

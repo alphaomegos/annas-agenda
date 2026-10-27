@@ -61,6 +61,7 @@ data class AppState(
     val palette: AppPalette = AppPalette.GREEN,
     val backStyle: BackStyle = BackStyle.ARROW,
     val mainMenuNarrow: MainMenuNarrowStyle = MainMenuNarrowStyle.LIST,
+    val dayScreenStyle: DayScreenStyle = DayScreenStyle.NEW,
 
     // The lowest id never yet handed out. Only ever goes up, so that an id
     // belonging to something deleted is never given to something new — see
