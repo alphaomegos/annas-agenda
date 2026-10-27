@@ -388,19 +388,19 @@ internal fun NewDateTaskRow(
         } else {
             SubtaskProgressToggle(done = subtasks.count { it.isDone }, total = totalSubs, onClick = onToggleDone)
         }
-        Row(
+        // The time above the title, not beside it (27.10): beside it the title
+        // had a third of the row and broke inside words.
+        Column(
             modifier = Modifier
                 .weight(1f)
                 .clickable { onEdit() }
-                .padding(start = 4.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(start = 4.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
         ) {
             task.time?.let { time ->
                 Text(
                     text = formatTaskTime(time),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = if (done) textColor else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 8.dp),
                 )
             }
             Text(
@@ -410,7 +410,6 @@ internal fun NewDateTaskRow(
                     lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph,
                 ),
                 color = textColor,
-                modifier = Modifier.weight(1f),
             )
         }
         IconButton(onClick = { if (canMoveUp) onMoveUp() }, enabled = canMoveUp, modifier = Modifier.size(40.dp)) {

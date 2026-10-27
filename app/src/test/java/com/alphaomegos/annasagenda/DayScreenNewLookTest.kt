@@ -50,4 +50,23 @@ class DayScreenNewLookTest {
         val content = block.substringAfter("private fun DateTasksBlockContent(").substringBefore(") {")
         assertTrue("DateTasksBlockContent has no newLook", content.contains("newLook: Boolean"))
     }
+
+    /** Every language spells twelve months after a day's number (0324). */
+    @Test
+    fun twelveMonthsInEveryLanguage() {
+        for (dir in listOf("values", "values-ru", "values-b+sr+Latn")) {
+            val xml = mainResRoot().resolve(dir).listFiles().orEmpty().filter { it.name.endsWith(".xml") }.joinToString("") { it.readText() }
+            val list = Regex("""<string name="months_after_day">([^<]*)</string>""").find(xml)?.groupValues?.get(1)
+            assertTrue("$dir has no months_after_day", list != null)
+            assertTrue("$dir: ${list!!.split('|').size} months", list.split('|').size == 12)
+        }
+    }
+
+    /** Back and the house are at the top in the new look; the foot is left to the tasks (0324). */
+    @Test
+    fun backAndHomeAreAtTheTop() {
+        val day = mainSourceFiles().single { it.name == "CalendarDayScreen.kt" }.readText()
+        val head = day.substringAfter("private fun NewDayHeader(")
+        assertTrue(head.contains("TopBarBack(onBack)") && head.contains("WayHomeButton()"))
+    }
 }

@@ -110,3 +110,11 @@ fun widgetErrorDetail(throwable: Throwable): String {
     val where = ours?.let { " @ ${it.className.substringAfterLast('.')}.${it.methodName}:${it.lineNumber}" }.orEmpty()
     return ("${root.javaClass.simpleName}: ${root.message.orEmpty()}$where").take(300)
 }
+
+/**
+ * A month's name as it is written after a day's number (27.10), from the
+ * app's own «|»-separated list: «октября» in Russian. The platform's «d MMMM»
+ * gave «27 октябрь» on the phones, the form for a month standing alone.
+ */
+fun monthAfterDay(list: String, date: LocalDate): String =
+    list.split('|').getOrNull(date.monthValue - 1)?.trim().orEmpty()

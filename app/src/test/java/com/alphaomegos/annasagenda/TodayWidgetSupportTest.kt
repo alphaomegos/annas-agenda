@@ -55,6 +55,15 @@ class TodayWidgetSupportTest {
         assertTrue(widgetErrorDetail(RuntimeException("x".repeat(1000))).length <= 300)
     }
 
+    /** The month after the day's number, from the app's own list (0324): «27 октября», not «27 октябрь». */
+    @Test
+    fun theMonthAfterTheDayComesFromTheAppsOwnList() {
+        val ru = "января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря"
+        assertEquals("октября", monthAfterDay(ru, java.time.LocalDate.of(2026, 10, 27)))
+        assertEquals("января", monthAfterDay(ru, java.time.LocalDate.of(2026, 1, 1)))
+        assertEquals("", monthAfterDay("", java.time.LocalDate.of(2026, 10, 27)))
+    }
+
     @Test
     fun theWidgetShowsTodayInDayOrderRepeatsIncluded() {
         val rows = todayWidgetRows(state, today, weekStart)

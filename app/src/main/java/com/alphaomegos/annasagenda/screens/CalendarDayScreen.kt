@@ -1,5 +1,10 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.support.monthAfterDay
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.TextButton
+import com.alphaomegos.annasagenda.components.WayHomeButton
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.PaddingValues
@@ -133,8 +138,8 @@ private fun CalendarDayContent(
         if (state.dayScreenStyle == DayScreenStyle.NEW) {
             NewDayHeader(
                 date = selectedDate,
-                fullDate = dateText,
                 locale = locale,
+                onBack = onBack,
                 onPrev = { selectedEpochDay -= 1 },
                 onToday = { selectedEpochDay = today.toEpochDay() },
                 onNext = { selectedEpochDay += 1 },
@@ -233,47 +238,68 @@ private fun CalendarDayContent(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Button(onClick = onBack, modifier = Modifier.weight(1f)) {
-                Text(stringResource(R.string.back))
+        // The new look has Back and the house at the top (27.10): the foot is one more row of tasks.
+        if (state.dayScreenStyle != DayScreenStyle.NEW) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Button(onClick = onBack, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.back))
+                }
+                WayHomeFootButton()
             }
-            WayHomeFootButton()
         }
     }
 }
 /**
- * The day screen's head in the new look (27.10, Eduard's brief): the date as
- * the title — «27 октября», the full date small under it — and one compact
- * row: the day before, today, the day after, then anthropometry as a ruler
- * and the primary «+ Task». No «Calendar», «Tasks» or «Anthropometry» words.
+ * The day screen's head in the new look (27.10, Eduard's brief, then his look
+ * at it on the phone): Back at the top left, the house at the top right, the
+ * date between them — «27 октября», the weekday and year small under it —
+ * and one light row: the day before, today, the day after, then anthropometry
+ * as a ruler and «+ Task». Nothing dark and heavy; no «Calendar», «Tasks» or
+ * «Anthropometry» words.
+ *
+ * The month is spelled from the app's own list (months_after_day), not by the
+ * platform: on the phones «d MMMM» gave «27 октябрь», the form for a month
+ * alone, where after a number Russian has «октября».
  */
 @Composable
 private fun NewDayHeader(
     date: LocalDate,
-    fullDate: String,
     locale: Locale,
+    onBack: () -> Unit,
     onPrev: () -> Unit,
     onToday: () -> Unit,
     onNext: () -> Unit,
     onAnthropometry: () -> Unit,
     onAddTask: () -> Unit,
 ) {
-    val title = remember(date, locale) { DateTimeFormatter.ofPattern("d MMMM", locale).format(date) }
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
-        Text(fullDate, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val month = monthAfterDay(stringResource(R.string.months_after_day), date)
+    val weekday = remember(date, locale) { date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, locale) }
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        TopBarBack(onBack)
+        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                stringResource(R.string.day_screen_title, date.dayOfMonth, month),
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                stringResource(R.string.day_screen_subtitle, weekday, date.dayOfMonth, month, date.year),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+        WayHomeButton()
     }
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(8.dp))
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onPrev) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.prev_day))
         }
-        FilledTonalButton(
-            onClick = onToday,
-            contentPadding = PaddingValues(horizontal = 14.dp),
-            modifier = Modifier.height(36.dp),
-        ) { Text(stringResource(R.string.today)) }
+        TextButton(onClick = onToday, contentPadding = PaddingValues(horizontal = 10.dp)) {
+            Text(stringResource(R.string.today))
+        }
         IconButton(onClick = onNext) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.next_day))
         }
@@ -281,7 +307,7 @@ private fun NewDayHeader(
         IconButton(onClick = onAnthropometry) {
             Icon(AppIcons.calendarBadge(CalendarBadge.ANTHROPOMETRY), contentDescription = stringResource(R.string.anthropometry_title))
         }
-        Button(
+        FilledTonalButton(
             onClick = onAddTask,
             contentPadding = PaddingValues(start = 10.dp, end = 14.dp),
             modifier = Modifier.height(36.dp),
