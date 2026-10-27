@@ -450,3 +450,98 @@ internal fun NewDateTaskRow(
         }
     }
 }
+
+/** One subtask's row, in the day screen's new look (27.10) or as it was. */
+@Composable
+internal fun SubtaskRowCall(
+    newLook: Boolean,
+    subtask: Subtask,
+    onToggleDone: () -> Unit,
+    onCycleColor: () -> Unit,
+    onEdit: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onMove: () -> Unit,
+    onCopy: () -> Unit,
+) {
+    if (newLook) NewDateSubtaskRow(subtask, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy)
+    else DateSubtaskRow(subtask, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy)
+}
+
+/**
+ * A subtask in the new look (27.10): inside the same surface as its task,
+ * set in under the task's tick, a size smaller — otherwise as a task's row:
+ * the tick, the title, ↑ ↓, ⋮ for moving and copying, the next colour's strip.
+ */
+@Composable
+internal fun NewDateSubtaskRow(
+    subtask: Subtask,
+    onToggleDone: () -> Unit,
+    onCycleColor: () -> Unit,
+    onEdit: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onMove: () -> Unit,
+    onCopy: () -> Unit,
+) {
+    val tint = subtask.colorArgb?.toInt()?.let { Color(it).copy(alpha = 0.16f) } ?: Color.Transparent
+    val next = nextPaletteColor(subtask.colorArgb)?.toInt()?.let { Color(it) } ?: MaterialTheme.colorScheme.outlineVariant
+    var menuOpen by rememberSaveable(subtask.id) { mutableStateOf(false) }
+    val done = subtask.isDone
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .background(tint)
+            .padding(start = 32.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(checked = done, onCheckedChange = { onToggleDone() })
+        Text(
+            text = subtask.description,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                textDecoration = if (done) TextDecoration.LineThrough else null,
+                lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph,
+            ),
+            color = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onEdit() }
+                .padding(start = 4.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+        )
+        IconButton(onClick = onMoveUp, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.move_task_up), modifier = Modifier.size(20.dp))
+        }
+        IconButton(onClick = onMoveDown, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.move_task_down), modifier = Modifier.size(20.dp))
+        }
+        Box {
+            IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.task_more_actions), modifier = Modifier.size(20.dp))
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.move_task)) },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) },
+                    onClick = { menuOpen = false; onMove() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.copy_task)) },
+                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                    onClick = { menuOpen = false; onCopy() },
+                )
+            }
+        }
+        val stripName = stringResource(R.string.task_next_colour)
+        Box(
+            modifier = Modifier
+                .width(16.dp)
+                .fillMaxHeight()
+                .clickable(onClickLabel = stripName) { onCycleColor() }
+                .semantics { contentDescription = stripName },
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Box(modifier = Modifier.width(5.dp).fillMaxHeight().background(next))
+        }
+    }
+}

@@ -248,7 +248,8 @@ private fun DateTasksBlockContent(
 
             if (subtasks.isNotEmpty() && isTaskExpanded) {
                 subtasks.forEach { st ->
-                    DateSubtaskRow(
+                    SubtaskRowCall(
+                        newLook = newLook,
                         subtask = st,
                         onToggleDone = { actions.toggleSubtaskDone(st.id) },
                         onCycleColor = {

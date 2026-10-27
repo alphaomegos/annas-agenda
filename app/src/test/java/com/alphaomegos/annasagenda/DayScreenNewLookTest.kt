@@ -30,4 +30,12 @@ class DayScreenNewLookTest {
         assertTrue(rows.contains("DateTaskRow(task, subtasks, isExpanded,"))
         assertTrue(block.contains("TaskListSurface(newLook)"))
     }
+
+    /** Subtasks too (0322): in the same surface, set in, the same menu and strip as a task's. */
+    @Test
+    fun subtasksFollowTheNewLook() {
+        val sub = rows.substringAfter("internal fun NewDateSubtaskRow(")
+        assertTrue(sub.contains("val next = nextPaletteColor(subtask.colorArgb)") && sub.contains("DropdownMenu("))
+        assertTrue(block.contains("SubtaskRowCall(") && block.contains("newLook = newLook,"))
+    }
 }
