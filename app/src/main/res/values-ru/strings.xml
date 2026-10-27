@@ -1348,4 +1348,6 @@
     <string name="day_screen_new">Новый</string>
     <string name="day_screen_summer_2025">Лето 2025</string>
     <string name="day_new_task">Задача</string>
+    <string name="task_more_actions">Ещё действия</string>
+    <string name="task_next_colour">Следующий цвет</string>
 </resources>

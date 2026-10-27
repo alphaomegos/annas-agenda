@@ -138,4 +138,6 @@
     <string name="new_task_add_subtask_short">+ Add</string>
     <string name="settings_done_tasks_last">Done tasks to the bottom of the list</string>
     <string name="settings_done_subtasks_last">Done subtasks to the bottom of their task</string>
+    <string name="task_more_actions">More actions</string>
+    <string name="task_next_colour">Next colour</string>
 </resources>

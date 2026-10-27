@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.components
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -74,6 +76,8 @@ internal fun DateTasksBlock(
     date: LocalDate?,
     includeDoneTasks: Boolean = true,
     visibleTaskIds: Set<Long>? = null,
+    // The day screen's new look (27.10): rows in one surface, NewDateTaskRow.
+    newLook: Boolean = false,
 ) {
     val tasks = remember(
         state.tasks,
@@ -193,76 +197,80 @@ private fun DateTasksBlockContent(
     val editSubtaskText = rememberSaveable { mutableStateOf("") }
     val showSubtaskRepeatPicker = rememberSaveable { mutableStateOf(false) }
 
-    tasks.forEach { task ->
-        val subtasks = subtasksByTaskId[task.id].orEmpty()
-        val isTaskExpanded = expandedTaskIds.contains(task.id)
+    TaskListSurface(newLook) {
+        tasks.forEachIndexed { index, task ->
+            val subtasks = subtasksByTaskId[task.id].orEmpty()
+            val isTaskExpanded = expandedTaskIds.contains(task.id)
 
-        DateTaskRow(
-            task = task,
-            subtasks = subtasks,
-            isExpanded = isTaskExpanded,
-            onToggleExpand = {
-                expandedTaskIds =
-                    if (isTaskExpanded) expandedTaskIds - task.id else expandedTaskIds + task.id
-            },
-            onToggleDone = { actions.toggleTaskDone(task.id) },
-            onCycleColor = {
-                actions.setTaskColor(task.id, nextPaletteColor(task.colorArgb))
-            },
-            onEdit = {
-                editTaskId = task.id
-                editTaskText.value = task.description
-                showTaskRepeatPicker.value = false
-            },
-            onMoveUp = { actions.moveTaskUp(task.id) },
-            onMoveDown = { actions.moveTaskDown(task.id) },
-            onMove = { moveTaskId.value = task.id },
-            onCopy = { copyTaskId.value = task.id },
-            // Asked of the whole day, done ones included: that is what the
-            // move itself looks at.
-            canMoveUp = canMoveTask(state.tasks, task.id, step = -1, doneLast = state.doneTasksLast),
-            canMoveDown = canMoveTask(state.tasks, task.id, step = 1, doneLast = state.doneTasksLast),
-        )
+            if (newLook && index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+            TaskRowCall(
+                newLook = newLook,
+                task = task,
+                subtasks = subtasks,
+                isExpanded = isTaskExpanded,
+                onToggleExpand = {
+                    expandedTaskIds =
+                        if (isTaskExpanded) expandedTaskIds - task.id else expandedTaskIds + task.id
+                },
+                onToggleDone = { actions.toggleTaskDone(task.id) },
+                onCycleColor = {
+                    actions.setTaskColor(task.id, nextPaletteColor(task.colorArgb))
+                },
+                onEdit = {
+                    editTaskId = task.id
+                    editTaskText.value = task.description
+                    showTaskRepeatPicker.value = false
+                },
+                onMoveUp = { actions.moveTaskUp(task.id) },
+                onMoveDown = { actions.moveTaskDown(task.id) },
+                onMove = { moveTaskId.value = task.id },
+                onCopy = { copyTaskId.value = task.id },
+                // Asked of the whole day, done ones included: that is what the
+                // move itself looks at.
+                canMoveUp = canMoveTask(state.tasks, task.id, step = -1, doneLast = state.doneTasksLast),
+                canMoveDown = canMoveTask(state.tasks, task.id, step = 1, doneLast = state.doneTasksLast),
+            )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            if (isTaskExpanded) {
-                TextButton(onClick = {
-                    addSubtaskToTaskId.value = task.id
-                    newSubtaskText.value = ""
-                    newSubtaskColor.value = task.colorArgb
-                }) {
-                    Text(stringResource(R.string.add_subtask))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                if (isTaskExpanded) {
+                    TextButton(onClick = {
+                        addSubtaskToTaskId.value = task.id
+                        newSubtaskText.value = ""
+                        newSubtaskColor.value = task.colorArgb
+                    }) {
+                        Text(stringResource(R.string.add_subtask))
+                    }
                 }
             }
-        }
 
-        if (subtasks.isNotEmpty() && isTaskExpanded) {
-            subtasks.forEach { st ->
-                DateSubtaskRow(
-                    subtask = st,
-                    onToggleDone = { actions.toggleSubtaskDone(st.id) },
-                    onCycleColor = {
-                        actions.setSubtaskColor(st.id, nextPaletteColor(st.colorArgb))
-                    },
-                    onEdit = {
-                        editSubtaskId = st.id
-                        editSubtaskText.value = st.description
-                        showSubtaskRepeatPicker.value = false
-                    },
-                    onMoveUp = { actions.moveSubtaskUp(st.id) },
-                    onMoveDown = { actions.moveSubtaskDown(st.id) },
-                    onMove = { moveSubtaskId.value = st.id },
-                    onCopy = { copySubtaskId.value = st.id },
-                )
+            if (subtasks.isNotEmpty() && isTaskExpanded) {
+                subtasks.forEach { st ->
+                    DateSubtaskRow(
+                        subtask = st,
+                        onToggleDone = { actions.toggleSubtaskDone(st.id) },
+                        onCycleColor = {
+                            actions.setSubtaskColor(st.id, nextPaletteColor(st.colorArgb))
+                        },
+                        onEdit = {
+                            editSubtaskId = st.id
+                            editSubtaskText.value = st.description
+                            showSubtaskRepeatPicker.value = false
+                        },
+                        onMoveUp = { actions.moveSubtaskUp(st.id) },
+                        onMoveDown = { actions.moveSubtaskDown(st.id) },
+                        onMove = { moveSubtaskId.value = st.id },
+                        onCopy = { copySubtaskId.value = st.id },
+                    )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+        }
     }
 
     // Move task: choose date (Today / Tomorrow / Someday / Pick date)

@@ -83,7 +83,7 @@ fun CalendarDayRoute(
             )
         },
         tasksContent = { date ->
-            DateTasksBlock(vm = vm, state = state, date = date)        }
+            DateTasksBlock(vm = vm, state = state, date = date, newLook = state.dayScreenStyle == DayScreenStyle.NEW)        }
     )
 }
 

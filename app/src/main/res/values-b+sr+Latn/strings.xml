@@ -1281,4 +1281,6 @@
     <string name="day_screen_new">Novi</string>
     <string name="day_screen_summer_2025">Leto 2025</string>
     <string name="day_new_task">Zadatak</string>
+    <string name="task_more_actions">Još radnji</string>
+    <string name="task_next_colour">Sledeća boja</string>
 </resources>

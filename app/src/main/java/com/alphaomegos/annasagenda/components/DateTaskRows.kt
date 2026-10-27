@@ -1,5 +1,20 @@
 package com.alphaomegos.annasagenda.components
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -277,5 +292,161 @@ private fun SubtaskProgressToggle(
             text = "$done/$total",
             style = MaterialTheme.typography.labelSmall
         )
+    }
+}
+/** One task's row, in the day screen's new look (27.10) or as it was. Same arguments either way. */
+@Composable
+internal fun TaskRowCall(
+    newLook: Boolean,
+    task: Task,
+    subtasks: List<Subtask>,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    onToggleDone: () -> Unit,
+    onCycleColor: () -> Unit,
+    onEdit: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onMove: () -> Unit,
+    onCopy: () -> Unit,
+    canMoveUp: Boolean = true,
+    canMoveDown: Boolean = true,
+) {
+    if (newLook) {
+        NewDateTaskRow(task, subtasks, isExpanded, onToggleExpand, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy, canMoveUp, canMoveDown)
+    } else {
+        DateTaskRow(task, subtasks, isExpanded, onToggleExpand, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy, canMoveUp, canMoveDown)
+    }
+}
+
+/**
+ * The day's rows on one surface in the new look (27.10, the brief: rows
+ * grounded in the page, not cards floating in space) — a soft container with
+ * rounded corners and hairlines between rows; as they were otherwise.
+ */
+@Composable
+internal fun TaskListSurface(newLook: Boolean, content: @Composable () -> Unit) {
+    if (!newLook) {
+        content()
+        return
+    }
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column { content() }
+    }
+}
+
+/**
+ * A task's row in the new look (27.10, Eduard's brief): the triangle that
+ * opens the subtasks, then the tick; the time and the title, wrapping as
+ * words do; up and down as plain icons, the rarer moving and copying under
+ * ⋮; and at the very edge a thin strip in the colour the next tap gives —
+ * the next one, not the current, which the row's tint already shows. Done
+ * tasks are ticked, faded and struck through.
+ */
+@Composable
+internal fun NewDateTaskRow(
+    task: Task,
+    subtasks: List<Subtask>,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    onToggleDone: () -> Unit,
+    onCycleColor: () -> Unit,
+    onEdit: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onMove: () -> Unit,
+    onCopy: () -> Unit,
+    canMoveUp: Boolean = true,
+    canMoveDown: Boolean = true,
+) {
+    val tint = task.colorArgb?.toInt()?.let { Color(it).copy(alpha = 0.22f) } ?: Color.Transparent
+    val next = nextPaletteColor(task.colorArgb)?.toInt()?.let { Color(it) } ?: MaterialTheme.colorScheme.outlineVariant
+    var menuOpen by rememberSaveable(task.id) { mutableStateOf(false) }
+    val done = task.isDone
+    val textColor = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .background(tint),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(
+            onClick = onToggleExpand,
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.width(32.dp),
+        ) {
+            Text(if (isExpanded) "▼" else "▶", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        val totalSubs = subtasks.size
+        if (totalSubs == 0 || done) {
+            Checkbox(checked = done, onCheckedChange = { onToggleDone() })
+        } else {
+            SubtaskProgressToggle(done = subtasks.count { it.isDone }, total = totalSubs, onClick = onToggleDone)
+        }
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onEdit() }
+                .padding(start = 4.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            task.time?.let { time ->
+                Text(
+                    text = formatTaskTime(time),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (done) textColor else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+            }
+            Text(
+                text = task.description,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    textDecoration = if (done) TextDecoration.LineThrough else null,
+                    lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph,
+                ),
+                color = textColor,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        IconButton(onClick = { if (canMoveUp) onMoveUp() }, enabled = canMoveUp, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.move_task_up), modifier = Modifier.size(22.dp))
+        }
+        IconButton(onClick = { if (canMoveDown) onMoveDown() }, enabled = canMoveDown, modifier = Modifier.size(40.dp)) {
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.move_task_down), modifier = Modifier.size(22.dp))
+        }
+        Box {
+            IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.task_more_actions), modifier = Modifier.size(22.dp))
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.move_task)) },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null) },
+                    onClick = { menuOpen = false; onMove() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.copy_task)) },
+                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                    onClick = { menuOpen = false; onCopy() },
+                )
+            }
+        }
+        // The strip: 5 dp of colour, in a 16 dp target at the row's full height.
+        val stripName = stringResource(R.string.task_next_colour)
+        Box(
+            modifier = Modifier
+                .width(16.dp)
+                .fillMaxHeight()
+                .clickable(onClickLabel = stripName) { onCycleColor() }
+                .semantics { contentDescription = stripName },
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+            Box(modifier = Modifier.width(5.dp).fillMaxHeight().background(next))
+        }
     }
 }
