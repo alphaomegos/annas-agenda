@@ -38,4 +38,16 @@ class DayScreenNewLookTest {
         assertTrue(sub.contains("val next = nextPaletteColor(subtask.colorArgb)") && sub.contains("DropdownMenu("))
         assertTrue(block.contains("SubtaskRowCall(") && block.contains("newLook = newLook,"))
     }
+
+    /**
+     * The look reaches the loop (0323): 0321 gave the parameter to DateTasksBlock
+     * but the rows are drawn in DateTasksBlockContent, which never had it.
+     */
+    @Test
+    fun theLookIsPassedToWhereTheRowsAreDrawn() {
+        assertTrue(block.contains("    newLook: Boolean = false,\n) {") )
+        assertTrue(block.contains("        newLook = newLook,\n    )"))
+        val content = block.substringAfter("private fun DateTasksBlockContent(").substringBefore(") {")
+        assertTrue("DateTasksBlockContent has no newLook", content.contains("newLook: Boolean"))
+    }
 }

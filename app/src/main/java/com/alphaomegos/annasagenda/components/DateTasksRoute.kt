@@ -146,7 +146,8 @@ internal fun DateTasksBlock(
         date = date,
         tasks = tasks,
         subtasksByTaskId = subtasksByTaskId,
-        actions = actions
+        actions = actions,
+        newLook = newLook,
     )
 }
 
@@ -158,6 +159,7 @@ private fun DateTasksBlockContent(
     tasks: List<Task>,
     subtasksByTaskId: Map<Long, List<Subtask>>,
     actions: DateTasksActions,
+    newLook: Boolean = false,
 ) {
     // Which tasks are open. Saveable like everything else in this screen: a
     // rotation used to collapse every one of them, and on a busy day that is
