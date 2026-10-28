@@ -1306,4 +1306,11 @@
     <string name="forecast_norm_reset">Po formuli</string>
     <string name="forecast_breakdown_days">Dana sa unetom hranom: %1$d od %2$d (ostali — bez deficita) · pojedeno %3$s kcal · koraci %4$s (%5$s kg) · trčanje %6$s km (%7$s kg)</string>
     <string name="anthro_since_first">%1$s %2$s · %3$s od %4$s</string>
+    <string name="weight_import_button">Uvoz težine iz Samsung Health</string>
+    <string name="weight_import_hint">U Samsung Health: Podešavanja → «Preuzmi lične podatke». Zatim izaberite fajl com.samsung.health.weight… u fascikli Download/Samsung Health.</string>
+    <string name="weight_import_conflicts">Za %1$d dana težina u aplikaciji i u Samsung Health se razlikuje. Šta zadržati?</string>
+    <string name="weight_import_take_samsung">Iz Samsung Health</string>
+    <string name="weight_import_keep_app">Iz aplikacije</string>
+    <string name="weight_import_done">Dana u fajlu: %1$d, od %2$s do %3$s.\nDodato: %4$d. Zamenjeno: %5$d. Ostavljeno: %6$d.</string>
+    <string name="weight_import_not_export">Ovo nije izvoz težine iz Samsung Health: fajl nema kolone weight i start_time.</string>
 </resources>

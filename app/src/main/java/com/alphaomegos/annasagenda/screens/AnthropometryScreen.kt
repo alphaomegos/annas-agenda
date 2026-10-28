@@ -1,5 +1,9 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.app.AppIcons
+import com.alphaomegos.annasagenda.support.WeightImportState
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.input.KeyboardType
@@ -217,6 +221,56 @@ fun AnthropometryScreen(
     val potentialKg = (deficit30 + burned30) / KCAL_PER_KG_FAT
     // The new forecast (28.10) is over the period on screen; the window is below.
     var forecastInfoOpen by rememberSaveable { mutableStateOf(false) }
+    var weightImportAsked by rememberSaveable { mutableStateOf(false) }
+    val weightImport by vm.weightImport.collectAsState()
+    val weightPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) vm.readSamsungWeight(uri)
+    }
+    if (weightImportAsked) {
+        AlertDialog(
+            onDismissRequest = { weightImportAsked = false },
+            title = { Text(stringResource(R.string.weight_import_button)) },
+            text = { Text(stringResource(R.string.weight_import_hint)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    weightImportAsked = false
+                    weightPicker.launch(arrayOf("*/*"))
+                }) { Text(stringResource(R.string.steps_import_pick)) }
+            },
+            dismissButton = { TextButton(onClick = { weightImportAsked = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+    when (val w = weightImport) {
+        null -> Unit
+        is WeightImportState.Conflicts -> AlertDialog(
+            onDismissRequest = vm::dismissWeightImport,
+            title = { Text(stringResource(R.string.weight_import_button)) },
+            text = { Text(stringResource(R.string.weight_import_conflicts, w.conflicts)) },
+            confirmButton = { TextButton(onClick = { vm.resolveWeightImport(true) }) { Text(stringResource(R.string.weight_import_take_samsung)) } },
+            dismissButton = { TextButton(onClick = { vm.resolveWeightImport(false) }) { Text(stringResource(R.string.weight_import_keep_app)) } },
+        )
+        else -> AlertDialog(
+            onDismissRequest = vm::dismissWeightImport,
+            title = { Text(stringResource(R.string.weight_import_button)) },
+            text = {
+                Text(
+                    when (w) {
+                        is WeightImportState.Done -> stringResource(
+                            R.string.weight_import_done,
+                            w.outcome.inFile,
+                            w.outcome.first?.let { formatShortDate(it, appLocale()) }.orEmpty(),
+                            w.outcome.last?.let { formatShortDate(it, appLocale()) }.orEmpty(),
+                            w.outcome.added, w.outcome.replaced, w.outcome.kept,
+                        )
+                        WeightImportState.NotAnExport -> stringResource(R.string.weight_import_not_export)
+                        is WeightImportState.Failed -> stringResource(R.string.steps_import_failed, w.reason)
+                        is WeightImportState.Conflicts -> ""
+                    }
+                )
+            },
+            confirmButton = { TextButton(onClick = vm::dismissWeightImport) { Text(stringResource(R.string.ok)) } },
+        )
+    }
     var profileOpen by rememberSaveable { mutableStateOf(false) }
 
     val allEntries = remember(state.anthropometry) {
@@ -318,6 +372,10 @@ fun AnthropometryScreen(
                 actions = {
                     // The new look (28.10): a measurement is added from here, not
                     // from a wide button under the list.
+                    // Weights from a Samsung Health export (28.10), once in a while.
+                    IconButton(onClick = { weightImportAsked = true }) {
+                        Icon(AppIcons.stepsImport, contentDescription = stringResource(R.string.weight_import_button))
+                    }
                     if (state.newLook) {
                         IconButton(onClick = { showInput.value = true }) {
                             Icon(Icons.Default.Add, contentDescription = stringResource(R.string.enter_data))

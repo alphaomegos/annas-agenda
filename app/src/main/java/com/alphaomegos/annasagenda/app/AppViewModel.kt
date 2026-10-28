@@ -1342,6 +1342,52 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private val _weightImport = MutableStateFlow<WeightImportState?>(null)
+    /** Where an import of Samsung Health weights stands (28.10). */
+    val weightImport: StateFlow<WeightImportState?> = _weightImport.asStateFlow()
+
+    fun dismissWeightImport() {
+        _weightImport.value = null
+    }
+
+    /** Reads a Samsung Health weight export; asks when the app and the export disagree on a day. */
+    fun readSamsungWeight(uri: android.net.Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _weightImport.value = try {
+                val text = appContext.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }.orEmpty()
+                val read = parseSamsungWeight(text)
+                when {
+                    read.isEmpty() -> WeightImportState.NotAnExport
+                    else -> {
+                        val conflicts = weightImportConflicts(_state.value.anthropometry, read)
+                        if (conflicts > 0) WeightImportState.Conflicts(read, conflicts) else applyWeightImport(read, preferImported = false)
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                android.util.Log.w("AnnaWeight", "importing a Samsung Health weight export failed", e)
+                WeightImportState.Failed("${e.javaClass.simpleName}: ${e.message}")
+            }
+        }
+    }
+
+    /** The user's answer to the disagreement: the export's weights, or the app's. */
+    fun resolveWeightImport(preferImported: Boolean) {
+        val pending = _weightImport.value as? WeightImportState.Conflicts ?: return
+        _weightImport.value = applyWeightImport(pending.read, preferImported)
+    }
+
+    private fun applyWeightImport(read: Map<LocalDate, Double>, preferImported: Boolean): WeightImportState {
+        var outcome: WeightImportOutcome? = null
+        _state.update { cur ->
+            val next = anthropometryAfterWeightImport(cur.anthropometry, read, preferImported)
+            outcome = next
+            cur.copy(anthropometry = next.entries)
+        }
+        return WeightImportState.Done(checkNotNull(outcome))
+    }
+
     private val _stepsReport = MutableStateFlow<StepsReadReport?>(null)
     /** What the last read found, or what stopped it; null before any read this session. */
     val stepsReport: StateFlow<StepsReadReport?> = _stepsReport.asStateFlow()

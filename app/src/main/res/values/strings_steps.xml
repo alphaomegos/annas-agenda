@@ -112,4 +112,11 @@
     <string name="forecast_norm_reset">By the formula</string>
     <string name="forecast_breakdown_days">Days with food written: %1$d of %2$d (the rest without deficit) · eaten %3$s kcal · steps %4$s (%5$s kg) · running %6$s km (%7$s kg)</string>
     <string name="anthro_since_first">%1$s %2$s · %3$s since %4$s</string>
+    <string name="weight_import_button">Import weight from Samsung Health</string>
+    <string name="weight_import_hint">In Samsung Health: Settings → Download personal data. Then pick the file com.samsung.health.weight… in Download/Samsung Health.</string>
+    <string name="weight_import_conflicts">On %1$d days the app and Samsung Health have different weights. Which to keep?</string>
+    <string name="weight_import_take_samsung">Samsung Health</string>
+    <string name="weight_import_keep_app">The app’s</string>
+    <string name="weight_import_done">Days in the file: %1$d, from %2$s to %3$s.\nAdded: %4$d. Replaced: %5$d. Kept as they were: %6$d.</string>
+    <string name="weight_import_not_export">This is not a Samsung Health weight export: the file has no weight and start_time columns.</string>
 </resources>

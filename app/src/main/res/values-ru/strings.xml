@@ -1373,4 +1373,11 @@
     <string name="forecast_norm_reset">По формуле</string>
     <string name="forecast_breakdown_days">Дней с записями еды: %1$d из %2$d (остальные — без дефицита) · съедено %3$s ккал · шаги %4$s (%5$s кг) · бег %6$s км (%7$s кг)</string>
     <string name="anthro_since_first">%1$s %2$s · %3$s с %4$s</string>
+    <string name="weight_import_button">Импорт веса из Samsung Health</string>
+    <string name="weight_import_hint">В Samsung Health: Настройки → «Загрузить личные данные». Затем выберите файл com.samsung.health.weight… в папке Download/Samsung Health.</string>
+    <string name="weight_import_conflicts">На %1$d днях вес в приложении и в Samsung Health разный. Что оставить?</string>
+    <string name="weight_import_take_samsung">Из Samsung Health</string>
+    <string name="weight_import_keep_app">Из приложения</string>
+    <string name="weight_import_done">Дней в файле: %1$d, с %2$s по %3$s.\nДобавлено: %4$d. Заменено: %5$d. Оставлено как было: %6$d.</string>
+    <string name="weight_import_not_export">Это не выгрузка веса Samsung Health: в файле нет столбцов weight и start_time.</string>
 </resources>
