@@ -23,20 +23,47 @@ class WeightForecastTest {
     )
 
     @Test
-    fun eachDaysBalance() {
+    fun onlyDaysWithFoodWrittenCount() {
         val f = forecast()!!
-        // Day 1: rest 600+1050−180−161 = 1309 × 1.2 = 1570.8, walking 0.5·60·6.9552 = 208.656, eaten 1500.
-        // Day 2: weighed 59.5 → rest 1304 × 1.2 = 1564.8; nothing eaten written → at the norm; running 1.036·59.5·5 = 308.21.
+        // Day 1: rest 600+1050−180−161 = 1309 × 1.2 = 1570.8, walking 0.5·60·6.9552, eaten 1500.
+        // Day 2: nothing eaten written → no deficit, its run included (0328 counted it; 0330 does not).
         val walk = 0.5 * 60.0 * (10_000 * 168 * 0.414 / 100.0 / 1000.0)
-        val run = 1.036 * 59.5 * 5.0
-        val balance = (1570.8 + walk - 1500) + run
+        val balance = 1570.8 + walk - 1500
         assertEquals(balance, f.balanceKcal, 1e-6)
         assertEquals(-balance / 7700.0, f.changeKg, 1e-9)
         assertEquals(2, f.days)
+        assertEquals(1, f.loggedDays)
         assertEquals(1, f.normDays)
         assertEquals(1500L, f.eatenKcal)
+        assertEquals(0.0, f.runKm, 0.0)
         assertEquals(-0.5, f.measuredKg!!, 1e-9)
         assertEquals(-0.5 - f.changeKg, f.discrepancyKg!!, 1e-9)
+    }
+
+    @Test
+    fun thePlansRunsCountAndTheOwnNormReplacesTheFormula() {
+        val f = newWeightForecast(
+            from = d1, to = d1, today = d2,
+            sex = ProfileSex.FEMALE, heightCm = 168, birthYear = 1990,
+            anthropometry = weights,
+            foodLog = listOf(FoodEntry(id = 1, date = d1, title = "обед", kcal = 1500)),
+            stepDays = emptyList(),
+            workouts = emptyList(),
+            planRuns = listOf(d1 to 10.0),
+            normKcal = 2000,
+        )!!
+        assertEquals(10.0, f.runKm, 0.0)
+        assertEquals(2000 + 1.036 * 60.0 * 10.0 - 1500, f.balanceKcal, 1e-6)
+    }
+
+    @Test
+    fun aPlanRunIsDoneWhenItsTaskIsTicked() {
+        val entries = listOf(
+            RunningPlanEntry(date = d1, distanceKmText = "8", taskId = 7),
+            RunningPlanEntry(date = d2, distanceKmText = "5", taskId = 8),
+            RunningPlanEntry(date = d2.plusDays(5), distanceKmText = "12"),
+        )
+        assertEquals(listOf(d1 to 8.0), runningPlanRunsDone(entries, setOf(7L), d2))
     }
 
     @Test

@@ -29,3 +29,6 @@ const val SEDENTARY_FACTOR = 1.2
 
 fun baselineKcal(sex: ProfileSex, weightKg: Double, heightCm: Int, ageYears: Int): Double =
     restingKcal(sex, weightKg, heightCm, ageYears) * SEDENTARY_FACTOR
+
+/** A daily norm the app will take as the user's own, in kcal. */
+val DAILY_NORM_RANGE = 800..6000

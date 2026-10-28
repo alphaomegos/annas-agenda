@@ -58,6 +58,10 @@ data class AnthropometrySlice(
     val weightForecastMethod: ForecastMethod = ForecastMethod.NEW,
     // The screens' look (28.10): the new one, or Summer 2026's.
     val newLook: Boolean = true,
+    // The plan's runs and which of their tasks are ticked; the own norm (28.10).
+    val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
+    val runningDoneTaskIds: Set<Long> = emptySet(),
+    val dailyNormKcal: Int? = null,
 )
 
 /**
@@ -134,6 +138,10 @@ fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySli
     profileBirthYear = state.profileBirthYear,
     weightForecastMethod = state.weightForecastMethod,
     newLook = state.dayScreenStyle == DayScreenStyle.NEW,
+    runningPlanEntries = state.runningPlanEntries,
+    runningDoneTaskIds = state.runningPlanEntries.mapNotNull { it.taskId }.toSet()
+        .let { linked -> state.tasks.filter { it.isDone && it.id in linked }.map { it.id }.toSet() },
+    dailyNormKcal = state.dailyNormKcal,
 )
 
 fun countersSliceOf(state: AppState): CountersSlice = CountersSlice(

@@ -96,6 +96,7 @@ internal data class AppStateDto(
     val profileSex: String? = null,
     val profileBirthYear: Int? = null,
     val weightForecastMethod: String = "NEW",
+    val dailyNormKcal: Int? = null,
     val stepsRange: String = "MONTH",
     val stepsCustomFromEpochDay: Long? = null,
     val stepsCustomToEpochDay: Long? = null,

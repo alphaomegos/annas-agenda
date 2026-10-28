@@ -1272,6 +1272,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         refreshSteps()
     }
 
+    fun setDailyNorm(kcal: Int?) {
+        _state.update { cur -> cur.copy(dailyNormKcal = kcal?.takeIf { it in DAILY_NORM_RANGE }) }
+    }
+
     fun setWeightForecastMethod(method: ForecastMethod) {
         _state.update { cur -> if (cur.weightForecastMethod == method) cur else cur.copy(weightForecastMethod = method) }
     }

@@ -1297,8 +1297,13 @@
     <string name="forecast_period_title">Moguća promena za period</string>
     <string name="forecast_info">Kako se računa prognoza</string>
     <string name="forecast_need_profile">Popunite profil — pol, visinu, godinu rođenja — i unesite bar jedno merenje težine.</string>
-    <string name="forecast_breakdown">Pojedeno %1$s kcal (dana po normi: %2$d) · koraci %3$s (%4$s kg) · trčanje %5$s kcal (%6$s kg)</string>
     <string name="forecast_discrepancy">Odstupanje od merenja: %1$s kg</string>
-    <string name="forecast_explain_new">Izabrana je nova metodika. Za svaki dan perioda: potrošnja organizma (Mifflin — St Jeor po polu, visini, godinama i težini tog dana, × 1,2) plus koraci i trčanje minus pojedeno po kalorimetru; dan bez unosa računa se kao pojedeno tačno po normi. Zbir se deli sa 7.700 kcal po kilogramu. Odstupanje — koliko su merenja težine u periodu odstupila od prognoze.</string>
+    <string name="forecast_explain_new">Izabrana je nova metodika. Za svaki dan perioda: potrošnja organizma (Mifflin — St Jeor po polu, visini, godinama i težini tog dana, × 1,2) plus koraci i trčanje minus pojedeno po kalorimetru; dan bez unosa računa se kao dan bez deficita — pojedeno tačno koliko je potrošeno, zajedno sa koracima i trčanjem. Zbir se deli sa 7.700 kcal po kilogramu. Odstupanje — koliko su merenja težine u periodu odstupila od prognoze.</string>
     <string name="forecast_explain_summer">Izabrana je metodika «Leto 2026»: za poslednjih 30 dana — zbir dnevnih ciljeva kalorimetra minus pojedeno, plus trčanje, podeljeno sa 7.800 kcal po kilogramu. Pol, visina, godine i koraci se ne računaju.</string>
+    <string name="forecast_norm_formula">Norma %1$s kcal dnevno (po formuli)</string>
+    <string name="forecast_norm_own">Norma %1$s kcal dnevno (vaša)</string>
+    <string name="forecast_norm_own_label">Vaša norma, kcal dnevno</string>
+    <string name="forecast_norm_reset">Po formuli</string>
+    <string name="forecast_breakdown_days">Dana sa unetom hranom: %1$d od %2$d (ostali — bez deficita) · pojedeno %3$s kcal · koraci %4$s (%5$s kg) · trčanje %6$s km (%7$s kg)</string>
+    <string name="anthro_since_first">%1$s %2$s · %3$s od %4$s</string>
 </resources>

@@ -1,5 +1,12 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import com.alphaomegos.annasagenda.support.ageIn
+import com.alphaomegos.annasagenda.support.baselineKcal
+import com.alphaomegos.annasagenda.support.weightOn
+import com.alphaomegos.annasagenda.support.runningPlanRunsDone
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalConfiguration
@@ -251,11 +258,26 @@ fun AnthropometryScreen(
             foodLog = state.foodLog,
             stepDays = state.stepDays,
             workouts = state.runningWorkouts,
+            planRuns = runningPlanRunsDone(state.runningPlanEntries, state.runningDoneTaskIds, today),
+            normKcal = state.dailyNormKcal,
         )
+    }
+    // The day's norm as it stands today (28.10): the user's own, or the formula's for the last weight.
+    val normToday: Int? = remember(state, today) {
+        state.dailyNormKcal ?: run {
+            val sex = state.profileSex ?: return@run null
+            val h = state.heightCm ?: return@run null
+            val y = state.profileBirthYear ?: return@run null
+            val w = weightOn(today, state.anthropometry) ?: return@run null
+            baselineKcal(sex, w, h, ageIn(today.year, y)).toInt()
+        }
     }
     if (forecastInfoOpen) {
         ForecastInfoDialog(
             method = state.weightForecastMethod,
+            normKcal = normToday,
+            ownNorm = state.dailyNormKcal,
+            onNorm = vm::setDailyNorm,
             onMethod = vm::setWeightForecastMethod,
             onProfile = { forecastInfoOpen = false; profileOpen = true },
             onDismiss = { forecastInfoOpen = false },
@@ -375,6 +397,8 @@ fun AnthropometryScreen(
                             if (state.weightForecastMethod == ForecastMethod.NEW) {
                                 NewForecastBlock(
                                     forecast = newForecast,
+                                    normKcal = normToday,
+                                    ownNorm = state.dailyNormKcal != null,
                                     onInfo = { forecastInfoOpen = true },
                                 )
                             } else {
@@ -454,7 +478,11 @@ fun AnthropometryScreen(
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
-                                    text = "${formatOneDecimal(last.second)} $unit (${
+                                    // The new look says what the difference is (28.10): since the first measurement.
+                                    text = if (state.newLook) stringResource(
+                                        R.string.anthro_since_first, formatOneDecimal(last.second), unit,
+                                        formatSignedOneDecimal(diff), formatShortDate(first.first, appLocale()),
+                                    ) else "${formatOneDecimal(last.second)} $unit (${
                                         formatSignedOneDecimal(
                                             diff
                                         )
@@ -469,7 +497,7 @@ fun AnthropometryScreen(
                         // 5.3: every measurement, newest first; a tap opens
                         // the same dialog the day is entered with.
                         if (state.anthropometryShowEntries) {
-                            item {
+                            if (!state.newLook) item {
                                 Text(
                                     text = stringResource(R.string.anthro_entries_header),
                                     style = MaterialTheme.typography.titleMedium,
@@ -946,7 +974,7 @@ private fun AnthropometryEntryRow(
  * period. Without the profile, a line saying what is missing.
  */
 @Composable
-private fun NewForecastBlock(forecast: WeightForecast?, onInfo: () -> Unit) {
+private fun NewForecastBlock(forecast: WeightForecast?, normKcal: Int?, ownNorm: Boolean, onInfo: () -> Unit) {
     val locale = LocalConfiguration.current.locales[0]
     val count = remember(locale) { java.text.NumberFormat.getIntegerInstance(locale) }
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -961,32 +989,60 @@ private fun NewForecastBlock(forecast: WeightForecast?, onInfo: () -> Unit) {
         }
         IconButton(onClick = onInfo) { Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.forecast_info)) }
     }
+    // The day's norm, where it can be seen — and changed, under «i» (28.10).
+    normKcal?.let { n ->
+        Text(
+            stringResource(if (ownNorm) R.string.forecast_norm_own else R.string.forecast_norm_formula, count.format(n)),
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
     if (forecast == null) {
         Text(stringResource(R.string.forecast_need_profile), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
     Text(
         stringResource(
-            R.string.forecast_breakdown,
-            count.format(forecast.eatenKcal), forecast.normDays,
+            R.string.forecast_breakdown_days,
+            forecast.loggedDays, forecast.days,
+            count.format(forecast.eatenKcal),
             count.format(forecast.steps), formatTwoDecimals(forecast.stepsKg),
-            count.format(forecast.runKcal.toLong()), formatTwoDecimals(forecast.runKg),
+            formatOneDecimal(forecast.runKm), formatTwoDecimals(forecast.runKg),
         ),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    // The scales against the forecast, marked by how far apart (28.10):
+    // within a kilo green, within three amber, beyond that red.
     forecast.discrepancyKg?.let { d ->
-        Text(
-            stringResource(R.string.forecast_discrepancy, (if (d > 0) "+" else "") + formatTwoDecimals(d)),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        val far = kotlin.math.abs(d)
+        val tone = when {
+            far <= 1.0 -> appExtraColors.positive
+            far <= 3.0 -> androidx.compose.ui.graphics.Color(0xFFB26A00)
+            else -> MaterialTheme.colorScheme.error
+        }
+        Surface(color = tone.copy(alpha = 0.14f), shape = RoundedCornerShape(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+            Text(
+                stringResource(R.string.forecast_discrepancy, (if (d > 0) "+" else "") + formatTwoDecimals(d)),
+                style = MaterialTheme.typography.labelMedium,
+                color = tone,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
     }
 }
 
 /** «i» (28.10): which forecast is chosen and how it is worked out; the choice; the profile. */
 @Composable
-private fun ForecastInfoDialog(method: ForecastMethod, onMethod: (ForecastMethod) -> Unit, onProfile: () -> Unit, onDismiss: () -> Unit) {
+private fun ForecastInfoDialog(
+    method: ForecastMethod,
+    normKcal: Int?,
+    ownNorm: Int?,
+    onNorm: (Int?) -> Unit,
+    onMethod: (ForecastMethod) -> Unit,
+    onProfile: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var normText by rememberSaveable { mutableStateOf(ownNorm?.toString() ?: "") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.forecast_info)) },
@@ -1000,6 +1056,21 @@ private fun ForecastInfoDialog(method: ForecastMethod, onMethod: (ForecastMethod
                     stringResource(if (method == ForecastMethod.NEW) R.string.forecast_explain_new else R.string.forecast_explain_summer),
                     style = MaterialTheme.typography.bodyMedium,
                 )
+                if (method == ForecastMethod.NEW) {
+                    // The day's norm (28.10): the formula's, or one's own.
+                    normKcal?.let { Text(stringResource(R.string.forecast_norm_formula, it.toString()), style = MaterialTheme.typography.labelLarge) }
+                    OutlinedTextField(
+                        value = normText,
+                        onValueChange = { v -> normText = v.filter { it.isDigit() }.take(4) },
+                        label = { Text(stringResource(R.string.forecast_norm_own_label)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = { onNorm(normText.toIntOrNull()) }) { Text(stringResource(R.string.save)) }
+                        TextButton(onClick = { normText = ""; onNorm(null) }) { Text(stringResource(R.string.forecast_norm_reset)) }
+                    }
+                }
                 TextButton(onClick = onProfile) { Text(stringResource(R.string.profile_title)) }
             }
         },
