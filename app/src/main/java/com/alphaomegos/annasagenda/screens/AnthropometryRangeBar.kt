@@ -1,5 +1,15 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -58,10 +68,45 @@ internal fun AnthropometryRangeBar(
     onSelect: (AnthropometryRange) -> Unit,
     onCustomPicked: (DateWindow) -> Unit,
     modifier: Modifier = Modifier,
+    // The new look (28.10): all six in one segmented strip that fits a folded
+    // Fold, rather than chips that run off its edge.
+    compact: Boolean = false,
 ) {
     var showCustom by rememberSaveable { mutableStateOf(false) }
 
-    Row(
+    if (compact) {
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            modifier = modifier.fillMaxWidth(),
+        ) {
+            Row(modifier = Modifier.padding(3.dp)) {
+                rangeLabels.forEach { (range, labelRes) ->
+                    val on = range == selected
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(if (on) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
+                            .selectable(selected = on, role = Role.Tab) {
+                                if (range == AnthropometryRange.CUSTOM) showCustom = true
+                                onSelect(range)
+                            }
+                            .padding(vertical = 7.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            stringResource(labelRes),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (on) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
+                    }
+                }
+            }
+        }
+    } else Row(
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),

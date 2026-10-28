@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -339,6 +341,7 @@ fun AnthropometryScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             AnthropometryRangeBar(
+                compact = state.newLook,
                 selected = range,
                 custom = custom,
                 onSelect = {
@@ -679,11 +682,38 @@ private fun AnthropometryChart(
         val locale = appLocale()
         val firstDateLabel = formatShortDate(entries.first().date, locale)
         val lastDateLabel = formatShortDate(entries.last().date, locale)
+        // A day picked on the chart (28.10, as on the steps chart): a tap, or a
+        // long press and a slide; the day nearest the finger, its values shown.
+        var picked by rememberSaveable(entries.size, entries.first().date.toEpochDay()) { mutableStateOf<Long?>(null) }
+        val cmOut = series.any { it.axis == AnthropometryAxis.CM }
+        val kgOut = series.any { it.axis == AnthropometryAxis.KG }
+        val days = entries.map { it.date.toEpochDay() }
+        fun nearestDay(x: Float, width: Int): Long? {
+            if (days.isEmpty()) return null
+            val l = if (cmOut) 52f else 12f
+            val r = width - (if (kgOut) 52f else 12f)
+            val lo = days.min()
+            val hi = days.max()
+            if (hi == lo) return lo
+            return days.minByOrNull { d -> kotlin.math.abs(l + (d - lo).toFloat() / (hi - lo) * (r - l) - x) }
+        }
 
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(12.dp)
+                .pointerInput(entries, series) {
+                    detectTapGestures { o -> nearestDay(o.x, size.width)?.let { picked = if (picked == it) null else it } }
+                }
+                .pointerInput(entries, series) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { o -> picked = nearestDay(o.x, size.width) },
+                        onDrag = { change, _ ->
+                            change.consume()
+                            picked = nearestDay(change.position.x, size.width)
+                        },
+                    )
+                }
         ) {
             val cmValues = series.filter { it.axis == AnthropometryAxis.CM }
                 .flatMap { s -> entries.mapNotNull { e -> s.getValue(e) } }
@@ -812,6 +842,17 @@ private fun AnthropometryChart(
                     )
                 }
                 drawPath(path, color = s.color, style = Stroke(width = 3f))
+            }
+            picked?.let { day ->
+                val e = entries.firstOrNull { it.date.toEpochDay() == day } ?: return@let
+                val x = xFor(e.date)
+                drawLine(gridColor, Offset(x, padTop), Offset(x, plotBottom), strokeWidth = 2.dp.toPx())
+                val values = series.mapNotNull { s ->
+                    s.getValue(e)?.let { v -> formatOneDecimal(v) + " " + if (s.axis == AnthropometryAxis.KG) kgUnit else cmUnit }
+                }
+                val text = formatShortDate(e.date, locale) + "   " + values.joinToString("   ")
+                val w = paint.measureText(text)
+                drawContext.canvas.nativeCanvas.drawText(text, (x - w / 2).coerceIn(padLeft, (plotRight - w).coerceAtLeast(padLeft)), padTop + 12.dp.toPx(), paint)
             }
         }
     }

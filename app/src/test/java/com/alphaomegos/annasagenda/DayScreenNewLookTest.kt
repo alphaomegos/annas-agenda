@@ -133,4 +133,14 @@ class DayScreenNewLookTest {
         assertTrue(a.contains("if (!state.newLook) {\n                Button("))
         assertTrue("the last date is placed by its width", !a.contains("plotRight - 72f"))
     }
+
+    /** The ranges fit a folded Fold in one strip (0331); the anthropometry chart picks a day as the steps chart does. */
+    @Test
+    fun rangesFitAndTheChartPicksADay() {
+        val bar = mainSourceFiles().single { it.name == "AnthropometryRangeBar.kt" }.readText()
+        assertTrue(bar.contains("compact: Boolean = false") && bar.contains(".weight(1f)"))
+        val a = mainSourceFiles().single { it.name == "AnthropometryScreen.kt" }.readText()
+        assertTrue(a.contains("compact = state.newLook,"))
+        assertTrue(a.contains("detectDragGesturesAfterLongPress(") && a.contains("picked?.let { day ->"))
+    }
 }

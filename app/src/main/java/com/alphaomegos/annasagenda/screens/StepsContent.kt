@@ -166,6 +166,7 @@ internal fun StepsContent(
         }
         item {
             AnthropometryRangeBar(
+                compact = true,
                 selected = state.stepsRange,
                 custom = state.stepsCustomRange,
                 onSelect = {
