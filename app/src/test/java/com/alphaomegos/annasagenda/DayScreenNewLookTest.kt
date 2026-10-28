@@ -119,4 +119,18 @@ class DayScreenNewLookTest {
         val menu = mainSourceFiles().single { it.name == "MainMenuScreen.kt" }.readText()
         assertTrue(menu.contains("val miniButtons = narrowStyle == MainMenuNarrowStyle.ICONS"))
     }
+
+    /**
+     * Anthropometry in the new look (0329): «+» in the bar instead of the wide
+     * button, one line a measurement, the chart filled; and its labels no longer
+     * overlap, in either look.
+     */
+    @Test
+    fun anthropometryFollowsTheLook() {
+        val a = mainSourceFiles().single { it.name == "AnthropometryScreen.kt" }.readText()
+        assertTrue(a.contains("filled = state.newLook,"))
+        assertTrue(a.contains("if (state.newLook) NewAnthropometryEntryRow("))
+        assertTrue(a.contains("if (!state.newLook) {\n                Button("))
+        assertTrue("the last date is placed by its width", !a.contains("plotRight - 72f"))
+    }
 }

@@ -56,6 +56,8 @@ data class AnthropometrySlice(
     val heightCm: Int? = null,
     val profileBirthYear: Int? = null,
     val weightForecastMethod: ForecastMethod = ForecastMethod.NEW,
+    // The screens' look (28.10): the new one, or Summer 2026's.
+    val newLook: Boolean = true,
 )
 
 /**
@@ -131,6 +133,7 @@ fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySli
     heightCm = state.stepsHeightCm,
     profileBirthYear = state.profileBirthYear,
     weightForecastMethod = state.weightForecastMethod,
+    newLook = state.dayScreenStyle == DayScreenStyle.NEW,
 )
 
 fun countersSliceOf(state: AppState): CountersSlice = CountersSlice(

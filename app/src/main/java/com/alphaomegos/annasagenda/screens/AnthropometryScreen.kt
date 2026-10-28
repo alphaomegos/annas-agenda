@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.outlined.Info
@@ -290,6 +292,13 @@ fun AnthropometryScreen(
                     TopBarBack(onBack = onBack)
                 },
                 actions = {
+                    // The new look (28.10): a measurement is added from here, not
+                    // from a wide button under the list.
+                    if (state.newLook) {
+                        IconButton(onClick = { showInput.value = true }) {
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.enter_data))
+                        }
+                    }
                     IconButton(onClick = { showSettings.value = true }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -337,6 +346,7 @@ fun AnthropometryScreen(
                 // pages: what was before is to the left.
                 onSwipeBack = { if (canBack) page -= 1 },
                 onSwipeForward = { if (canForward) page += 1 },
+                filled = state.newLook,
             )
 
             Surface(
@@ -467,7 +477,11 @@ fun AnthropometryScreen(
                                 )
                             }
                             items(allEntries.asReversed(), key = { it.date.toEpochDay() }) { e ->
-                                AnthropometryEntryRow(
+                                if (state.newLook) NewAnthropometryEntryRow(
+                                    entry = e,
+                                    fields = visibleFieldDefs,
+                                    onClick = { editingEntryDay = e.date.toEpochDay() },
+                                ) else AnthropometryEntryRow(
                                     entry = e,
                                     fields = visibleFieldDefs,
                                     onClick = { editingEntryDay = e.date.toEpochDay() },
@@ -478,11 +492,13 @@ fun AnthropometryScreen(
                 }
             }
 
-            Button(
-                onClick = { showInput.value = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.enter_data))
+            if (!state.newLook) {
+                Button(
+                    onClick = { showInput.value = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.enter_data))
+                }
             }
         }
     }
@@ -587,6 +603,7 @@ private fun AnthropometryChart(
     series: List<AnthropometryFieldDef>,
     onSwipeBack: () -> Unit,
     onSwipeForward: () -> Unit,
+    filled: Boolean = false,
 ) {
     val cmUnit = stringResource(R.string.cm_short)
     val kgUnit = stringResource(R.string.kg_short)
@@ -669,7 +686,9 @@ private fun AnthropometryChart(
             val padLeft = if (cmInUse) 52f else 12f
             val padRight = if (kgInUse) 52f else 12f
             val padTop = 10f
-            val padBottom = 24f
+            // Room under the plot for the dates (28.10): 24 px was less than the
+            // text is tall, and the lowest value sat on the last date.
+            val padBottom = 18.dp.toPx()
 
             val plotRight = size.width - padRight
             val plotBottom = size.height - padBottom
@@ -707,23 +726,23 @@ private fun AnthropometryChart(
                 drawContext.canvas.nativeCanvas.drawText(text, x, y, paint)
             }
 
-            if (cmInUse) drawLabel(cmUnit, 4f, 12.dp.toPx())
-            if (kgInUse) drawLabel(kgUnit, size.width - padRight + 6f, 12.dp.toPx())
-
+            // The unit with the top value, not a label of its own on top of it (28.10).
             val ticks = listOf(0f, 0.5f, 1f)
             for (t in ticks) {
                 val y = plotBottom - t * (plotBottom - padTop)
                 val cm = cmMin + (cmMax - cmMin) * t
                 val kg = kgMin + (kgMax - kgMin) * t
-                if (cmInUse) drawLabel(formatOneDecimal(cm), 4f, y + 4f)
-                if (kgInUse) drawLabel(formatOneDecimal(kg), size.width - padRight + 6f, y + 4f)
+                val top = t == 1f
+                if (cmInUse) drawLabel(formatOneDecimal(cm) + if (top) " $cmUnit" else "", 4f, y + 4f)
+                if (kgInUse) drawLabel(formatOneDecimal(kg) + if (top) " $kgUnit" else "", size.width - padRight + 6f, y + 4f)
             }
 
             // Date labels (start/end). Formatted before the draw scope, for
             // the same reason the colours are read before it: a DrawScope is
             // not a composition and cannot ask what language the app is in.
-            drawLabel(firstDateLabel, padLeft, size.height - 6f)
-            drawLabel(lastDateLabel, plotRight - 72f, size.height - 6f)
+            drawLabel(firstDateLabel, padLeft, size.height - 4f)
+            // The last date ends where the plot does — measured, not guessed at 72 px (28.10).
+            drawLabel(lastDateLabel, plotRight - paint.measureText(lastDateLabel), size.height - 4f)
 
             // Series lines.
             //
@@ -749,6 +768,19 @@ private fun AnthropometryChart(
                         hop.control1.x, hop.control1.y,
                         hop.control2.x, hop.control2.y,
                         hop.end.x, hop.end.y,
+                    )
+                }
+                // The new look (28.10): a soft fill under the line, fading to nothing.
+                if (filled) {
+                    val area = Path().apply {
+                        addPath(path)
+                        lineTo(points.last().x, plotBottom)
+                        lineTo(points.first().x, plotBottom)
+                        close()
+                    }
+                    drawPath(
+                        area,
+                        brush = Brush.verticalGradient(listOf(s.color.copy(alpha = 0.22f), s.color.copy(alpha = 0f)), startY = padTop, endY = plotBottom),
                     )
                 }
                 drawPath(path, color = s.color, style = Stroke(width = 3f))
@@ -973,4 +1005,43 @@ private fun ForecastInfoDialog(method: ForecastMethod, onMethod: (ForecastMethod
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
     )
+}
+
+/**
+ * A measurement in the new look (28.10): one line — the date, the values in
+ * their colours, «›» — rather than the date over a line per value.
+ */
+@Composable
+private fun NewAnthropometryEntryRow(
+    entry: AnthropometryEntry,
+    fields: List<AnthropometryFieldDef>,
+    onClick: () -> Unit,
+) {
+    val locale = appLocale()
+    val cm = stringResource(R.string.cm_short)
+    val kg = stringResource(R.string.kg_short)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(formatShortDate(entry.date, locale), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        fields.forEach { f ->
+            val v = f.getValue(entry) ?: return@forEach
+            Text(
+                formatOneDecimal(v) + " " + if (f.axis == AnthropometryAxis.KG) kg else cm,
+                color = f.color,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 12.dp),
+            )
+        }
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+    }
 }
