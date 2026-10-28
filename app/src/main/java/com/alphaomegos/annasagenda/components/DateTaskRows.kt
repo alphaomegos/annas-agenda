@@ -488,8 +488,10 @@ internal fun SubtaskRowCall(
     onMoveDown: () -> Unit,
     onMove: () -> Unit,
     onCopy: () -> Unit,
+    onRepeat: () -> Unit = {},
+    onDelete: () -> Unit = {},
 ) {
-    if (newLook) NewDateSubtaskRow(subtask, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy)
+    if (newLook) NewDateSubtaskRow(subtask, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy, onRepeat, onDelete)
     else DateSubtaskRow(subtask, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy)
 }
 
@@ -508,6 +510,8 @@ internal fun NewDateSubtaskRow(
     onMoveDown: () -> Unit,
     onMove: () -> Unit,
     onCopy: () -> Unit,
+    onRepeat: () -> Unit = {},
+    onDelete: () -> Unit = {},
 ) {
     val tint = subtask.colorArgb?.toInt()?.let { Color(it).copy(alpha = 0.16f) } ?: Color.Transparent
     val next = nextPaletteColor(subtask.colorArgb)?.toInt()?.let { Color(it) } ?: MaterialTheme.colorScheme.outlineVariant
@@ -554,6 +558,17 @@ internal fun NewDateSubtaskRow(
                     text = { Text(stringResource(R.string.copy_task)) },
                     leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
                     onClick = { menuOpen = false; onCopy() },
+                )
+                // As in the subtask's dialog (28.10).
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.repeat)) },
+                    leadingIcon = { Icon(Icons.Default.Repeat, contentDescription = null) },
+                    onClick = { menuOpen = false; onRepeat() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    onClick = { menuOpen = false; onDelete() },
                 )
             }
         }

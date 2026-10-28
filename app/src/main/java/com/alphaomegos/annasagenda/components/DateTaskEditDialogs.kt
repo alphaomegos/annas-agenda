@@ -354,25 +354,21 @@ internal fun NewEditTaskDialog(
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
     val linkedTitle = manualCounters.firstOrNull { it.id == editingTask?.linkedManualCounterId }?.title
     val time = editingTask?.time
+    // No title (28.10): the task's own words are the head of the dialog.
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.task_description_label)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextField(
-                    value = text,
-                    onValueChange = onTextChange,
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                // The text and its time on one line (28.10).
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextField(
+                        value = text,
+                        onValueChange = onTextChange,
+                        textStyle = MaterialTheme.typography.titleMedium,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        colors = frameless(),
+                        modifier = Modifier.weight(1f),
+                    )
                     if (time == null) {
                         IconButton(onClick = onShowTimePicker) {
                             Icon(Icons.Default.Schedule, contentDescription = stringResource(R.string.set_task_time))
@@ -385,8 +381,9 @@ internal fun NewEditTaskDialog(
                             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear_task_time))
                         }
                     }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (linkedTitle != null) {
-                        Spacer(Modifier.width(8.dp))
                         Text(
                             stringResource(R.string.attached_counter_fmt, linkedTitle),
                             style = MaterialTheme.typography.bodySmall,
@@ -448,4 +445,87 @@ internal fun TaskDialogCall(
     } else {
         EditTaskDialog(taskId, editingTask, manualCounters, text, onTextChange, onDismiss, onShowRepeatPicker, onShowCounterPicker, onDelete, onConfirm, onDetachCounter, onShowTimePicker, onClearTime)
     }
+}
+
+/** A text field with no frame and no fill (28.10): the words alone, on the dialog's own surface. */
+@Composable
+private fun frameless() = TextFieldDefaults.colors(
+    focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+    unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+)
+
+/**
+ * A subtask's dialog in the new look (28.10): as the task's — no title, the
+ * words with no frame, the tools as icons with short words: repeat, copy,
+ * move, delete. «Summer 2026» keeps EditSubtaskDialog.
+ */
+@Composable
+internal fun NewEditSubtaskDialog(
+    subtaskId: Long?,
+    text: String,
+    onTextChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onShowRepeatPicker: () -> Unit,
+    onDelete: (Long) -> Unit,
+    onConfirm: (Long, String) -> Unit,
+    onCopy: (Long) -> Unit,
+    onMove: (Long) -> Unit,
+) {
+    if (subtaskId == null) return
+    var confirmingDelete by rememberSaveable { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    textStyle = MaterialTheme.typography.titleMedium,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    colors = frameless(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TaskTool(Icons.Default.Repeat, stringResource(R.string.repeat), onClick = onShowRepeatPicker)
+                    TaskTool(Icons.Default.ContentCopy, stringResource(R.string.task_tool_copy)) { onCopy(subtaskId) }
+                    TaskTool(Icons.AutoMirrored.Filled.ArrowForward, stringResource(R.string.task_tool_move)) { onMove(subtaskId) }
+                    TaskTool(Icons.Default.Delete, stringResource(R.string.remove), MaterialTheme.colorScheme.error) { confirmingDelete = true }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(subtaskId, text) }) { Text(stringResource(R.string.ok)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+    if (confirmingDelete) {
+        ConfirmDialog(
+            titleRes = R.string.delete_subtask_title,
+            textRes = R.string.action_cannot_be_undone,
+            confirmLabelRes = R.string.remove,
+            onConfirm = {
+                confirmingDelete = false
+                onDelete(subtaskId)
+            },
+            onDismiss = { confirmingDelete = false },
+        )
+    }
+}
+
+/** A subtask's dialog as the look has it (28.10). */
+@Composable
+internal fun SubtaskDialogCall(
+    newLook: Boolean,
+    subtaskId: Long?,
+    text: String,
+    onTextChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onShowRepeatPicker: () -> Unit,
+    onDelete: (Long) -> Unit,
+    onConfirm: (Long, String) -> Unit,
+    onCopy: (Long) -> Unit,
+    onMove: (Long) -> Unit,
+) {
+    if (newLook) NewEditSubtaskDialog(subtaskId, text, onTextChange, onDismiss, onShowRepeatPicker, onDelete, onConfirm, onCopy, onMove)
+    else EditSubtaskDialog(subtaskId, text, onTextChange, onDismiss, onShowRepeatPicker, onDelete, onConfirm)
 }

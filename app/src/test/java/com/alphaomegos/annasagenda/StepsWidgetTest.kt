@@ -61,4 +61,12 @@ class StepsWidgetTest {
         assertTrue("a GlanceTheme colour reaches CheckBoxColors", !tasks.contains("GlanceTheme.colors"))
         assertTrue(tasks.contains("?: WIDGET_DEFAULT_TICK"))
     }
+
+    /** A tap on the steps widget opens «On the run» on its Steps tab, not the day (0326). */
+    @Test
+    fun theStepsWidgetOpensTheStepsTab() {
+        assertTrue(widget.contains(".putExtra(EXTRA_OPEN_STEPS, true)"))
+        val main = mainSourceFiles().single { it.name == "MainActivity.kt" }.readText()
+        assertTrue(main.contains("EXTRA_OPEN_STEPS") && main.contains("RunningMode.STEPS"))
+    }
 }

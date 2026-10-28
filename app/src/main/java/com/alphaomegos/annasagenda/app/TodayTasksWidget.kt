@@ -60,6 +60,9 @@ import com.alphaomegos.annasagenda.app.*
 /** The extra that asks MainActivity to open a day; the value is an epoch day. */
 internal const val EXTRA_OPEN_EPOCH_DAY = "com.alphaomegos.annasagenda.OPEN_EPOCH_DAY"
 
+/** The steps widget's tap (28.10): open «On the run» on its Steps tab. */
+internal const val EXTRA_OPEN_STEPS = "com.alphaomegos.annasagenda.OPEN_STEPS"
+
 private val WidgetTaskKey = ActionParameters.Key<String>("task_key")
 
 /** The state as the app has it now: the live view model's, or what is on disk. */

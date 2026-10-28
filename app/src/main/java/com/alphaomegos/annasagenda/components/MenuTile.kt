@@ -150,6 +150,13 @@ internal fun MenuTile(
 
     val click = onClick
     val longClick = onLongClick
+    // Mini buttons (28.10): no card round the picture — no fill, no shadow.
+    val bareColors = CardDefaults.elevatedCardColors(
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        disabledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+    )
+    val elevation = if (titled) CardDefaults.elevatedCardElevation()
+    else CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp)
     when {
         enabled && click != null && longClick != null -> ElevatedCard(
             // Taps through a gesture detector carry no semantics; name the two
@@ -165,20 +172,23 @@ internal fun MenuTile(
                 )
             },
             shape = shape,
-            colors = if (comingSoon) colorsComingSoon else colorsEnabled
+            elevation = elevation,
+            colors = if (!titled) bareColors else if (comingSoon) colorsComingSoon else colorsEnabled
         ) { content() }
 
         enabled && click != null -> ElevatedCard(
             onClick = click,
             modifier = modifier,
             shape = shape,
-            colors = if (comingSoon) colorsComingSoon else colorsEnabled
+            elevation = elevation,
+            colors = if (!titled) bareColors else if (comingSoon) colorsComingSoon else colorsEnabled
         ) { content() }
 
         else -> ElevatedCard(
             modifier = modifier,
             shape = shape,
-            colors = if (!enabled) colorsDisabled else if (comingSoon) colorsComingSoon else colorsEnabled
+            elevation = elevation,
+            colors = if (!titled) bareColors else if (!enabled) colorsDisabled else if (comingSoon) colorsComingSoon else colorsEnabled
         ) { content() }
     }
 }

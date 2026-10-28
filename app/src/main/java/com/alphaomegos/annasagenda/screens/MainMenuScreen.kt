@@ -534,8 +534,10 @@ internal fun MainMenuContent(
             ) {
                 val wide = mainMenuColumns(maxWidth.value.toInt())
                 // A narrow screen as «mini buttons» (25.10): two to a row, pictures only.
-                val miniButtons = wide == 1 && narrowStyle == MainMenuNarrowStyle.ICONS
-                val columns = if (miniButtons) 2 else wide
+                // «Mini buttons» on any screen (28.10): two to a row when narrow,
+                // as many as the tiles when wide; pictures only, no frames.
+                val miniButtons = narrowStyle == MainMenuNarrowStyle.ICONS
+                val columns = if (miniButtons && wide == 1) 2 else wide
 
                 // Rearranging stays in whichever shape the menu is in. Until
                 // 0130 the tiles handed over to the list for it, which on the

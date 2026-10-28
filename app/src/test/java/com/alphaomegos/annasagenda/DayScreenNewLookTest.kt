@@ -82,11 +82,41 @@ class DayScreenNewLookTest {
     fun theTaskDialogIsLighter() {
         val dialogs = mainSourceFiles().single { it.name == "DateTaskEditDialogs.kt" }.readText()
         val newDialog = dialogs.substringAfter("internal fun NewEditTaskDialog(").substringBefore("internal fun TaskDialogCall(")
-        assertTrue(Regex("""R\.string\.task_description_label""").findAll(newDialog).count() == 1)
-        assertTrue(newDialog.contains("unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent"))
+        // No title at all now (0326): the task's words head the dialog.
+        assertTrue(!newDialog.contains("R.string.task_description_label"))
+        assertTrue(newDialog.contains("colors = frameless()"))
+        assertTrue(dialogs.contains("unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent"))
         assertTrue(newDialog.contains("Icons.Default.Schedule") && newDialog.contains("Icons.Default.Close"))
         for (label in listOf("R.string.repeat", "R.string.task_menu_counter", "R.string.task_tool_copy", "R.string.task_tool_move", "R.string.remove")) {
             assertTrue(label, newDialog.contains(label))
         }
+    }
+
+    /** Subtasks too (0326): the dialog without title or frame, its tools as icons; the row's ⋮ repeats and deletes. */
+    @Test
+    fun subtasksGetTheSameDialogAndMenu() {
+        val dialogs = mainSourceFiles().single { it.name == "DateTaskEditDialogs.kt" }.readText()
+        val sub = dialogs.substringAfter("internal fun NewEditSubtaskDialog(").substringBefore("internal fun SubtaskDialogCall(")
+        assertTrue(!sub.contains("R.string.task_description_label") && sub.contains("colors = frameless()"))
+        for (label in listOf("R.string.repeat", "R.string.task_tool_copy", "R.string.task_tool_move", "R.string.remove")) assertTrue(label, sub.contains(label))
+        val subRow = rows.substringAfter("internal fun NewDateSubtaskRow(")
+        assertTrue(subRow.contains("R.string.repeat") && subRow.contains("R.string.remove"))
+    }
+
+    /** «Someday» follows the day screen's look (0326): Back and the house on top, the rows in the surface. */
+    @Test
+    fun somedayFollowsTheLook() {
+        val someday = mainSourceFiles().single { it.name == "SomedayScreen.kt" }.readText()
+        assertTrue(someday.contains("DateTasksBlock(vm = vm, state = state, date = null, newLook = newLook)"))
+        assertTrue(someday.contains("TopBarBack(onBack)") && someday.contains("WayHomeButton()"))
+    }
+
+    /** Mini buttons have no card round them (0326), on a narrow screen and a wide one. */
+    @Test
+    fun miniButtonsAreBare() {
+        val tile = mainSourceFiles().single { it.name == "MenuTile.kt" }.readText()
+        assertTrue(tile.contains("if (!titled) bareColors"))
+        val menu = mainSourceFiles().single { it.name == "MainMenuScreen.kt" }.readText()
+        assertTrue(menu.contains("val miniButtons = narrowStyle == MainMenuNarrowStyle.ICONS"))
     }
 }

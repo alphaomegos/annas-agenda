@@ -85,6 +85,7 @@ class StepsWidget : GlanceAppWidget() {
             val version by TodayWidgetRefresh.version.collectAsState()
             LaunchedEffect(version) { data = loadStepsWidget(context) }
             val open = Intent(context, MainActivity::class.java)
+                .putExtra(EXTRA_OPEN_STEPS, true)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             val text = widgetTextColor(data.style)
             GlanceTheme {

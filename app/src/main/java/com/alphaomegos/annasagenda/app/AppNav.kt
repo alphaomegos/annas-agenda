@@ -141,6 +141,8 @@ fun AppNav(
     vm: AppViewModel,
     openDayRequest: Long? = null,
     onOpenDayHandled: () -> Unit = {},
+    openStepsRequest: Boolean = false,
+    onOpenStepsHandled: () -> Unit = {},
 ) {
     val nav = rememberNavController()
 
@@ -502,5 +504,11 @@ fun AppNav(
         val day = openDayRequest ?: return@LaunchedEffect
         nav.navigate("${Route.CALENDAR_DAY}/$day") { launchSingleTop = true }
         onOpenDayHandled()
+    }
+    // The steps widget's tap (28.10): «On the run», its Steps tab, over the menu.
+    LaunchedEffect(openStepsRequest) {
+        if (!openStepsRequest) return@LaunchedEffect
+        onOpenStepsHandled()
+        nav.navigate(Route.RUNNING) { launchSingleTop = true }
     }
 }

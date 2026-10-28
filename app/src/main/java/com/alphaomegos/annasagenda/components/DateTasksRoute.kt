@@ -198,6 +198,8 @@ private fun DateTasksBlockContent(
     // A picker opened from a row's ⋮ (28.10) opens without the task's dialog under it.
     val editFromMenu = rememberSaveable { mutableStateOf(false) }
     val menuDeleteTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
+    val editSubtaskFromMenu = rememberSaveable { mutableStateOf(false) }
+    val menuDeleteSubtaskId = rememberSaveable { mutableStateOf<Long?>(null) }
     var editSubtaskId by rememberSaveable { mutableStateOf<Long?>(null) }
     val editSubtaskText = rememberSaveable { mutableStateOf("") }
     val showSubtaskRepeatPicker = rememberSaveable { mutableStateOf(false) }
@@ -275,6 +277,7 @@ private fun DateTasksBlockContent(
                             actions.setSubtaskColor(st.id, nextPaletteColor(st.colorArgb))
                         },
                         onEdit = {
+                            editSubtaskFromMenu.value = false
                             editSubtaskId = st.id
                             editSubtaskText.value = st.description
                             showSubtaskRepeatPicker.value = false
@@ -283,6 +286,13 @@ private fun DateTasksBlockContent(
                         onMoveDown = { actions.moveSubtaskDown(st.id) },
                         onMove = { moveSubtaskId.value = st.id },
                         onCopy = { copySubtaskId.value = st.id },
+                        onRepeat = {
+                            editSubtaskFromMenu.value = true
+                            editSubtaskId = st.id
+                            editSubtaskText.value = st.description
+                            showSubtaskRepeatPicker.value = true
+                        },
+                        onDelete = { menuDeleteSubtaskId.value = st.id },
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
@@ -450,6 +460,18 @@ private fun DateTasksBlockContent(
         onClearTime = { taskId -> actions.setTaskTime(taskId, null) },
     )
 
+    menuDeleteSubtaskId.value?.let { id ->
+        ConfirmDialog(
+            titleRes = R.string.delete_subtask_title,
+            textRes = R.string.action_cannot_be_undone,
+            confirmLabelRes = R.string.remove,
+            onConfirm = {
+                menuDeleteSubtaskId.value = null
+                actions.deleteSubtask(id)
+            },
+            onDismiss = { menuDeleteSubtaskId.value = null },
+        )
+    }
     // Deleting from a row's ⋮ (28.10): asked first, as in the task's dialog.
     menuDeleteTaskId.value?.let { id ->
         ConfirmDialog(
@@ -486,8 +508,17 @@ private fun DateTasksBlockContent(
         )
     }
 
-    EditSubtaskDialog(
-        subtaskId = editSubtaskId,
+    SubtaskDialogCall(
+        newLook = newLook,
+        subtaskId = if (editSubtaskFromMenu.value) null else editSubtaskId,
+        onCopy = { id ->
+            editSubtaskId = null
+            copySubtaskId.value = id
+        },
+        onMove = { id ->
+            editSubtaskId = null
+            moveSubtaskId.value = id
+        },
         text = editSubtaskText.value,
         onTextChange = { editSubtaskText.value = it },
         onDismiss = {

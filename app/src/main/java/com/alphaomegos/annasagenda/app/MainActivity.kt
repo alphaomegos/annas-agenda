@@ -30,8 +30,14 @@ class MainActivity : AppCompatActivity() {
 
     // A day the widget asked to open, until the navigation has opened it.
     private val openDayRequest = MutableStateFlow<Long?>(null)
+    // The steps widget asked for the Steps tab (28.10), until it is open.
+    private val openStepsRequest = MutableStateFlow(false)
 
     private fun takeOpenDayRequest(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_OPEN_STEPS, false) == true) {
+            openStepsRequest.value = true
+            intent.removeExtra(EXTRA_OPEN_STEPS)
+        }
         val day = intent?.getLongExtra(EXTRA_OPEN_EPOCH_DAY, Long.MIN_VALUE) ?: return
         if (day != Long.MIN_VALUE) {
             openDayRequest.value = day
@@ -80,10 +86,16 @@ class MainActivity : AppCompatActivity() {
 
                         else -> {
                             val openDay by openDayRequest.collectAsState()
+                            val openSteps by openStepsRequest.collectAsState()
                             AppNav(
                                 vm = vm,
                                 openDayRequest = openDay,
                                 onOpenDayHandled = { openDayRequest.value = null },
+                                openStepsRequest = openSteps,
+                                onOpenStepsHandled = {
+                                    vm.setRunningMode(com.alphaomegos.annasagenda.model.RunningMode.STEPS)
+                                    openStepsRequest.value = false
+                                },
                             )
                         }
                     }

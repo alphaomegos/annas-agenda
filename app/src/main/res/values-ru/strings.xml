@@ -1327,8 +1327,8 @@
     <string name="steps_widget_week_average">Среднее за неделю: %1$s</string>
     <string name="steps_info">Последнее чтение</string>
     <string name="steps_info_none">В этот раз шаги ещё не читались.</string>
-    <string name="main_menu_narrow_menu">Главная на узком экране</string>
-    <string name="main_menu_narrow_list">Списком</string>
+    <string name="main_menu_narrow_menu">Вид главной</string>
+    <string name="main_menu_narrow_list">Обычный</string>
     <string name="main_menu_narrow_icons">Мини-кнопками</string>
     <string name="widget_error_tasks">Не удалось показать задачи. Нажмите, чтобы открыть приложение.</string>
     <string name="widget_error_steps">Не удалось показать шаги. Нажмите, чтобы открыть приложение.</string>
