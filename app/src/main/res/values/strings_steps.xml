@@ -100,4 +100,11 @@
     <string name="profile_male">Male</string>
     <string name="profile_birth_year">Year of birth</string>
     <string name="profile_height_cm">%1$d cm</string>
+    <string name="forecast_period_title">Potential change over the period</string>
+    <string name="forecast_info">How the forecast is worked out</string>
+    <string name="forecast_need_profile">Fill in the profile — sex, height, year of birth — and weigh yourself at least once.</string>
+    <string name="forecast_breakdown">Eaten %1$s kcal (days at the norm: %2$d) · steps %3$s (%4$s kg) · running %5$s kcal (%6$s kg)</string>
+    <string name="forecast_discrepancy">The scales differ from the forecast by %1$s kg</string>
+    <string name="forecast_explain_new">The new method is chosen. For each day of the period: what the body spends (Mifflin–St Jeor from sex, height, age and that day’s weight, × 1.2), plus steps and running, minus what the calorimeter says was eaten; a day with nothing written counts as eaten exactly to that norm. The sum is divided by 7,700 kcal a kilogram. The discrepancy is how far the weighings in the period differ from it.</string>
+    <string name="forecast_explain_summer">The «Summer 2026» method is chosen: over the last 30 days, the calorimeter’s daily goals minus what was eaten, plus running, divided by 7,800 kcal a kilogram. Sex, height, age and steps are not counted.</string>
 </resources>

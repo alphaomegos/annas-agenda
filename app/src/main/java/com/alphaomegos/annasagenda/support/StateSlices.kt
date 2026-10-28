@@ -50,6 +50,12 @@ data class AnthropometrySlice(
     val anthropometryShowEntries: Boolean = false,
     val anthropometryRange: AnthropometryRange = AnthropometryRange.MONTH,
     val anthropometryCustomRange: DateWindow? = null,
+    // The new forecast (28.10): steps, the profile, and which forecast.
+    val stepDays: List<StepDay> = emptyList(),
+    val profileSex: ProfileSex? = null,
+    val heightCm: Int? = null,
+    val profileBirthYear: Int? = null,
+    val weightForecastMethod: ForecastMethod = ForecastMethod.NEW,
 )
 
 /**
@@ -120,6 +126,11 @@ fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySli
     anthropometryShowEntries = state.anthropometryShowEntries,
     anthropometryRange = state.anthropometryRange,
     anthropometryCustomRange = state.anthropometryCustomRange,
+    stepDays = state.stepDays,
+    profileSex = state.profileSex,
+    heightCm = state.stepsHeightCm,
+    profileBirthYear = state.profileBirthYear,
+    weightForecastMethod = state.weightForecastMethod,
 )
 
 fun countersSliceOf(state: AppState): CountersSlice = CountersSlice(

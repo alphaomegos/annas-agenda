@@ -130,6 +130,8 @@ data class AppState(
     // body's own energy use in the weight forecast.
     val profileSex: ProfileSex? = null,
     val profileBirthYear: Int? = null,
+    // How anthropometry's forecast is worked out (28.10): the new energy balance, or Summer 2026's.
+    val weightForecastMethod: ForecastMethod = ForecastMethod.NEW,
     val stepsRange: AnthropometryRange = AnthropometryRange.MONTH,
     val stepsCustomRange: DateWindow? = null,
     // A day's steps on the month, under its number (19.10); on unless turned off.

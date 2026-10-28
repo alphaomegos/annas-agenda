@@ -1,5 +1,12 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.outlined.Info
+import com.alphaomegos.annasagenda.components.ProfileDialog
+import com.alphaomegos.annasagenda.support.newWeightForecast
+import com.alphaomegos.annasagenda.support.WeightForecast
+import com.alphaomegos.annasagenda.support.ForecastMethod
 import com.alphaomegos.annasagenda.components.TopBarBack
 import android.graphics.Paint
 import android.widget.Toast
@@ -197,6 +204,9 @@ fun AnthropometryScreen(
     }
 
     val potentialKg = (deficit30 + burned30) / KCAL_PER_KG_FAT
+    // The new forecast (28.10) is over the period on screen; the window is below.
+    var forecastInfoOpen by rememberSaveable { mutableStateOf(false) }
+    var profileOpen by rememberSaveable { mutableStateOf(false) }
 
     val allEntries = remember(state.anthropometry) {
         state.anthropometry.sortedBy { it.date }
@@ -226,6 +236,37 @@ fun AnthropometryScreen(
 
     val window = remember(allEntries, dateWindow) {
         anthropometryEntriesIn(allEntries, dateWindow)
+    }
+    val newForecast = remember(state, dateWindow, today) {
+        newWeightForecast(
+            from = dateWindow.from,
+            to = dateWindow.to,
+            today = today,
+            sex = state.profileSex,
+            heightCm = state.heightCm,
+            birthYear = state.profileBirthYear,
+            anthropometry = state.anthropometry,
+            foodLog = state.foodLog,
+            stepDays = state.stepDays,
+            workouts = state.runningWorkouts,
+        )
+    }
+    if (forecastInfoOpen) {
+        ForecastInfoDialog(
+            method = state.weightForecastMethod,
+            onMethod = vm::setWeightForecastMethod,
+            onProfile = { forecastInfoOpen = false; profileOpen = true },
+            onDismiss = { forecastInfoOpen = false },
+        )
+    }
+    if (profileOpen) {
+        ProfileDialog(
+            sex = state.profileSex,
+            heightCm = state.heightCm,
+            birthYear = state.profileBirthYear,
+            onSave = { sx, h, y -> vm.setProfile(sx, h, y); profileOpen = false },
+            onDismiss = { profileOpen = false },
+        )
     }
 
     val showInput = rememberSaveable { mutableStateOf(false) }
@@ -321,42 +362,56 @@ fun AnthropometryScreen(
                     ) {
                         // 5.1: the whole forecast block, or none of it.
                         if (state.anthropometryShowForecast) item {
-                            val okGreen = appExtraColors.positive
-                            val badRed = MaterialTheme.colorScheme.error
-                            val color = if (potentialKg >= 0.0) okGreen else badRed
+                            if (state.weightForecastMethod == ForecastMethod.NEW) {
+                                NewForecastBlock(
+                                    forecast = newForecast,
+                                    onInfo = { forecastInfoOpen = true },
+                                )
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        val okGreen = appExtraColors.positive
+                                        val badRed = MaterialTheme.colorScheme.error
+                                        val color = if (potentialKg >= 0.0) okGreen else badRed
 
-                            val kgText = formatTwoDecimals(potentialKg)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.calorimeter_month_projection),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = "$kgText ${stringResource(R.string.kg_short)}",
-                                    color = color,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.End,
-                                    modifier = Modifier.widthIn(min = 140.dp)
-                                )
-                            }
+                                        val kgText = formatTwoDecimals(potentialKg)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.calorimeter_month_projection),
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                            Text(
+                                                text = "$kgText ${stringResource(R.string.kg_short)}",
+                                                color = color,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                textAlign = TextAlign.End,
+                                                modifier = Modifier.widthIn(min = 140.dp)
+                                            )
+                                        }
 
-                            // Said only when there is something to say. A line
-                            // reading "running included: 0 kcal" on a screen
-                            // belonging to somebody who does not run is noise
-                            // that never goes away.
-                            if (burned30 > 0) {
-                                Text(
-                                    text = stringResource(
-                                        R.string.anthropometry_running_included,
-                                        burned30,
-                                    ),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                        // Said only when there is something to say. A line
+                                        // reading "running included: 0 kcal" on a screen
+                                        // belonging to somebody who does not run is noise
+                                        // that never goes away.
+                                        if (burned30 > 0) {
+                                            Text(
+                                                text = stringResource(
+                                                    R.string.anthropometry_running_included,
+                                                    burned30,
+                                                ),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                                            }
+                                    IconButton(onClick = { forecastInfoOpen = true }) {
+                                        Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.forecast_info))
+                                    }
+                                }
                             }
                         }
 
@@ -850,4 +905,72 @@ private fun AnthropometryEntryRow(
             )
         }
     }
+}
+
+/**
+ * The new forecast's lines (28.10): «Potential change over the period» and the
+ * kilograms, the «i» beside them; under them what they are made of — eaten,
+ * steps, runs — and how far the scales disagreed, if weighed twice in the
+ * period. Without the profile, a line saying what is missing.
+ */
+@Composable
+private fun NewForecastBlock(forecast: WeightForecast?, onInfo: () -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
+    val count = remember(locale) { java.text.NumberFormat.getIntegerInstance(locale) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.forecast_period_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+        if (forecast != null) {
+            val color = if (forecast.changeKg <= 0.0) appExtraColors.positive else MaterialTheme.colorScheme.error
+            Text(
+                (if (forecast.changeKg > 0) "+" else "") + formatTwoDecimals(forecast.changeKg) + " " + stringResource(R.string.kg_short),
+                color = color,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        IconButton(onClick = onInfo) { Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.forecast_info)) }
+    }
+    if (forecast == null) {
+        Text(stringResource(R.string.forecast_need_profile), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        return
+    }
+    Text(
+        stringResource(
+            R.string.forecast_breakdown,
+            count.format(forecast.eatenKcal), forecast.normDays,
+            count.format(forecast.steps), formatTwoDecimals(forecast.stepsKg),
+            count.format(forecast.runKcal.toLong()), formatTwoDecimals(forecast.runKg),
+        ),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    forecast.discrepancyKg?.let { d ->
+        Text(
+            stringResource(R.string.forecast_discrepancy, (if (d > 0) "+" else "") + formatTwoDecimals(d)),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** «i» (28.10): which forecast is chosen and how it is worked out; the choice; the profile. */
+@Composable
+private fun ForecastInfoDialog(method: ForecastMethod, onMethod: (ForecastMethod) -> Unit, onProfile: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.forecast_info)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = method == ForecastMethod.NEW, onClick = { onMethod(ForecastMethod.NEW) }, label = { Text(stringResource(R.string.day_screen_new)) })
+                    FilterChip(selected = method == ForecastMethod.SUMMER_2026, onClick = { onMethod(ForecastMethod.SUMMER_2026) }, label = { Text(stringResource(R.string.day_screen_summer_2025)) })
+                }
+                Text(
+                    stringResource(if (method == ForecastMethod.NEW) R.string.forecast_explain_new else R.string.forecast_explain_summer),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                TextButton(onClick = onProfile) { Text(stringResource(R.string.profile_title)) }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
+    )
 }

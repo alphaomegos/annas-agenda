@@ -1272,6 +1272,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         refreshSteps()
     }
 
+    fun setWeightForecastMethod(method: ForecastMethod) {
+        _state.update { cur -> if (cur.weightForecastMethod == method) cur else cur.copy(weightForecastMethod = method) }
+    }
+
     /** The profile (28.10): sex, height and year of birth, one set for the whole app. */
     fun setProfile(sex: ProfileSex?, heightCm: Int?, birthYear: Int?) {
         _state.update { cur ->

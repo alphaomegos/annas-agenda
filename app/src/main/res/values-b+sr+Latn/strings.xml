@@ -1294,4 +1294,11 @@
     <string name="profile_male">Muški</string>
     <string name="profile_birth_year">Godina rođenja</string>
     <string name="profile_height_cm">%1$d cm</string>
+    <string name="forecast_period_title">Moguća promena za period</string>
+    <string name="forecast_info">Kako se računa prognoza</string>
+    <string name="forecast_need_profile">Popunite profil — pol, visinu, godinu rođenja — i unesite bar jedno merenje težine.</string>
+    <string name="forecast_breakdown">Pojedeno %1$s kcal (dana po normi: %2$d) · koraci %3$s (%4$s kg) · trčanje %5$s kcal (%6$s kg)</string>
+    <string name="forecast_discrepancy">Odstupanje od merenja: %1$s kg</string>
+    <string name="forecast_explain_new">Izabrana je nova metodika. Za svaki dan perioda: potrošnja organizma (Mifflin — St Jeor po polu, visini, godinama i težini tog dana, × 1,2) plus koraci i trčanje minus pojedeno po kalorimetru; dan bez unosa računa se kao pojedeno tačno po normi. Zbir se deli sa 7.700 kcal po kilogramu. Odstupanje — koliko su merenja težine u periodu odstupila od prognoze.</string>
+    <string name="forecast_explain_summer">Izabrana je metodika «Leto 2026»: za poslednjih 30 dana — zbir dnevnih ciljeva kalorimetra minus pojedeno, plus trčanje, podeljeno sa 7.800 kcal po kilogramu. Pol, visina, godine i koraci se ne računaju.</string>
 </resources>
