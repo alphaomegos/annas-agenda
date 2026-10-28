@@ -1,5 +1,8 @@
 package com.alphaomegos.annasagenda.components
 
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlusOne
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -311,9 +314,13 @@ internal fun TaskRowCall(
     onCopy: () -> Unit,
     canMoveUp: Boolean = true,
     canMoveDown: Boolean = true,
+    // The new look's ⋮ also repeats, links a counter and deletes (28.10).
+    onRepeat: () -> Unit = {},
+    onCounter: () -> Unit = {},
+    onDelete: () -> Unit = {},
 ) {
     if (newLook) {
-        NewDateTaskRow(task, subtasks, isExpanded, onToggleExpand, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy, canMoveUp, canMoveDown)
+        NewDateTaskRow(task, subtasks, isExpanded, onToggleExpand, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy, canMoveUp, canMoveDown, onRepeat, onCounter, onDelete)
     } else {
         DateTaskRow(task, subtasks, isExpanded, onToggleExpand, onToggleDone, onCycleColor, onEdit, onMoveUp, onMoveDown, onMove, onCopy, canMoveUp, canMoveDown)
     }
@@ -362,6 +369,9 @@ internal fun NewDateTaskRow(
     onCopy: () -> Unit,
     canMoveUp: Boolean = true,
     canMoveDown: Boolean = true,
+    onRepeat: () -> Unit = {},
+    onCounter: () -> Unit = {},
+    onDelete: () -> Unit = {},
 ) {
     val tint = task.colorArgb?.toInt()?.let { Color(it).copy(alpha = 0.22f) } ?: Color.Transparent
     val next = nextPaletteColor(task.colorArgb)?.toInt()?.let { Color(it) } ?: MaterialTheme.colorScheme.outlineVariant
@@ -432,6 +442,22 @@ internal fun NewDateTaskRow(
                     text = { Text(stringResource(R.string.copy_task)) },
                     leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
                     onClick = { menuOpen = false; onCopy() },
+                )
+                // As in the task's dialog (28.10): repeating, a counter, deleting.
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.repeat)) },
+                    leadingIcon = { Icon(Icons.Default.Repeat, contentDescription = null) },
+                    onClick = { menuOpen = false; onRepeat() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.task_menu_counter)) },
+                    leadingIcon = { Icon(Icons.Default.PlusOne, contentDescription = null) },
+                    onClick = { menuOpen = false; onCounter() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
+                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                    onClick = { menuOpen = false; onDelete() },
                 )
             }
         }

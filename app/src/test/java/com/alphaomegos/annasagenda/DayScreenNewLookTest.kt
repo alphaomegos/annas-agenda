@@ -69,4 +69,24 @@ class DayScreenNewLookTest {
         val head = day.substringAfter("private fun NewDayHeader(")
         assertTrue(head.contains("TopBarBack(onBack)") && head.contains("WayHomeButton()"))
     }
+
+    /** The row's ⋮ also repeats, links a counter and deletes (0325), as the task's dialog does. */
+    @Test
+    fun theRowMenuHasEverythingTheDialogHas() {
+        val newRow = rows.substringAfter("internal fun NewDateTaskRow(").substringBefore("internal fun SubtaskRowCall(")
+        for (label in listOf("R.string.repeat", "R.string.task_menu_counter", "R.string.remove")) assertTrue(label, newRow.contains(label))
+    }
+
+    /** The task's dialog in the new look (0325): its title once, no frame round the text, the time as a clock. */
+    @Test
+    fun theTaskDialogIsLighter() {
+        val dialogs = mainSourceFiles().single { it.name == "DateTaskEditDialogs.kt" }.readText()
+        val newDialog = dialogs.substringAfter("internal fun NewEditTaskDialog(").substringBefore("internal fun TaskDialogCall(")
+        assertTrue(Regex("""R\.string\.task_description_label""").findAll(newDialog).count() == 1)
+        assertTrue(newDialog.contains("unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent"))
+        assertTrue(newDialog.contains("Icons.Default.Schedule") && newDialog.contains("Icons.Default.Close"))
+        for (label in listOf("R.string.repeat", "R.string.task_menu_counter", "R.string.task_tool_copy", "R.string.task_tool_move", "R.string.remove")) {
+            assertTrue(label, newDialog.contains(label))
+        }
+    }
 }

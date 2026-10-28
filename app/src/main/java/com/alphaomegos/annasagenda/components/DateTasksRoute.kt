@@ -195,6 +195,9 @@ private fun DateTasksBlockContent(
     val pendingShiftTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
     val pendingShiftEpochDay = rememberSaveable { mutableStateOf<Long?>(null) }
     val showCounterPicker = rememberSaveable { mutableStateOf(false) }
+    // A picker opened from a row's ⋮ (28.10) opens without the task's dialog under it.
+    val editFromMenu = rememberSaveable { mutableStateOf(false) }
+    val menuDeleteTaskId = rememberSaveable { mutableStateOf<Long?>(null) }
     var editSubtaskId by rememberSaveable { mutableStateOf<Long?>(null) }
     val editSubtaskText = rememberSaveable { mutableStateOf("") }
     val showSubtaskRepeatPicker = rememberSaveable { mutableStateOf(false) }
@@ -219,6 +222,7 @@ private fun DateTasksBlockContent(
                     actions.setTaskColor(task.id, nextPaletteColor(task.colorArgb))
                 },
                 onEdit = {
+                    editFromMenu.value = false
                     editTaskId = task.id
                     editTaskText.value = task.description
                     showTaskRepeatPicker.value = false
@@ -227,6 +231,19 @@ private fun DateTasksBlockContent(
                 onMoveDown = { actions.moveTaskDown(task.id) },
                 onMove = { moveTaskId.value = task.id },
                 onCopy = { copyTaskId.value = task.id },
+                onRepeat = {
+                    editFromMenu.value = true
+                    editTaskId = task.id
+                    editTaskText.value = task.description
+                    showTaskRepeatPicker.value = true
+                },
+                onCounter = {
+                    editFromMenu.value = true
+                    editTaskId = task.id
+                    editTaskText.value = task.description
+                    showCounterPicker.value = true
+                },
+                onDelete = { menuDeleteTaskId.value = task.id },
                 // Asked of the whole day, done ones included: that is what the
                 // move itself looks at.
                 canMoveUp = canMoveTask(state.tasks, task.id, step = -1, doneLast = state.doneTasksLast),
@@ -389,8 +406,17 @@ private fun DateTasksBlockContent(
         },
     )
 
-    EditTaskDialog(
-        taskId = editTaskId,
+    TaskDialogCall(
+        newLook = newLook,
+        taskId = if (editFromMenu.value) null else editTaskId,
+        onCopy = { id ->
+            editTaskId = null
+            copyTaskId.value = id
+        },
+        onMove = { id ->
+            editTaskId = null
+            moveTaskId.value = id
+        },
         editingTask = tasks.firstOrNull { it.id == editTaskId },
         manualCounters = state.counters.filterIsInstance<ManualCounter>(),
         text = editTaskText.value,
@@ -423,6 +449,20 @@ private fun DateTasksBlockContent(
         onShowTimePicker = { showTaskTimePicker.value = true },
         onClearTime = { taskId -> actions.setTaskTime(taskId, null) },
     )
+
+    // Deleting from a row's ⋮ (28.10): asked first, as in the task's dialog.
+    menuDeleteTaskId.value?.let { id ->
+        ConfirmDialog(
+            titleRes = R.string.delete_task_title,
+            textRes = R.string.action_cannot_be_undone,
+            confirmLabelRes = R.string.remove,
+            onConfirm = {
+                menuDeleteTaskId.value = null
+                actions.deleteTask(id)
+            },
+            onDismiss = { menuDeleteTaskId.value = null },
+        )
+    }
 
     // The time is written as soon as it is picked, as the counter is when it
     // is attached: it is a separate choice from the wording in the text field.

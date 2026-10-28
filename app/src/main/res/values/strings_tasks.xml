@@ -140,4 +140,7 @@
     <string name="settings_done_subtasks_last">Done subtasks to the bottom of their task</string>
     <string name="task_more_actions">More actions</string>
     <string name="task_next_colour">Next colour</string>
+    <string name="task_menu_counter">Counter</string>
+    <string name="task_tool_copy">Copy</string>
+    <string name="task_tool_move">Move</string>
 </resources>

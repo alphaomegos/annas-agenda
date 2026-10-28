@@ -1346,11 +1346,14 @@
     </plurals>
     <string name="day_screen_menu">Экран дня</string>
     <string name="day_screen_new">Новый</string>
-    <string name="day_screen_summer_2025">Лето 2025</string>
+    <string name="day_screen_summer_2025">Лето 2026</string>
     <string name="day_new_task">Задача</string>
     <string name="task_more_actions">Ещё действия</string>
     <string name="task_next_colour">Следующий цвет</string>
     <string name="day_screen_title">%1$d %2$s</string>
     <string name="day_screen_subtitle">%1$s, %2$d %3$s %4$d г.</string>
     <string name="months_after_day">января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря</string>
+    <string name="task_menu_counter">Счётчик</string>
+    <string name="task_tool_copy">Копировать</string>
+    <string name="task_tool_move">Перенести</string>
 </resources>

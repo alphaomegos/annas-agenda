@@ -1,5 +1,22 @@
 package com.alphaomegos.annasagenda.components
 
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.PlusOne
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextField
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -291,5 +308,144 @@ internal fun EditSubtaskDialog(
             },
             onDismiss = { confirmingDelete = false },
         )
+    }
+}
+/** One of the task dialog's tools in the new look (28.10): an icon over a short word. */
+@Composable
+private fun TaskTool(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(icon, contentDescription = null, tint = tint)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tint, maxLines = 1)
+    }
+}
+
+/**
+ * The task's dialog in the day screen's new look (28.10, Eduard): «Task
+ * description» once, as the title; the text with no frame round it; the time
+ * as a clock to tap — once set, «14:10» and a cross to take it off; and the
+ * tools as icons with short words: repeat, counter, copy, move, delete.
+ * «Summer 2026» keeps the dialog as it was (EditTaskDialog).
+ */
+@Composable
+internal fun NewEditTaskDialog(
+    taskId: Long?,
+    editingTask: Task?,
+    manualCounters: List<ManualCounter>,
+    text: String,
+    onTextChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onShowRepeatPicker: () -> Unit,
+    onShowCounterPicker: () -> Unit,
+    onDelete: (Long) -> Unit,
+    onConfirm: (Long, String) -> Unit,
+    onDetachCounter: (Long) -> Unit,
+    onShowTimePicker: () -> Unit,
+    onClearTime: (Long) -> Unit,
+    onCopy: (Long) -> Unit,
+    onMove: (Long) -> Unit,
+) {
+    if (taskId == null) return
+    var confirmingDelete by rememberSaveable { mutableStateOf(false) }
+    val linkedTitle = manualCounters.firstOrNull { it.id == editingTask?.linkedManualCounterId }?.title
+    val time = editingTask?.time
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.task_description_label)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    textStyle = MaterialTheme.typography.bodyLarge,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (time == null) {
+                        IconButton(onClick = onShowTimePicker) {
+                            Icon(Icons.Default.Schedule, contentDescription = stringResource(R.string.set_task_time))
+                        }
+                    } else {
+                        TextButton(onClick = onShowTimePicker) {
+                            Text(formatTaskTime(time), style = MaterialTheme.typography.titleMedium)
+                        }
+                        IconButton(onClick = { onClearTime(taskId) }) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear_task_time))
+                        }
+                    }
+                    if (linkedTitle != null) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            stringResource(R.string.attached_counter_fmt, linkedTitle),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = { onDetachCounter(taskId) }) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.detach_counter))
+                        }
+                    }
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TaskTool(Icons.Default.Repeat, stringResource(R.string.repeat), onClick = onShowRepeatPicker)
+                    TaskTool(Icons.Default.PlusOne, stringResource(R.string.task_menu_counter), onClick = onShowCounterPicker)
+                    TaskTool(Icons.Default.ContentCopy, stringResource(R.string.task_tool_copy)) { onCopy(taskId) }
+                    TaskTool(Icons.AutoMirrored.Filled.ArrowForward, stringResource(R.string.task_tool_move)) { onMove(taskId) }
+                    TaskTool(Icons.Default.Delete, stringResource(R.string.remove), MaterialTheme.colorScheme.error) { confirmingDelete = true }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(taskId, text) }) { Text(stringResource(R.string.ok)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+    if (confirmingDelete) {
+        ConfirmDialog(
+            titleRes = R.string.delete_task_title,
+            textRes = R.string.action_cannot_be_undone,
+            confirmLabelRes = R.string.remove,
+            onConfirm = {
+                confirmingDelete = false
+                onDelete(taskId)
+            },
+            onDismiss = { confirmingDelete = false },
+        )
+    }
+}
+
+/** The task's dialog as the look has it (28.10): the new one, or «Summer 2026»'s. Same arguments. */
+@Composable
+internal fun TaskDialogCall(
+    newLook: Boolean,
+    taskId: Long?,
+    editingTask: Task?,
+    manualCounters: List<ManualCounter>,
+    text: String,
+    onTextChange: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onShowRepeatPicker: () -> Unit,
+    onShowCounterPicker: () -> Unit,
+    onDelete: (Long) -> Unit,
+    onConfirm: (Long, String) -> Unit,
+    onDetachCounter: (Long) -> Unit,
+    onShowTimePicker: () -> Unit,
+    onClearTime: (Long) -> Unit,
+    onCopy: (Long) -> Unit,
+    onMove: (Long) -> Unit,
+) {
+    if (newLook) {
+        NewEditTaskDialog(taskId, editingTask, manualCounters, text, onTextChange, onDismiss, onShowRepeatPicker, onShowCounterPicker, onDelete, onConfirm, onDetachCounter, onShowTimePicker, onClearTime, onCopy, onMove)
+    } else {
+        EditTaskDialog(taskId, editingTask, manualCounters, text, onTextChange, onDismiss, onShowRepeatPicker, onShowCounterPicker, onDelete, onConfirm, onDetachCounter, onShowTimePicker, onClearTime)
     }
 }
