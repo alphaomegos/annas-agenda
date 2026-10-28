@@ -1272,6 +1272,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         refreshSteps()
     }
 
+    /** The profile (28.10): sex, height and year of birth, one set for the whole app. */
+    fun setProfile(sex: ProfileSex?, heightCm: Int?, birthYear: Int?) {
+        _state.update { cur ->
+            cur.copy(
+                profileSex = sex,
+                stepsHeightCm = heightCm?.takeIf { it in STEPS_HEIGHT_RANGE_CM },
+                profileBirthYear = birthYear?.takeIf { it in PROFILE_BIRTH_YEARS },
+            )
+        }
+    }
+
     fun setStepsHeight(heightCm: Int?) {
         _state.update { cur -> cur.copy(stepsHeightCm = heightCm?.takeIf { it in STEPS_HEIGHT_RANGE_CM }) }
     }

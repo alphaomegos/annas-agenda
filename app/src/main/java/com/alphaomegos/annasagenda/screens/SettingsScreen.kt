@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.model.ProfileSex
+import com.alphaomegos.annasagenda.components.ProfileDialog
 import com.alphaomegos.annasagenda.components.TopBarBack
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -101,6 +103,13 @@ fun SettingsScreen(
             // looks, how tasks behave, and each section's own. A choice
             // between several opens its dialog and shows what it is now; one
             // that is only on or off is a switch, and the row is the switch.
+            // The profile (28.10): one set for the whole app — steps, the forecast.
+            item {
+                SettingsRow(
+                    stringResource(R.string.profile_title),
+                    profileSummary(state.profileSex, state.stepsHeightCm, state.profileBirthYear),
+                ) { open = SETTINGS_PROFILE }
+            }
             item { SettingsSection(stringResource(R.string.settings_section_appearance)) }
             item { SettingsRow(stringResource(R.string.choose_language), null, onLanguage) }
             item {
@@ -228,6 +237,17 @@ fun SettingsScreen(
         )
 
         SETTINGS_STEPS_TOGETHER -> StepsTogetherDialog(onDismiss = close)
+
+        SETTINGS_PROFILE -> ProfileDialog(
+            sex = state.profileSex,
+            heightCm = state.stepsHeightCm,
+            birthYear = state.profileBirthYear,
+            onSave = { s, h, y ->
+                vm.setProfile(s, h, y)
+                close()
+            },
+            onDismiss = close,
+        )
 
         SETTINGS_STEPS_WIDGET -> StepsWidgetDialog(
             line = state.stepsWidgetLine,
@@ -380,6 +400,7 @@ private const val SETTINGS_BACK = "back"
 private const val SETTINGS_MENU_NARROW = "menu-narrow"
 private const val SETTINGS_DAY_SCREEN = "day-screen"
 private const val SETTINGS_STEPS_TOGETHER = "steps-together"
+private const val SETTINGS_PROFILE = "profile"
 private const val SETTINGS_STEPS_WIDGET = "steps-widget"
 private const val SETTINGS_NOTIFICATIONS = "notifications"
 private const val SETTINGS_WIDGET = "widget"
@@ -510,4 +531,15 @@ private fun MetroSchemeDialog(
             TextButton(onClick = onCreate) { Text(stringResource(R.string.metro_create_scheme)) }
         },
     )
+}
+
+/** The profile row's summary: «Female · 168 cm · 1990», what is set of it; null when nothing is. */
+@Composable
+private fun profileSummary(sex: ProfileSex?, heightCm: Int?, birthYear: Int?): String? {
+    val parts = listOfNotNull(
+        sex?.let { stringResource(if (it == ProfileSex.FEMALE) R.string.profile_female else R.string.profile_male) },
+        heightCm?.let { stringResource(R.string.profile_height_cm, it) },
+        birthYear?.toString(),
+    )
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }

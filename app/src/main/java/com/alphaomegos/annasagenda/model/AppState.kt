@@ -122,7 +122,14 @@ data class AppState(
     // Steps (19.10): the days kept, the walker's height for distance and
     // energy, and the range the Steps tab last showed.
     val stepDays: List<StepDay> = emptyList(),
+    // The user's height — one for the whole app since 28.10 (the profile):
+    // steps' distance, the energy formulas, anthropometry. Named for where it
+    // was first asked; the store keeps the name so nothing moves.
     val stepsHeightCm: Int? = null,
+    // The rest of the profile (28.10): sex and year of birth, for the
+    // body's own energy use in the weight forecast.
+    val profileSex: ProfileSex? = null,
+    val profileBirthYear: Int? = null,
     val stepsRange: AnthropometryRange = AnthropometryRange.MONTH,
     val stepsCustomRange: DateWindow? = null,
     // A day's steps on the month, under its number (19.10); on unless turned off.

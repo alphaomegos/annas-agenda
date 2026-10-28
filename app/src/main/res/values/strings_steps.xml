@@ -95,4 +95,9 @@
     <string name="steps_info_none">Steps have not been read yet this time.</string>
     <string name="widget_error_tasks">Couldn’t show the tasks. Tap to open the app.</string>
     <string name="widget_error_steps">Couldn’t show the steps. Tap to open the app.</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_female">Female</string>
+    <string name="profile_male">Male</string>
+    <string name="profile_birth_year">Year of birth</string>
+    <string name="profile_height_cm">%1$d cm</string>
 </resources>

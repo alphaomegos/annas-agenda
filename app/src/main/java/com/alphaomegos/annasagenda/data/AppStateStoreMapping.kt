@@ -57,6 +57,8 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     anthropometryCustomToEpochDay = anthropometryCustomRange?.to?.toEpochDay(),
     stepDays = stepDays.map { StepDayDto(it.date.toEpochDay(), it.steps, it.source.name) },
     stepsHeightCm = stepsHeightCm,
+    profileSex = profileSex?.name,
+    profileBirthYear = profileBirthYear,
     stepsRange = stepsRange.name,
     stepsCustomFromEpochDay = stepsCustomRange?.from?.toEpochDay(),
     stepsCustomToEpochDay = stepsCustomRange?.to?.toEpochDay(),
@@ -195,6 +197,8 @@ internal fun AppStateDto.toDomain(): AppState {
             }
         ),
         stepsHeightCm = stepsHeightCm?.takeIf { it in STEPS_HEIGHT_RANGE_CM },
+        profileSex = profileSex?.let { raw -> runCatching { ProfileSex.valueOf(raw) }.getOrNull() },
+        profileBirthYear = profileBirthYear?.takeIf { it in PROFILE_BIRTH_YEARS },
         stepsRange = anthropometryRangeFromName(stepsRange),
         stepsCustomRange = dateWindowFromEpochDays(stepsCustomFromEpochDay, stepsCustomToEpochDay),
         calendarShowSteps = calendarShowSteps,

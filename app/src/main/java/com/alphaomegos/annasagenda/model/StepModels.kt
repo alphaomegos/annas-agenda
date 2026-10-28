@@ -61,3 +61,9 @@ data class StepSharing(
 
 /** The steps widget's second line (25.10): yesterday, the week's average, a bar towards the day's goal, or nothing. */
 enum class StepsWidgetLine { YESTERDAY, WEEK_AVERAGE, GOAL_BAR, NONE }
+
+/**
+ * The user's sex, as the energy formulas ask (28.10, the profile): one of the
+ * two the Mifflin–St Jeor equation knows; unset until the user says.
+ */
+enum class ProfileSex { FEMALE, MALE }

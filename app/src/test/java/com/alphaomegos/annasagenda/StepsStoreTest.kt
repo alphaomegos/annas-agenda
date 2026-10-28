@@ -81,4 +81,17 @@ class StepsStoreTest {
         assertEquals(StepsWidgetLine.YESTERDAY, odd.stepsWidgetLine)
         assertEquals(1_000, odd.stepsGoal)
     }
+
+    /** The profile (0327): kept as set; a year of birth out of range, or a sex this version does not know, left unset. */
+    @Test
+    fun theProfileComesBackAsKept() {
+        val back = roundTrip(AppState(profileSex = ProfileSex.FEMALE, stepsHeightCm = 168, profileBirthYear = 1990))
+        assertEquals(ProfileSex.FEMALE, back.profileSex)
+        assertEquals(168, back.stepsHeightCm)
+        assertEquals(1990, back.profileBirthYear)
+        val json = """{"v":$CURRENT_SCHEMA_VERSION,"profileSex":"OTHER","profileBirthYear":1}"""
+        val odd = appStateStoreJson.decodeFromString<AppStateDto>(json).toDomain()
+        assertEquals(null, odd.profileSex)
+        assertEquals(null, odd.profileBirthYear)
+    }
 }

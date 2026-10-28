@@ -93,6 +93,8 @@ internal data class AppStateDto(
     val anthropometryRange: String = "MONTH",
     val stepDays: List<StepDayDto> = emptyList(),
     val stepsHeightCm: Int? = null,
+    val profileSex: String? = null,
+    val profileBirthYear: Int? = null,
     val stepsRange: String = "MONTH",
     val stepsCustomFromEpochDay: Long? = null,
     val stepsCustomToEpochDay: Long? = null,

@@ -1289,4 +1289,9 @@
     <string name="task_menu_counter">Brojač</string>
     <string name="task_tool_copy">Kopiraj</string>
     <string name="task_tool_move">Premesti</string>
+    <string name="profile_title">Profil</string>
+    <string name="profile_female">Ženski</string>
+    <string name="profile_male">Muški</string>
+    <string name="profile_birth_year">Godina rođenja</string>
+    <string name="profile_height_cm">%1$d cm</string>
 </resources>

@@ -1356,4 +1356,9 @@
     <string name="task_menu_counter">Счётчик</string>
     <string name="task_tool_copy">Копировать</string>
     <string name="task_tool_move">Перенести</string>
+    <string name="profile_title">Профиль</string>
+    <string name="profile_female">Женский</string>
+    <string name="profile_male">Мужской</string>
+    <string name="profile_birth_year">Год рождения</string>
+    <string name="profile_height_cm">%1$d см</string>
 </resources>
