@@ -88,4 +88,9 @@
     <string name="music_local_forget">Play from the sidecar again</string>
     <string name="music_local_label">File on the phone: %1$s</string>
     <string name="music_local_missing">The file on the phone is not found: plays from the sidecar</string>
+    <string name="music_viz_open">Visualizer</string>
+    <string name="music_viz_waves">Waves</string>
+    <string name="music_viz_metronome">Metronome</string>
+    <string name="music_viz_full">Full screen</string>
+    <string name="music_viz_close">Close</string>
 </resources>

@@ -1,5 +1,8 @@
 package com.alphaomegos.annasagenda.screens.music
 
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,9 +78,14 @@ internal fun ColumnScope.MusicPlayerPanel(controller: MediaController, now: Musi
         }
     }
 
+    // The visualizer (29.10): opened under the controls, half the screen high.
+    var vizOpen by rememberSaveable { mutableStateOf(false) }
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         MusicControl(Icons.Default.KeyboardArrowDown, "v", stringResource(R.string.music_player_close), onClose)
+        Spacer(modifier = Modifier.weight(1f))
+        MusicControl(Icons.Default.GraphicEq, "~", stringResource(R.string.music_viz_open), { vizOpen = !vizOpen }, lit = vizOpen, on = vizOpen)
     }
+    if (vizOpen) MusicVisualizerPanel(controller)
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -36,6 +36,14 @@ class TypedStateSurvivesRotationTest {
      * number stops being true the next time somebody adds a line above it.
      */
     private val mayBeLostOnRotation = mapOf(
+        "MusicVisualizer.kt:rings" to
+            "the visualizer's rings in flight (29.10): each lives 1.6 s, a picture, not data",
+        "MusicVisualizer.kt:side" to
+            "which way the metronome swings next (29.10): a picture's moment, not data",
+        "MusicVisualizer.kt:shown" to
+            "whether the full-screen visualizer's controls show (29.10): they come back on a tap",
+        "MusicVisualizer.kt:touched" to
+            "the full-screen visualizer's last-touch count (29.10), restarting its 5 s",
         "StepsContent.kt:scrubbed" to
             "the day a slide on the steps chart last passed (25.10), so each day is picked once " +
                 "while sliding; a rotation ends the slide",

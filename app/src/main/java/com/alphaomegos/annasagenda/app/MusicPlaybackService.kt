@@ -73,7 +73,8 @@ class MusicPlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         val connection = SidecarConnections.of(this)
-        val player = ExoPlayer.Builder(this)
+        // The pulse listens to the sound on its way out (29.10): the visualizer draws from it.
+        val player = ExoPlayer.Builder(this, PulseRenderersFactory(this))
             .setMediaSourceFactory(DefaultMediaSourceFactory(musicDataSourceFactory(this, connection)))
             .setAudioAttributes(
                 AudioAttributes.Builder()

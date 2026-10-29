@@ -1385,4 +1385,9 @@
     <string name="steps_friend_rename">Как называть на этом телефоне</string>
     <string name="anthro_last_measured">последний замер — %1$s</string>
     <string name="anthro_carry_last">Период без замеров — показывать последний замер</string>
+    <string name="music_viz_open">Визуализация</string>
+    <string name="music_viz_waves">Волны</string>
+    <string name="music_viz_metronome">Метроном</string>
+    <string name="music_viz_full">На весь экран</string>
+    <string name="music_viz_close">Закрыть</string>
 </resources>
