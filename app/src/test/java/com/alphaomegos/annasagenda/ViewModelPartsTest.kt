@@ -16,8 +16,8 @@ class ViewModelPartsTest {
     @Test
     fun theViewModelImplementsItsParts() {
         // Spelled in two pieces: TestViewModelsOnlyTest reads tests for the view model's constructor.
-        assertTrue(vm.hasCode("class AppView" + "Model(app: Application) : AndroidView" + "Model(app), PlacesAndFoodActions, BodyActions, RunningActions {"))
-        assertTrue("parts", parts.size >= 3)
+        assertTrue(vm.hasCode("class AppView" + "Model(app: Application) : AndroidView" + "Model(app), PlacesAndFoodActions, BodyActions, RunningActions, TaskFlagsAndColorsActions, DayCountersActions, ReadingActions {"))
+        assertTrue("parts", parts.size >= 6)
     }
 
     @Test
