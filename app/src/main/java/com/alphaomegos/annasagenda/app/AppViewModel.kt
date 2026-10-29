@@ -33,7 +33,7 @@ import com.alphaomegos.annasagenda.support.*
 import com.alphaomegos.annasagenda.data.*
 
 
-class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActions, BodyActions, RunningActions, TaskFlagsAndColorsActions, DayCountersActions, ReadingActions {
+class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActions, BodyActions, RunningActions, TaskFlagsAndColorsActions, DayCountersActions, ReadingActions, MainMenuActions {
     // The parts kept in files of their own (28.10) reach the state through these.
     override val stateFlow: MutableStateFlow<AppState> get() = _state
     override fun nextFreshId(): Long = newId()
@@ -527,121 +527,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
         return true
     }
 
-    /* ---------------------------
-   Main menu ordering / visibility
----------------------------- */
-        fun setMainMenuOrder(ids: List<String>) {
-        val normalized = normalizeMainMenuOrderIds(ids)
-
-        val cur = _state.value
-        if (cur.mainMenuOrder == normalized) return
-        _state.value = cur.copy(mainMenuOrder = normalized)
-    }
-
-        fun hideMainMenuItem(id: String) {
-            val normalizedId = normalizeMainMenuItemId(id) ?: return
-
-        val cur = _state.value
-        if (normalizedId in cur.mainMenuHiddenIds) return
-
-        _state.value = cur.copy(
-            mainMenuHiddenIds = cur.mainMenuHiddenIds + normalizedId
-        )
-    }
-
-    fun showAllMainMenuItems() {
-        val cur = _state.value
-        if (cur.mainMenuHiddenIds.isEmpty()) return
-
-        _state.value = cur.copy(mainMenuHiddenIds = emptySet())
-    }
-
-    /** Done tasks at the bottom of their day, or in their place (06.10). */
-    fun setDoneTasksLast(value: Boolean) {
-        val cur = _state.value
-        if (cur.doneTasksLast != value) _state.value = cur.copy(doneTasksLast = value)
-    }
-
-    /** Done subtasks at the bottom of their task (16.10). */
-    fun setDoneSubtasksLast(value: Boolean) {
-        val cur = _state.value
-        if (cur.doneSubtasksLast != value) _state.value = cur.copy(doneSubtasksLast = value)
-    }
-
-    fun setUndoneLampMuted(value: Boolean) {
-        val cur = _state.value
-        if (cur.undoneLampMuted == value) return
-        _state.value = cur.copy(undoneLampMuted = value)
-    }
-
-    fun toggleUndoneLampMuted() {
-        val cur = _state.value
-        _state.value = cur.copy(undoneLampMuted = !cur.undoneLampMuted)
-    }
-
-    fun setUndoneHorizonDays(days: Int) {
-        val normalized = normalizeUndoneHorizonDays(days)
-
-        val cur = _state.value
-        if (cur.undoneHorizonDays == normalized) return
-        _state.value = cur.copy(undoneHorizonDays = normalized)
-    }
-
-    /**
-     * Both of these go through [undoneDebt] so the lamp and the screen can
-     * never disagree again: the lamp used to ignore tombstones and light red
-     * for an occurrence the screen refused to show.
-     */
-    fun hasUndonePastTasks(today: LocalDate = LocalDate.now()): Boolean =
-        !currentUndoneDebt(today).isEmpty
-
-    fun undonePastTaskDates(today: LocalDate = LocalDate.now()): List<LocalDate> =
-        currentUndoneDebt(today).dates
-
-    private fun currentUndoneDebt(today: LocalDate): UndoneDebt {
-        val cur = _state.value
-        return undoneDebt(
-            tasks = cur.tasks,
-            suppressedRecurrences = cur.suppressedRecurrences,
-            today = today,
-            horizonDays = cur.undoneHorizonDays,
-        )
-    }
-
-    /**
-     * Materialises recurrences across the Undone horizon.
-     *
-     * Until this existed, a debt only showed up if the calendar had happened to
-     * draw that month, because nothing else called ensureGeneratedInRange. The
-     * list therefore reflected browsing history rather than what was left
-     * undone. Callers run this before reading the debt.
-     *
-     * Bounded twice over: by the chosen horizon, and by the first day any
-     * repeating template starts. With nothing repeating it walks no days at all.
-     */
-    fun ensureUndoneHorizonGenerated(today: LocalDate = LocalDate.now()) {
-        val cur = _state.value
-
-        val start = undoneGenerationStart(
-            tasks = cur.tasks,
-            subtasks = cur.subtasks,
-            today = today,
-            horizonDays = cur.undoneHorizonDays,
-        ) ?: return
-
-        val end = today.minusDays(1)
-        if (start.isAfter(end)) return
-
-        ensureGeneratedInRange(start, end)
-    }
-
-    /** Generates the horizon, then reports what is owed. */
-    fun prepareUndoneDebt(today: LocalDate = LocalDate.now()): UndoneDebt {
-        ensureUndoneHorizonGenerated(today)
-        return currentUndoneDebt(today)
-    }
-
-
 
        private fun formatRunningTaskKmTitle(kmTitle: String): String =
         getApplication<Application>().getString(R.string.running_task_km, kmTitle)
@@ -949,7 +834,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
      * result back. Reading `cur` once is safe precisely because that function
      * touches nothing.
      */
-    fun ensureGeneratedInRange(start: LocalDate, end: LocalDate) {
+    override fun ensureGeneratedInRange(start: LocalDate, end: LocalDate) {
         val cur = _state.value
 
         val generated = generateRecurrencesInRange(
