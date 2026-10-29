@@ -189,7 +189,7 @@ internal fun StepsContent(
             val own = StepsSeries(chartDays.map { byDate[it]?.steps ?: 0 }, MaterialTheme.colorScheme.primary, stringResource(R.string.steps_legend_me))
             val friendsShown = together.friends.mapNotNull { f ->
                 val pref = together.prefs[f.id] ?: StepFriendPref(0)
-                if (!pref.shown) null else StepsSeries(chartDays.map { f.days[it] ?: 0 }, STEP_FRIEND_COLORS[pref.color.coerceIn(0, 3)], f.name)
+                if (!pref.shown) null else StepsSeries(chartDays.map { f.days[it] ?: 0 }, STEP_FRIEND_COLORS[pref.color.coerceIn(0, 3)], stepFriendName(f, together.prefs))
             }
             val series = (if (together.selfShown || together.friends.isEmpty()) listOf(own) else emptyList()) + friendsShown
             val ceiling = niceStepsCeiling(series.flatMap { it.values }.maxOrNull() ?: 0)
@@ -200,6 +200,9 @@ internal fun StepsContent(
                 axis = stepsAxisLabels(state.stepsRange, chartDays, locale),
                 // The period's best day of the user's own, marked across (not for «all»).
                 best = if (state.stepsRange == AnthropometryRange.ALL) null else own.values.maxOrNull()?.takeIf { it > 0 },
+                // Each friend's best of the period too (29.10), in their colour, named.
+                friendBests = if (state.stepsRange == AnthropometryRange.ALL || !state.stepsFriendsBest) emptyList()
+                else friendsShown.mapNotNull { s -> s.values.maxOrNull()?.takeIf { it > 0 }?.let { Triple(it, s.color, s.name) } },
                 bestLabel = { count.format(it) },
                 picked = picked,
                 onPick = { picked = if (picked == it) null else it },
@@ -219,8 +222,10 @@ internal fun StepsContent(
                     meColor = MaterialTheme.colorScheme.primary,
                     friends = together.friends.map { f ->
                         val pref = together.prefs[f.id] ?: StepFriendPref(0)
-                        Triple(f, pref.shown, STEP_FRIEND_COLORS[pref.color.coerceIn(0, 3)])
+                        Triple(f.copy(name = stepFriendName(f, together.prefs)), pref.shown, STEP_FRIEND_COLORS[pref.color.coerceIn(0, 3)])
                     },
+                    friendsBest = state.stepsFriendsBest,
+                    onFriendsBest = { vm.setStepsFriendsBest(it) },
                     onToggle = { id, shown -> StepsTogether.setShown(context, id, shown) },
                 )
             }
@@ -481,6 +486,7 @@ private fun StepsChart(
     axis: List<Pair<Int, String>>,
     best: Int?,
     bestLabel: (Int) -> String,
+    friendBests: List<Triple<Int, androidx.compose.ui.graphics.Color, String>> = emptyList(),
     picked: Int?,
     onPick: (Int) -> Unit,
     style: StepsChartStyle,
@@ -595,6 +601,16 @@ private fun StepsChart(
                 val text = "🥇 " + bestLabel(b)
                 drawContext.canvas.nativeCanvas.drawText(text, size.width - paint.measureText(text), y - 3.dp.toPx(), paint)
             }
+            // Friends' bests: their colour, dashed, the name and number at the left.
+            friendBests.filter { it.first <= ceiling }.forEach { (value, color, name) ->
+                val y = floor - plotHeight * value / ceiling
+                drawLine(
+                    color, Offset(left, y), Offset(size.width, y), strokeWidth = 1.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())),
+                )
+                val label = android.graphics.Paint(paint).apply { this.color = color.toArgb() }
+                drawContext.canvas.nativeCanvas.drawText(name + " " + bestLabel(value), left + 2.dp.toPx(), y - 3.dp.toPx(), label)
+            }
             if (style == StepsChartStyle.LINE) {
                 // A line through each day's middle for each person; a day of nothing is on the floor.
                 series.forEach { s ->
@@ -656,6 +672,8 @@ private fun StepsLegend(
     meColor: androidx.compose.ui.graphics.Color,
     friends: List<Triple<com.alphaomegos.annasagenda.model.StepFriend, Boolean, androidx.compose.ui.graphics.Color>>,
     onToggle: (String?, Boolean) -> Unit,
+    friendsBest: Boolean = true,
+    onFriendsBest: (Boolean) -> Unit = {},
 ) {
     Row(
         modifier = Modifier
@@ -674,6 +692,12 @@ private fun StepsLegend(
                 leadingIcon = { Box(modifier = Modifier.size(10.dp).background(look.second, CircleShape)) },
             )
         }
+        // Friends' bests of the period on the chart, or one's own alone (29.10).
+        FilterChip(
+            selected = friendsBest,
+            onClick = { onFriendsBest(!friendsBest) },
+            label = { Text(stringResource(R.string.steps_friends_best)) },
+        )
     }
 }
 

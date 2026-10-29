@@ -81,4 +81,9 @@ interface StepsDaysActions : AppStateHost {
     fun setStepsRange(range: AnthropometryRange, custom: DateWindow?) {
         stateFlow.update { cur -> cur.copy(stepsRange = range, stepsCustomRange = custom ?: cur.stepsCustomRange) }
     }
+
+    /** The period's best of each friend on the steps chart, or one's own alone (29.10). */
+    fun setStepsFriendsBest(on: Boolean) {
+        stateFlow.update { cur -> cur.copy(stepsFriendsBest = on) }
+    }
 }

@@ -1314,4 +1314,6 @@
     <string name="weight_import_done">Dana u fajlu: %1$d, od %2$s do %3$s.\nDodato: %4$d. Zamenjeno: %5$d. Ostavljeno: %6$d.</string>
     <string name="weight_import_not_export">Ovo nije izvoz težine iz Samsung Health: fajl nema kolone weight i start_time.</string>
     <string name="forecast_method_new">Nova</string>
+    <string name="steps_friends_best">Rekordi prijatelja</string>
+    <string name="steps_friend_rename">Kako ih zvati ovde</string>
 </resources>

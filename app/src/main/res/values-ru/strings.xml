@@ -1381,4 +1381,6 @@
     <string name="weight_import_done">Дней в файле: %1$d, с %2$s по %3$s.\nДобавлено: %4$d. Заменено: %5$d. Оставлено как было: %6$d.</string>
     <string name="weight_import_not_export">Это не выгрузка веса Samsung Health: в файле нет столбцов weight и start_time.</string>
     <string name="forecast_method_new">Новая</string>
+    <string name="steps_friends_best">Рекорды друзей</string>
+    <string name="steps_friend_rename">Как называть на этом телефоне</string>
 </resources>

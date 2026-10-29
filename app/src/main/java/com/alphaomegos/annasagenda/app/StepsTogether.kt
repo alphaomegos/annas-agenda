@@ -135,6 +135,15 @@ internal object StepsTogether {
     private suspend fun savedDays(context: Context): List<StepDay> =
         (AppStateStore(context).load() as? AppStateLoadResult.Loaded)?.state?.stepDays.orEmpty()
 
+    /** What a friend is called on this phone (29.10); blank = the server's name. */
+    fun setAlias(context: Context, id: String, alias: String?) {
+        loadOnce(context)
+        _state.update { s ->
+            s.copy(prefs = s.prefs + (id to (s.prefs[id] ?: StepFriendPref(0)).copy(alias = alias?.trim()?.takeIf { it.isNotEmpty() })))
+        }
+        save(context)
+    }
+
     /** A friend's line on the chart, or the user's own ([id] null), shown or hidden. */
     fun setShown(context: Context, id: String?, shown: Boolean) {
         loadOnce(context)

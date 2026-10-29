@@ -43,4 +43,13 @@ class StepsTogetherTest {
         // Too narrow to split into anything finer than a pixel each.
         assertEquals(1f, stepsSubBar(0f, 2f, 3, 5).second, 0.001f)
     }
+
+    /** A friend is called on this phone what the user named them (0344), else the server's name. */
+    @Test
+    fun aFriendsNameHere() {
+        val f = StepFriend("u1", "anna@example.com", true, emptyMap())
+        assertEquals("Ана", stepFriendName(f, mapOf("u1" to StepFriendPref(0, alias = " Ана "))))
+        assertEquals("anna@example.com", stepFriendName(f, mapOf("u1" to StepFriendPref(0, alias = "  "))))
+        assertEquals("anna@example.com", stepFriendName(f, emptyMap()))
+    }
 }

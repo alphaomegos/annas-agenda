@@ -102,6 +102,7 @@ internal data class AppStateDto(
     val stepsCustomToEpochDay: Long? = null,
     val calendarShowSteps: Boolean = true,
     val stepsChartStyle: String = "BARS",
+    val stepsFriendsBest: Boolean = true,
     val stepsWidgetLine: String = "YESTERDAY",
     val stepsWidgetRecord: Boolean = true,
     val stepsGoal: Int = 10_000,

@@ -18,13 +18,13 @@ internal data class StepsTogetherFileDto(
 )
 
 @Serializable
-internal data class StepFriendPrefDto(val id: String, val color: Int = 0, val shown: Boolean = true)
+internal data class StepFriendPrefDto(val id: String, val color: Int = 0, val shown: Boolean = true, val alias: String? = null)
 
 internal fun StepsTogetherFileDto.toState() = StepsTogetherState(
     sharing = sharing?.toDomain(),
     friends = friends.map { it.toDomain() },
     invitations = invitations.toDomain(),
-    prefs = prefs.associate { it.id to StepFriendPref(it.color.coerceIn(0, 3), it.shown) },
+    prefs = prefs.associate { it.id to StepFriendPref(it.color.coerceIn(0, 3), it.shown, it.alias) },
     selfShown = selfShown,
     notified = notified.toSet(),
     syncedAt = syncedAt,
@@ -37,7 +37,7 @@ internal fun StepsTogetherState.toFileDto() = StepsTogetherFileDto(
         incoming = invitations.filter { it.incoming }.map { StepIncomingDto(it.id, it.name, it.createdAt) },
         outgoing = invitations.filter { !it.incoming }.map { StepOutgoingDto(it.id, it.name, it.createdAt) },
     ),
-    prefs = prefs.map { (id, p) -> StepFriendPrefDto(id, p.color, p.shown) },
+    prefs = prefs.map { (id, p) -> StepFriendPrefDto(id, p.color, p.shown, p.alias) },
     selfShown = selfShown,
     notified = notified.sorted(),
     syncedAt = syncedAt,

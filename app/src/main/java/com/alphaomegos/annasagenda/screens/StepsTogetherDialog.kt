@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.foundation.clickable
+import com.alphaomegos.annasagenda.support.stepFriendName
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,6 +92,9 @@ internal fun StepsTogetherDialog(onDismiss: () -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var leaving by rememberSaveable { mutableStateOf<String?>(null) }
+    // Renaming a friend on this phone (29.10): «Ана», not her address.
+    var renaming by rememberSaveable { mutableStateOf<String?>(null) }
+    var aliasText by rememberSaveable { mutableStateOf("") }
     val sentText = stringResource(R.string.steps_together_invite_sent)
 
     LaunchedEffect(Unit) { StepsTogether.sync(context) }
@@ -213,12 +218,38 @@ internal fun StepsTogetherDialog(onDismiss: () -> Unit) {
                     if (together.friends.isNotEmpty()) {
                         item { SectionTitle(stringResource(R.string.steps_together_friends)) }
                         items(together.friends, key = { "f-" + it.id }) { friend ->
-                            FriendRow(friend, STEP_FRIEND_COLORS[(together.prefs[friend.id]?.color ?: 0).coerceIn(0, 3)]) { leaving = friend.id }
+                            FriendRow(
+                                friend.copy(name = stepFriendName(friend, together.prefs)),
+                                STEP_FRIEND_COLORS[(together.prefs[friend.id]?.color ?: 0).coerceIn(0, 3)],
+                                onRename = { renaming = friend.id; aliasText = together.prefs[friend.id]?.alias ?: friend.name },
+                            ) { leaving = friend.id }
                         }
                     }
                 }
             }
         }
+    }
+
+    renaming?.let { id ->
+        AlertDialog(
+            onDismissRequest = { renaming = null },
+            title = { Text(stringResource(R.string.steps_friend_rename)) },
+            text = {
+                OutlinedTextField(
+                    value = aliasText,
+                    onValueChange = { aliasText = it.take(40) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    StepsTogether.setAlias(context, id, aliasText)
+                    renaming = null
+                }) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = { TextButton(onClick = { renaming = null }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
 
     leaving?.let { id ->
@@ -270,10 +301,10 @@ private fun InvitationRow(invitation: StepInvitation, actions: @Composable () ->
 }
 
 @Composable
-private fun FriendRow(friend: StepFriend, color: Color, onLeave: () -> Unit) {
+private fun FriendRow(friend: StepFriend, color: Color, onRename: () -> Unit = {}, onLeave: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.size(12.dp).background(color, CircleShape))
-        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+        Column(modifier = Modifier.weight(1f).padding(start = 12.dp).clickable(onClick = onRename)) {
             Text(friend.name, style = MaterialTheme.typography.bodyLarge)
             if (!friend.sharing) {
                 Text(stringResource(R.string.steps_together_not_sharing), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

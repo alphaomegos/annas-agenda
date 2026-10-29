@@ -11,7 +11,14 @@ import com.alphaomegos.annasagenda.model.StepSharing
  */
 
 /** How a friend is drawn here: their colour (0–3, of four) and whether the chart shows them. */
-data class StepFriendPref(val color: Int, val shown: Boolean = true)
+data class StepFriendPref(val color: Int, val shown: Boolean = true, val alias: String? = null)
+
+/**
+ * The name a friend goes by on this phone (29.10, Eduard: «Ана», not her
+ * address): the one given here, or the one the server has.
+ */
+fun stepFriendName(friend: StepFriend, prefs: Map<String, StepFriendPref>): String =
+    prefs[friend.id]?.alias?.trim()?.takeIf { it.isNotEmpty() } ?: friend.name
 
 data class StepsTogetherState(
     val sharing: StepSharing? = null,

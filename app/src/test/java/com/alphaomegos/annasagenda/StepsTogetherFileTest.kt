@@ -19,7 +19,7 @@ class StepsTogetherFileTest {
             sharing = StepSharing(true, "Эдик", "Эдуард", true),
             friends = listOf(StepFriend("u1", "Аня", true, mapOf(LocalDate.of(2026, 10, 24) to 8012))),
             invitations = listOf(StepInvitation("i1", "Ира", true, "2026-10-25T09:14:03.000Z"), StepInvitation("o1", "Оля", false, "x")),
-            prefs = mapOf("u1" to StepFriendPref(1, shown = false)),
+            prefs = mapOf("u1" to StepFriendPref(1, shown = false, alias = "Ана")),
             selfShown = false,
             notified = setOf("i1"),
             syncedAt = "2026-10-25T10:00:00Z",
@@ -32,6 +32,8 @@ class StepsTogetherFileTest {
     @Test
     fun theAppsStateHasNoFriends() {
         val json = appStateStoreJson.encodeToString(AppStateDto.serializer(), com.alphaomegos.annasagenda.model.AppState().toDto())
-        listOf("friend", "invitation", "sharing").forEach { assertTrue("$it in the app's state", !json.contains(it, ignoreCase = true)) }
+        // Keys, not words: «stepsFriendsBest» (0344) is a setting of the user's own, not friends' data.
+        val keys = Regex(""""([A-Za-z]+)":""").findAll(json).map { it.groupValues[1] }.toSet() - "stepsFriendsBest"
+        listOf("friend", "invitation", "sharing").forEach { w -> assertTrue("$w in the app's state", keys.none { it.contains(w, ignoreCase = true) }) }
     }
 }

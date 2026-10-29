@@ -139,6 +139,8 @@ data class AppState(
     // A day's steps on the month, under its number (19.10); on unless turned off.
     val calendarShowSteps: Boolean = true,
     val stepsChartStyle: StepsChartStyle = StepsChartStyle.BARS,
+    // The period's best of each friend on the chart too (29.10), beside one's own.
+    val stepsFriendsBest: Boolean = true,
     // The steps widget (25.10): its second line, whether it shows the record, and the day's goal.
     val stepsWidgetLine: StepsWidgetLine = StepsWidgetLine.YESTERDAY,
     val stepsWidgetRecord: Boolean = true,

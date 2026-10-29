@@ -119,4 +119,6 @@
     <string name="weight_import_keep_app">The app’s</string>
     <string name="weight_import_done">Days in the file: %1$d, from %2$s to %3$s.\nAdded: %4$d. Replaced: %5$d. Kept as they were: %6$d.</string>
     <string name="weight_import_not_export">This is not a Samsung Health weight export: the file has no weight and start_time columns.</string>
+    <string name="steps_friends_best">Friends’ bests</string>
+    <string name="steps_friend_rename">What to call them here</string>
 </resources>
