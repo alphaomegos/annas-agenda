@@ -143,4 +143,14 @@ class DayScreenNewLookTest {
         assertTrue(a.contains("compact = state.newLook,"))
         assertTrue(a.contains("detectDragGesturesAfterLongPress(") && a.contains("picked?.let { day ->"))
     }
+
+    /** «Undone» and the repeating tasks follow the look (0334). */
+    @Test
+    fun undoneAndRecurringFollowTheLook() {
+        val undone = mainSourceFiles().single { it.name == "UndoneTasksScreen.kt" }.readText()
+        assertTrue(undone.contains("newLook = look == DayScreenStyle.NEW,"))
+        val rec = mainSourceFiles().single { it.name == "RecurringTasksScreen.kt" }.readText()
+        assertTrue(rec.contains("TopBarBack(onBack)") && rec.contains("if (!newLook) Button(onClick = onBack"))
+        assertTrue(rec.contains("Icons.Default.Delete"))
+    }
 }

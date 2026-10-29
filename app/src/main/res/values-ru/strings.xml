@@ -1344,8 +1344,8 @@
         <item quantity="many">%1$d недель</item>
         <item quantity="other">%1$d недели</item>
     </plurals>
-    <string name="day_screen_menu">Экран дня</string>
-    <string name="day_screen_new">Новый</string>
+    <string name="day_screen_menu">Оформление</string>
+    <string name="day_screen_new">Новое</string>
     <string name="day_screen_summer_2025">Лето 2026</string>
     <string name="day_new_task">Задача</string>
     <string name="task_more_actions">Ещё действия</string>
@@ -1380,4 +1380,5 @@
     <string name="weight_import_keep_app">Из приложения</string>
     <string name="weight_import_done">Дней в файле: %1$d, с %2$s по %3$s.\nДобавлено: %4$d. Заменено: %5$d. Оставлено как было: %6$d.</string>
     <string name="weight_import_not_export">Это не выгрузка веса Samsung Health: в файле нет столбцов weight и start_time.</string>
+    <string name="forecast_method_new">Новая</string>
 </resources>

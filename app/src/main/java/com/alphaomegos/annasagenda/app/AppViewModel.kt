@@ -1432,6 +1432,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** The screens' look (28.10): «New» or «Summer 2026», for screens that read nothing else of the state. */
+    val dayScreenStyle: StateFlow<DayScreenStyle> = stateSlice { it.dayScreenStyle }
+
     fun setDayScreenStyle(style: DayScreenStyle) {
         _state.update { cur -> if (cur.dayScreenStyle == style) cur else cur.copy(dayScreenStyle = style) }
     }

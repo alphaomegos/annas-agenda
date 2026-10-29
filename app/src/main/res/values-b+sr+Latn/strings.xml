@@ -1277,7 +1277,7 @@
         <item quantity="few">%1$d nedelje</item>
         <item quantity="other">%1$d nedelja</item>
     </plurals>
-    <string name="day_screen_menu">Ekran dana</string>
+    <string name="day_screen_menu">Stil</string>
     <string name="day_screen_new">Novi</string>
     <string name="day_screen_summer_2025">Leto 2026</string>
     <string name="day_new_task">Zadatak</string>
@@ -1313,4 +1313,5 @@
     <string name="weight_import_keep_app">Iz aplikacije</string>
     <string name="weight_import_done">Dana u fajlu: %1$d, od %2$s do %3$s.\nDodato: %4$d. Zamenjeno: %5$d. Ostavljeno: %6$d.</string>
     <string name="weight_import_not_export">Ovo nije izvoz težine iz Samsung Health: fajl nema kolone weight i start_time.</string>
+    <string name="forecast_method_new">Nova</string>
 </resources>

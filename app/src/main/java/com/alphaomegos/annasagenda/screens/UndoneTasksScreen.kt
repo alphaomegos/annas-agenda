@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +59,7 @@ fun UndoneTasksScreen(
     onBack: () -> Unit,
 ) {
     val state by vm.undoneTasks.collectAsState()
+    val look by vm.dayScreenStyle.collectAsState()
     val locale = appLocale()
 
     val today = remember { LocalDate.now() }
@@ -185,7 +187,8 @@ fun UndoneTasksScreen(
                         state = state,
                         date = date,
                         includeDoneTasks = true,
-                        visibleTaskIds = initialUndoneTaskIds
+                        visibleTaskIds = initialUndoneTaskIds,
+                        newLook = look == DayScreenStyle.NEW,
                     )
                 }
             }

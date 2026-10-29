@@ -1148,7 +1148,7 @@ private fun ForecastInfoDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = method == ForecastMethod.NEW, onClick = { onMethod(ForecastMethod.NEW) }, label = { Text(stringResource(R.string.day_screen_new)) })
+                    FilterChip(selected = method == ForecastMethod.NEW, onClick = { onMethod(ForecastMethod.NEW) }, label = { Text(stringResource(R.string.forecast_method_new)) })
                     FilterChip(selected = method == ForecastMethod.SUMMER_2026, onClick = { onMethod(ForecastMethod.SUMMER_2026) }, label = { Text(stringResource(R.string.day_screen_summer_2025)) })
                 }
                 Text(

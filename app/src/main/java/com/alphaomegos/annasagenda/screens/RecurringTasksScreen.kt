@@ -1,5 +1,15 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.style.TextAlign
+import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.TopBarBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +60,7 @@ fun RecurringTasksScreen(
     onBack: () -> Unit,
 ) {
     val state by vm.state.collectAsState()
+    val newLook = state.dayScreenStyle == DayScreenStyle.NEW
     val locale = appLocale()
     val today = remember { LocalDate.now() }
 
@@ -92,11 +103,25 @@ fun RecurringTasksScreen(
             .systemBarsPadding()
             .padding(16.dp)
     ) {
-        Text(
-            text = stringResource(R.string.recurring_tasks_title),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
+        if (newLook) {
+            // The new look (28.10): Back at the top left, the title centred.
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TopBarBack(onBack)
+                Text(
+                    text = stringResource(R.string.recurring_tasks_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(48.dp))
+            }
+        } else {
+            Text(
+                text = stringResource(R.string.recurring_tasks_title),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        }
 
         Spacer(Modifier.height(12.dp))
 
@@ -142,7 +167,9 @@ fun RecurringTasksScreen(
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(if (newLook) 16.dp else 12.dp),
+                            // Grounded in the new look: the day screen's surface, no shadow.
+                            colors = if (newLook) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) else CardDefaults.cardColors(),
                         ) {
                             Column(Modifier.padding(12.dp)) {
                                 Text(t.description, style = MaterialTheme.typography.titleMedium)
@@ -171,11 +198,20 @@ fun RecurringTasksScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
                                 ) {
-                                    TextButton(onClick = { editSeriesTaskId.value = t.id }) {
-                                        Text(stringResource(R.string.edit_series))
-                                    }
-                                    TextButton(onClick = { confirmDeleteTaskId.value = t.id }) {
-                                        Text(stringResource(R.string.recurring_tasks_delete_from_today))
+                                    if (newLook) {
+                                        IconButton(onClick = { editSeriesTaskId.value = t.id }) {
+                                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit_series))
+                                        }
+                                        IconButton(onClick = { confirmDeleteTaskId.value = t.id }) {
+                                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.recurring_tasks_delete_from_today), tint = MaterialTheme.colorScheme.error)
+                                        }
+                                    } else {
+                                        TextButton(onClick = { editSeriesTaskId.value = t.id }) {
+                                            Text(stringResource(R.string.edit_series))
+                                        }
+                                        TextButton(onClick = { confirmDeleteTaskId.value = t.id }) {
+                                            Text(stringResource(R.string.recurring_tasks_delete_from_today))
+                                        }
                                     }
                                 }
                             }
@@ -207,7 +243,8 @@ fun RecurringTasksScreen(
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(if (newLook) 16.dp else 12.dp),
+                            colors = if (newLook) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) else CardDefaults.cardColors(),
                         ) {
                             Column(Modifier.padding(12.dp)) {
                                 Text(
@@ -235,7 +272,11 @@ fun RecurringTasksScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.End
                                 ) {
-                                    TextButton(onClick = { confirmDeleteSubtaskId.value = s.id }) {
+                                    if (newLook) {
+                                        IconButton(onClick = { confirmDeleteSubtaskId.value = s.id }) {
+                                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.recurring_tasks_delete_from_today), tint = MaterialTheme.colorScheme.error)
+                                        }
+                                    } else TextButton(onClick = { confirmDeleteSubtaskId.value = s.id }) {
                                         Text(stringResource(R.string.recurring_tasks_delete_from_today))
                                     }
                                 }
@@ -247,7 +288,7 @@ fun RecurringTasksScreen(
         }
 
         Spacer(Modifier.height(12.dp))
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+        if (!newLook) Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.back))
         }
     }
