@@ -1323,4 +1323,9 @@
     <string name="music_viz_metronome">Metronom</string>
     <string name="music_viz_full">Preko celog ekrana</string>
     <string name="music_viz_close">Zatvori</string>
+    <string name="anthro_card_weight">Težina</string>
+    <string name="anthro_card_since">od prvog merenja, %1$s</string>
+    <string name="anthro_card_max">Najviše u periodu</string>
+    <string name="anthro_card_min">Najmanje u periodu</string>
+    <string name="anthro_card_forecast">Prognoza za period</string>
 </resources>

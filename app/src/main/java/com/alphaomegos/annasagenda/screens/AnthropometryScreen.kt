@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import com.alphaomegos.annasagenda.support.days
 import com.alphaomegos.annasagenda.support.anthropometryPanClamp
 import com.alphaomegos.annasagenda.support.anthropometryPanned
@@ -431,26 +433,41 @@ fun AnthropometryScreen(
                 )
             }
 
+            // The new look (29.10): the weight on its own card — beside the chart when the
+            // screen is wide (the unfolded Fold), under it when not.
+            val wideCard = state.newLook && LocalConfiguration.current.screenWidthDp >= 600
             // Nothing measured in the period (29.10): the last measurement before it, level.
             val carried = if (state.anthropometryCarryLast) anthropometryCarriedLast(allEntries, dateWindow) else null
-            AnthropometryChart(
-                entries = carried?.entries ?: window,
-                series = visibleFieldDefs,
-                // A swipe to the right goes back in time, the way a calendar
-                // pages: what was before is to the left.
-                onSwipeBack = { if (canBack) page -= 1 },
-                onSwipeForward = { if (canForward) page += 1 },
-                filled = state.newLook,
-                onPanDays = if (state.newLook) { d -> panDays = anthropometryPanClamp(baseWindow, panDays + d, today) } else null,
-                windowDays = dateWindow.days(),
-            )
-            carried?.let { c ->
-                Text(
-                    stringResource(R.string.anthro_last_measured, formatShortDate(c.lastDate, appLocale())),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, top = 2.dp),
-                )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                Column(modifier = Modifier.weight(if (wideCard) 1.6f else 1f)) {
+                    AnthropometryChart(
+                        entries = carried?.entries ?: window,
+                        series = visibleFieldDefs,
+                        // A swipe to the right goes back in time, the way a calendar
+                        // pages: what was before is to the left.
+                        onSwipeBack = { if (canBack) page -= 1 },
+                        onSwipeForward = { if (canForward) page += 1 },
+                        filled = state.newLook,
+                        onPanDays = if (state.newLook) { d -> panDays = anthropometryPanClamp(baseWindow, panDays + d, today) } else null,
+                        windowDays = dateWindow.days(),
+                    )
+                    carried?.let { c ->
+                        Text(
+                            stringResource(R.string.anthro_last_measured, formatShortDate(c.lastDate, appLocale())),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 16.dp, top = 2.dp),
+                        )
+                    }
+                }
+                if (wideCard) {
+                    Spacer(Modifier.width(12.dp))
+                    WeightCard(allEntries, window, newForecast.takeIf { state.weightForecastMethod == ForecastMethod.NEW && state.anthropometryShowForecast }, Modifier.weight(1f))
+                }
+            }
+            if (state.newLook && !wideCard) {
+                Spacer(Modifier.height(8.dp))
+                WeightCard(allEntries, window, newForecast.takeIf { state.weightForecastMethod == ForecastMethod.NEW && state.anthropometryShowForecast }, Modifier.fillMaxWidth())
             }
 
             Surface(
@@ -542,6 +559,8 @@ fun AnthropometryScreen(
                                     s.getValue(e)?.let { v -> Pair(e.date, v) }
                                 }
                             if (first == null || last == null) return@items
+                            // The new look shows the weight on its own card (29.10); not twice.
+                            if (state.newLook && s.axis == AnthropometryAxis.KG) return@items
 
                             val diff = last.second - first.second
                             val unit =
@@ -1259,5 +1278,58 @@ private fun NewAnthropometryEntryRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp),
         )
+    }
+}
+
+/**
+ * The weight on its own card (29.10, the new look, Eduard's mock-up): the
+ * last weighing large, the change since the first in a chip, the period's
+ * highest and lowest, and the forecast's kilograms for the period.
+ */
+@Composable
+private fun WeightCard(all: List<AnthropometryEntry>, window: List<AnthropometryEntry>, forecast: WeightForecast?, modifier: Modifier) {
+    val weighed = all.filter { it.weightKg != null }.sortedBy { it.date }
+    val last = weighed.lastOrNull() ?: return
+    val first = weighed.first()
+    val kg = stringResource(R.string.kg_short)
+    val diff = last.weightKg!! - first.weightKg!!
+    val inPeriod = window.mapNotNull { it.weightKg }
+    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = modifier) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.anthro_card_weight), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("${formatOneDecimal(last.weightKg)} $kg", style = MaterialTheme.typography.headlineMedium)
+                Spacer(Modifier.width(10.dp))
+                val tone = if (diff <= 0) appExtraColors.positive else MaterialTheme.colorScheme.error
+                Surface(color = tone.copy(alpha = 0.14f), shape = RoundedCornerShape(10.dp)) {
+                    Text(
+                        "${formatSignedOneDecimal(diff)} $kg",
+                        color = tone,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
+            }
+            Text(
+                stringResource(R.string.anthro_card_since, formatShortDate(first.date, appLocale())),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (inPeriod.isNotEmpty()) {
+                CardLine(stringResource(R.string.anthro_card_max), "${formatOneDecimal(inPeriod.max())} $kg")
+                CardLine(stringResource(R.string.anthro_card_min), "${formatOneDecimal(inPeriod.min())} $kg")
+            }
+            forecast?.let { f ->
+                CardLine(stringResource(R.string.anthro_card_forecast), (if (f.changeKg > 0) "+" else "") + formatTwoDecimals(f.changeKg) + " " + kg)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardLine(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.bodyMedium)
     }
 }

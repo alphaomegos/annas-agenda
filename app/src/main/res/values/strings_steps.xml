@@ -123,4 +123,9 @@
     <string name="steps_friend_rename">What to call them here</string>
     <string name="anthro_last_measured">last measured — %1$s</string>
     <string name="anthro_carry_last">A period without measurements shows the last one</string>
+    <string name="anthro_card_weight">Weight</string>
+    <string name="anthro_card_since">since the first measurement, %1$s</string>
+    <string name="anthro_card_max">Highest in the period</string>
+    <string name="anthro_card_min">Lowest in the period</string>
+    <string name="anthro_card_forecast">Forecast for the period</string>
 </resources>

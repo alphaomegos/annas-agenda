@@ -179,4 +179,13 @@ class DayScreenNewLookTest {
         val r = mainSourceFiles().single { it.name == "RunningPlanScreen.kt" }.readText()
         assertTrue(r.hasCode("IconButton(onClick = { workoutAddRequest += 1 })"))
     }
+
+    /** Anthropometry's weight card (0350): beside the chart when wide, under it when not; not twice. */
+    @Test
+    fun theWeightHasItsCard() {
+        val a = mainSourceFiles().single { it.name == "AnthropometryScreen.kt" }.readText()
+        assertTrue(a.hasCode("val wideCard = state.newLook && LocalConfiguration.current.screenWidthDp >= 600"))
+        assertTrue(a.hasCode("if (state.newLook && s.axis == AnthropometryAxis.KG) return@items"))
+        assertTrue(Regex("""WeightCard\(allEntries""").findAll(a).count() == 2)
+    }
 }

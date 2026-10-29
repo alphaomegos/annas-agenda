@@ -1390,4 +1390,9 @@
     <string name="music_viz_metronome">Метроном</string>
     <string name="music_viz_full">На весь экран</string>
     <string name="music_viz_close">Закрыть</string>
+    <string name="anthro_card_weight">Вес</string>
+    <string name="anthro_card_since">с первого замера, %1$s</string>
+    <string name="anthro_card_max">Макс. за период</string>
+    <string name="anthro_card_min">Мин. за период</string>
+    <string name="anthro_card_forecast">Прогноз за период</string>
 </resources>
