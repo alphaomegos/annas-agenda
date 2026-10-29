@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.runtime.collectAsState
 import androidx.compose.material3.Text
@@ -91,6 +92,7 @@ fun RunningPlanScreen(
     val today = LocalDate.now()
     var stepsImportAsked by rememberSaveable { mutableStateOf(false) }
     var stepsInfoOpen by rememberSaveable { mutableStateOf(false) }
+    var workoutAddRequest by rememberSaveable { mutableStateOf(0) }
     val stepsReport by vm.stepsReport.collectAsState()
     if (stepsInfoOpen) {
         AlertDialog(
@@ -135,6 +137,12 @@ fun RunningPlanScreen(
                     // mode there is no plan to approve, and the reset phrase
                     // would delete one the user cannot see.
                     val planActions = state.runningMode == RunningMode.PLAN
+                    // Between marathons, new look (29.10): a workout is added from here.
+                    if (state.runningMode == RunningMode.BETWEEN && state.dayScreenStyle == DayScreenStyle.NEW) {
+                        IconButton(onClick = { workoutAddRequest += 1 }) {
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.running_workout_add))
+                        }
+                    }
 
                     if (planActions && approved) {
                         IconButton(
@@ -196,6 +204,8 @@ fun RunningPlanScreen(
                     },
                     onDelete = vm::deleteRunningWorkout,
                     modifier = Modifier.fillMaxSize(),
+                    newLook = state.dayScreenStyle == DayScreenStyle.NEW,
+                    addRequest = workoutAddRequest,
                 )
             } else {
 

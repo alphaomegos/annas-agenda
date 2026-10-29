@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,11 +64,15 @@ internal fun RunningWorkoutsContent(
     onAdd: (LocalDate, String, String, String) -> Boolean,
     onDelete: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    // The new look (29.10): «+» in the top bar asks (each ask a new number), no wide button; flat cards.
+    newLook: Boolean = false,
+    addRequest: Int = 0,
 ) {
     val context = LocalContext.current
     val locale = appLocale()
 
     var showAdd by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(addRequest) { if (addRequest > 0) showAdd = true }
 
     val newestFirst = remember(workouts) { workouts.sortedByDescending { it.date } }
 
@@ -113,13 +119,14 @@ internal fun RunningWorkoutsContent(
                             workout = workout,
                             dateLabel = formatShortDate(workout.date, locale),
                             onDelete = { onDelete(workout.id) },
+                            flat = newLook,
                         )
                     }
                 }
             }
         }
 
-        Button(
+        if (!newLook) Button(
             onClick = { showAdd = true },
             modifier = Modifier
                 .fillMaxWidth()
@@ -147,10 +154,16 @@ private fun RunningWorkoutRow(
     workout: RunningWorkout,
     dateLabel: String,
     onDelete: () -> Unit,
+    flat: Boolean = false,
 ) {
     val pace = remember(workout) { runningWorkoutPace(workout) }
 
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        // Flat in the new look: the day screen's surface colour, no shadow.
+        colors = if (flat) CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) else CardDefaults.elevatedCardColors(),
+        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

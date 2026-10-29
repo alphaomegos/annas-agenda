@@ -170,4 +170,13 @@ class DayScreenNewLookTest {
         assertTrue(m.hasCode(".then(if (newLook) Modifier else Modifier.border(1.dp, cellBorderColor, cellShape))"))
         assertTrue(m.hasCode("if (!newLook) Button("))
     }
+
+    /** «On the run», between marathons, new look (0347): «+» in the bar, no wide button, flat cards. */
+    @Test
+    fun betweenMarathonsFollowsTheLook() {
+        val w = mainSourceFiles().single { it.name == "RunningWorkoutsContent.kt" }.readText()
+        assertTrue(w.hasCode("if (!newLook) Button(") && w.hasCode("flat = newLook,"))
+        val r = mainSourceFiles().single { it.name == "RunningPlanScreen.kt" }.readText()
+        assertTrue(r.hasCode("IconButton(onClick = { workoutAddRequest += 1 })"))
+    }
 }
