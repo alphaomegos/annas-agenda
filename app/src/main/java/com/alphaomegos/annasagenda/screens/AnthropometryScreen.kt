@@ -1,5 +1,8 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.support.days
+import com.alphaomegos.annasagenda.support.anthropometryPanClamp
+import com.alphaomegos.annasagenda.support.anthropometryPanned
 import com.alphaomegos.annasagenda.support.anthropometryCarriedLast
 import com.alphaomegos.annasagenda.app.AppIcons
 import com.alphaomegos.annasagenda.support.WeightImportState
@@ -288,7 +291,7 @@ fun AnthropometryScreen(
     val range = state.anthropometryRange
     val custom = state.anthropometryCustomRange
 
-    val dateWindow = remember(range, custom, allEntries, today, page) {
+    val baseWindow = remember(range, custom, allEntries, today, page) {
         anthropometryWindowFor(
             range = range,
             today = today,
@@ -297,6 +300,11 @@ fun AnthropometryScreen(
             page = page,
         )
     }
+    // Moved by hand (29.10, new look): the chart slides day by day under the
+    // finger and stays where it is let go; never past today. The arrows still
+    // page whole periods, from where the page starts.
+    var panDays by rememberSaveable(range, custom, page) { mutableIntStateOf(0) }
+    val dateWindow = remember(baseWindow, panDays, today) { anthropometryPanned(baseWindow, panDays, today) }
     val canBack = canPageAnthropometryBack(range, dateWindow, allEntries)
     val canForward = canPageAnthropometryForward(range, page)
 
@@ -433,6 +441,8 @@ fun AnthropometryScreen(
                 onSwipeBack = { if (canBack) page -= 1 },
                 onSwipeForward = { if (canForward) page += 1 },
                 filled = state.newLook,
+                onPanDays = if (state.newLook) { d -> panDays = anthropometryPanClamp(baseWindow, panDays + d, today) } else null,
+                windowDays = dateWindow.days(),
             )
             carried?.let { c ->
                 Text(
@@ -706,7 +716,12 @@ private fun AnthropometryChart(
     onSwipeBack: () -> Unit,
     onSwipeForward: () -> Unit,
     filled: Boolean = false,
+    // Sliding by hand (new look): days moved, negative back in time; null = swipes page.
+    onPanDays: ((Int) -> Unit)? = null,
+    windowDays: Int = 1,
 ) {
+    val latestPan by androidx.compose.runtime.rememberUpdatedState(onPanDays)
+    val latestDays by androidx.compose.runtime.rememberUpdatedState(windowDays)
     val cmUnit = stringResource(R.string.cm_short)
     val kgUnit = stringResource(R.string.kg_short)
 
@@ -722,10 +737,11 @@ private fun AnthropometryChart(
             .height(240.dp)
             .pointerInput(Unit) {
                 var travelled = 0f
+                var unspent = 0f
                 detectHorizontalDragGestures(
-                    onDragStart = { travelled = 0f },
+                    onDragStart = { travelled = 0f; unspent = 0f },
                     onDragEnd = {
-                        when {
+                        if (latestPan == null) when {
                             travelled > swipeThresholdPx -> latestSwipeBack()
                             travelled < -swipeThresholdPx -> latestSwipeForward()
                         }
@@ -733,6 +749,16 @@ private fun AnthropometryChart(
                     onHorizontalDrag = { change, amount ->
                         change.consume()
                         travelled += amount
+                        latestPan?.let { pan ->
+                            // A day is the width the chart gives it; a drag to the right goes back.
+                            val dayPx = size.width.toFloat() / latestDays.coerceAtLeast(1)
+                            unspent += amount
+                            val days = (unspent / dayPx).toInt()
+                            if (days != 0) {
+                                unspent -= days * dayPx
+                                pan(-days)
+                            }
+                        }
                     },
                 )
             }

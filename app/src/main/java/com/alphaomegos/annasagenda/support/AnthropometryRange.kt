@@ -153,3 +153,18 @@ fun anthropometryCarriedLast(all: List<AnthropometryEntry>, window: DateWindow):
     val last = all.filter { it.date.isBefore(window.from) }.maxByOrNull { it.date } ?: return null
     return CarriedLast(listOf(last.copy(date = window.from), last.copy(date = window.to)), last.date)
 }
+
+/** Days in a window, both ends counted. */
+fun DateWindow.days(): Int = (java.time.temporal.ChronoUnit.DAYS.between(from, to) + 1).toInt()
+
+/** How far a window may be slid by hand (29.10): any way back, forward no further than today. */
+fun anthropometryPanClamp(base: DateWindow, panDays: Int, today: LocalDate): Int {
+    val ahead = java.time.temporal.ChronoUnit.DAYS.between(base.to, today).toInt().coerceAtLeast(0)
+    return panDays.coerceAtMost(ahead)
+}
+
+/** The window slid by [panDays] (clamped): the dates flow with the finger. */
+fun anthropometryPanned(base: DateWindow, panDays: Int, today: LocalDate): DateWindow {
+    val p = anthropometryPanClamp(base, panDays, today).toLong()
+    return DateWindow(base.from.plusDays(p), base.to.plusDays(p))
+}

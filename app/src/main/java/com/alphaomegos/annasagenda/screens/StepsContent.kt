@@ -140,7 +140,11 @@ internal fun StepsContent(
 
     // The page of the range shown (19.10): 0 holds today, −1 the period before.
     var page by rememberSaveable { mutableIntStateOf(0) }
-    val window = stepsPage(state.stepsRange, today, state.stepsCustomRange, state.stepDays, page)
+    val basePage = stepsPage(state.stepsRange, today, state.stepsCustomRange, state.stepDays, page)
+    // Slid by hand (29.10, as anthropometry): day by day under the finger, staying where let go,
+    // never past today; the arrows still page whole periods.
+    var panDays by rememberSaveable(state.stepsRange, state.stepsCustomRange, page) { mutableIntStateOf(0) }
+    val window = if (state.stepsRange == AnthropometryRange.ALL) basePage else anthropometryPanned(basePage, panDays, today)
     val listDays = stepsListDays(window, today)
     val canBack = canPageStepsBack(state.stepsRange, window, state.stepDays)
     val canForward = canPageStepsForward(state.stepsRange, page)
@@ -211,6 +215,7 @@ internal fun StepsContent(
                 labels = listOf(0, ceiling / 2, ceiling).map { count.format(it) },
                 onSwipeBack = { if (canBack) page -= 1 },
                 onSwipeForward = { if (canForward) page += 1 },
+                onPanDays = if (state.stepsRange == AnthropometryRange.ALL) null else { d -> panDays = anthropometryPanClamp(basePage, panDays + d, today) },
             )
             picked?.let { i -> chartDays.getOrNull(i) }?.let { d ->
                 StepsLoupe(dateFmt.format(d), series.map { Triple(it.name, it.color, count.format(it.values.getOrElse(picked!!) { 0 })) })
@@ -494,6 +499,9 @@ private fun StepsChart(
     labels: List<String>,
     onSwipeBack: () -> Unit,
     onSwipeForward: () -> Unit,
+
+    // Sliding by hand: days moved, negative back in time; null = swipes page.
+    onPanDays: ((Int) -> Unit)? = null,
 ) {
     val grid = MaterialTheme.colorScheme.outlineVariant
     val bestColor = MaterialTheme.colorScheme.tertiary
@@ -504,6 +512,7 @@ private fun StepsChart(
     val back by rememberUpdatedState(onSwipeBack)
     val forward by rememberUpdatedState(onSwipeForward)
     val pickNow by rememberUpdatedState(onPick)
+    val panNow by rememberUpdatedState(onPanDays)
     // A slide after a long press shows each day it passes, not toggles them.
     var scrubbed by remember { mutableStateOf<Int?>(null) }
     val scrubTo: androidx.compose.ui.input.pointer.PointerInputScope.(Float, Int) -> Unit = { x, days ->
@@ -531,16 +540,31 @@ private fun StepsChart(
                 .padding(12.dp)
                 .semantics { contentDescription = description }
                 .pointerInput(Unit) {
+                    var unspent = 0f
                     detectHorizontalDragGestures(
-                        onDragStart = { travelled = 0f },
+                        onDragStart = { travelled = 0f; unspent = 0f },
                         onDragEnd = {
-                            val enough = STEPS_SWIPE_DP.dp.toPx()
-                            when {
-                                travelled > enough -> back()
-                                travelled < -enough -> forward()
+                            if (panNow == null) {
+                                val enough = STEPS_SWIPE_DP.dp.toPx()
+                                when {
+                                    travelled > enough -> back()
+                                    travelled < -enough -> forward()
+                                }
                             }
                         },
-                    ) { _, delta -> travelled += delta }
+                    ) { _, delta ->
+                        travelled += delta
+                        panNow?.let { pan ->
+                            val count = series.firstOrNull()?.values?.size ?: 0
+                            val dayPx = size.width.toFloat() / count.coerceAtLeast(1)
+                            unspent += delta
+                            val moved = (unspent / dayPx).toInt()
+                            if (moved != 0) {
+                                unspent -= moved * dayPx
+                                pan(-moved)
+                            }
+                        }
+                    }
                 }
                 .pointerInput(labels, series.firstOrNull()?.values?.size) {
                     val days = series.firstOrNull()?.values?.size ?: 0
