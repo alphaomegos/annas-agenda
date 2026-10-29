@@ -91,14 +91,14 @@ android {
         // versionName said 21.3. Nobody remembers how. From then they moved
         // together, one step each per release, and VersionNumbersTest holds
         // them to it. 22.0 (16.10, Eduard: the music, oursidecar and its
-        // backups make a new main version) is versionCode 25, and 22.1 will
-        // be 26.
+        // backups make a new main version) is versionCode 25, and 22.1 (28.10:
+        // steps, steps together, the profile and forecast, the new look) is 26.
         //
         // versionCode only ever goes up: Android refuses an update whose code
         // is lower than the one installed, so matching it down to 21 was not
         // an option.
-        versionCode = 25
-        versionName = "22.0"
+        versionCode = 26
+        versionName = "22.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
