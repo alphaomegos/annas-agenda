@@ -44,6 +44,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
     override fun runningDeleteTask(taskId: Long) = deleteTask(taskId)
     override fun runningRetitleTask(taskId: Long, description: String) = updateTaskDescription(taskId, description)
     override fun runningMinutesTitle(minutes: Int): String = formatRunningTaskMinutesTitle(minutes)
+    override fun runningKmTitle(kmTitle: String): String = formatRunningTaskKmTitle(kmTitle)
     override var stagedFlightTextSlot: String?
         get() = stagedFlightText
         set(value) { stagedFlightText = value }

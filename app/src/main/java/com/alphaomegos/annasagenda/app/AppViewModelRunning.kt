@@ -39,6 +39,7 @@ interface RunningActions : AppStateHost {
     fun runningDeleteTask(taskId: Long)
     fun runningRetitleTask(taskId: Long, description: String)
     fun runningMinutesTitle(minutes: Int): String
+    fun runningKmTitle(kmTitle: String): String
 
     /* ---------------------------
        Running plan ("On the run")
@@ -81,7 +82,7 @@ interface RunningActions : AppStateHost {
         val after = stateFlow.value.runningPlanEntries.firstOrNull { it.date == date } ?: return
         val title = buildRunningPlanTaskTitle(
             entry = after,
-            formatKmTitle = ::formatRunningTaskKmTitle,
+            formatKmTitle = ::runningKmTitle,
             formatMinutesTitle = ::runningMinutesTitle,
         ) ?: return
 
@@ -135,7 +136,7 @@ interface RunningActions : AppStateHost {
             if (e.taskId == null) {
                 val title = buildRunningPlanTaskTitle(
                     entry = e,
-                    formatKmTitle = ::formatRunningTaskKmTitle,
+                    formatKmTitle = ::runningKmTitle,
                     formatMinutesTitle = ::runningMinutesTitle,
                 )
                 if (title != null) {
