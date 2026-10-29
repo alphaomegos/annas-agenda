@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * How the app names itself to the map's servers: its own name and version,
  * and where to learn of it — as OpenStreetMap's tile policy asks (17.10).
  */
-private const val METRO_HTTP_AGENT = "AnnasAgenda/22.0 (Android; +https://github.com/alphaomegos/annas-agenda)"
+private const val METRO_HTTP_AGENT = "AnnasAgenda/22.1 (Android; +https://github.com/alphaomegos/annas-agenda)"
 
 /**
  * CARTO's key, from the build (17.10): local.properties' cartoKey, never git.

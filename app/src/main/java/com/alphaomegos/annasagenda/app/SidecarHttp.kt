@@ -7,7 +7,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /** The app's name to oursidecar's server (16.10): no address, no account, only what is asking. */
-internal const val SIDECAR_HTTP_AGENT = "AnnasAgenda/22.0 (Android)"
+internal const val SIDECAR_HTTP_AGENT = "AnnasAgenda/22.1 (Android)"
 
 /** The most of an answer read: the longest list of tracks is far smaller. */
 private const val SIDECAR_MAX_REPLY_BYTES = 8 * 1024 * 1024
