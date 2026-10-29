@@ -41,6 +41,8 @@ import com.alphaomegos.annasagenda.data.*
 interface AppStateHost {
     val stateFlow: MutableStateFlow<AppState>
     fun nextFreshId(): Long
+    // The next id to give out, raised when recurrences are drawn (29.10, TasksActions).
+    var idCounter: Long
 }
 
 /** Metro, travel, flights, the food library and the diet: the view model's tail, moved here unchanged. */
