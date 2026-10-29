@@ -121,6 +121,13 @@ android {
     }
 
     buildTypes {
+        // Coverage of the unit tests, on asking (28.10): ./gradlew -Pcoverage
+        // createDebugUnitTestCoverageReport, then
+        // app/build/reports/coverage/test/debug/index.html. Off otherwise, so an
+        // everyday build runs its tests as fast as before.
+        getByName("debug") {
+            enableUnitTestCoverage = providers.gradleProperty("coverage").isPresent
+        }
         release {
             // Null when nothing is configured, which leaves the APK unsigned
             // rather than signing it with something that is not the key the

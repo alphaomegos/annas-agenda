@@ -16,7 +16,7 @@ class StepsHealthConnectTest {
 
     @Test
     fun theAppAsksToReadStepsAndNothingElse() {
-        assertTrue(manifest.contains("android.permission.health.READ_STEPS"))
+        assertTrue(manifest.hasCode("android.permission.health.READ_STEPS"))
         val health = Regex("""android\.permission\.health\.[A-Z_]+""").findAll(manifest).map { it.value }.toSet()
         assertTrue("only steps, only read: $health", health == setOf("android.permission.health.READ_STEPS"))
     }
@@ -24,13 +24,13 @@ class StepsHealthConnectTest {
     @Test
     fun healthConnectCanAlwaysShowWhyTheAppReads() {
         // Android 13 and older…
-        assertTrue(manifest.contains("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"))
+        assertTrue(manifest.hasCode("androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"))
         // …and Android 14 on, behind the permission only the system holds.
-        assertTrue(manifest.contains("android.intent.action.VIEW_PERMISSION_USAGE"))
-        assertTrue(manifest.contains("android.intent.category.HEALTH_PERMISSIONS"))
-        assertTrue(manifest.contains("android.permission.START_VIEW_PERMISSION_USAGE"))
-        assertTrue(manifest.contains(".StepsPrivacyActivity"))
-        assertTrue("Health Connect as an app must be visible to ask about it", manifest.contains("com.google.android.apps.healthdata"))
+        assertTrue(manifest.hasCode("android.intent.action.VIEW_PERMISSION_USAGE"))
+        assertTrue(manifest.hasCode("android.intent.category.HEALTH_PERMISSIONS"))
+        assertTrue(manifest.hasCode("android.permission.START_VIEW_PERMISSION_USAGE"))
+        assertTrue(manifest.hasCode(".StepsPrivacyActivity"))
+        assertTrue("Health Connect as an app must be visible to ask about it", manifest.hasCode("com.google.android.apps.healthdata"))
     }
 
     /** Health Connect's own total, day by day — never records added up, which counts the phone and the watch twice. */
@@ -44,7 +44,7 @@ class StepsHealthConnectTest {
     /** The library wants Android 8 and the app runs from 7: nothing may reach it before the check. */
     @Test
     fun nothingReachesHealthConnectBelowAndroid9() {
-        assertTrue(manifest.contains("""tools:overrideLibrary="androidx.health.connect.client""""))
+        assertTrue(manifest.hasCode("""tools:overrideLibrary="androidx.health.connect.client""""))
         assertTrue(reader.contains("Build.VERSION.SDK_INT < Build.VERSION_CODES.P"))
         val elsewhere = mainSourceFiles()
             .filter { it.name != "HealthConnectSteps.kt" && it.readText().contains("import androidx.health.connect") }

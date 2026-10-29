@@ -84,3 +84,13 @@ internal fun isCommentLine(line: String): Boolean {
     val t = line.trimStart()
     return t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")
 }
+
+/**
+ * Whether this source text holds [snippet], whitespace aside (28.10): a guard
+ * that reads the code checks what it says, not how it is indented or wrapped
+ * — a reformatting is not a regression.
+ */
+internal fun String.hasCode(snippet: String): Boolean {
+    fun squeeze(s: String) = s.replace(Regex("""\s+"""), " ").trim()
+    return squeeze(this).contains(squeeze(snippet))
+}

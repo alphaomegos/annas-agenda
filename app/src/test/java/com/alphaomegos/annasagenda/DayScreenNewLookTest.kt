@@ -14,29 +14,29 @@ class DayScreenNewLookTest {
 
     @Test
     fun theStripShowsTheNextColour() {
-        assertTrue(rows.contains("val next = nextPaletteColor(task.colorArgb)"))
-        assertTrue(rows.contains(".background(next)"))
+        assertTrue(rows.hasCode("val next = nextPaletteColor(task.colorArgb)"))
+        assertTrue(rows.hasCode(".background(next)"))
     }
 
     @Test
     fun movingAndCopyingAreUnderTheMenu_upAndDownStayOnTheRow() {
         val newRow = rows.substringAfter("internal fun NewDateTaskRow(")
-        assertTrue(newRow.contains("DropdownMenu(") && newRow.contains("R.string.move_task") && newRow.contains("R.string.copy_task"))
-        assertTrue(newRow.contains("R.string.move_task_up") && newRow.contains("R.string.move_task_down"))
+        assertTrue(newRow.hasCode("DropdownMenu(") && newRow.hasCode("R.string.move_task") && newRow.hasCode("R.string.copy_task"))
+        assertTrue(newRow.hasCode("R.string.move_task_up") && newRow.hasCode("R.string.move_task_down"))
     }
 
     @Test
     fun theOldLookIsTheOldRow() {
-        assertTrue(rows.contains("DateTaskRow(task, subtasks, isExpanded,"))
-        assertTrue(block.contains("TaskListSurface(newLook)"))
+        assertTrue(rows.hasCode("DateTaskRow(task, subtasks, isExpanded,"))
+        assertTrue(block.hasCode("TaskListSurface(newLook)"))
     }
 
     /** Subtasks too (0322): in the same surface, set in, the same menu and strip as a task's. */
     @Test
     fun subtasksFollowTheNewLook() {
         val sub = rows.substringAfter("internal fun NewDateSubtaskRow(")
-        assertTrue(sub.contains("val next = nextPaletteColor(subtask.colorArgb)") && sub.contains("DropdownMenu("))
-        assertTrue(block.contains("SubtaskRowCall(") && block.contains("newLook = newLook,"))
+        assertTrue(sub.hasCode("val next = nextPaletteColor(subtask.colorArgb)") && sub.hasCode("DropdownMenu("))
+        assertTrue(block.hasCode("SubtaskRowCall(") && block.hasCode("newLook = newLook,"))
     }
 
     /**
@@ -45,8 +45,8 @@ class DayScreenNewLookTest {
      */
     @Test
     fun theLookIsPassedToWhereTheRowsAreDrawn() {
-        assertTrue(block.contains("    newLook: Boolean = false,\n) {") )
-        assertTrue(block.contains("        newLook = newLook,\n    )"))
+        assertTrue(block.hasCode("    newLook: Boolean = false,\n) {") )
+        assertTrue(block.hasCode("        newLook = newLook,\n    )"))
         val content = block.substringAfter("private fun DateTasksBlockContent(").substringBefore(") {")
         assertTrue("DateTasksBlockContent has no newLook", content.contains("newLook: Boolean"))
     }
@@ -67,7 +67,7 @@ class DayScreenNewLookTest {
     fun backAndHomeAreAtTheTop() {
         val day = mainSourceFiles().single { it.name == "CalendarDayScreen.kt" }.readText()
         val head = day.substringAfter("private fun NewDayHeader(")
-        assertTrue(head.contains("TopBarBack(onBack)") && head.contains("WayHomeButton()"))
+        assertTrue(head.hasCode("TopBarBack(onBack)") && head.hasCode("WayHomeButton()"))
     }
 
     /** The row's ⋮ also repeats, links a counter and deletes (0325), as the task's dialog does. */
@@ -83,10 +83,10 @@ class DayScreenNewLookTest {
         val dialogs = mainSourceFiles().single { it.name == "DateTaskEditDialogs.kt" }.readText()
         val newDialog = dialogs.substringAfter("internal fun NewEditTaskDialog(").substringBefore("internal fun TaskDialogCall(")
         // No title at all now (0326): the task's words head the dialog.
-        assertTrue(!newDialog.contains("R.string.task_description_label"))
-        assertTrue(newDialog.contains("colors = frameless()"))
-        assertTrue(dialogs.contains("unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent"))
-        assertTrue(newDialog.contains("Icons.Default.Schedule") && newDialog.contains("Icons.Default.Close"))
+        assertTrue(!newDialog.hasCode("R.string.task_description_label"))
+        assertTrue(newDialog.hasCode("colors = frameless()"))
+        assertTrue(dialogs.hasCode("unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent"))
+        assertTrue(newDialog.hasCode("Icons.Default.Schedule") && newDialog.hasCode("Icons.Default.Close"))
         for (label in listOf("R.string.repeat", "R.string.task_menu_counter", "R.string.task_tool_copy", "R.string.task_tool_move", "R.string.remove")) {
             assertTrue(label, newDialog.contains(label))
         }
@@ -97,27 +97,27 @@ class DayScreenNewLookTest {
     fun subtasksGetTheSameDialogAndMenu() {
         val dialogs = mainSourceFiles().single { it.name == "DateTaskEditDialogs.kt" }.readText()
         val sub = dialogs.substringAfter("internal fun NewEditSubtaskDialog(").substringBefore("internal fun SubtaskDialogCall(")
-        assertTrue(!sub.contains("R.string.task_description_label") && sub.contains("colors = frameless()"))
+        assertTrue(!sub.hasCode("R.string.task_description_label") && sub.hasCode("colors = frameless()"))
         for (label in listOf("R.string.repeat", "R.string.task_tool_copy", "R.string.task_tool_move", "R.string.remove")) assertTrue(label, sub.contains(label))
         val subRow = rows.substringAfter("internal fun NewDateSubtaskRow(")
-        assertTrue(subRow.contains("R.string.repeat") && subRow.contains("R.string.remove"))
+        assertTrue(subRow.hasCode("R.string.repeat") && subRow.hasCode("R.string.remove"))
     }
 
     /** «Someday» follows the day screen's look (0326): Back and the house on top, the rows in the surface. */
     @Test
     fun somedayFollowsTheLook() {
         val someday = mainSourceFiles().single { it.name == "SomedayScreen.kt" }.readText()
-        assertTrue(someday.contains("DateTasksBlock(vm = vm, state = state, date = null, newLook = newLook)"))
-        assertTrue(someday.contains("TopBarBack(onBack)") && someday.contains("WayHomeButton()"))
+        assertTrue(someday.hasCode("DateTasksBlock(vm = vm, state = state, date = null, newLook = newLook)"))
+        assertTrue(someday.hasCode("TopBarBack(onBack)") && someday.hasCode("WayHomeButton()"))
     }
 
     /** Mini buttons have no card round them (0326), on a narrow screen and a wide one. */
     @Test
     fun miniButtonsAreBare() {
         val tile = mainSourceFiles().single { it.name == "MenuTile.kt" }.readText()
-        assertTrue(tile.contains("if (!titled) bareColors"))
+        assertTrue(tile.hasCode("if (!titled) bareColors"))
         val menu = mainSourceFiles().single { it.name == "MainMenuScreen.kt" }.readText()
-        assertTrue(menu.contains("val miniButtons = narrowStyle == MainMenuNarrowStyle.ICONS"))
+        assertTrue(menu.hasCode("val miniButtons = narrowStyle == MainMenuNarrowStyle.ICONS"))
     }
 
     /**
@@ -128,29 +128,29 @@ class DayScreenNewLookTest {
     @Test
     fun anthropometryFollowsTheLook() {
         val a = mainSourceFiles().single { it.name == "AnthropometryScreen.kt" }.readText()
-        assertTrue(a.contains("filled = state.newLook,"))
-        assertTrue(a.contains("if (state.newLook) NewAnthropometryEntryRow("))
-        assertTrue(a.contains("if (!state.newLook) {\n                Button("))
-        assertTrue("the last date is placed by its width", !a.contains("plotRight - 72f"))
+        assertTrue(a.hasCode("filled = state.newLook,"))
+        assertTrue(a.hasCode("if (state.newLook) NewAnthropometryEntryRow("))
+        assertTrue(a.hasCode("if (!state.newLook) {\n                Button("))
+        assertTrue("the last date is placed by its width", !a.hasCode("plotRight - 72f"))
     }
 
     /** The ranges fit a folded Fold in one strip (0331); the anthropometry chart picks a day as the steps chart does. */
     @Test
     fun rangesFitAndTheChartPicksADay() {
         val bar = mainSourceFiles().single { it.name == "AnthropometryRangeBar.kt" }.readText()
-        assertTrue(bar.contains("compact: Boolean = false") && bar.contains(".weight(1f)"))
+        assertTrue(bar.hasCode("compact: Boolean = false") && bar.hasCode(".weight(1f)"))
         val a = mainSourceFiles().single { it.name == "AnthropometryScreen.kt" }.readText()
-        assertTrue(a.contains("compact = state.newLook,"))
-        assertTrue(a.contains("detectDragGesturesAfterLongPress(") && a.contains("picked?.let { day ->"))
+        assertTrue(a.hasCode("compact = state.newLook,"))
+        assertTrue(a.hasCode("detectDragGesturesAfterLongPress(") && a.hasCode("picked?.let { day ->"))
     }
 
     /** «Undone» and the repeating tasks follow the look (0334). */
     @Test
     fun undoneAndRecurringFollowTheLook() {
         val undone = mainSourceFiles().single { it.name == "UndoneTasksScreen.kt" }.readText()
-        assertTrue(undone.contains("newLook = look == DayScreenStyle.NEW,"))
+        assertTrue(undone.hasCode("newLook = look == DayScreenStyle.NEW,"))
         val rec = mainSourceFiles().single { it.name == "RecurringTasksScreen.kt" }.readText()
-        assertTrue(rec.contains("TopBarBack(onBack)") && rec.contains("if (!newLook) Button(onClick = onBack"))
-        assertTrue(rec.contains("Icons.Default.Delete"))
+        assertTrue(rec.hasCode("TopBarBack(onBack)") && rec.hasCode("if (!newLook) Button(onClick = onBack"))
+        assertTrue(rec.hasCode("Icons.Default.Delete"))
     }
 }

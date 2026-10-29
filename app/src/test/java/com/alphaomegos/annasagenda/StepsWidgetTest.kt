@@ -14,16 +14,16 @@ class StepsWidgetTest {
 
     @Test
     fun theWidgetIsDeclaredAndDescribed() {
-        assertTrue(manifest.contains(".StepsWidgetReceiver"))
-        assertTrue(manifest.contains("@xml/steps_widget_info"))
+        assertTrue(manifest.hasCode(".StepsWidgetReceiver"))
+        assertTrue(manifest.hasCode("@xml/steps_widget_info"))
         assertTrue(mainResRoot().resolve("xml/steps_widget_info.xml").isFile)
     }
 
     @Test
     fun itWearsTheTasksWidgetsStyle() {
-        assertTrue(widget.contains("widgetBackground(data.style)"))
-        assertTrue(widget.contains("widgetTextColor(data.style)"))
-        assertTrue(widget.contains("state?.widgetStyle"))
+        assertTrue(widget.hasCode("widgetBackground(data.style)"))
+        assertTrue(widget.hasCode("widgetTextColor(data.style)"))
+        assertTrue(widget.hasCode("state?.widgetStyle"))
     }
 
     /**
@@ -34,9 +34,9 @@ class StepsWidgetTest {
     @Test
     fun eachWidgetIsRedrawnByItsOwnReceiver() {
         val tasks = mainSourceFiles().single { it.name == "TodayTasksWidget.kt" }.readText()
-        assertTrue("updateAll finds widgets by class name", !tasks.contains("updateAll("))
-        assertTrue(tasks.contains("redrawWidgetsOf(context, TodayTasksWidgetReceiver::class.java, TodayTasksWidget())"))
-        assertTrue(tasks.contains("redrawWidgetsOf(context, StepsWidgetReceiver::class.java, StepsWidget())"))
+        assertTrue("updateAll finds widgets by class name", !tasks.hasCode("updateAll("))
+        assertTrue(tasks.hasCode("redrawWidgetsOf(context, TodayTasksWidgetReceiver::class.java, TodayTasksWidget())"))
+        assertTrue(tasks.hasCode("redrawWidgetsOf(context, StepsWidgetReceiver::class.java, StepsWidget())"))
         val rules = mainResRoot().absoluteFile.parentFile.parentFile.parentFile.resolve("proguard-rules.pro").readText()
         assertTrue(rules.contains("-keep class * extends androidx.glance.appwidget.GlanceAppWidget"))
     }
@@ -45,8 +45,8 @@ class StepsWidgetTest {
     @Test
     fun bothWidgetsShowTheirOwnError() {
         val tasks = mainSourceFiles().single { it.name == "TodayTasksWidget.kt" }.readText()
-        assertTrue(tasks.contains("override fun onCompositionError(") && tasks.contains("R.string.widget_error_tasks"))
-        assertTrue(widget.contains("override fun onCompositionError(") && widget.contains("R.string.widget_error_steps"))
+        assertTrue(tasks.hasCode("override fun onCompositionError(") && tasks.hasCode("R.string.widget_error_tasks"))
+        assertTrue(widget.hasCode("override fun onCompositionError(") && widget.hasCode("R.string.widget_error_steps"))
         assertTrue(mainResRoot().resolve("layout/widget_error.xml").isFile)
     }
 
@@ -58,15 +58,15 @@ class StepsWidgetTest {
     @Test
     fun theTasksWidgetsTicksAreFixedColours() {
         val tasks = mainSourceFiles().single { it.name == "TodayTasksWidget.kt" }.readText()
-        assertTrue("a GlanceTheme colour reaches CheckBoxColors", !tasks.contains("GlanceTheme.colors"))
-        assertTrue(tasks.contains("?: WIDGET_DEFAULT_TICK"))
+        assertTrue("a GlanceTheme colour reaches CheckBoxColors", !tasks.hasCode("GlanceTheme.colors"))
+        assertTrue(tasks.hasCode("?: WIDGET_DEFAULT_TICK"))
     }
 
     /** A tap on the steps widget opens «On the run» on its Steps tab, not the day (0326). */
     @Test
     fun theStepsWidgetOpensTheStepsTab() {
-        assertTrue(widget.contains(".putExtra(EXTRA_OPEN_STEPS, true)"))
+        assertTrue(widget.hasCode(".putExtra(EXTRA_OPEN_STEPS, true)"))
         val main = mainSourceFiles().single { it.name == "MainActivity.kt" }.readText()
-        assertTrue(main.contains("EXTRA_OPEN_STEPS") && main.contains("RunningMode.STEPS"))
+        assertTrue(main.hasCode("EXTRA_OPEN_STEPS") && main.hasCode("RunningMode.STEPS"))
     }
 }
