@@ -86,8 +86,8 @@ class TypedStateSurvivesRotationTest {
         "MainMenuScreen.kt:draggingIndex" to "a drag in flight; a rotation ends the drag",
         "MainMenuScreen.kt:draggingOffsetY" to "a drag in flight; a rotation ends the drag",
         "MainMenuScreen.kt:draggingOffsetX" to "a drag in flight; a rotation ends the drag",
-        "MainMenuScreen.kt:swipingItemId" to "a swipe in flight; a rotation ends the swipe",
-        "MainMenuScreen.kt:swipeOffsetX" to "a swipe in flight; a rotation ends the swipe",
+        "MainMenuParts.kt:swipingItemId" to "a swipe in flight; a rotation ends the swipe",
+        "MainMenuParts.kt:swipeOffsetX" to "a swipe in flight; a rotation ends the swipe",
         "NewTaskScreen.kt:draftLoaded" to
             "gates this composition's own effects: the autosave of the draft must start " +
             "only after this composition has read the draft, so it has to begin false " +
