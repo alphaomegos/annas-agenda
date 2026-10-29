@@ -33,7 +33,7 @@ import com.alphaomegos.annasagenda.support.*
 import com.alphaomegos.annasagenda.data.*
 
 
-class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActions, BodyActions, RunningActions, TaskFlagsAndColorsActions, DayCountersActions, ReadingActions, MainMenuActions {
+class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActions, BodyActions, RunningActions, TaskFlagsAndColorsActions, DayCountersActions, ReadingActions, MainMenuActions, LookActions, StepsDaysActions, SubtasksActions {
     // The parts kept in files of their own (28.10) reach the state through these.
     override val stateFlow: MutableStateFlow<AppState> get() = _state
     override fun nextFreshId(): Long = newId()
@@ -597,50 +597,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
 
     val backStyle: StateFlow<BackStyle> = stateSlice { it.backStyle }
 
-    /* ---------------- steps (19.10) ---------------- */
-
-    /** What a read from Health Connect brought: each day of it, a day with nothing as 0. */
-    fun applyReadSteps(read: Map<LocalDate, Int>) {
-        _state.update { cur -> cur.copy(stepDays = stepDaysAfterRead(cur.stepDays, read)) }
-    }
-
-    /** A day's steps typed in by hand; no later read replaces them. */
-    fun typeSteps(date: LocalDate, steps: Int) {
-        _state.update { cur -> cur.copy(stepDays = stepDaysWithTyped(cur.stepDays, date, steps)) }
-    }
-
-    /** A typed-in day taken back: Health Connect's count returns with the next read. */
-    fun untypeSteps(date: LocalDate) {
-        _state.update { cur -> cur.copy(stepDays = stepDaysWithoutTyped(cur.stepDays, date)) }
-        refreshSteps()
-    }
-
-    fun setDailyNorm(kcal: Int?) {
-        _state.update { cur -> cur.copy(dailyNormKcal = kcal?.takeIf { it in DAILY_NORM_RANGE }) }
-    }
-
-    fun setWeightForecastMethod(method: ForecastMethod) {
-        _state.update { cur -> if (cur.weightForecastMethod == method) cur else cur.copy(weightForecastMethod = method) }
-    }
-
-    /** The profile (28.10): sex, height and year of birth, one set for the whole app. */
-    fun setProfile(sex: ProfileSex?, heightCm: Int?, birthYear: Int?) {
-        _state.update { cur ->
-            cur.copy(
-                profileSex = sex,
-                stepsHeightCm = heightCm?.takeIf { it in STEPS_HEIGHT_RANGE_CM },
-                profileBirthYear = birthYear?.takeIf { it in PROFILE_BIRTH_YEARS },
-            )
-        }
-    }
-
-    fun setStepsHeight(heightCm: Int?) {
-        _state.update { cur -> cur.copy(stepsHeightCm = heightCm?.takeIf { it in STEPS_HEIGHT_RANGE_CM }) }
-    }
-
-    fun setStepsRange(range: AnthropometryRange, custom: DateWindow?) {
-        _state.update { cur -> cur.copy(stepsRange = range, stepsCustomRange = custom ?: cur.stepsCustomRange) }
-    }
 
     private val _stepsAvailability = MutableStateFlow(StepsAvailability.NONE)
     /** Whether this phone has a Health Connect, as of the last look. */
@@ -748,7 +704,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
      * would be overwritten by the load. Any failure leaves the days as they
      * are; the next return to the app tries again.
      */
-    fun refreshSteps() {
+    override fun refreshSteps() {
         if (!_isLoaded.value) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -777,29 +733,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
 
     /** The screens' look (28.10): «New» or «Summer 2026», for screens that read nothing else of the state. */
     val dayScreenStyle: StateFlow<DayScreenStyle> = stateSlice { it.dayScreenStyle }
-
-    fun setDayScreenStyle(style: DayScreenStyle) {
-        _state.update { cur -> if (cur.dayScreenStyle == style) cur else cur.copy(dayScreenStyle = style) }
-    }
-
-    fun setMainMenuNarrow(style: MainMenuNarrowStyle) {
-        _state.update { cur -> if (cur.mainMenuNarrow == style) cur else cur.copy(mainMenuNarrow = style) }
-    }
-
-    fun setBackStyle(style: BackStyle) {
-        if (_state.value.backStyle == style) return
-        _state.value = _state.value.copy(backStyle = style)
-    }
-
-    fun setPalette(palette: AppPalette) {
-        if (_state.value.palette == palette) return
-        _state.value = _state.value.copy(palette = palette)
-    }
-
-    fun setThemeMode(mode: AppThemeMode) {
-        if (_state.value.themeMode == mode) return
-        _state.value = _state.value.copy(themeMode = mode)
-    }
 
     /**
      * Writes the state down, with the id counter's position recorded in it.
@@ -1081,133 +1014,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
         val after = stateAfterCopyingTask(cur.tasks, cur.subtasks, taskId, targetDate, ::newId)
 
         _state.value = cur.copy(tasks = after.tasks, subtasks = after.subtasks)
-    }
-
-    /* ---------------------------
-       Subtasks
-    ---------------------------- */
-
-    /**
-     * Adds a part to a task. The rule about a part joining a task that is
-     * already finished lives in TaskDoneSupport, with the reason it matters.
-     */
-    fun createSubtask(taskId: Long, description: String, colorArgb: Long? = null): Long {
-        val id = newId()
-        val cur = _state.value
-
-        val after = stateAfterCreatingSubtask(
-            tasks = cur.tasks,
-            subtasks = cur.subtasks,
-            counters = cur.counters,
-            taskId = taskId,
-            description = description,
-            colorArgb = colorArgb,
-            id = id,
-        )
-
-        _state.value = cur.copy(
-            tasks = after.tasks,
-            subtasks = after.subtasks,
-            counters = after.counters,
-        )
-
-        return after.createdId
-    }
-
-    fun updateSubtaskDescription(subtaskId: Long, description: String) {
-        val clean = description.trim()
-        if (clean.isBlank()) return
-        val updated = _state.value.subtasks.map { s ->
-            if (s.id == subtaskId) s.copy(description = clean) else s
-        }
-        _state.value = _state.value.copy(subtasks = updated)
-    }
-
-    /**
-     * Deletes a subtask, which can finish the task it was under and move the
-     * counter that task is linked to.
-     *
-     * This used to be three separate writes to the state with reads in
-     * between — the shape two earlier bugs in this file had. It is one now,
-     * and what it does is stated in TaskDeletionSupport.
-     */
-    fun deleteSubtask(subtaskId: Long) {
-        _state.update { cur ->
-            val after = stateAfterDeletingSubtask(
-                tasks = cur.tasks,
-                subtasks = cur.subtasks,
-                suppressedRecurrences = cur.suppressedRecurrences,
-                counters = cur.counters,
-                subtaskId = subtaskId,
-            )
-            cur.copy(
-                tasks = after.tasks,
-                subtasks = after.subtasks,
-                suppressedRecurrences = after.suppressedRecurrences,
-                counters = after.counters,
-            )
-        }
-    }
-
-    fun copySubtaskToDate(subtaskId: Long, targetDate: LocalDate) {
-        val cur = _state.value
-        val after = stateAfterCopyingSubtask(cur.tasks, cur.subtasks, subtaskId, targetDate, ::newId)
-
-        _state.value = cur.copy(tasks = after.tasks, subtasks = after.subtasks)
-    }
-
-    /**
-     * Moves a part to another task. Both tasks can change their minds about
-     * being finished and both can move a counter, so it is one write; the
-     * rules are in TaskDoneSupport.
-     */
-    fun moveSubtask(subtaskId: Long, targetTaskId: Long) {
-        val cur = _state.value
-
-        val after = stateAfterMovingSubtask(
-            cur.tasks, cur.subtasks, cur.counters, subtaskId, targetTaskId,
-        )
-
-        _state.value = cur.copy(
-            tasks = after.tasks,
-            subtasks = after.subtasks,
-            counters = after.counters,
-        )
-    }
-
-    fun moveTaskUp(taskId: Long) {
-        val cur = _state.value
-        val newTasks = moveTaskWithinDate(cur.tasks, taskId, step = -1, doneLast = cur.doneTasksLast)
-        if (newTasks == cur.tasks) return
-        _state.value = cur.copy(tasks = newTasks)
-    }
-    fun moveTaskDown(taskId: Long) {
-        val cur = _state.value
-        val newTasks = moveTaskWithinDate(cur.tasks, taskId, step = 1, doneLast = cur.doneTasksLast)
-        if (newTasks == cur.tasks) return
-        _state.value = cur.copy(tasks = newTasks)
-    }
-
-    fun moveSubtaskUp(subtaskId: Long) {
-        val cur = _state.value
-        val after = stateAfterReorderingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId, step = -1, doneLast = cur.doneSubtasksLast)
-
-        _state.value = cur.copy(
-            tasks = after.tasks,
-            subtasks = after.subtasks,
-            counters = after.counters,
-        )
-    }
-
-    fun moveSubtaskDown(subtaskId: Long) {
-        val cur = _state.value
-        val after = stateAfterReorderingSubtask(cur.tasks, cur.subtasks, cur.counters, subtaskId, step = 1, doneLast = cur.doneSubtasksLast)
-
-        _state.value = cur.copy(
-            tasks = after.tasks,
-            subtasks = after.subtasks,
-            counters = after.counters,
-        )
     }
 
 }
