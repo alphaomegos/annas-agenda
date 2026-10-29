@@ -127,7 +127,7 @@ class DayScreenNewLookTest {
      */
     @Test
     fun anthropometryFollowsTheLook() {
-        val a = mainSourceFiles().single { it.name == "AnthropometryScreen.kt" }.readText()
+        val a = anthropometrySource()
         assertTrue(a.hasCode("filled = state.newLook,"))
         assertTrue(a.hasCode("if (state.newLook) NewAnthropometryEntryRow("))
         assertTrue(a.hasCode("if (!state.newLook) {\n                Button("))
@@ -139,7 +139,7 @@ class DayScreenNewLookTest {
     fun rangesFitAndTheChartPicksADay() {
         val bar = mainSourceFiles().single { it.name == "AnthropometryRangeBar.kt" }.readText()
         assertTrue(bar.hasCode("compact: Boolean = false") && bar.hasCode(".weight(1f)"))
-        val a = mainSourceFiles().single { it.name == "AnthropometryScreen.kt" }.readText()
+        val a = anthropometrySource()
         assertTrue(a.hasCode("compact = state.newLook,"))
         assertTrue(a.hasCode("detectDragGesturesAfterLongPress(") && a.hasCode("picked?.let { day ->"))
     }
@@ -183,9 +183,13 @@ class DayScreenNewLookTest {
     /** Anthropometry's weight card (0350): beside the chart when wide, under it when not; not twice. */
     @Test
     fun theWeightHasItsCard() {
-        val a = mainSourceFiles().single { it.name == "AnthropometryScreen.kt" }.readText()
+        val a = anthropometrySource()
         assertTrue(a.hasCode("val wideCard = state.newLook && LocalConfiguration.current.screenWidthDp >= 600"))
         assertTrue(a.hasCode("if (state.newLook && s.axis == AnthropometryAxis.KG) return@items"))
         assertTrue(Regex("""WeightCard\(allEntries""").findAll(a).count() == 2)
     }
+
+    // The screen and its parts (0353: split in two files); a guard reads them as one.
+    private fun anthropometrySource(): String =
+        mainSourceFiles().filter { it.name == "AnthropometryScreen.kt" || it.name == "AnthropometryParts.kt" }.joinToString("\n") { it.readText() }
 }
