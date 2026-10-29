@@ -269,6 +269,9 @@ private fun CalendarMonthContent(
 
             val cellShape = MaterialTheme.shapes.medium
             val cellBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.15f)
+            // The new look keeps a hairline round each day (29.10, Eduard): without it
+            // the badges did not belong to any day.
+            val thinBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
@@ -287,7 +290,7 @@ private fun CalendarMonthContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(cellHeight)
-                                .then(if (newLook) Modifier else Modifier.border(1.dp, cellBorderColor, cellShape))
+                                .then(if (newLook) Modifier.border(0.5.dp, thinBorderColor, cellShape) else Modifier.border(1.dp, cellBorderColor, cellShape))
                         )
                     } else {
                         val count = itemCountByDate[date] ?: 0
@@ -303,7 +306,7 @@ private fun CalendarMonthContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(cellHeight)
-                                .then(if (newLook) Modifier else Modifier.border(1.dp, cellBorderColor, cellShape))
+                                .then(if (newLook) Modifier.border(0.5.dp, thinBorderColor, cellShape) else Modifier.border(1.dp, cellBorderColor, cellShape))
                                 .clickable { onOpenDay(date.toEpochDay()) }
                         ) {
                             // The day's number at the top, its steps right under it — at

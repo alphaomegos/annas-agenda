@@ -505,6 +505,7 @@ private fun StepsChart(
 ) {
     val grid = MaterialTheme.colorScheme.outlineVariant
     val bestColor = MaterialTheme.colorScheme.tertiary
+    val backing = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
     val labelArgb = MaterialTheme.colorScheme.onSurfaceVariant.toArgb()
     val description = stringResource(R.string.steps_chart_description)
     var travelled by remember { mutableStateOf(0f) }
@@ -625,15 +626,31 @@ private fun StepsChart(
                 val text = "🥇 " + bestLabel(b)
                 drawContext.canvas.nativeCanvas.drawText(text, size.width - paint.measureText(text), y - 3.dp.toPx(), paint)
             }
-            // Friends' bests: their colour, dashed, the name and number at the left.
-            friendBests.filter { it.first <= ceiling }.forEach { (value, color, name) ->
+            // Friends' bests: their colour, dashed; the name and number at the right edge
+            // on a backing, so bars do not hide them (29.10), each label clear of the others.
+            val taken = mutableListOf<Float>()
+            best?.takeIf { it <= ceiling }?.let { taken += floor - plotHeight * it / ceiling - 3.dp.toPx() }
+            val lineH = paint.textSize + 3.dp.toPx()
+            friendBests.filter { it.first <= ceiling }.sortedByDescending { it.first }.forEach { (value, color, name) ->
                 val y = floor - plotHeight * value / ceiling
                 drawLine(
                     color, Offset(left, y), Offset(size.width, y), strokeWidth = 1.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())),
                 )
+                var base = y - 3.dp.toPx()
+                while (taken.any { kotlin.math.abs(it - base) < lineH }) base += lineH
+                taken += base
+                val text = name + " " + bestLabel(value)
                 val label = android.graphics.Paint(paint).apply { this.color = color.toArgb() }
-                drawContext.canvas.nativeCanvas.drawText(name + " " + bestLabel(value), left + 2.dp.toPx(), y - 3.dp.toPx(), label)
+                val w = label.measureText(text)
+                val x = size.width - w
+                val pad = 2.dp.toPx()
+                val back = android.graphics.Paint().apply { this.color = backing.toArgb(); isAntiAlias = true }
+                drawContext.canvas.nativeCanvas.drawRoundRect(
+                    android.graphics.RectF(x - pad * 2, base - label.textSize, size.width + pad, base + pad * 2),
+                    pad * 2, pad * 2, back,
+                )
+                drawContext.canvas.nativeCanvas.drawText(text, x, base, label)
             }
             if (style == StepsChartStyle.LINE) {
                 // A line through each day's middle for each person; a day of nothing is on the floor.

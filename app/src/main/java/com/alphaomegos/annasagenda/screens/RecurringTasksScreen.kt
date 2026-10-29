@@ -104,16 +104,10 @@ fun RecurringTasksScreen(
             .padding(16.dp)
     ) {
         if (newLook) {
-            // The new look (28.10): Back at the top left, the title centred.
+            // The new look (28.10): Back at the top left; no title (29.10, Eduard:
+            // the series say what the screen is).
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopBarBack(onBack)
-                Text(
-                    text = stringResource(R.string.recurring_tasks_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width(48.dp))
             }
         } else {
             Text(

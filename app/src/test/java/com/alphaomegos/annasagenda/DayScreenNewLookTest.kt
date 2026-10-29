@@ -162,12 +162,13 @@ class DayScreenNewLookTest {
         assertTrue(Regex("""openAppIntent\(context, java\.time\.LocalDate\.now\(\)\)""").findAll(n).count() == 2)
     }
 
-    /** The month in the new look (0346): Back and the month on top, ‹ Today ›, no cell frames, no foot. */
+    /** The month in the new look (0346): Back and the month on top, ‹ Today ›, hairline cells (0354), no foot. */
     @Test
     fun theMonthFollowsTheLook() {
         val m = mainSourceFiles().single { it.name == "CalendarMonthScreen.kt" }.readText()
         assertTrue(m.hasCode("TopBarBack(onBack)") && m.hasCode("TextButton(onClick = { monthIndex = baseIndex })"))
-        assertTrue(m.hasCode(".then(if (newLook) Modifier else Modifier.border(1.dp, cellBorderColor, cellShape))"))
+        // A hairline round each day in the new look (0354): without it the badges belonged to no day.
+        assertTrue(m.hasCode(".then(if (newLook) Modifier.border(0.5.dp, thinBorderColor, cellShape) else Modifier.border(1.dp, cellBorderColor, cellShape))"))
         assertTrue(m.hasCode("if (!newLook) Button("))
     }
 
