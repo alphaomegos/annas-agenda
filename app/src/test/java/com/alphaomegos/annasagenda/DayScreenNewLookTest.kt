@@ -153,4 +153,12 @@ class DayScreenNewLookTest {
         assertTrue(rec.hasCode("TopBarBack(onBack)") && rec.hasCode("if (!newLook) Button(onClick = onBack"))
         assertTrue(rec.hasCode("Icons.Default.Delete"))
     }
+
+    /** A notification about tasks opens their day, not the main menu (0343). */
+    @Test
+    fun aTaskNotificationOpensTheDay() {
+        val n = mainSourceFiles().single { it.name == "Notifications.kt" }.readText()
+        assertTrue(n.hasCode("day?.let { launch.putExtra(EXTRA_OPEN_EPOCH_DAY, it.toEpochDay()) }"))
+        assertTrue(Regex("""openAppIntent\(context, java\.time\.LocalDate\.now\(\)\)""").findAll(n).count() == 2)
+    }
 }

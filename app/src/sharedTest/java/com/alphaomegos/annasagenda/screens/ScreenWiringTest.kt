@@ -1,5 +1,7 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
@@ -478,5 +480,46 @@ class ScreenWiringTest {
         composeRule.onNodeWithText(word(R.string.metro_style_win95)).performClick()
         composeRule.waitForIdle()
         assertEquals(MetroStyle.WIN95, vm.state.value.metroPrefs.style)
+    }
+
+    // ---- the new look (0343): what the source guards could not check — taps and what they do ----
+
+    /** «Someday» in the new look: its row, «+ Task», and the row's ⋮ deleting after asking. */
+    @Test
+    fun someday_newLook_plusTask_andTheMenuDeletesAfterAsking() {
+        val id = vm.createTaskForDate(date = null, time = null, description = "Купить лампу")
+        var created = false
+        composeRule.setContent { SomedayScreen(vm = vm, onBack = {}, onCreateTask = { created = true }) }
+        composeRule.onNodeWithText("Купить лампу").assertExists()
+        composeRule.onNodeWithText(word(R.string.day_new_task)).performClick()
+        assertTrue(created)
+        composeRule.onNodeWithContentDescription(word(R.string.task_more_actions)).performClick()
+        composeRule.onNodeWithText(word(R.string.copy_task)).assertExists()
+        composeRule.onNodeWithText(word(R.string.remove)).performClick()
+        // Asked first; the task is still there.
+        assertTrue(vm.state.value.tasks.any { it.id == id })
+        composeRule.onAllNodesWithText(word(R.string.remove)).onLast().performClick()
+        composeRule.waitForIdle()
+        assertTrue(vm.state.value.tasks.none { it.id == id })
+    }
+
+    /** «Summer 2026» keeps the old Someday: the wide create button, no ⋮. */
+    @Test
+    fun someday_summer2026_keepsTheOldScreen() {
+        vm.setDayScreenStyle(com.alphaomegos.annasagenda.model.DayScreenStyle.SUMMER_2025)
+        vm.createTaskForDate(date = null, time = null, description = "Купить лампу")
+        composeRule.setContent { SomedayScreen(vm = vm, onBack = {}, onCreateTask = {}) }
+        composeRule.onNodeWithText(word(R.string.create_task)).assertExists()
+        composeRule.onAllNodesWithContentDescription(word(R.string.task_more_actions)).assertCountEquals(0)
+    }
+
+    /** Anthropometry in the new look: «+» in the bar opens the measurement's input. */
+    @Test
+    fun anthropometry_newLook_plusOpensTheInput() {
+        composeRule.setContent { AnthropometryScreen(vm = vm, onBack = {}) }
+        composeRule.onNodeWithContentDescription(word(R.string.enter_data)).performClick()
+        composeRule.waitForIdle()
+        // The input dialog has a field to type a value into.
+        assertTrue(composeRule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty())
     }
 }

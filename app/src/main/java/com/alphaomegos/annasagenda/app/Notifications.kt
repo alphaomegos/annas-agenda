@@ -187,12 +187,14 @@ internal fun inAppLanguage(context: Context): Context {
     return context.createConfigurationContext(config)
 }
 
-private fun openAppIntent(context: Context): PendingIntent? {
+private fun openAppIntent(context: Context, day: java.time.LocalDate? = null): PendingIntent? {
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
+    // A notification about tasks opens their day (29.10, Eduard), as the widget's header does.
+    day?.let { launch.putExtra(EXTRA_OPEN_EPOCH_DAY, it.toEpochDay()) }
     // SINGLE_TOP: an open app gets onNewIntent rather than being finished and
     // rebuilt, which would drop its back stack and an autosave in flight.
     launch.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-    return PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    return PendingIntent.getActivity(context, if (day == null) 0 else 1, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 }
 
 @SuppressLint("MissingPermission") // checked by canPostNotifications
@@ -222,7 +224,7 @@ private fun postSummary(context: Context, summary: DailySummary) {
         .setContentTitle(title)
         .setContentText(text)
         .setStyle(inbox)
-        .setContentIntent(openAppIntent(context))
+        .setContentIntent(openAppIntent(context, java.time.LocalDate.now()))
         .setAutoCancel(true)
         .build()
     // One id: a newer summary replaces the one before it rather than piling up.
@@ -238,7 +240,7 @@ private fun postReminder(context: Context, event: ReminderEvent) {
         .setContentText(context.getString(R.string.notif_reminder_at, formatTaskTime(event.time)))
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setCategory(NotificationCompat.CATEGORY_REMINDER)
-        .setContentIntent(openAppIntent(context))
+        .setContentIntent(openAppIntent(context, java.time.LocalDate.now()))
         .setAutoCancel(true)
         .build()
     NotificationManagerCompat.from(context).notify(event.taskKey.hashCode(), n)
