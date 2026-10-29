@@ -1,5 +1,10 @@
 package com.alphaomegos.annasagenda.screens
 
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import com.alphaomegos.annasagenda.components.TopBarBack
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
@@ -168,7 +173,35 @@ private fun CalendarMonthContent(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        val newLook = state.dayScreenStyle == DayScreenStyle.NEW
+        val monthTitleText = remember(monthIndex, locale) {
+            yearMonth.atDay(1).format(DateTimeFormatter.ofPattern("LLLL yyyy", locale)).replaceFirstChar { it.titlecase(locale) }
+        }
+        if (newLook) {
+            // The new look (29.10), as the day screen: Back at the top left, the
+            // month as the title, ⚙ at the right; then one light row of ‹ Today ›.
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TopBarBack(onBack)
+                Text(
+                    text = monthTitleText,
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { showBadgeSettings = true }) {
+                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.calendar_badges_open))
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                IconButton(onClick = { monthIndex -= 1 }) {
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.prev_month))
+                }
+                TextButton(onClick = { monthIndex = baseIndex }) { Text(stringResource(R.string.today)) }
+                IconButton(onClick = { monthIndex += 1 }) {
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.next_month))
+                }
+            }
+        } else Box(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = stringResource(R.string.calendar_title),
                 style = MaterialTheme.typography.headlineSmall,
@@ -181,9 +214,9 @@ private fun CalendarMonthContent(
                 Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.calendar_badges_open))
             }
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(if (newLook) 4.dp else 12.dp))
 
-        Row(
+        if (!newLook) Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -254,7 +287,7 @@ private fun CalendarMonthContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(cellHeight)
-                                .border(1.dp, cellBorderColor, cellShape)
+                                .then(if (newLook) Modifier else Modifier.border(1.dp, cellBorderColor, cellShape))
                         )
                     } else {
                         val count = itemCountByDate[date] ?: 0
@@ -264,11 +297,13 @@ private fun CalendarMonthContent(
 
                         Surface(
                             tonalElevation = if (isToday) 4.dp else 0.dp,
+                            // The new look (29.10): no frames; today in the accent's light tone.
+                            color = if (newLook && isToday) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                             shape = cellShape,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(cellHeight)
-                                .border(1.dp, cellBorderColor, cellShape)
+                                .then(if (newLook) Modifier else Modifier.border(1.dp, cellBorderColor, cellShape))
                                 .clickable { onOpenDay(date.toEpochDay()) }
                         ) {
                             // The day's number at the top, its steps right under it — at
@@ -344,7 +379,7 @@ private fun CalendarMonthContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Button(
+        if (!newLook) Button(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth()
         ) { Text(stringResource(R.string.back)) }

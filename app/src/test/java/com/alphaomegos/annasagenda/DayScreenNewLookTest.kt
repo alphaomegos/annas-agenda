@@ -161,4 +161,13 @@ class DayScreenNewLookTest {
         assertTrue(n.hasCode("day?.let { launch.putExtra(EXTRA_OPEN_EPOCH_DAY, it.toEpochDay()) }"))
         assertTrue(Regex("""openAppIntent\(context, java\.time\.LocalDate\.now\(\)\)""").findAll(n).count() == 2)
     }
+
+    /** The month in the new look (0346): Back and the month on top, ‹ Today ›, no cell frames, no foot. */
+    @Test
+    fun theMonthFollowsTheLook() {
+        val m = mainSourceFiles().single { it.name == "CalendarMonthScreen.kt" }.readText()
+        assertTrue(m.hasCode("TopBarBack(onBack)") && m.hasCode("TextButton(onClick = { monthIndex = baseIndex })"))
+        assertTrue(m.hasCode(".then(if (newLook) Modifier else Modifier.border(1.dp, cellBorderColor, cellShape))"))
+        assertTrue(m.hasCode("if (!newLook) Button("))
+    }
 }
