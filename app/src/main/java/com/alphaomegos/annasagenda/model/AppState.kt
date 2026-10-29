@@ -134,6 +134,8 @@ data class AppState(
     val weightForecastMethod: ForecastMethod = ForecastMethod.NEW,
     // The user's own daily norm (28.10), instead of the formula's; null = the formula.
     val dailyNormKcal: Int? = null,
+    // A period with no measurement shows the last one before it as a level line (29.10).
+    val anthropometryCarryLast: Boolean = true,
     val stepsRange: AnthropometryRange = AnthropometryRange.MONTH,
     val stepsCustomRange: DateWindow? = null,
     // A day's steps on the month, under its number (19.10); on unless turned off.

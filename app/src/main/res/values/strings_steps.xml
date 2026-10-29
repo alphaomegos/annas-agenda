@@ -121,4 +121,6 @@
     <string name="weight_import_not_export">This is not a Samsung Health weight export: the file has no weight and start_time columns.</string>
     <string name="steps_friends_best">Friends’ bests</string>
     <string name="steps_friend_rename">What to call them here</string>
+    <string name="anthro_last_measured">last measured — %1$s</string>
+    <string name="anthro_carry_last">A period without measurements shows the last one</string>
 </resources>

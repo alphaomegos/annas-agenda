@@ -1,5 +1,6 @@
 package com.alphaomegos.annasagenda.screens
 
+import com.alphaomegos.annasagenda.support.anthropometryCarriedLast
 import com.alphaomegos.annasagenda.app.AppIcons
 import com.alphaomegos.annasagenda.support.WeightImportState
 import androidx.activity.result.contract.ActivityResultContracts
@@ -422,8 +423,10 @@ fun AnthropometryScreen(
                 )
             }
 
+            // Nothing measured in the period (29.10): the last measurement before it, level.
+            val carried = if (state.anthropometryCarryLast) anthropometryCarriedLast(allEntries, dateWindow) else null
             AnthropometryChart(
-                entries = window,
+                entries = carried?.entries ?: window,
                 series = visibleFieldDefs,
                 // A swipe to the right goes back in time, the way a calendar
                 // pages: what was before is to the left.
@@ -431,6 +434,14 @@ fun AnthropometryScreen(
                 onSwipeForward = { if (canForward) page += 1 },
                 filled = state.newLook,
             )
+            carried?.let { c ->
+                Text(
+                    stringResource(R.string.anthro_last_measured, formatShortDate(c.lastDate, appLocale())),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, top = 2.dp),
+                )
+            }
 
             Surface(
                 tonalElevation = 1.dp,
@@ -629,6 +640,8 @@ fun AnthropometryScreen(
             enabledFieldIds = state.anthropometryEnabledFieldIds,
             showForecast = state.anthropometryShowForecast,
             showEntries = state.anthropometryShowEntries,
+            carryLast = state.anthropometryCarryLast,
+            onCarryLast = vm::setAnthropometryCarryLast,
             onDismiss = { showSettings.value = false },
             onSave = { enabledIds, forecast, entries ->
                 vm.setAnthropometryEnabledFieldIds(enabledIds)
@@ -930,7 +943,10 @@ internal fun AnthropometryFieldsDialog(
     showEntries: Boolean,
     onDismiss: () -> Unit,
     onSave: (Set<String>, showForecast: Boolean, showEntries: Boolean) -> Unit,
+    carryLast: Boolean = true,
+    onCarryLast: (Boolean) -> Unit = {},
 ) {
+    var pendingCarry by rememberSaveable(carryLast) { mutableStateOf(carryLast) }
     var pendingForecast by rememberSaveable(showForecast) { mutableStateOf(showForecast) }
     var pendingEntries by rememberSaveable(showEntries) { mutableStateOf(showEntries) }
 
@@ -991,6 +1007,7 @@ internal fun AnthropometryFieldsDialog(
                 listOf(
                     Triple(R.string.anthro_show_forecast, pendingForecast) { v: Boolean -> pendingForecast = v },
                     Triple(R.string.anthro_show_entries, pendingEntries) { v: Boolean -> pendingEntries = v },
+                    Triple(R.string.anthro_carry_last, pendingCarry) { v: Boolean -> pendingCarry = v },
                 ).forEach { (labelRes, checked, set) ->
                     Row(
                         modifier = Modifier
@@ -1009,7 +1026,10 @@ internal fun AnthropometryFieldsDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(pendingIds.value, pendingForecast, pendingEntries) }) {
+            Button(onClick = {
+                onCarryLast(pendingCarry)
+                onSave(pendingIds.value, pendingForecast, pendingEntries)
+            }) {
                 Text(stringResource(R.string.ok))
             }
         },

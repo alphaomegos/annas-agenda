@@ -1383,4 +1383,6 @@
     <string name="forecast_method_new">Новая</string>
     <string name="steps_friends_best">Рекорды друзей</string>
     <string name="steps_friend_rename">Как называть на этом телефоне</string>
+    <string name="anthro_last_measured">последний замер — %1$s</string>
+    <string name="anthro_carry_last">Период без замеров — показывать последний замер</string>
 </resources>

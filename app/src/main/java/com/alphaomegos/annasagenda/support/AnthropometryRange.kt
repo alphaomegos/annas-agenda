@@ -139,3 +139,17 @@ fun anthropometryEntriesIn(
     entries
         .filter { it.date >= window.from && it.date <= window.to }
         .sortedBy { it.date }
+
+/** A period with nothing measured, drawn from the last measurement before it (29.10). */
+data class CarriedLast(val entries: List<AnthropometryEntry>, val lastDate: LocalDate)
+
+/**
+ * When [window] holds no measurement but one was taken before it: that last
+ * one, at the window's first and last day, so the chart draws it level across
+ * the period — «последний замер — 12.10.26» under it. Null otherwise.
+ */
+fun anthropometryCarriedLast(all: List<AnthropometryEntry>, window: DateWindow): CarriedLast? {
+    if (all.any { !it.date.isBefore(window.from) && !it.date.isAfter(window.to) }) return null
+    val last = all.filter { it.date.isBefore(window.from) }.maxByOrNull { it.date } ?: return null
+    return CarriedLast(listOf(last.copy(date = window.from), last.copy(date = window.to)), last.date)
+}

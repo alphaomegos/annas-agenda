@@ -142,4 +142,9 @@ interface BodyActions : AppStateHost {
         val cur = stateFlow.value
         if (cur.widgetStyle != clean) stateFlow.value = cur.copy(widgetStyle = clean)
     }
+
+    /** A period with no measurement: the last one before it as a level line, or nothing (29.10). */
+    fun setAnthropometryCarryLast(on: Boolean) {
+        stateFlow.update { cur -> cur.copy(anthropometryCarryLast = on) }
+    }
 }

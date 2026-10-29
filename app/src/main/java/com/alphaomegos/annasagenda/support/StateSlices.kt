@@ -62,6 +62,7 @@ data class AnthropometrySlice(
     val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
     val runningDoneTaskIds: Set<Long> = emptySet(),
     val dailyNormKcal: Int? = null,
+    val anthropometryCarryLast: Boolean = true,
 )
 
 /**
@@ -142,6 +143,7 @@ fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySli
     runningDoneTaskIds = state.runningPlanEntries.mapNotNull { it.taskId }.toSet()
         .let { linked -> state.tasks.filter { it.isDone && it.id in linked }.map { it.id }.toSet() },
     dailyNormKcal = state.dailyNormKcal,
+    anthropometryCarryLast = state.anthropometryCarryLast,
 )
 
 fun countersSliceOf(state: AppState): CountersSlice = CountersSlice(

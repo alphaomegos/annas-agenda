@@ -1316,4 +1316,6 @@
     <string name="forecast_method_new">Nova</string>
     <string name="steps_friends_best">Rekordi prijatelja</string>
     <string name="steps_friend_rename">Kako ih zvati ovde</string>
+    <string name="anthro_last_measured">poslednje merenje — %1$s</string>
+    <string name="anthro_carry_last">Period bez merenja — prikaži poslednje merenje</string>
 </resources>

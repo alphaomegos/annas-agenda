@@ -97,6 +97,7 @@ internal data class AppStateDto(
     val profileBirthYear: Int? = null,
     val weightForecastMethod: String = "NEW",
     val dailyNormKcal: Int? = null,
+    val anthropometryCarryLast: Boolean = true,
     val stepsRange: String = "MONTH",
     val stepsCustomFromEpochDay: Long? = null,
     val stepsCustomToEpochDay: Long? = null,
