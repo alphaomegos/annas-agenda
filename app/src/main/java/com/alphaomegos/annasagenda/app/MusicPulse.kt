@@ -11,36 +11,9 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import com.alphaomegos.annasagenda.support.MusicHeardClock
 import com.alphaomegos.annasagenda.support.MusicSampleRing
 import com.alphaomegos.annasagenda.support.MusicStreamBase
-import com.alphaomegos.annasagenda.support.PulseBeats
-import com.alphaomegos.annasagenda.support.pulseLevel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-
-/**
- * The music's pulse (29.10): the player's own sound, listened to on its way
- * out — no microphone, no permission. The level and a beat count, for the
- * visualizer to draw from.
- */
-internal object MusicPulse {
-    private val _level = MutableStateFlow(0f)
-    val level: StateFlow<Float> = _level.asStateFlow()
-    private val _beats = MutableStateFlow(0L)
-    val beats: StateFlow<Long> = _beats.asStateFlow()
-    private val detector = PulseBeats()
-
-    fun feed(rms: Float) {
-        val l = pulseLevel(rms)
-        _level.value = l
-        if (detector.feed(l, System.nanoTime())) _beats.value = _beats.value + 1
-    }
-
-    fun silence() {
-        _level.value = 0f
-    }
-}
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * The sound kept for the visualizer (30.10): the samples on their way out and which
@@ -52,24 +25,30 @@ internal object MusicTap {
     val ring = MusicSampleRing()
     val clock = MusicHeardClock()
 
-    /** The visualizer is on screen: samples are kept, the position noted often. */
-    @Volatile
-    var listening = false
-        private set
+    // How many visualizers are on screen (the panel and the full screen may overlap a moment).
+    private val listeners = AtomicInteger(0)
+
+    /** A visualizer is on screen: samples are kept, the position noted often. */
+    val listening: Boolean get() = listeners.get() > 0
 
     /** Set by the playing service: starts its noting of the position. */
     @Volatile
     var wake: (() -> Unit)? = null
 
+    /** A visualizer came ([on]) or went. */
     fun listen(on: Boolean) {
-        listening = on
-        if (on) wake?.invoke()
+        if (on) {
+            listeners.incrementAndGet()
+            wake?.invoke()
+        } else {
+            listeners.updateAndGet { maxOf(0, it - 1) }
+        }
     }
 }
 
 /**
- * Passes the sound through unchanged, measuring each slice's loudness on the way, and
- * keeping its samples for the visualizer while one is on screen (30.10).
+ * Passes the sound through unchanged, keeping its samples for the visualizer while
+ * one is on screen (30.10; until then it measured each slice's loudness).
  */
 @UnstableApi
 internal class PulseAudioProcessor : BaseAudioProcessor() {
@@ -89,15 +68,6 @@ internal class PulseAudioProcessor : BaseAudioProcessor() {
     override fun queueInput(inputBuffer: ByteBuffer) {
         val size = inputBuffer.remaining()
         if (size == 0) return
-        val view = inputBuffer.duplicate().order(ByteOrder.nativeOrder())
-        var sum = 0.0
-        var n = 0
-        if (encoding == C.ENCODING_PCM_16BIT) {
-            while (view.remaining() >= 2) { val v = view.short / 32768.0; sum += v * v; n++ }
-        } else {
-            while (view.remaining() >= 4) { val v = view.float.toDouble(); sum += v * v; n++ }
-        }
-        if (n > 0) MusicPulse.feed(kotlin.math.sqrt(sum / n).toFloat())
         keep(inputBuffer)
         val out = replaceOutputBuffer(size)
         out.put(inputBuffer)
@@ -127,7 +97,6 @@ internal class PulseAudioProcessor : BaseAudioProcessor() {
 
     // A flush (a seek, a new stream): the next sample is this stream position.
     override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata) {
-        MusicPulse.silence()
         MusicTap.clock.base = MusicStreamBase(MusicTap.ring.cursor, streamMetadata.positionOffsetUs.coerceAtLeast(0L), rate)
     }
 }

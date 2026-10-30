@@ -75,4 +75,26 @@ class MusicPlaybackManifestTest {
         assertTrue(service.hasCode("if (MusicTap.listening && player.isPlaying) handler.postDelayed(this, POSITION_TICK_MS)"))
         assertTrue(service.hasCode("handler.removeCallbacks(positionTick)"))
     }
+
+    /**
+     * The new visualizer (0364): three pictures and nothing of the old waves or metronome;
+     * an OpenGL ES 2.0 view paused with the screen, listening only while it is shown; the
+     * shaders' moving parts as wrapped phases; a refused shader shown, not thrown.
+     */
+    @Test
+    fun theVisualizerIsTheNewOne() {
+        val files = mainSourceFiles().associateBy { it.name }
+        val viz = files.getValue("MusicVisualizer.kt").readText()
+        assertTrue(viz.hasCode("setEGLContextClientVersion(2)") && viz.hasCode("preserveEGLContextOnPause = true"))
+        assertTrue(viz.hasCode("Lifecycle.Event.ON_PAUSE -> view.onPause()") && viz.hasCode("Lifecycle.Event.ON_RESUME -> view.onResume()"))
+        assertTrue(viz.hasCode("MusicTap.listen(true)") && viz.hasCode("MusicTap.listen(false)"))
+        assertTrue(viz.hasCode("if (!full) MusicVisualizer(preset, Modifier.fillMaxSize())"))
+        listOf("music_viz_vortex", "music_viz_spectrum", "music_viz_flame").forEach { assertTrue(it, viz.contains("R.string.$it")) }
+        assertTrue("the old pictures are gone", !files.values.any { it.readText().contains("VisualizerStyle") || it.readText().contains("PulseBeats") })
+        val gl = files.getValue("MusicGlRenderer.kt").readText()
+        assertTrue(gl.hasCode("catch (e: IllegalStateException) {") && gl.hasCode("onError(e.message ?: \"shader\")"))
+        val shaders = files.getValue("MusicShaders.kt").readText()
+        assertTrue("no time that grows without end in a shader", !shaders.contains("uTime"))
+        assertTrue(!shaders.contains("#version") && shaders.contains("GL_FRAGMENT_PRECISION_HIGH"))
+    }
 }

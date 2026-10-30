@@ -1321,8 +1321,9 @@
     <string name="anthro_last_measured">poslednje merenje — %1$s</string>
     <string name="anthro_carry_last">Period bez merenja — prikaži poslednje merenje</string>
     <string name="music_viz_open">Vizualizacija</string>
-    <string name="music_viz_waves">Talasi</string>
-    <string name="music_viz_metronome">Metronom</string>
+    <string name="music_viz_vortex">Grimizni vrtlog</string>
+    <string name="music_viz_spectrum">Klasični spektar</string>
+    <string name="music_viz_flame">Plamen spektra</string>
     <string name="music_viz_full">Preko celog ekrana</string>
     <string name="music_viz_close">Zatvori</string>
     <string name="anthro_card_weight">Težina</string>

@@ -1388,8 +1388,9 @@
     <string name="anthro_last_measured">последний замер — %1$s</string>
     <string name="anthro_carry_last">Период без замеров — показывать последний замер</string>
     <string name="music_viz_open">Визуализация</string>
-    <string name="music_viz_waves">Волны</string>
-    <string name="music_viz_metronome">Метроном</string>
+    <string name="music_viz_vortex">Багровый вихрь</string>
+    <string name="music_viz_spectrum">Классический спектр</string>
+    <string name="music_viz_flame">Пламя спектра</string>
     <string name="music_viz_full">На весь экран</string>
     <string name="music_viz_close">Закрыть</string>
     <string name="anthro_card_weight">Вес</string>
