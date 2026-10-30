@@ -78,6 +78,12 @@ interface MainMenuActions : AppStateHost {
         if (cur.doneSubtasksLast != value) stateFlow.value = cur.copy(doneSubtasksLast = value)
     }
 
+    /** Whether deleting a task or a subtask asks first (30.10). */
+    fun setAskBeforeDeleting(value: Boolean) {
+        val cur = stateFlow.value
+        if (cur.askBeforeDeleting != value) stateFlow.value = cur.copy(askBeforeDeleting = value)
+    }
+
     fun setUndoneLampMuted(value: Boolean) {
         val cur = stateFlow.value
         if (cur.undoneLampMuted == value) return

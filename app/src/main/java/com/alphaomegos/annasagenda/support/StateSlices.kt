@@ -87,6 +87,7 @@ data class UndoneSlice(
     val undoneHorizonDays: Int = DEFAULT_UNDONE_HORIZON_DAYS,
     override val doneTasksLast: Boolean = false,
     override val doneSubtasksLast: Boolean = false,
+    override val askBeforeDeleting: Boolean = true,
 ) : DateTasksData
 
 /**
@@ -159,4 +160,5 @@ fun undoneSliceOf(state: AppState): UndoneSlice = UndoneSlice(
     undoneHorizonDays = state.undoneHorizonDays,
     doneTasksLast = state.doneTasksLast,
     doneSubtasksLast = state.doneSubtasksLast,
+    askBeforeDeleting = state.askBeforeDeleting,
 )

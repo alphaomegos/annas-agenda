@@ -507,6 +507,19 @@ class ScreenWiringTest {
         assertTrue(vm.state.value.tasks.none { it.id == id })
     }
 
+    /** «Ask before deleting tasks» turned off (0359): the row's ⋮ deletes at the tap. */
+    @Test
+    fun someday_notAsking_theMenuDeletesAtOnce() {
+        vm.setAskBeforeDeleting(false)
+        val id = vm.createTaskForDate(date = null, time = null, description = "Купить лампу")
+        composeRule.setContent { SomedayScreen(vm = vm, onBack = {}, onCreateTask = {}) }
+        composeRule.onNodeWithContentDescription(word(R.string.task_more_actions)).performClick()
+        composeRule.onNodeWithText(word(R.string.remove)).performClick()
+        composeRule.waitForIdle()
+        assertTrue(vm.state.value.tasks.none { it.id == id })
+        composeRule.onAllNodesWithText(word(R.string.delete_task_title)).assertCountEquals(0)
+    }
+
     /** «Summer 2026» keeps the old Someday: the wide create button, no ⋮. */
     @Test
     fun someday_summer2026_keepsTheOldScreen() {

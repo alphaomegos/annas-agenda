@@ -44,6 +44,8 @@ internal data class AppStateDto(
     // Done tasks at the bottom of their day (06.10). A setting: no version step.
     val doneTasksLast: Boolean = false,
     val doneSubtasksLast: Boolean = false,
+    // Deleting asks first (30.10). A setting with a default: no version step.
+    val askBeforeDeleting: Boolean = true,
 
     // Additive with a default: an older payload simply decodes to the default,
     // so this needs no schema migration.

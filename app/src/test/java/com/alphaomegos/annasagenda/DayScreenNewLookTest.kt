@@ -103,6 +103,24 @@ class DayScreenNewLookTest {
         assertTrue(subRow.hasCode("R.string.repeat") && subRow.hasCode("R.string.remove"))
     }
 
+    /**
+     * «Ask before deleting tasks» (0359): every delete of a task or a subtask — the four dialogs
+     * and the rows' ⋮ — asks only when the setting is on; the repeats' series ask always (Eduard).
+     */
+    @Test
+    fun deletingAsksAsTheSettingSays() {
+        val dialogs = mainSourceFiles().single { it.name == "DateTaskEditDialogs.kt" }.readText()
+        assertTrue(!dialogs.hasCode("{ confirmingDelete = true }") && !dialogs.hasCode("onClick = { confirmingDelete = true }"))
+        assertTrue(Regex("""if \(askFirst\) confirmingDelete = true else onDelete\((taskId|subtaskId)\)""").findAll(dialogs).count() == 4)
+        assertTrue(Regex("""askFirst = askFirst""").findAll(dialogs).count() == 4)
+        val route = mainSourceFiles().single { it.name == "DateTasksRoute.kt" }.readText()
+        assertTrue(route.hasCode("onDelete = { if (state.askBeforeDeleting) menuDeleteTaskId.value = task.id else actions.deleteTask(task.id) },"))
+        assertTrue(route.hasCode("onDelete = { if (state.askBeforeDeleting) menuDeleteSubtaskId.value = st.id else actions.deleteSubtask(st.id) },"))
+        assertTrue(Regex("""askFirst = state\.askBeforeDeleting""").findAll(route).count() == 2)
+        val repeats = mainSourceFiles().single { it.name == "RecurringTasksScreen.kt" }.readText()
+        assertTrue("the repeats ask always", !repeats.contains("askBeforeDeleting"))
+    }
+
     /** «Someday» follows the day screen's look (0326): Back and the house on top, the rows in the surface. */
     @Test
     fun somedayFollowsTheLook() {

@@ -24,6 +24,9 @@ interface DateTasksData {
 
     /** Done subtasks go to the bottom of their task (16.10, a setting of its own). */
     val doneSubtasksLast: Boolean get() = false
+
+    /** Deleting a task or a subtask asks first (30.10, a setting; on unless turned off). */
+    val askBeforeDeleting: Boolean get() = true
 }
 
 data class AppState(
@@ -77,6 +80,9 @@ data class AppState(
     // Done subtasks at the bottom of their task (16.10). A setting of its
     // own, with a default, so no schema step.
     override val doneSubtasksLast: Boolean = false,
+    // Deleting a task or a subtask asks first (30.10, Eduard: a setting —
+    // off, they go at the tap). With a default, so no schema step.
+    override val askBeforeDeleting: Boolean = true,
 
     // How many days back the "Undone" screen and the lamp look for debts.
     // UNDONE_HORIZON_UNLIMITED means no limit.

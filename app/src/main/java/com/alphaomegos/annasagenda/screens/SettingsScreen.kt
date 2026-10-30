@@ -169,6 +169,14 @@ fun SettingsScreen(
                     onChange = vm::setDoneSubtasksLast,
                 )
             }
+            // Deleting asks first unless this is off (30.10). Repeats' series ask always.
+            item {
+                SettingsSwitchRow(
+                    stringResource(R.string.settings_ask_before_deleting),
+                    checked = state.askBeforeDeleting,
+                    onChange = vm::setAskBeforeDeleting,
+                )
+            }
             item {
                 SettingsRow(
                     stringResource(R.string.undone_title),

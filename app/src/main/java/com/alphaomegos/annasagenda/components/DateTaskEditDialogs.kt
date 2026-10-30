@@ -63,6 +63,7 @@ internal fun EditTaskDialog(
     onDetachCounter: (Long) -> Unit,
     onShowTimePicker: () -> Unit,
     onClearTime: (Long) -> Unit,
+    askFirst: Boolean = true,
 ) {
     if (taskId == null) return
 
@@ -152,7 +153,7 @@ internal fun EditTaskDialog(
                 }
 
                 TextButton(
-                    onClick = { confirmingDelete = true },
+                    onClick = { if (askFirst) confirmingDelete = true else onDelete(taskId) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
@@ -249,6 +250,7 @@ internal fun EditSubtaskDialog(
     onShowRepeatPicker: () -> Unit,
     onDelete: (Long) -> Unit,
     onConfirm: (Long, String) -> Unit,
+    askFirst: Boolean = true,
 ) {
     if (subtaskId == null) return
 
@@ -282,7 +284,7 @@ internal fun EditSubtaskDialog(
                 // the only one of the three that could not be taken back, and
                 // the only one that looked exactly like its neighbours.
                 TextButton(
-                    onClick = { confirmingDelete = true },
+                    onClick = { if (askFirst) confirmingDelete = true else onDelete(subtaskId) },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     )
@@ -349,6 +351,7 @@ internal fun NewEditTaskDialog(
     onClearTime: (Long) -> Unit,
     onCopy: (Long) -> Unit,
     onMove: (Long) -> Unit,
+    askFirst: Boolean = true,
 ) {
     if (taskId == null) return
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
@@ -399,7 +402,7 @@ internal fun NewEditTaskDialog(
                     TaskTool(Icons.Default.PlusOne, stringResource(R.string.task_menu_counter), onClick = onShowCounterPicker)
                     TaskTool(Icons.Default.ContentCopy, stringResource(R.string.task_tool_copy)) { onCopy(taskId) }
                     TaskTool(Icons.AutoMirrored.Filled.ArrowForward, stringResource(R.string.task_tool_move)) { onMove(taskId) }
-                    TaskTool(Icons.Default.Delete, stringResource(R.string.remove), MaterialTheme.colorScheme.error) { confirmingDelete = true }
+                    TaskTool(Icons.Default.Delete, stringResource(R.string.remove), MaterialTheme.colorScheme.error) { if (askFirst) confirmingDelete = true else onDelete(taskId) }
                 }
             }
         },
@@ -439,11 +442,12 @@ internal fun TaskDialogCall(
     onClearTime: (Long) -> Unit,
     onCopy: (Long) -> Unit,
     onMove: (Long) -> Unit,
+    askFirst: Boolean = true,
 ) {
     if (newLook) {
-        NewEditTaskDialog(taskId, editingTask, manualCounters, text, onTextChange, onDismiss, onShowRepeatPicker, onShowCounterPicker, onDelete, onConfirm, onDetachCounter, onShowTimePicker, onClearTime, onCopy, onMove)
+        NewEditTaskDialog(taskId, editingTask, manualCounters, text, onTextChange, onDismiss, onShowRepeatPicker, onShowCounterPicker, onDelete, onConfirm, onDetachCounter, onShowTimePicker, onClearTime, onCopy, onMove, askFirst = askFirst)
     } else {
-        EditTaskDialog(taskId, editingTask, manualCounters, text, onTextChange, onDismiss, onShowRepeatPicker, onShowCounterPicker, onDelete, onConfirm, onDetachCounter, onShowTimePicker, onClearTime)
+        EditTaskDialog(taskId, editingTask, manualCounters, text, onTextChange, onDismiss, onShowRepeatPicker, onShowCounterPicker, onDelete, onConfirm, onDetachCounter, onShowTimePicker, onClearTime, askFirst = askFirst)
     }
 }
 
@@ -472,6 +476,7 @@ internal fun NewEditSubtaskDialog(
     onConfirm: (Long, String) -> Unit,
     onCopy: (Long) -> Unit,
     onMove: (Long) -> Unit,
+    askFirst: Boolean = true,
 ) {
     if (subtaskId == null) return
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
@@ -491,7 +496,7 @@ internal fun NewEditSubtaskDialog(
                     TaskTool(Icons.Default.Repeat, stringResource(R.string.repeat), onClick = onShowRepeatPicker)
                     TaskTool(Icons.Default.ContentCopy, stringResource(R.string.task_tool_copy)) { onCopy(subtaskId) }
                     TaskTool(Icons.AutoMirrored.Filled.ArrowForward, stringResource(R.string.task_tool_move)) { onMove(subtaskId) }
-                    TaskTool(Icons.Default.Delete, stringResource(R.string.remove), MaterialTheme.colorScheme.error) { confirmingDelete = true }
+                    TaskTool(Icons.Default.Delete, stringResource(R.string.remove), MaterialTheme.colorScheme.error) { if (askFirst) confirmingDelete = true else onDelete(subtaskId) }
                 }
             }
         },
@@ -525,7 +530,8 @@ internal fun SubtaskDialogCall(
     onConfirm: (Long, String) -> Unit,
     onCopy: (Long) -> Unit,
     onMove: (Long) -> Unit,
+    askFirst: Boolean = true,
 ) {
-    if (newLook) NewEditSubtaskDialog(subtaskId, text, onTextChange, onDismiss, onShowRepeatPicker, onDelete, onConfirm, onCopy, onMove)
-    else EditSubtaskDialog(subtaskId, text, onTextChange, onDismiss, onShowRepeatPicker, onDelete, onConfirm)
+    if (newLook) NewEditSubtaskDialog(subtaskId, text, onTextChange, onDismiss, onShowRepeatPicker, onDelete, onConfirm, onCopy, onMove, askFirst = askFirst)
+    else EditSubtaskDialog(subtaskId, text, onTextChange, onDismiss, onShowRepeatPicker, onDelete, onConfirm, askFirst = askFirst)
 }

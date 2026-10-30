@@ -101,6 +101,11 @@ class StateSlicesTest {
             undoneSliceOf(populated),
             undoneSliceOf(populated.copy(counters = emptyList())),
         )
+        // Whether deleting asks first (0359): the block's rows and dialogs read it.
+        assertNotEquals(
+            undoneSliceOf(populated),
+            undoneSliceOf(populated.copy(askBeforeDeleting = !populated.askBeforeDeleting)),
+        )
     }
 
     /* ---------------- own changes do come through ---------------- */

@@ -245,7 +245,8 @@ private fun DateTasksBlockContent(
                     editTaskText.value = task.description
                     showCounterPicker.value = true
                 },
-                onDelete = { menuDeleteTaskId.value = task.id },
+                // Asked first unless the setting says not to (30.10).
+                onDelete = { if (state.askBeforeDeleting) menuDeleteTaskId.value = task.id else actions.deleteTask(task.id) },
                 // Asked of the whole day, done ones included: that is what the
                 // move itself looks at.
                 canMoveUp = canMoveTask(state.tasks, task.id, step = -1, doneLast = state.doneTasksLast),
@@ -292,7 +293,7 @@ private fun DateTasksBlockContent(
                             editSubtaskText.value = st.description
                             showSubtaskRepeatPicker.value = true
                         },
-                        onDelete = { menuDeleteSubtaskId.value = st.id },
+                        onDelete = { if (state.askBeforeDeleting) menuDeleteSubtaskId.value = st.id else actions.deleteSubtask(st.id) },
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
@@ -418,6 +419,7 @@ private fun DateTasksBlockContent(
 
     TaskDialogCall(
         newLook = newLook,
+        askFirst = state.askBeforeDeleting,
         taskId = if (editFromMenu.value) null else editTaskId,
         onCopy = { id ->
             editTaskId = null
@@ -510,6 +512,7 @@ private fun DateTasksBlockContent(
 
     SubtaskDialogCall(
         newLook = newLook,
+        askFirst = state.askBeforeDeleting,
         subtaskId = if (editSubtaskFromMenu.value) null else editSubtaskId,
         onCopy = { id ->
             editSubtaskId = null

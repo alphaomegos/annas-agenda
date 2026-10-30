@@ -152,6 +152,7 @@ class AppStateWholeRoundTripTest {
         undoneLampMuted = true,
         doneTasksLast = true,
         doneSubtasksLast = true,
+        askBeforeDeleting = false,
         undoneHorizonDays = 90,
         readingBooks = listOf(
             ReadingBook(
@@ -487,7 +488,7 @@ class AppStateWholeRoundTripTest {
         listOf(
             "tasks", "subtasks", "suppressedRecurrences", "anthropometry",
             "calorieGoalChanges", "foodLog", "runningPlanEntries", "counters",
-            "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "palette", "backStyle", "mainMenuNarrow", "dayScreenStyle", "idHighWater",
+            "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "palette", "backStyle", "mainMenuNarrow", "dayScreenStyle", "idHighWater", "askBeforeDeleting",
             "readingBooks", "readingMovies", "readingSeries", "readingSessions",
             "activeReading", "pendingReadingSession", "autoRecordInterruptedReading",
             "runningMode", "runningWorkouts",
