@@ -8,6 +8,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
+import com.alphaomegos.annasagenda.support.MusicHeardClock
+import com.alphaomegos.annasagenda.support.MusicSampleRing
+import com.alphaomegos.annasagenda.support.MusicStreamBase
 import com.alphaomegos.annasagenda.support.PulseBeats
 import com.alphaomegos.annasagenda.support.pulseLevel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,13 +42,45 @@ internal object MusicPulse {
     }
 }
 
-/** Passes the sound through unchanged, measuring each slice's loudness on the way. */
+/**
+ * The sound kept for the visualizer (30.10): the samples on their way out and which
+ * of them is heard now (support/MusicTap.kt). The player's thread writes [ring] and
+ * the stream's [clock] base; the service notes the player's position into [clock]
+ * while [listening]; the drawing reads both.
+ */
+internal object MusicTap {
+    val ring = MusicSampleRing()
+    val clock = MusicHeardClock()
+
+    /** The visualizer is on screen: samples are kept, the position noted often. */
+    @Volatile
+    var listening = false
+        private set
+
+    /** Set by the playing service: starts its noting of the position. */
+    @Volatile
+    var wake: (() -> Unit)? = null
+
+    fun listen(on: Boolean) {
+        listening = on
+        if (on) wake?.invoke()
+    }
+}
+
+/**
+ * Passes the sound through unchanged, measuring each slice's loudness on the way, and
+ * keeping its samples for the visualizer while one is on screen (30.10).
+ */
 @UnstableApi
 internal class PulseAudioProcessor : BaseAudioProcessor() {
     private var encoding = C.ENCODING_INVALID
+    private var channels = 1
+    private var rate = 44_100
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         encoding = inputAudioFormat.encoding
+        channels = inputAudioFormat.channelCount.coerceAtLeast(1)
+        rate = inputAudioFormat.sampleRate
         // PCM it can read; anything else goes by untouched (the processor stays inactive).
         return if (encoding == C.ENCODING_PCM_16BIT || encoding == C.ENCODING_PCM_FLOAT) inputAudioFormat
         else AudioProcessor.AudioFormat.NOT_SET
@@ -63,13 +98,37 @@ internal class PulseAudioProcessor : BaseAudioProcessor() {
             while (view.remaining() >= 4) { val v = view.float.toDouble(); sum += v * v; n++ }
         }
         if (n > 0) MusicPulse.feed(kotlin.math.sqrt(sum / n).toFloat())
+        keep(inputBuffer)
         val out = replaceOutputBuffer(size)
         out.put(inputBuffer)
         out.flip()
     }
 
-    override fun onFlush() {
+    // Left and right of each frame into the ring — the first two channels, a mono sound
+    // on both sides — or only counted, when nothing is watching.
+    private fun keep(buffer: ByteBuffer) {
+        val ring = MusicTap.ring
+        val sixteen = encoding == C.ENCODING_PCM_16BIT
+        val frames = buffer.remaining() / ((if (sixteen) 2 else 4) * channels)
+        if (!MusicTap.listening) {
+            ring.skip(frames)
+        } else {
+            val view = buffer.duplicate().order(ByteOrder.nativeOrder())
+            fun next(): Float = if (sixteen) view.short / 32768f else view.float
+            repeat(frames) {
+                val l = next()
+                val r = if (channels >= 2) next() else l
+                repeat(channels - 2) { next() }
+                ring.put(l, r)
+            }
+        }
+        ring.publish()
+    }
+
+    // A flush (a seek, a new stream): the next sample is this stream position.
+    override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata) {
         MusicPulse.silence()
+        MusicTap.clock.base = MusicStreamBase(MusicTap.ring.cursor, streamMetadata.positionOffsetUs.coerceAtLeast(0L), rate)
     }
 }
 

@@ -27,6 +27,7 @@ import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.app.musicPlayerMemoryFile
 import com.alphaomegos.annasagenda.app.musicRepeatOf
 import com.alphaomegos.annasagenda.model.MusicPlayerMemory
+import com.alphaomegos.annasagenda.support.MusicHeardPosition
 import com.alphaomegos.annasagenda.support.sidecarIsServerUrl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -70,8 +71,29 @@ class MusicPlaybackService : MediaSessionService() {
         }
     }
 
+    // The visualizer's clock (30.10): where the player is in the stream, noted every
+    // 50 ms while a visualizer is on screen and the music plays, and at every change.
+    private val positionTick = object : Runnable {
+        override fun run() {
+            val player = session?.player ?: return
+            notePosition(player)
+            handler.removeCallbacks(this)
+            if (MusicTap.listening && player.isPlaying) handler.postDelayed(this, POSITION_TICK_MS)
+        }
+    }
+
+    private fun notePosition(player: Player) {
+        MusicTap.clock.heard = MusicHeardPosition(
+            positionUs = player.currentPosition * 1000L,
+            atNanos = System.nanoTime(),
+            playing = player.isPlaying,
+            speed = player.playbackParameters.speed,
+        )
+    }
+
     override fun onCreate() {
         super.onCreate()
+        MusicTap.wake = { handler.post(positionTick) }
         val connection = SidecarConnections.of(this)
         // The pulse listens to the sound on its way out (29.10): the visualizer draws from it.
         val player = ExoPlayer.Builder(this, PulseRenderersFactory(this))
@@ -104,6 +126,9 @@ class MusicPlaybackService : MediaSessionService() {
                     MusicCache.changed()
                 }
                 if (player.isPlaying) failuresInARow = 0
+                if (events.containsAny(Player.EVENT_IS_PLAYING_CHANGED, Player.EVENT_POSITION_DISCONTINUITY, Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_PLAYBACK_PARAMETERS_CHANGED)) {
+                    handler.post(positionTick)
+                }
                 if (events.contains(Player.EVENT_IS_PLAYING_CHANGED)) {
                     handler.removeCallbacks(rememberTick)
                     if (player.isPlaying) handler.postDelayed(rememberTick, MEMORY_TICK_MS)
@@ -148,6 +173,8 @@ class MusicPlaybackService : MediaSessionService() {
     override fun onDestroy() {
         scope.cancel()
         handler.removeCallbacks(rememberTick)
+        handler.removeCallbacks(positionTick)
+        MusicTap.wake = null
         session?.run {
             remember(player)
             player.release()
@@ -175,6 +202,7 @@ class MusicPlaybackService : MediaSessionService() {
 
     private companion object {
         const val MEMORY_TICK_MS = 10_000L
+        const val POSITION_TICK_MS = 50L
     }
 
     /** The app, as its icon opens it: the one already open comes forward, its place kept. */

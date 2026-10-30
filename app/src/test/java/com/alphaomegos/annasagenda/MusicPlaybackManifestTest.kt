@@ -58,4 +58,21 @@ class MusicPlaybackManifestTest {
             assertTrue("media3 ${version("media3")} needs a newer Kotlin than $kotlin", major == 1 && minor <= 10)
         }
     }
+
+    /**
+     * The visualizer hears what is heard (0363): the samples kept only while one is on
+     * screen, each stream's start from the flush, the player's position noted by the
+     * service while one watches — and the hook let go with the service.
+     */
+    @Test
+    fun theVisualizerHearsWhatIsHeard() {
+        val pulse = mainSourceFiles().single { it.name == "MusicPulse.kt" }.readText()
+        assertTrue(pulse.hasCode("if (!MusicTap.listening) {\n ring.skip(frames)"))
+        assertTrue(pulse.hasCode("override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata)"))
+        assertTrue(pulse.hasCode("MusicTap.clock.base = MusicStreamBase(MusicTap.ring.cursor, streamMetadata.positionOffsetUs"))
+        val service = mainSourceFiles().single { it.name == "MusicPlaybackService.kt" }.readText()
+        assertTrue(service.hasCode("MusicTap.wake = { handler.post(positionTick) }") && service.hasCode("MusicTap.wake = null"))
+        assertTrue(service.hasCode("if (MusicTap.listening && player.isPlaying) handler.postDelayed(this, POSITION_TICK_MS)"))
+        assertTrue(service.hasCode("handler.removeCallbacks(positionTick)"))
+    }
 }
