@@ -1,6 +1,10 @@
 package com.alphaomegos.annasagenda.screens
 
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import android.app.Application
 import androidx.activity.ComponentActivity
@@ -511,6 +515,32 @@ class ScreenWiringTest {
         composeRule.setContent { SomedayScreen(vm = vm, onBack = {}, onCreateTask = {}) }
         composeRule.onNodeWithText(word(R.string.create_task)).assertExists()
         composeRule.onAllNodesWithContentDescription(word(R.string.task_more_actions)).assertCountEquals(0)
+    }
+
+    /**
+     * The month in the new look (0358): one title row — ‹ › page the months, a tap on the
+     * month brings this month back, the Someday circle opens Someday; no «Someday: N» line.
+     */
+    @Test
+    fun month_newLook_arrowsTheTitleAndTheSomedayCircle() {
+        vm.createTaskForDate(date = null, time = null, description = "Купить лампу")
+        var someday = false
+        composeRule.setContent { CalendarMonthRoute(vm = vm, onBack = {}, onOpenDay = {}, onOpenSomeday = { someday = true }) }
+        val backToThisMonth = SemanticsMatcher("goes back to this month") {
+            it.config.getOrNull(SemanticsActions.OnClick)?.label == word(R.string.calendar_to_this_month)
+        }
+        fun title() = composeRule.onNode(backToThisMonth).fetchSemanticsNode().config[SemanticsProperties.Text].joinToString { it.text }
+        val thisMonth = title()
+        composeRule.onNodeWithContentDescription(word(R.string.next_month)).performClick()
+        composeRule.waitForIdle()
+        val next = title()
+        assertTrue("the month did not change: $next", next != thisMonth)
+        composeRule.onNode(backToThisMonth).performClick()
+        composeRule.waitForIdle()
+        assertEquals(thisMonth, title())
+        composeRule.onAllNodesWithText(word(R.string.someday_count, 1)).assertCountEquals(0)
+        composeRule.onNodeWithContentDescription(word(R.string.someday_count, 1)).performClick()
+        assertTrue(someday)
     }
 
     /** Anthropometry in the new look: «+» in the bar opens the measurement's input. */

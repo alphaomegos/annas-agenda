@@ -75,6 +75,7 @@
     <string name="no_tasks_for_this_day">Нет задач на этот день</string>
     <string name="tasks_header">Задачи</string>
     <string name="someday_count">Когда-нибудь: %1$d</string>
+    <string name="calendar_to_this_month">Вернуться к текущему месяцу</string>
     <string name="repeating_tasks_header">Повторяющиеся задачи</string>
     <string name="repeating_subtasks_header">Повторяющиеся подзадачи</string>
 

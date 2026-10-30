@@ -87,6 +87,7 @@
     <string name="no_tasks_for_this_day">Nema zadataka za ovaj dan</string>
     <string name="tasks_header">Zadaci</string>
     <string name="someday_count">Jednog dana: %1$d</string>
+    <string name="calendar_to_this_month">Nazad na tekući mesec</string>
     <string name="move_task">Premesti zadatak</string>
     <string name="repeat">Ponavljanje</string>
     <string name="repeating_tasks_header">Ponavljajući zadaci</string>

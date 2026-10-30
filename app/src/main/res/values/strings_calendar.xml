@@ -13,6 +13,7 @@
     <string name="no_tasks_for_this_day">No tasks for this day</string>
     <string name="tasks_header">Tasks</string>
     <string name="someday_count">Someday: %1$d</string>
+    <string name="calendar_to_this_month">Back to this month</string>
     <string name="repeating_tasks_header">Repeating tasks</string>
     <string name="repeating_subtasks_header">Repeating subtasks</string>
     <!-- Calendar marks (0142) -->

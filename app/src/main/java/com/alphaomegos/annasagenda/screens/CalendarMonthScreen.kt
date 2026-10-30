@@ -4,6 +4,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import com.alphaomegos.annasagenda.components.TopBarBack
+import com.alphaomegos.annasagenda.components.FittingText
+import com.alphaomegos.annasagenda.support.somedayShade
+import com.alphaomegos.annasagenda.support.somedayInk
+import com.alphaomegos.annasagenda.support.somedayCountLabel
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.alphaomegos.annasagenda.model.DayScreenStyle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
@@ -178,27 +190,46 @@ private fun CalendarMonthContent(
             yearMonth.atDay(1).format(DateTimeFormatter.ofPattern("LLLL yyyy", locale)).replaceFirstChar { it.titlecase(locale) }
         }
         if (newLook) {
-            // The new look (29.10), as the day screen: Back at the top left, the
-            // month as the title, ⚙ at the right; then one light row of ‹ Today ›.
+            // The new look (30.10, Eduard): one row — Back, ‹ the month ›, the Someday
+            // circle, ⚙. A tap on the month brings this month back; the circle
+            // replaces the «Someday: N» line under the month and reddens a step per task.
+            // Narrower and narrower: the month and the year, smaller; the month over the
+            // year; the short month; the short month over the year (the folded Fold).
+            val titleParts = remember(monthIndex, locale) {
+                fun f(pattern: String) = yearMonth.atDay(1).format(DateTimeFormatter.ofPattern(pattern, locale)).replaceFirstChar { it.titlecase(locale) }
+                listOf(f("LLLL") + "\n" + f("yyyy"), f("LLL yyyy"), f("LLL") + "\n" + f("yyyy"))
+            }
+            val typography = MaterialTheme.typography
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopBarBack(onBack)
-                Text(
-                    text = monthTitleText,
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { showBadgeSettings = true }) {
-                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.calendar_badges_open))
-                }
-            }
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                 IconButton(onClick = { monthIndex -= 1 }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.prev_month))
                 }
-                TextButton(onClick = { monthIndex = baseIndex }) { Text(stringResource(R.string.today)) }
+                FittingText(
+                    choices = listOf(
+                        monthTitleText to typography.headlineSmall,
+                        monthTitleText to typography.titleLarge,
+                        monthTitleText to typography.titleMedium,
+                        titleParts[0] to typography.titleSmall,
+                        titleParts[1] to typography.titleSmall,
+                        titleParts[2] to typography.titleSmall,
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(
+                            enabled = monthIndex != baseIndex,
+                            onClickLabel = stringResource(R.string.calendar_to_this_month),
+                            role = Role.Button,
+                        ) { monthIndex = baseIndex }
+                        .padding(vertical = 4.dp),
+                )
                 IconButton(onClick = { monthIndex += 1 }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.next_month))
+                }
+                SomedayCircle(count = somedayCount, locale = locale, onClick = onOpenSomeday)
+                IconButton(onClick = { showBadgeSettings = true }) {
+                    Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.calendar_badges_open))
                 }
             }
         } else Box(modifier = Modifier.fillMaxWidth()) {
@@ -376,11 +407,14 @@ private fun CalendarMonthContent(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        TextButton(onClick = onOpenSomeday) {
-            Text(stringResource(R.string.someday_count, somedayCount))
-        }
+        // In the new look the count is the circle on the title row (30.10).
+        if (!newLook) {
+            TextButton(onClick = onOpenSomeday) {
+                Text(stringResource(R.string.someday_count, somedayCount))
+            }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         if (!newLook) Button(
             onClick = onBack,
@@ -399,6 +433,36 @@ private fun CalendarMonthContent(
                 showBadgeSettings = false
             },
         )
+    }
+}
+
+/**
+ * «Someday» on the month's title row (30.10, Eduard): the count in a circle, a
+ * step redder per task waiting (sixteen shades, [somedayShade]). Named for TalkBack
+ * as the old line was, «Someday: N»; the number itself is not read twice.
+ */
+@Composable
+private fun SomedayCircle(count: Int, locale: Locale, onClick: () -> Unit) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val shade = Color(somedayShade(count, dark))
+    val ink = Color(somedayInk(somedayShade(count, dark)))
+    val label = remember(count, locale) { somedayCountLabel(count) { NumberFormat.getIntegerInstance(locale).format(it) } }
+    val name = stringResource(R.string.someday_count, count)
+    IconButton(onClick = onClick, modifier = Modifier.semantics { contentDescription = name }) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .background(shade, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                color = ink,
+                style = if (label.length > 2) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
+        }
     }
 }
 
