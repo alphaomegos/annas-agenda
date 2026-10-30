@@ -9,6 +9,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.ui.text.style.TextAlign
 import com.alphaomegos.annasagenda.components.WayHomeButton
+import com.alphaomegos.annasagenda.components.FittingText
 import com.alphaomegos.annasagenda.components.TopBarBack
 import com.alphaomegos.annasagenda.model.DayScreenStyle
 import androidx.compose.foundation.layout.Arrangement
@@ -63,19 +64,23 @@ fun SomedayScreen(
     ) {
         val newLook = state.dayScreenStyle == DayScreenStyle.NEW
         if (newLook) {
-            // The day screen's new look (28.10): Back, the title and the house
-            // in one row at the top, «+ Task» light under it, no foot.
+            // The day screen's new look (28.10): Back, the title and the house in one
+            // row at the top, no foot — and «+ Task» in that row too (30.10, Eduard: a
+            // row of its own for one button was a row too many). The title takes what
+            // is left, smaller on a narrow screen (FittingText).
+            val title = stringResource(R.string.someday_title)
+            val typography = MaterialTheme.typography
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopBarBack(onBack)
-                Text(
-                    text = stringResource(R.string.someday_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
+                FittingText(
+                    choices = listOf(
+                        title to typography.headlineSmall,
+                        title to typography.titleLarge,
+                        title to typography.titleMedium,
+                        title to typography.titleSmall,
+                    ),
                     modifier = Modifier.weight(1f),
                 )
-                WayHomeButton()
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 FilledTonalButton(
                     onClick = onCreateTask,
                     contentPadding = PaddingValues(start = 10.dp, end = 14.dp),
@@ -85,6 +90,7 @@ fun SomedayScreen(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(stringResource(R.string.day_new_task))
                 }
+                WayHomeButton()
             }
         } else {
             Text(

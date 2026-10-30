@@ -130,7 +130,9 @@ fun RecurringTasksScreen(
             ) {
 
                 if (taskTemplates.isNotEmpty()) {
-                    item {
+                    // No «Repeating tasks» over them in the new look (30.10, Eduard): the
+                    // screen holds nothing else. The subtasks' heading stays, to part the two.
+                    if (!newLook) item {
                         Text(
                             stringResource(R.string.repeating_tasks_header),
                             style = MaterialTheme.typography.titleMedium

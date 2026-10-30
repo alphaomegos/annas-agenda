@@ -127,6 +127,14 @@ class DayScreenNewLookTest {
         val someday = mainSourceFiles().single { it.name == "SomedayScreen.kt" }.readText()
         assertTrue(someday.hasCode("DateTasksBlock(vm = vm, state = state, date = null, newLook = newLook)"))
         assertTrue(someday.hasCode("TopBarBack(onBack)") && someday.hasCode("WayHomeButton()"))
+        // «+ Task» in the title row, between the title and the house (0360).
+        val titleRow = someday.substringAfter("TopBarBack(onBack)").substringBefore("WayHomeButton()")
+        assertTrue(titleRow.hasCode("FittingText(") && titleRow.hasCode("FilledTonalButton(") && titleRow.hasCode("Text(stringResource(R.string.day_new_task))"))
+        assertTrue("no row of its own for «+ Task»", !someday.hasCode("Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End)"))
+        // The repeats: no «Repeating tasks» heading in the new look; the subtasks' stays (0360).
+        val rec = mainSourceFiles().single { it.name == "RecurringTasksScreen.kt" }.readText()
+        assertTrue(rec.hasCode("if (!newLook) item {\n Text(\n stringResource(R.string.repeating_tasks_header),"))
+        assertTrue(rec.hasCode("stringResource(R.string.repeating_subtasks_header),"))
     }
 
     /** Mini buttons have no card round them (0326), on a narrow screen and a wide one. */

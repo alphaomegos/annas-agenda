@@ -520,6 +520,16 @@ class ScreenWiringTest {
         composeRule.onAllNodesWithText(word(R.string.delete_task_title)).assertCountEquals(0)
     }
 
+    /** The repeats in the new look (0360): the series without a «Repeating tasks» heading over them. */
+    @Test
+    fun repeats_newLook_noHeadingOverTheSeries() {
+        val id = vm.createTaskForDate(date = java.time.LocalDate.now(), time = null, description = "Полить цветы")
+        vm.setTaskRepeatRule(id, com.alphaomegos.annasagenda.model.RepeatRule(freq = com.alphaomegos.annasagenda.model.RepeatFreq.DAILY))
+        composeRule.setContent { RecurringTasksScreen(vm = vm, onBack = {}) }
+        composeRule.onNodeWithText("Полить цветы").assertExists()
+        composeRule.onAllNodesWithText(word(R.string.repeating_tasks_header)).assertCountEquals(0)
+    }
+
     /** «Summer 2026» keeps the old Someday: the wide create button, no ⋮. */
     @Test
     fun someday_summer2026_keepsTheOldScreen() {
