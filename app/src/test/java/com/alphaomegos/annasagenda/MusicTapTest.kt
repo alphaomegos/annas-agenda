@@ -41,6 +41,23 @@ class MusicTapTest {
         assertEquals(21_000L, ring.written)
     }
 
+    /** Frames only counted while nobody watched hold older sound: not read (0365). */
+    @Test
+    fun whatWasOnlyCountedIsNotRead() {
+        val ring = MusicSampleRing(4096 * 4)
+        repeat(6_000) { ring.put(9f, 9f) }      // an earlier listening
+        ring.skip(6_000)                         // nobody watching: counted only
+        ring.publish()
+        repeat(1_000) { ring.put(1f, 1f) }       // watching again
+        ring.publish()
+        val l = FloatArray(2048); val r = FloatArray(2048)
+        assertFalse("reaches back into the counted frames", ring.read(13_000, 2048, l, r))
+        repeat(2_000) { ring.put(1f, 1f) }
+        ring.publish()
+        assertTrue(ring.read(15_000, 2048, l, r))
+        assertTrue(l.all { it == 1f })
+    }
+
     @Test
     fun theHeardFrameIsAtThePlayersPosition() {
         val clock = MusicHeardClock()

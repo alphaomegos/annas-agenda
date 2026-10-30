@@ -37,6 +37,11 @@ class MusicSampleRing(val capacity: Int = 1 shl 17) {
     var written: Long = 0L
         private set
 
+    /** Frames from here on were kept: what lies before was only counted, and holds older sound. */
+    @Volatile
+    var keptFrom: Long = 0L
+        private set
+
     /** Writes one frame (a mono sound twice). */
     fun put(l: Float, r: Float) {
         val i = (cursor and mask).toInt()
@@ -48,6 +53,7 @@ class MusicSampleRing(val capacity: Int = 1 shl 17) {
     /** Counts [frames] that passed without being kept (nothing is watching). */
     fun skip(frames: Int) {
         cursor += frames
+        keptFrom = cursor
     }
 
     /** Makes what was put so far readable. */
@@ -62,7 +68,7 @@ class MusicSampleRing(val capacity: Int = 1 shl 17) {
      */
     fun read(end: Long, n: Int, outLeft: FloatArray, outRight: FloatArray): Boolean {
         val top = written
-        if (end > top || end - n < top - capacity + SAFETY || end - n < 0) return false
+        if (end > top || end - n < top - capacity + SAFETY || end - n < keptFrom) return false
         for (k in 0 until n) {
             val i = ((end - n + k) and mask).toInt()
             outLeft[k] = left[i]
