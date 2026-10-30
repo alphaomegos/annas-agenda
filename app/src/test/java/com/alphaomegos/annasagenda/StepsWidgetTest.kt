@@ -9,6 +9,23 @@ import org.junit.Test
  * Widget, not a second set to keep in step.
  */
 class StepsWidgetTest {
+
+    /**
+     * The steps chart (0361): the days are drawn first and the bests — mine and the
+     * friends', lines and names — over them, so no bar hides a best (Eduard, 30.10).
+     */
+    @Test
+    fun theBestsAreDrawnOverTheDays() {
+        val chart = mainSourceFiles().single { it.name == "StepsContent.kt" }.readText()
+            .substringAfter("private fun StepsChart(").substringBefore("private fun StepsLoupe(")
+        val bars = chart.indexOf("drawRect(color = s.color")
+        val lines = chart.indexOf("drawPath(path, color = s.color")
+        val mine = chart.indexOf("best?.takeIf { it <= ceiling }?.let { b ->")
+        val friends = chart.indexOf("friendBests.filter { it.first <= ceiling }")
+        assertTrue(listOf(bars, lines, mine, friends).all { it >= 0 })
+        assertTrue("a best is drawn before the days", bars < mine && lines < mine && mine < friends)
+        assertTrue("only an empty chart leaves early", Regex("return@Canvas").findAll(chart).count() == 1)
+    }
     private val manifest by lazy { mainResRoot().parentFile.resolve("AndroidManifest.xml").readText() }
     private val widget by lazy { mainSourceFiles().single { it.name == "StepsWidget.kt" }.readText() }
 

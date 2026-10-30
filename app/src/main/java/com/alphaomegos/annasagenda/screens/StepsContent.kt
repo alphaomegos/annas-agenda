@@ -617,6 +617,30 @@ private fun StepsChart(
                 val x = left + i * slot + slot / 2
                 drawLine(grid, Offset(x, top), Offset(x, floor), strokeWidth = 2.dp.toPx())
             }
+            // The days first, the bests over them (30.10, Eduard): drawn the other way round,
+            // a bar taller than a best hid its line and its name.
+            if (style == StepsChartStyle.LINE) {
+                // A line through each day's middle for each person; a day of nothing is on the floor.
+                series.forEach { s ->
+                    val path = Path()
+                    s.values.forEachIndexed { i, n ->
+                        val x = left + i * slot + slot / 2
+                        val y = floor - plotHeight * n / ceiling
+                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    drawPath(path, color = s.color, style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round, cap = StrokeCap.Round))
+                }
+            } else {
+                // Bars: the people side by side within each day.
+                series.forEachIndexed { k, s ->
+                    s.values.forEachIndexed { i, n ->
+                        if (n <= 0) return@forEachIndexed
+                        val (x, w) = stepsSubBar(left + i * slot, slot, k, series.size)
+                        val h = plotHeight * n / ceiling
+                        drawRect(color = s.color, topLeft = Offset(x, floor - h), size = Size(w, h))
+                    }
+                }
+            }
             best?.takeIf { it <= ceiling }?.let { b ->
                 val y = floor - plotHeight * b / ceiling
                 drawLine(
@@ -651,28 +675,6 @@ private fun StepsChart(
                     pad * 2, pad * 2, back,
                 )
                 drawContext.canvas.nativeCanvas.drawText(text, x, base, label)
-            }
-            if (style == StepsChartStyle.LINE) {
-                // A line through each day's middle for each person; a day of nothing is on the floor.
-                series.forEach { s ->
-                    val path = Path()
-                    s.values.forEachIndexed { i, n ->
-                        val x = left + i * slot + slot / 2
-                        val y = floor - plotHeight * n / ceiling
-                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                    }
-                    drawPath(path, color = s.color, style = Stroke(width = 2.dp.toPx(), join = StrokeJoin.Round, cap = StrokeCap.Round))
-                }
-                return@Canvas
-            }
-            // Bars: the people side by side within each day.
-            series.forEachIndexed { k, s ->
-                s.values.forEachIndexed { i, n ->
-                    if (n <= 0) return@forEachIndexed
-                    val (x, w) = stepsSubBar(left + i * slot, slot, k, series.size)
-                    val h = plotHeight * n / ceiling
-                    drawRect(color = s.color, topLeft = Offset(x, floor - h), size = Size(w, h))
-                }
             }
         }
     }
