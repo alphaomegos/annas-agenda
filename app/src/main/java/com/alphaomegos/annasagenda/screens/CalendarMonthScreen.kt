@@ -5,6 +5,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import com.alphaomegos.annasagenda.components.TopBarBack
 import com.alphaomegos.annasagenda.components.FittingText
+import androidx.compose.ui.draw.alpha
+import com.alphaomegos.annasagenda.support.monthGridDates
 import com.alphaomegos.annasagenda.support.somedayShade
 import com.alphaomegos.annasagenda.support.somedayInk
 import com.alphaomegos.annasagenda.support.somedayCountLabel
@@ -173,6 +175,10 @@ private fun CalendarMonthContent(
         out
     }
 
+    // The new look (31.10, Eduard): no empty frames before the 1st and after the last —
+    // the days of the months around, paler, and opened like any other day.
+    val gridDates = remember(yearMonth, offset) { monthGridDates(yearMonth, offset) }
+
     val somedayCount = remember(state.tasks, state.suppressedRecurrences) {
         somedayTaskCount(state.tasks, state.suppressedRecurrences)
     }
@@ -311,7 +317,7 @@ private fun CalendarMonthContent(
                 horizontalArrangement = Arrangement.spacedBy(spacing),
             ) {
                 itemsIndexed(
-                    items = cells,
+                    items = if (newLook) gridDates else cells,
                     key = { index, date ->
                         date?.toEpochDay() ?: (Long.MIN_VALUE + index.toLong())
                     }
@@ -328,6 +334,7 @@ private fun CalendarMonthContent(
                         val isToday = date == today
                         val marks = badgesByDate[date].orEmpty()
                         val steps = if (state.calendarShowSteps) stepsByDate[date] ?: 0 else 0
+                        val outside = YearMonth.from(date) != yearMonth
 
                         Surface(
                             tonalElevation = if (isToday) 4.dp else 0.dp,
@@ -337,6 +344,7 @@ private fun CalendarMonthContent(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(cellHeight)
+                                .alpha(if (outside) 0.4f else 1f)
                                 .then(if (newLook) Modifier.border(0.5.dp, thinBorderColor, cellShape) else Modifier.border(1.dp, cellBorderColor, cellShape))
                                 .clickable { onOpenDay(date.toEpochDay()) }
                         ) {

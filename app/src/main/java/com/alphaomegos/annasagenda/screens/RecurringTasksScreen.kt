@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.text.style.TextAlign
 import com.alphaomegos.annasagenda.model.DayScreenStyle
 import com.alphaomegos.annasagenda.components.TopBarBack
+import com.alphaomegos.annasagenda.components.FittingText
+import com.alphaomegos.annasagenda.components.WayHomeButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -104,10 +106,22 @@ fun RecurringTasksScreen(
             .padding(16.dp)
     ) {
         if (newLook) {
-            // The new look (28.10): Back at the top left; no title (29.10, Eduard:
-            // the series say what the screen is).
+            // The new look (28.10): Back at the top left, the house at the right and the
+            // title between them, as «Someday» has it (31.10, Eduard — 29.10 had none).
+            val title = stringResource(R.string.recurring_tasks_title)
+            val typography = MaterialTheme.typography
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 TopBarBack(onBack)
+                FittingText(
+                    choices = listOf(
+                        title to typography.headlineSmall,
+                        title to typography.titleLarge,
+                        title to typography.titleMedium,
+                        title to typography.titleSmall,
+                    ),
+                    modifier = Modifier.weight(1f),
+                )
+                WayHomeButton()
             }
         } else {
             Text(

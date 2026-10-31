@@ -1,5 +1,8 @@
 package com.alphaomegos.annasagenda.support
 
+import java.time.LocalDate
+import java.time.YearMonth
+
 /**
  * A month cell's height in whole pixels (25.10): what is left of [availablePx]
  * after the gaps between [rows] rows, shared out and rounded down — so the
@@ -18,4 +21,15 @@ fun monthCellHeightPx(availablePx: Int, gapPx: Int, rows: Int): Int =
 fun stepsCellChoice(texts: List<String>, fitsBeside: (String) -> Boolean, fitsAlone: (String) -> Boolean): Pair<Boolean, String> {
     texts.firstOrNull(fitsBeside)?.let { return true to it }
     return false to (texts.firstOrNull(fitsAlone) ?: texts.last())
+}
+
+/**
+ * The month's weeks whole (31.10, Eduard): the [leading] last days of the month
+ * before ahead of the 1st, the month, and the next month's first days to the end of
+ * its last week — the days around drawn paler, and opened like any other.
+ */
+fun monthGridDates(month: YearMonth, leading: Int): List<LocalDate> {
+    val first = month.atDay(1).minusDays(leading.coerceAtLeast(0).toLong())
+    val shown = leading.coerceAtLeast(0) + month.lengthOfMonth()
+    return List((shown + 6) / 7 * 7) { first.plusDays(it.toLong()) }
 }

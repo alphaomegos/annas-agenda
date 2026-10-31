@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import com.alphaomegos.annasagenda.app.AppIcons
 import com.alphaomegos.annasagenda.components.TopBarBack
+import com.alphaomegos.annasagenda.components.ImportIconButton
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -129,9 +130,7 @@ fun RunningPlanScreen(
                         IconButton(onClick = { stepsInfoOpen = true }) {
                             Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.steps_info))
                         }
-                        IconButton(onClick = { stepsImportAsked = true }) {
-                            Icon(AppIcons.stepsImport, contentDescription = stringResource(R.string.steps_import_button))
-                        }
+                        ImportIconButton(stringResource(R.string.steps_import_button)) { stepsImportAsked = true }
                     }
                     // Approving and resetting are about the plan. In the other
                     // mode there is no plan to approve, and the reset phrase

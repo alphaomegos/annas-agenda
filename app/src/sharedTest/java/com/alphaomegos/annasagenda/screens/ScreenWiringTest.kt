@@ -528,6 +528,8 @@ class ScreenWiringTest {
         composeRule.setContent { RecurringTasksScreen(vm = vm, onBack = {}) }
         composeRule.onNodeWithText("Полить цветы").assertExists()
         composeRule.onAllNodesWithText(word(R.string.repeating_tasks_header)).assertCountEquals(0)
+        // Its name at the top, in the middle (0366).
+        composeRule.onNodeWithText(word(R.string.recurring_tasks_title)).assertExists()
     }
 
     /** «Summer 2026» keeps the old Someday: the wide create button, no ⋮. */

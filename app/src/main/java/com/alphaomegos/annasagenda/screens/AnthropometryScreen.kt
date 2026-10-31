@@ -29,6 +29,7 @@ import com.alphaomegos.annasagenda.support.newWeightForecast
 import com.alphaomegos.annasagenda.support.WeightForecast
 import com.alphaomegos.annasagenda.support.ForecastMethod
 import com.alphaomegos.annasagenda.components.TopBarBack
+import com.alphaomegos.annasagenda.components.ImportIconButton
 import android.graphics.Paint
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
@@ -384,9 +385,7 @@ fun AnthropometryScreen(
                     // The new look (28.10): a measurement is added from here, not
                     // from a wide button under the list.
                     // Weights from a Samsung Health export (28.10), once in a while.
-                    IconButton(onClick = { weightImportAsked = true }) {
-                        Icon(AppIcons.stepsImport, contentDescription = stringResource(R.string.weight_import_button))
-                    }
+                    ImportIconButton(stringResource(R.string.weight_import_button)) { weightImportAsked = true }
                     if (state.newLook) {
                         IconButton(onClick = { showInput.value = true }) {
                             Icon(Icons.Default.Add, contentDescription = stringResource(R.string.enter_data))

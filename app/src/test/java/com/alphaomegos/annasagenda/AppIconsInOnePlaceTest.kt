@@ -36,4 +36,16 @@ class AppIconsInOnePlaceTest {
 
         assertTrue("these name an AppIcons picture themselves: $strays", strays.isEmpty())
     }
+
+    /** An import is an arrow into a tray, named on a long press (0366): no folder for it any more. */
+    @Test
+    fun anImportSaysImport() {
+        val files = mainSourceFiles()
+        val icons = files.single { it.name == "AppIcons.kt" }.readText()
+        assertTrue(icons.hasCode("val importData: ImageVector = Icons.Filled.SystemUpdateAlt") && !icons.contains("FolderOpen"))
+        val button = files.single { it.name == "ImportIconButton.kt" }.readText()
+        assertTrue(button.hasCode("tooltip = { PlainTooltip { Text(label) } },") && button.hasCode("Icon(AppIcons.importData, contentDescription = label)"))
+        val users = files.filter { it.readText().contains("ImportIconButton(stringResource(") }.map { it.name }.toSet()
+        assertTrue("$users", users == setOf("RunningPlanScreen.kt", "AnthropometryScreen.kt"))
+    }
 }

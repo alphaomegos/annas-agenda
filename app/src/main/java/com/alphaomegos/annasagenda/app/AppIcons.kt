@@ -3,7 +3,7 @@ package com.alphaomegos.annasagenda.app
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.BreakfastDining
 import androidx.compose.material.icons.filled.Cake
@@ -37,8 +37,12 @@ internal object AppIcons {
     /** Steps (19.10): on the month under a day, and beside its switch in the calendar's settings. */
     val steps: ImageVector = Icons.AutoMirrored.Filled.DirectionsWalk
 
-    /** The Samsung Health import (19.10): a file to open, in the Steps tab's corner. */
-    val stepsImport: ImageVector = Icons.Filled.FolderOpen
+    /**
+     * Bringing data in from outside (31.10, Eduard: a folder said «a file», not «import»):
+     * an arrow into a tray — what comes in, not where it lies. The Samsung Health imports
+     * of steps and weight; ImportIconButton names it on a long press.
+     */
+    val importData: ImageVector = Icons.Filled.SystemUpdateAlt
 
     /** The Steps chart drawn as bars, or as a line (19.10). */
     val stepsChartBars: ImageVector = Icons.Filled.BarChart

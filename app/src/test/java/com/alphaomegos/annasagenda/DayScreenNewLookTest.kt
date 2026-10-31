@@ -135,6 +135,10 @@ class DayScreenNewLookTest {
         val rec = mainSourceFiles().single { it.name == "RecurringTasksScreen.kt" }.readText()
         assertTrue(rec.hasCode("if (!newLook) item {\n Text(\n stringResource(R.string.repeating_tasks_header),"))
         assertTrue(rec.hasCode("stringResource(R.string.repeating_subtasks_header),"))
+        // Its title in the middle, between Back and the house, as «Someday» (0366).
+        val recRow = rec.substringAfter("TopBarBack(onBack)").substringBefore("WayHomeButton()")
+        assertTrue(recRow.hasCode("val title = stringResource(R.string.recurring_tasks_title)") || rec.hasCode("val title = stringResource(R.string.recurring_tasks_title)"))
+        assertTrue(recRow.hasCode("FittingText(") && recRow.length < 600)
     }
 
     /** Mini buttons have no card round them (0326), on a narrow screen and a wide one. */
@@ -201,6 +205,9 @@ class DayScreenNewLookTest {
         assertTrue(m.hasCode("SomedayCircle(count = somedayCount, locale = locale, onClick = onOpenSomeday)"))
         assertTrue(m.hasCode("if (!newLook) {\n            TextButton(onClick = onOpenSomeday) {"))
         assertTrue("no second row of ‹ Today › any more", !m.hasCode("TextButton(onClick = { monthIndex = baseIndex })"))
+        // No empty frames round the month (0366): the days around, paler, opened like any day.
+        assertTrue(m.hasCode("items = if (newLook) gridDates else cells,"))
+        assertTrue(m.hasCode(".alpha(if (outside) 0.4f else 1f)") && m.hasCode("val outside = YearMonth.from(date) != yearMonth"))
         // A hairline round each day in the new look (0354): without it the badges belonged to no day.
         assertTrue(m.hasCode(".then(if (newLook) Modifier.border(0.5.dp, thinBorderColor, cellShape) else Modifier.border(1.dp, cellBorderColor, cellShape))"))
         assertTrue(m.hasCode("if (!newLook) Button("))
