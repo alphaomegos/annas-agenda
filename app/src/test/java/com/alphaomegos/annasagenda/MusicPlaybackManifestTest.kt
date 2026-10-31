@@ -89,12 +89,31 @@ class MusicPlaybackManifestTest {
         assertTrue(viz.hasCode("Lifecycle.Event.ON_PAUSE -> view.onPause()") && viz.hasCode("Lifecycle.Event.ON_RESUME -> view.onResume()"))
         assertTrue(viz.hasCode("MusicTap.listen(true)") && viz.hasCode("MusicTap.listen(false)"))
         assertTrue(viz.hasCode("if (!full) MusicVisualizer(preset, Modifier.fillMaxSize())"))
-        listOf("music_viz_vortex", "music_viz_spectrum", "music_viz_flame").forEach { assertTrue(it, viz.contains("R.string.$it")) }
+        listOf("music_viz_vortex", "music_viz_spectrum", "music_viz_flame", "music_viz_ribbon").forEach { assertTrue(it, viz.contains("R.string.$it")) }
         assertTrue("the old pictures are gone", !files.values.any { it.readText().contains("VisualizerStyle") || it.readText().contains("PulseBeats") })
         val gl = files.getValue("MusicGlRenderer.kt").readText()
         assertTrue(gl.hasCode("catch (e: IllegalStateException) {") && gl.hasCode("onError(e.message ?: \"shader\")"))
         val shaders = files.getValue("MusicShaders.kt").readText()
         assertTrue("no time that grows without end in a shader", !shaders.contains("uTime"))
         assertTrue(!shaders.contains("#version") && shaders.contains("GL_FRAGMENT_PRECISION_HIGH"))
+    }
+
+    /**
+     * The full screen goes round the pictures with a swipe, names the one it came to for a
+     * moment, and offers TalkBack the same as two actions (0367); the rainbow ribbon draws
+     * its dots from a buffer on the GPU and lets go of it, as the other pictures draw from memory.
+     */
+    @Test
+    fun theFullScreenSwipesAndTheRibbonLetsGo() {
+        val files = mainSourceFiles().associateBy { it.name }
+        val viz = files.getValue("MusicVisualizer.kt").readText()
+        assertTrue(viz.hasCode("detectHorizontalDragGestures(") && viz.hasCode("onDragEnd = { if (abs(travel) > far) step(if (travel < 0f) 1 else -1) },"))
+        assertTrue(viz.hasCode("CustomAccessibilityAction(nextName) { step(1); true },") && viz.hasCode("CustomAccessibilityAction(previousName) { step(-1); true },"))
+        assertTrue(viz.hasCode("if (nameShown) {") && viz.hasCode("delay(2_500)"))
+        val gl = files.getValue("MusicGlRenderer.kt").readText()
+        assertTrue(gl.hasCode("VisualizerPreset.RAINBOW_RIBBON -> drawRibbon(a, dt)"))
+        val ribbon = gl.substringAfter("private fun drawRibbon(").substringBefore("private fun drawFilaments(")
+        assertTrue(ribbon.hasCode("GLES20.glDrawArrays(GLES20.GL_POINTS, 0, ribbonDots)") && ribbon.trimEnd().removeSuffix("}").contains("GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)"))
+        assertTrue("the buffer is made again with the context", gl.substringAfter("override fun onSurfaceCreated(").substringBefore("override fun onSurfaceChanged(").hasCode("GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER,"))
     }
 }

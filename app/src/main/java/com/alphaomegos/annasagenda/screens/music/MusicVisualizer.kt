@@ -52,6 +52,15 @@ import androidx.media3.session.MediaController
 import com.alphaomegos.annasagenda.MusicTap
 import com.alphaomegos.annasagenda.R
 import kotlinx.coroutines.delay
+import kotlin.math.abs
+import com.alphaomegos.annasagenda.support.cycle
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 
 /** What each picture is called. */
 private val VisualizerPreset.label: Int
@@ -59,6 +68,7 @@ private val VisualizerPreset.label: Int
         VisualizerPreset.CRIMSON_VORTEX -> R.string.music_viz_vortex
         VisualizerPreset.CLASSIC_SPECTRUM -> R.string.music_viz_spectrum
         VisualizerPreset.SPECTRUM_FLAME -> R.string.music_viz_flame
+        VisualizerPreset.RAINBOW_RIBBON -> R.string.music_viz_ribbon
     }
 
 /**
@@ -159,15 +169,22 @@ internal fun MusicVisualizerPanel(controller: MediaController) {
             Icon(Icons.Default.Fullscreen, contentDescription = stringResource(R.string.music_viz_full), tint = Color.White)
         }
     }
-    if (full) MusicVisualizerFull(preset, controller) { full = false }
+    if (full) MusicVisualizerFull(preset, controller, onPreset = { preset = it }) { full = false }
 }
 
 /**
  * The visualizer filling the screen (29.10): the player's controls drawn over
- * it, gone after 5 seconds untouched; a tap brings them back.
+ * it, gone after 5 seconds untouched; a tap brings them back. A swipe left or
+ * right goes to the next picture or back round them (31.10, Eduard), its name
+ * shown for a moment; TalkBack has the same as two actions.
  */
 @Composable
-private fun MusicVisualizerFull(preset: VisualizerPreset, controller: MediaController, onClose: () -> Unit) {
+private fun MusicVisualizerFull(
+    preset: VisualizerPreset,
+    controller: MediaController,
+    onPreset: (VisualizerPreset) -> Unit,
+    onClose: () -> Unit,
+) {
     var shown by remember { mutableStateOf(true) }
     var touched by remember { mutableStateOf(0) }
     LaunchedEffect(touched) {
@@ -175,14 +192,62 @@ private fun MusicVisualizerFull(preset: VisualizerPreset, controller: MediaContr
         delay(5_000)
         shown = false
     }
+    var swipes by rememberSaveable { mutableStateOf(0) }
+    var nameShown by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(swipes) {
+        if (swipes > 0) {
+            nameShown = true
+            delay(2_500)
+            nameShown = false
+        }
+    }
+    val pictures = VisualizerPreset.entries
+    val currentPreset by rememberUpdatedState(preset)
+    val choose by rememberUpdatedState(onPreset)
+    fun step(by: Int) {
+        choose(pictures[cycle(pictures.indexOf(currentPreset), pictures.size, by)])
+        swipes++
+    }
+    val nextName = stringResource(R.string.music_viz_next)
+    val previousName = stringResource(R.string.music_viz_previous)
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
+                .pointerInput(Unit) {
+                    val far = 56.dp.toPx()
+                    var travel = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { travel = 0f },
+                        onDragEnd = { if (abs(travel) > far) step(if (travel < 0f) 1 else -1) },
+                        onHorizontalDrag = { change, amount ->
+                            change.consume()
+                            travel += amount
+                        },
+                    )
+                }
+                .semantics {
+                    customActions = listOf(
+                        CustomAccessibilityAction(nextName) { step(1); true },
+                        CustomAccessibilityAction(previousName) { step(-1); true },
+                    )
+                }
                 .clickable { touched++ },
         ) {
             MusicVisualizer(preset, Modifier.fillMaxSize())
+            if (nameShown) {
+                Text(
+                    text = stringResource(preset.label),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 32.dp)
+                        .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             if (shown) {
                 IconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.music_viz_close), tint = Color.White)

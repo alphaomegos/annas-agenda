@@ -1324,6 +1324,9 @@
     <string name="music_viz_vortex">Grimizni vrtlog</string>
     <string name="music_viz_spectrum">Klasični spektar</string>
     <string name="music_viz_flame">Plamen spektra</string>
+    <string name="music_viz_ribbon">Dugina traka</string>
+    <string name="music_viz_next">Sledeća slika</string>
+    <string name="music_viz_previous">Prethodna slika</string>
     <string name="music_viz_full">Preko celog ekrana</string>
     <string name="music_viz_close">Zatvori</string>
     <string name="anthro_card_weight">Težina</string>

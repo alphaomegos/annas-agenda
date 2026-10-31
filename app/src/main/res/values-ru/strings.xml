@@ -1391,6 +1391,9 @@
     <string name="music_viz_vortex">Багровый вихрь</string>
     <string name="music_viz_spectrum">Классический спектр</string>
     <string name="music_viz_flame">Пламя спектра</string>
+    <string name="music_viz_ribbon">Радужная лента</string>
+    <string name="music_viz_next">Следующая картинка</string>
+    <string name="music_viz_previous">Предыдущая картинка</string>
     <string name="music_viz_full">На весь экран</string>
     <string name="music_viz_close">Закрыть</string>
     <string name="anthro_card_weight">Вес</string>

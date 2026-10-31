@@ -154,3 +154,32 @@ class VortexFilaments(val count: Int = 3, val points: Int = 192) {
         val SIDES = floatArrayOf(-1f, 1f)
     }
 }
+
+/**
+ * The rainbow ribbon's dots (31.10): a grid of [around] × [along] places on the sheet,
+ * each as (around 0..1, along −1..1) — the shader makes the shape of it. Made once.
+ */
+fun ribbonGrid(around: Int = 160, along: Int = 72): FloatArray {
+    val out = FloatArray(around * along * 2)
+    var k = 0
+    for (j in 0 until along) for (i in 0 until around) {
+        out[k++] = i.toFloat() / around
+        out[k++] = -1f + 2f * j / (along - 1)
+    }
+    return out
+}
+
+/** The bands gathered into [out].size groups (each the mean of its share), low to high. */
+fun bandGroups(bands: FloatArray, out: FloatArray) {
+    val n = bands.size
+    for (g in out.indices) {
+        val from = g * n / out.size
+        val to = maxOf(from + 1, (g + 1) * n / out.size)
+        var s = 0f
+        for (b in from until to) s += bands[b]
+        out[g] = s / (to - from)
+    }
+}
+
+/** One step [step] round [size] things from [index]: past the last is the first again. */
+fun cycle(index: Int, size: Int, step: Int): Int = Math.floorMod(index + step, size)

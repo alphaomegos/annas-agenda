@@ -92,6 +92,9 @@
     <string name="music_viz_vortex">Crimson vortex</string>
     <string name="music_viz_spectrum">Classic spectrum</string>
     <string name="music_viz_flame">Spectrum flame</string>
+    <string name="music_viz_ribbon">Rainbow ribbon</string>
+    <string name="music_viz_next">Next picture</string>
+    <string name="music_viz_previous">Previous picture</string>
     <string name="music_viz_full">Full screen</string>
     <string name="music_viz_close">Close</string>
 </resources>

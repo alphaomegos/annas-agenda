@@ -167,4 +167,68 @@ void main() {
     gl_FragColor = vec4(min(max(colour, trail), vec3(0.97)), 1.0);
 }
 """
+
+    /**
+     * The rainbow ribbon (31.10, Eduard's fourth picture): a twisted hourglass sheet of
+     * square dots seen in perspective, red at its wide ends through orange, yellow and
+     * green to blue at the waist, the far side darker. Worked out here, per dot, from its
+     * place on the grid (aGrid: around 0..1, along −1..1): the spectrum shapes the sheet's
+     * profile (low frequencies at the waist, high at the ends), the bass swells it, the
+     * middle ripples it round, the treble scatters the dots a little, onsets twist it.
+     * uBands: 16 band levels; uTurn: the yaw, the tilt, the twist's flow, the ripple's phase.
+     */
+    const val RIBBON_VERTEX = """
+attribute vec2 aGrid;
+uniform float uBands[16];
+uniform vec4 uTurn;
+uniform float uAspect;
+uniform float uFit;
+uniform float uBass;
+uniform float uMiddle;
+uniform float uTreble;
+uniform float uSurge;
+uniform float uEnergy;
+uniform float uDot;
+varying vec3 vColor;
+
+vec3 rainbow(float h) {
+    return clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+}
+
+void main() {
+    float v = aGrid.y;
+    float av = abs(v);
+    float f = av * 15.0;
+    int i = int(f);
+    int j = i + 1;
+    if (j > 15) j = 15;
+    float band = mix(uBands[i], uBands[j], f - float(i));
+    float theta = 6.2831853 * aGrid.x * 0.86 + v * (2.4 + 1.6 * uSurge) + uTurn.z;
+    float radius = 0.16 + 0.85 * av * av + 0.32 * band * (0.25 + av) + 0.1 * uBass;
+    radius *= 1.0 + (0.04 + 0.1 * uMiddle) * sin(5.0 * theta + 3.0 * v + uTurn.w);
+    vec3 p = vec3(radius * cos(theta), radius * sin(theta), v * 1.15);
+    float n = fract(sin(dot(aGrid, vec2(12.9898, 78.233))) * 43758.5453);
+    p += vec3(n - 0.5, fract(n * 7.13) - 0.5, fract(n * 3.71) - 0.5) * 0.05 * uTreble;
+    float cy = cos(uTurn.x);
+    float sy = sin(uTurn.x);
+    p = vec3(cy * p.x + sy * p.z, p.y, cy * p.z - sy * p.x);
+    float cx = cos(uTurn.y);
+    float sx = sin(uTurn.y);
+    p = vec3(p.x, cx * p.y - sx * p.z, sx * p.y + cx * p.z);
+    float depth = p.z + 2.7;
+    vec2 screen = p.xy * (1.55 / depth) * uFit;
+    gl_Position = vec4(screen.x / uAspect, screen.y, 0.0, 1.0);
+    gl_PointSize = max(1.0, uDot * 2.7 / depth);
+    float near = clamp(1.75 - depth * 0.5, 0.12, 1.0);
+    vColor = rainbow(0.66 * (1.0 - av)) * near * (0.5 + 0.35 * uEnergy + 0.4 * band);
+}
+"""
+
+    const val RIBBON_FRAGMENT = """
+precision mediump float;
+varying vec3 vColor;
+void main() {
+    gl_FragColor = vec4(vColor, 1.0);
+}
+"""
 }

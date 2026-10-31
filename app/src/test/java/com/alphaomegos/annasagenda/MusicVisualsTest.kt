@@ -7,6 +7,9 @@ import com.alphaomegos.annasagenda.support.VortexFilaments
 import com.alphaomegos.annasagenda.support.spectrumBars
 import com.alphaomegos.annasagenda.support.spectrumFloats
 import com.alphaomegos.annasagenda.support.wrapPhase
+import com.alphaomegos.annasagenda.support.bandGroups
+import com.alphaomegos.annasagenda.support.cycle
+import com.alphaomegos.annasagenda.support.ribbonGrid
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -112,5 +115,35 @@ class MusicVisualsTest {
         val f = VortexFilaments(points = 16)
         repeat(200_000) { f.update(1f / 60, 0.5f, 0.5f, 0.5f, 0f, 1f, FloatArray(0), 1.5f, 0.004f) }
         assertTrue(f.phases().all { it in 0f..TWO_PI_F })
+    }
+
+    /** The rainbow ribbon's grid (0367): every place once, around 0..1, along −1..1 end to end. */
+    @Test
+    fun theRibbonsGridCoversTheSheet() {
+        val g = ribbonGrid(around = 8, along = 5)
+        assertEquals(8 * 5 * 2, g.size)
+        val places = (0 until 40).map { g[it * 2] to g[it * 2 + 1] }
+        assertEquals(40, places.toSet().size)
+        assertTrue(places.all { (u, v) -> u in 0f..1f && u < 1f && v in -1f..1f })
+        assertEquals(-1f, places.minOf { it.second }, 0f)
+        assertEquals(1f, places.maxOf { it.second }, 1e-6f)
+    }
+
+    @Test
+    fun theBandsGatherInOrder() {
+        val bands = FloatArray(48) { it / 47f }
+        val groups = FloatArray(16)
+        bandGroups(bands, groups)
+        assertEquals((0f + 1f + 2f) / 3f / 47f, groups[0], 1e-6f)
+        assertEquals((45f + 46f + 47f) / 3f / 47f, groups[15], 1e-6f)
+        assertTrue(groups.toList().zipWithNext().all { (a, b) -> b > a })
+    }
+
+    /** A swipe goes round the pictures (0367): past the last comes the first. */
+    @Test
+    fun aSwipeGoesRound() {
+        assertEquals(1, cycle(0, 4, 1))
+        assertEquals(0, cycle(3, 4, 1))
+        assertEquals(3, cycle(0, 4, -1))
     }
 }

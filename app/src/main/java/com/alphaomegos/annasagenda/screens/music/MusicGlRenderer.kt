@@ -8,6 +8,8 @@ import com.alphaomegos.annasagenda.support.MusicSampleRing
 import com.alphaomegos.annasagenda.support.SPECTRUM_VERTEX_FLOATS
 import com.alphaomegos.annasagenda.support.SpectrumPeaks
 import com.alphaomegos.annasagenda.support.VortexFilaments
+import com.alphaomegos.annasagenda.support.bandGroups
+import com.alphaomegos.annasagenda.support.ribbonGrid
 import com.alphaomegos.annasagenda.support.spectrumBars
 import com.alphaomegos.annasagenda.support.spectrumFloats
 import com.alphaomegos.annasagenda.support.wrapPhase
@@ -20,7 +22,7 @@ import kotlin.math.exp
 import kotlin.math.max
 
 /** The visualizer's pictures (30.10, Eduard), after Windows Media Player's. */
-internal enum class VisualizerPreset { CRIMSON_VORTEX, CLASSIC_SPECTRUM, SPECTRUM_FLAME }
+internal enum class VisualizerPreset { CRIMSON_VORTEX, CLASSIC_SPECTRUM, SPECTRUM_FLAME, RAINBOW_RIBBON }
 
 /**
  * Draws the visualizer with OpenGL ES 2.0 (30.10): each frame reads the sound being
@@ -60,6 +62,7 @@ internal class MusicGlRenderer(
     private var filamentProgram = 0
     private var flameProgram = 0
     private var vortexProgram = 0
+    private var ribbonProgram = 0
 
     private val quad = floats(8).apply { put(floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)); position(0) }
     private val bandBytes: ByteBuffer = ByteBuffer.allocateDirect(BAND_TEXELS).order(ByteOrder.nativeOrder())
@@ -83,6 +86,13 @@ internal class MusicGlRenderer(
     private var surge = 0f
     private val phase = FloatArray(4)
 
+    // The rainbow ribbon: its dots' places, in a buffer on the GPU made once a context.
+    private val ribbonPlaces = ribbonGrid()
+    private val ribbonDots = ribbonPlaces.size / 2
+    private var ribbonBuffer = 0
+    private val ribbonBands = FloatArray(16)
+    private val ribbonPhase = FloatArray(4)
+
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         // A new context (the first, or after one was lost): every GL thing is made again.
         failed = false
@@ -93,6 +103,7 @@ internal class MusicGlRenderer(
             filamentProgram = program(MusicShaders.FILAMENT_VERTEX, MusicShaders.FILAMENT_FRAGMENT, "aPos", "aSide")
             flameProgram = program(MusicShaders.QUAD_VERTEX, MusicShaders.FLAME_FRAGMENT, "aPos")
             vortexProgram = program(MusicShaders.QUAD_VERTEX, MusicShaders.VORTEX_FRAGMENT, "aPos")
+            ribbonProgram = program(MusicShaders.RIBBON_VERTEX, MusicShaders.RIBBON_FRAGMENT, "aGrid")
         } catch (e: IllegalStateException) {
             failed = true
             onError(e.message ?: "shader")
@@ -105,6 +116,12 @@ internal class MusicGlRenderer(
         GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1)
         textureParameters()
         GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, BAND_TEXELS, 1, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, bandBytes)
+        GLES20.glGenBuffers(1, ids, 0)
+        ribbonBuffer = ids[0]
+        val places = floats(ribbonPlaces.size).apply { put(ribbonPlaces); position(0) }
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, ribbonBuffer)
+        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, ribbonPlaces.size * 4, places, GLES20.GL_STATIC_DRAW)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
         GLES20.glClearColor(0f, 0f, 0f, 1f)
     }
 
@@ -133,6 +150,7 @@ internal class MusicGlRenderer(
             VisualizerPreset.CLASSIC_SPECTRUM -> drawSpectrum(a, dt)
             VisualizerPreset.SPECTRUM_FLAME -> drawFlame(a, dt)
             VisualizerPreset.CRIMSON_VORTEX -> drawVortex(a, dt)
+            VisualizerPreset.RAINBOW_RIBBON -> drawRibbon(a, dt)
         }
     }
 
@@ -215,6 +233,43 @@ internal class MusicGlRenderer(
         showFeedback()
         filaments.update(0f, a.bass, a.middle, a.treble, surge, a.energy, a.waveform, aspect, SHARP_HALF_WIDTH_PX * 2f / height)
         drawFilaments(0.9f)
+    }
+
+    // The sheet of dots, straight onto the view, added up where they overlap.
+    private fun drawRibbon(a: MusicAnalyzer, dt: Float) {
+        surge = max(a.onset, surge * exp(-dt / 0.3f))
+        ribbonPhase[0] = wrapPhase(ribbonPhase[0] + dt * (0.16f + 0.22f * a.energy))
+        ribbonPhase[1] = wrapPhase(ribbonPhase[1] + dt * 0.11f)
+        ribbonPhase[2] = wrapPhase(ribbonPhase[2] + dt * (0.35f + 1.1f * a.bass + 0.8f * surge))
+        ribbonPhase[3] = wrapPhase(ribbonPhase[3] + dt * 1.3f)
+        bandGroups(a.bands, ribbonBands)
+        val aspect = width.toFloat() / height
+        val p = ribbonProgram
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+        GLES20.glViewport(0, 0, width, height)
+        GLES20.glUseProgram(p)
+        GLES20.glUniform1fv(GLES20.glGetUniformLocation(p, "uBands"), ribbonBands.size, ribbonBands, 0)
+        GLES20.glUniform4f(
+            GLES20.glGetUniformLocation(p, "uTurn"),
+            ribbonPhase[0], 0.5f + 0.35f * kotlin.math.sin(ribbonPhase[1]), ribbonPhase[2], ribbonPhase[3],
+        )
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(p, "uAspect"), aspect)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(p, "uFit"), kotlin.math.min(1f, aspect * 1.1f))
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(p, "uBass"), a.bass)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(p, "uMiddle"), a.middle)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(p, "uTreble"), a.treble)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(p, "uSurge"), surge)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(p, "uEnergy"), a.energy)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(p, "uDot"), max(2f, height / 300f))
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, ribbonBuffer)
+        GLES20.glVertexAttribPointer(0, 2, GLES20.GL_FLOAT, false, 0, 0)
+        GLES20.glEnableVertexAttribArray(0)
+        GLES20.glDrawArrays(GLES20.GL_POINTS, 0, ribbonDots)
+        // Back to arrays from memory, as the other pictures draw.
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+        GLES20.glDisable(GLES20.GL_BLEND)
     }
 
     private fun drawFilaments(alpha: Float) {
