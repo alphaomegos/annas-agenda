@@ -527,9 +527,13 @@ class ScreenWiringTest {
         vm.setTaskRepeatRule(id, com.alphaomegos.annasagenda.model.RepeatRule(freq = com.alphaomegos.annasagenda.model.RepeatFreq.DAILY))
         composeRule.setContent { RecurringTasksScreen(vm = vm, onBack = {}) }
         composeRule.onNodeWithText("Полить цветы").assertExists()
-        composeRule.onAllNodesWithText(word(R.string.repeating_tasks_header)).assertCountEquals(0)
-        // Its name at the top, in the middle (0366).
-        composeRule.onNodeWithText(word(R.string.recurring_tasks_title)).assertExists()
+        // Its name at the top, in the middle (0366) — and no heading over the series. In
+        // English (the tests' language) the title and the old heading are the same words,
+        // «Repeating tasks» (0368): then the one node with them is the title.
+        val heading = word(R.string.repeating_tasks_header)
+        val title = word(R.string.recurring_tasks_title)
+        composeRule.onAllNodesWithText(title).assertCountEquals(1)
+        composeRule.onAllNodesWithText(heading).assertCountEquals(if (heading == title) 1 else 0)
     }
 
     /** «Summer 2026» keeps the old Someday: the wide create button, no ⋮. */
