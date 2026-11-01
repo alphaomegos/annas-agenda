@@ -121,6 +121,23 @@ class DayScreenNewLookTest {
         assertTrue("the repeats ask always", !repeats.contains("askBeforeDeleting"))
     }
 
+    /**
+     * The calorimeter follows the look (0369): the day screen's date and light row, the rows on
+     * grounded surfaces with hairlines — no cards, no big round button — and the day's spending
+     * from the profile; «Summer 2026» keeps the old body.
+     */
+    @Test
+    fun theCalorimeterFollowsTheLook() {
+        val screen = mainSourceFiles().single { it.name == "CalorimeterScreen.kt" }.readText()
+        assertTrue(screen.hasCode("if (state.newLook) {\n CalorimeterNewDay("))
+        assertTrue(screen.hasCode("ProfileDialog(") && screen.hasCode("dayEnergy("))
+        val body = mainSourceFiles().single { it.name == "CalorimeterNewDay.kt" }.readText()
+        assertTrue("no cards (the diet card is passed in)", !Regex("""\bCard\(""").containsMatchIn(body) && !body.contains("CircleShape"))
+        assertTrue(body.hasCode("color = MaterialTheme.colorScheme.surfaceContainerLow,") && body.hasCode("HorizontalDivider(thickness = 0.5.dp"))
+        assertTrue(body.hasCode("R.string.calorimeter_spent") && body.hasCode("R.string.calorimeter_no_records") && body.hasCode("onProfile"))
+        assertTrue(body.hasCode("NumberFormat.getIntegerInstance(locale)"))
+    }
+
     /** «Someday» follows the day screen's look (0326): Back and the house on top, the rows in the surface. */
     @Test
     fun somedayFollowsTheLook() {

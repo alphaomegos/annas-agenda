@@ -184,6 +184,11 @@
     <string name="calorimeter_food_name">Продукт</string>
     <string name="calorimeter_food_kcal">Калории</string>
     <string name="calorimeter_day_balance">Баланс за сегодня</string>
+    <string name="calorimeter_spent">Расход дня</string>
+    <string name="calorimeter_spent_parts">норма %1$s · шаги %2$s · бег %3$s</string>
+    <string name="calorimeter_spent_parts_own">своя норма %1$s · шаги %2$s · бег %3$s</string>
+    <string name="calorimeter_spent_needs">Расход дня появится, когда заполнен профиль и есть хоть одно взвешивание</string>
+    <string name="calorimeter_no_records">За день ничего не записано: прогноз веса его не считает</string>
     <string name="calorimeter_week_goal">Недельная цель</string>
     <string name="calorimeter_week_balance">Баланс (последние 7 дней)</string>
     <string name="calorimeter_month_projection">Потенциальное изменение (30 дней)</string>

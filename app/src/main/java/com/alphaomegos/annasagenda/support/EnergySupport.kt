@@ -1,6 +1,11 @@
 package com.alphaomegos.annasagenda.support
 
+import com.alphaomegos.annasagenda.model.AnthropometryEntry
 import com.alphaomegos.annasagenda.model.ProfileSex
+import com.alphaomegos.annasagenda.model.RunningWorkout
+import com.alphaomegos.annasagenda.model.StepDay
+import java.time.LocalDate
+import kotlin.math.roundToInt
 
 /*
  * The body's own energy use (28.10), for the new weight forecast: the
@@ -32,3 +37,38 @@ fun baselineKcal(sex: ProfileSex, weightKg: Double, heightCm: Int, ageYears: Int
 
 /** A daily norm the app will take as the user's own, in kcal. */
 val DAILY_NORM_RANGE = 800..6000
+
+/**
+ * A day's energy as the weight forecast counts it (01.11, for the calorimeter): the
+ * norm — the user's own, or rest × 1.2 from the profile and the last weight — and the
+ * day's walking and running on top. Null when there is no own norm and the profile or
+ * a weight is missing; steps and runs count only where height and weight are known.
+ */
+data class DayEnergy(val normKcal: Int, val ownNorm: Boolean, val stepsKcal: Int, val runKcal: Int) {
+    val totalKcal: Int get() = normKcal + stepsKcal + runKcal
+}
+
+fun dayEnergy(
+    date: LocalDate,
+    sex: ProfileSex?,
+    heightCm: Int?,
+    birthYear: Int?,
+    anthropometry: List<AnthropometryEntry>,
+    stepDays: List<StepDay>,
+    workouts: List<RunningWorkout>,
+    planRuns: List<Pair<LocalDate, Double>> = emptyList(),
+    ownNormKcal: Int? = null,
+): DayEnergy? {
+    val weight = weightOn(date, anthropometry)
+    val norm = ownNormKcal?.toDouble()
+        ?: if (sex != null && heightCm != null && birthYear != null && weight != null) {
+            baselineKcal(sex, weight, heightCm, ageIn(date.year, birthYear))
+        } else {
+            return null
+        }
+    val steps = stepDays.firstOrNull { it.date == date }?.steps ?: 0
+    val walk = if (heightCm != null && weight != null) stepsKcal(steps, heightCm, weight) else 0.0
+    val km = workouts.filter { it.date == date }.sumOf { it.distanceKm } + planRuns.filter { it.first == date }.sumOf { it.second }
+    val run = if (weight != null) KCAL_PER_KG_PER_KM * weight * km else 0.0
+    return DayEnergy(norm.roundToInt(), ownNormKcal != null, walk.roundToInt(), run.roundToInt())
+}

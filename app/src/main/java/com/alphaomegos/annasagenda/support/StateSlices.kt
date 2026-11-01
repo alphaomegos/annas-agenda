@@ -34,6 +34,18 @@ data class CalorimeterSlice(
     // Schema 7.
     val dietShowPastUnticked: Boolean = true,
     val foodLibraryUserItems: List<FoodLibraryUserItem> = emptyList(),
+    // The day's spending and the profile, shown in the new look (01.11): what the weight
+    // forecast counts — the norm, steps, runs — and the profile they come from.
+    val newLook: Boolean = true,
+    val profileSex: ProfileSex? = null,
+    val heightCm: Int? = null,
+    val profileBirthYear: Int? = null,
+    val dailyNormKcal: Int? = null,
+    val anthropometry: List<AnthropometryEntry> = emptyList(),
+    val stepDays: List<StepDay> = emptyList(),
+    val runningWorkouts: List<RunningWorkout> = emptyList(),
+    val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
+    val runningDoneTaskIds: Set<Long> = emptySet(),
 )
 
 data class AnthropometrySlice(
@@ -122,6 +134,17 @@ fun calorimeterSliceOf(state: AppState): CalorimeterSlice = CalorimeterSlice(
     dietPlan = state.dietPlan,
     dietShowPastUnticked = state.dietShowPastUnticked,
     foodLibraryUserItems = state.foodLibraryUserItems,
+    newLook = state.dayScreenStyle == DayScreenStyle.NEW,
+    profileSex = state.profileSex,
+    heightCm = state.stepsHeightCm,
+    profileBirthYear = state.profileBirthYear,
+    dailyNormKcal = state.dailyNormKcal,
+    anthropometry = state.anthropometry,
+    stepDays = state.stepDays,
+    runningWorkouts = state.runningWorkouts,
+    runningPlanEntries = state.runningPlanEntries,
+    runningDoneTaskIds = state.runningPlanEntries.mapNotNull { it.taskId }.toSet()
+        .let { linked -> state.tasks.filter { it.isDone && it.id in linked }.map { it.id }.toSet() },
 )
 
 fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySlice(

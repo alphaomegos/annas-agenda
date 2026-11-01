@@ -91,6 +91,15 @@ class StateSlicesTest {
         assertEquals(undoneSliceOf(populated), undoneSliceOf(changed))
     }
 
+    /** The calorimeter's day spending (0369): its slice moves with the steps, the profile and the look. */
+    @Test
+    fun calorimeterSliceCarriesTheSpendingsInputs() {
+        val base = calorimeterSliceOf(populated)
+        assertNotEquals(base, calorimeterSliceOf(populated.copy(stepsHeightCm = (populated.stepsHeightCm ?: 160) + 1)))
+        assertNotEquals(base, calorimeterSliceOf(populated.copy(dailyNormKcal = 1777)))
+        assertNotEquals(base, calorimeterSliceOf(populated.copy(stepDays = emptyList<com.alphaomegos.annasagenda.model.StepDay>() + populated.stepDays.drop(1) + listOf(com.alphaomegos.annasagenda.model.StepDay(java.time.LocalDate.of(2020, 1, 1), 5, com.alphaomegos.annasagenda.model.StepSource.HEALTH_CONNECT)))))
+    }
+
     @Test
     fun undoneSliceReactsToWhatDateTasksBlockReads() {
         assertNotEquals(

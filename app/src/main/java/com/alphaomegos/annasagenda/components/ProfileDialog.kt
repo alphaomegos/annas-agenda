@@ -86,3 +86,14 @@ internal fun ProfileDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
+
+/** The profile's summary: «Female · 168 cm · 1990», what is set of it; null when nothing is (Settings, the calorimeter). */
+@Composable
+internal fun profileSummary(sex: ProfileSex?, heightCm: Int?, birthYear: Int?): String? {
+    val parts = listOfNotNull(
+        sex?.let { stringResource(if (it == ProfileSex.FEMALE) R.string.profile_female else R.string.profile_male) },
+        heightCm?.let { stringResource(R.string.profile_height_cm, it) },
+        birthYear?.toString(),
+    )
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+}

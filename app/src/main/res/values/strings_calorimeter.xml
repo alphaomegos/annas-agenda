@@ -9,6 +9,11 @@
     <string name="calorimeter_food_name">Food</string>
     <string name="calorimeter_food_kcal">Calories</string>
     <string name="calorimeter_day_balance">Balance today</string>
+    <string name="calorimeter_spent">The day\'s spending</string>
+    <string name="calorimeter_spent_parts">norm %1$s · steps %2$s · running %3$s</string>
+    <string name="calorimeter_spent_parts_own">own norm %1$s · steps %2$s · running %3$s</string>
+    <string name="calorimeter_spent_needs">The day\'s spending shows once the profile is filled in and there is a weight</string>
+    <string name="calorimeter_no_records">Nothing written down for this day: the weight forecast leaves it out</string>
     <string name="calorimeter_week_goal">Weekly goal</string>
     <string name="calorimeter_week_balance">Balance (last 7 days)</string>
     <string name="calorimeter_month_projection">Potential change (30 days)</string>

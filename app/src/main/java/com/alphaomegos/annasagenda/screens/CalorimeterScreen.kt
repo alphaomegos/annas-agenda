@@ -1,6 +1,11 @@
 package com.alphaomegos.annasagenda.screens
 
 import com.alphaomegos.annasagenda.components.TopBarBack
+import com.alphaomegos.annasagenda.support.runningPlanRunsDone
+import com.alphaomegos.annasagenda.support.dayEnergy
+import com.alphaomegos.annasagenda.model.ProfileSex
+import com.alphaomegos.annasagenda.components.profileSummary
+import com.alphaomegos.annasagenda.components.ProfileDialog
 import android.media.AudioAttributes
 import android.media.SoundPool
 import androidx.compose.foundation.layout.Arrangement
@@ -119,6 +124,7 @@ fun CalorimeterRoute(
         onRemoveLibraryFood = vm::removeFoodLibraryUserItem,
         onTickDish = { id, date, eaten -> if (eaten) vm.tickDietDish(id, date) else vm.untickDietDish(id, date) },
         onOpenDiet = onOpenDiet,
+        onSetProfile = vm::setProfile,
     )
 }
 
@@ -137,6 +143,7 @@ private fun CalorimeterContent(
     onRemoveLibraryFood: (Long) -> Unit,
     onTickDish: (itemId: Long, date: LocalDate, eaten: Boolean) -> Unit,
     onOpenDiet: () -> Unit,
+    onSetProfile: (ProfileSex?, Int?, Int?) -> Unit = { _, _, _ -> },
 ) {
     val ctx = LocalContext.current
     val showDisplaySettings = rememberSaveable { mutableStateOf(false) }
@@ -224,6 +231,23 @@ private fun CalorimeterContent(
         if (munchSoundId != 0) soundPool.play(munchSoundId, 1f, 1f, 1, 0, 1f)
     }
 
+    // The new look's day spending and profile (01.11).
+    var profileOpen by rememberSaveable { mutableStateOf(false) }
+    val profileText = profileSummary(state.profileSex, state.heightCm, state.profileBirthYear)
+    val energy = remember(state, selectedDate, today) {
+        dayEnergy(
+            date = selectedDate,
+            sex = state.profileSex,
+            heightCm = state.heightCm,
+            birthYear = state.profileBirthYear,
+            anthropometry = state.anthropometry,
+            stepDays = state.stepDays,
+            workouts = state.runningWorkouts,
+            planRuns = runningPlanRunsDone(state.runningPlanEntries, state.runningDoneTaskIds, today),
+            ownNormKcal = state.dailyNormKcal,
+        )
+    }
+
     val showGoalDialog = rememberSaveable { mutableStateOf(false) }
     var goalInput by rememberSaveable(goalSelected) { mutableStateOf(goalSelected.toString()) }
 
@@ -270,6 +294,51 @@ private fun CalorimeterContent(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+          if (state.newLook) {
+            CalorimeterNewDay(
+                view = CalorimeterDayView(
+                    date = selectedDate,
+                    isToday = isToday,
+                    goalKcal = goalSelected,
+                    showGoal = state.calorimeterShowDailyGoal,
+                    eatenKcal = eatenSelectedSum,
+                    eaten = eatenSelected,
+                    hasRecords = state.foodLog.any { it.date == selectedDate },
+                    energy = energy,
+                    profile = profileText,
+                    dietDishes = dietDishes,
+                    showWeek = state.calorimeterShowWeeklyGoal,
+                    weekGoalKcal = weekGoal,
+                    weekBalanceKcal = weekBalance,
+                    showMonth = state.calorimeterShowPotentialLoss,
+                    monthKg = potentialKg,
+                ),
+                locale = locale,
+                positive = okGreen,
+                onPrev = { selectedEpochDay -= 1 },
+                onToday = { selectedEpochDay = today.toEpochDay() },
+                onNext = { selectedEpochDay += 1 },
+                onAdd = {
+                    foodName = ""
+                    foodKcal = ""
+                    pricedFromName = null
+                    pricedFromLibraryKey = null
+                    showAddDialog.value = true
+                },
+                onEditGoal = {
+                    goalInput = goalSelected.toString()
+                    showGoalDialog.value = true
+                },
+                onDelete = onDeleteFood,
+                onProfile = { profileOpen = true },
+                dietCard = {
+                    DietDayCard(
+                        dishes = dietDishes,
+                        onTick = { id, eaten -> onTickDish(id, selectedDate, eaten) },
+                    )
+                },
+            )
+          } else {
             // Date row with arrows
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -468,7 +537,21 @@ private fun CalorimeterContent(
                     }
                 }
             }
+          }
         }
+    }
+
+    if (profileOpen) {
+        ProfileDialog(
+            sex = state.profileSex,
+            heightCm = state.heightCm,
+            birthYear = state.profileBirthYear,
+            onSave = { sx, h, y ->
+                onSetProfile(sx, h, y)
+                profileOpen = false
+            },
+            onDismiss = { profileOpen = false },
+        )
     }
 
     // Dialogs must be conditional; otherwise "showXDialog = false" looks like a write-only variable.

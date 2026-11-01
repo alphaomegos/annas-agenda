@@ -2,6 +2,7 @@ package com.alphaomegos.annasagenda.screens
 
 import com.alphaomegos.annasagenda.model.ProfileSex
 import com.alphaomegos.annasagenda.components.ProfileDialog
+import com.alphaomegos.annasagenda.components.profileSummary
 import com.alphaomegos.annasagenda.components.TopBarBack
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -539,15 +540,4 @@ private fun MetroSchemeDialog(
             TextButton(onClick = onCreate) { Text(stringResource(R.string.metro_create_scheme)) }
         },
     )
-}
-
-/** The profile row's summary: «Female · 168 cm · 1990», what is set of it; null when nothing is. */
-@Composable
-private fun profileSummary(sex: ProfileSex?, heightCm: Int?, birthYear: Int?): String? {
-    val parts = listOfNotNull(
-        sex?.let { stringResource(if (it == ProfileSex.FEMALE) R.string.profile_female else R.string.profile_male) },
-        heightCm?.let { stringResource(R.string.profile_height_cm, it) },
-        birthYear?.toString(),
-    )
-    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
