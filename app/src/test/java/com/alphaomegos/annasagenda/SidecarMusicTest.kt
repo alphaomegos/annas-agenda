@@ -198,6 +198,21 @@ class SidecarMusicTest {
         assertEquals(listOf(MusicTab.All, MusicTab.Member("u2")), musicTabs(listOf(anna), byArtist = false))
     }
 
+    /** The phone's own list (0372): first, always; the sidecar's after it only signed in. */
+    @Test
+    fun thePhonesOwnListIsFirstSignedInOrNot() {
+        assertEquals(listOf(MusicTab.Local), musicAllTabs(signedIn = false, members = listOf(eduard, anna)))
+        assertEquals(
+            listOf(MusicTab.Local, MusicTab.All, MusicTab.ByArtist, MusicTab.Member("u1"), MusicTab.Member("u2")),
+            musicAllTabs(signedIn = true, members = listOf(eduard, anna)),
+        )
+        assertEquals(MusicTab.Local, parseMusicTab(musicTabKey(MusicTab.Local)))
+        // Signed out, a remembered sidecar list falls back to the phone's own.
+        assertEquals(MusicTab.Local, musicTabShown(MusicTab.All, musicAllTabs(signedIn = false, members = emptyList())))
+        assertEquals(MusicTab.Local, musicTabShown(MusicTab.Local, musicAllTabs(signedIn = true, members = listOf(anna))))
+        assertEquals(emptyList<SidecarTrack>(), musicTracksOf(listOf(track("t1")), MusicTab.Local, null))
+    }
+
     @Test
     fun aListIsRememberedAndReadBackAndOneThatIsGoneIsAllSongs() {
         val tabs = musicTabs(listOf(eduard, anna))

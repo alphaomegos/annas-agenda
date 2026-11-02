@@ -45,8 +45,11 @@ data class SidecarTrack(
     val pendingApproval: Boolean = false,
 )
 
-/** A list of the music section (16.10), as the web shows them: all, one artist's, one person's. */
+/** A list of the music section (16.10), as the web shows them: all, one artist's, one person's; and the phone's own. */
 sealed interface MusicTab {
+    /** The phone's own music (02.11): always there, always first, signed in or not. */
+    data object Local : MusicTab
+
     /** Every approved track. */
     data object All : MusicTab
 

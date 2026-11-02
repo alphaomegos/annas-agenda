@@ -101,6 +101,20 @@ import com.alphaomegos.annasagenda.support.musicArtistShown
 import com.alphaomegos.annasagenda.support.musicArtists
 import com.alphaomegos.annasagenda.support.musicMemberName
 import com.alphaomegos.annasagenda.support.musicQueue
+import androidx.compose.material.icons.filled.MoreVert
+import com.alphaomegos.annasagenda.support.key
+import com.alphaomegos.annasagenda.support.phoneTracksShown
+import com.alphaomegos.annasagenda.support.phoneTracksHidden
+import com.alphaomegos.annasagenda.support.phoneTrackId
+import com.alphaomegos.annasagenda.support.phoneFolders
+import com.alphaomegos.annasagenda.support.phoneFolderChosen
+import com.alphaomegos.annasagenda.support.musicAllTabs
+import com.alphaomegos.annasagenda.support.isPhoneTrackId
+import com.alphaomegos.annasagenda.support.asTrack
+import com.alphaomegos.annasagenda.components.rememberSidecarAvatar
+import com.alphaomegos.annasagenda.components.SidecarAccountIcon
+import com.alphaomegos.annasagenda.app.MusicPhones
+import com.alphaomegos.annasagenda.app.MusicPhone
 import com.alphaomegos.annasagenda.support.musicResumed
 import com.alphaomegos.annasagenda.app.musicPlayerMemoryFile
 import androidx.media3.common.MediaItem
@@ -167,13 +181,34 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     LaunchedEffect(space?.id, signIn == SidecarSignInState.SIGNED_IN) {
         if (signIn == SidecarSignInState.SIGNED_IN && space != null) library.refresh(space.id)
     }
-    val refresh: () -> Unit = { space?.let { s -> scope.launch { library.refresh(s.id) } } }
+    val refresh: () -> Unit = {
+        scope.launch { MusicPhones.of(context).rescan() }
+        if (signIn == SidecarSignInState.SIGNED_IN) space?.let { s -> scope.launch { library.refresh(s.id) } }
+    }
 
-    val tabs = musicTabs(lib.members, prefs.artistTab)
+    // The phone's own music (02.11, Eduard): read on entering and after the permission is
+    // given; it follows the media index by itself after that. Its tab is first, signed in or not.
+    val phone = remember(context) { MusicPhones.of(context) }
+    val phonePrefs = remember(context) { MusicPhones.prefsOf(context) }
+    val phoneScan by phone.scan.collectAsStateWithLifecycle()
+    val phoneChoices by phonePrefs.choices.collectAsStateWithLifecycle()
+    val askPhone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { scope.launch { phone.rescan() } }
+    LaunchedEffect(Unit) { phone.rescan() }
+    val phoneById = remember(phoneScan) { phoneScan.tracks.associateBy { phoneTrackId(it) } }
+    val phoneShown = remember(phoneScan, phoneChoices) {
+        phoneTracksShown(phoneScan.tracks, phoneChoices.folders, phoneChoices.hidden).map { it.asTrack() }
+    }
+    var foldersOpen by rememberSaveable { mutableStateOf(false) }
+    var hiddenOpen by rememberSaveable { mutableStateOf(false) }
+    var phoneActions by rememberSaveable { mutableStateOf<String?>(null) }
+    val sidecarAvatar = rememberSidecarAvatar(status)
+
+    val sidecarIn = signIn == SidecarSignInState.SIGNED_IN && space != null
+    val tabs = musicAllTabs(sidecarIn, lib.members, prefs.artistTab)
     val tab = musicTabShown(parseMusicTab(prefs.tab), tabs)
     val artists = musicArtists(lib.tracks, locale)
     val artist = musicArtistShown(prefs.artist, artists)
-    val shown = musicSorted(musicTracksOf(lib.tracks, tab, artist), prefs.sort, locale)
+    val shown = musicSorted(if (tab == MusicTab.Local) phoneShown else musicTracksOf(lib.tracks, tab, artist), prefs.sort, locale)
     val namesById = lib.members.associate { it.id to musicMemberName(it) }
 
     // What is kept on the phone (16.10): looked at again whenever it may have changed.
@@ -194,7 +229,8 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     // "Save all" for the list shown (16.10): what it would fetch, and how it is going.
     val saveAll by remember(context) { MusicSaveAllWorker.progress(context) }.collectAsStateWithLifecycle(initialValue = null)
     val savePlan = musicDownloadPlan(
-        shown,
+        // The phone's own are on the phone already.
+        if (tab == MusicTab.Local) emptyList() else shown,
         shown.filter { it.id in kept }.mapNotNull { musicCacheKey(it) }.toSet(),
         localFiles.keys - unreadable,
     )
@@ -203,7 +239,13 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         if (lib.loaded && !lib.fromPhone) MusicCache.dropStale(context, lib.tracks, localFiles.keys - unreadable)
     }
 
-    val localOf: (SidecarTrack) -> MusicLocalFile? = { track -> localFiles[track.id]?.takeIf { track.id !in unreadable } }
+    val localOf: (SidecarTrack) -> MusicLocalFile? = { track ->
+        if (isPhoneTrackId(track.id)) {
+            phoneById[track.id]?.let { MusicLocalFile(it.uri, it.fileName) }
+        } else {
+            localFiles[track.id]?.takeIf { track.id !in unreadable }
+        }
+    }
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val trackId = pickingFor
         pickingFor = null
@@ -253,18 +295,30 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
             }
         },
         topBar = {
+            // Back, the sidecar's picture, refresh, order, look, settings (02.11, Eduard): the
+            // sidecar's name is its list's now, not the title's.
             MetroTopBar(
-                title = space?.name?.takeIf { it.isNotBlank() && signIn == SidecarSignInState.SIGNED_IN }
-                    ?: stringResource(R.string.menu_music),
+                title = "",
                 onBack = onBack,
                 actions = {
-                    if (signIn == SidecarSignInState.SIGNED_IN && space != null) {
-                        IconButton(onClick = refresh) {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.music_refresh))
-                        }
-                        IconButton(onClick = { sortOpen = true }) {
-                            Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.music_sort))
-                        }
+                    IconButton(onClick = { accountOpen = true }) {
+                        SidecarAccountIcon(
+                            state = signIn,
+                            avatar = sidecarAvatar,
+                            contentDescription = stringResource(
+                                when (signIn) {
+                                    SidecarSignInState.SIGNED_OUT -> R.string.sidecar_account_signed_out
+                                    SidecarSignInState.SIGNED_IN -> R.string.sidecar_account_signed_in
+                                    SidecarSignInState.ATTENTION -> R.string.sidecar_account_attention
+                                },
+                            ),
+                        )
+                    }
+                    IconButton(onClick = refresh) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.music_refresh))
+                    }
+                    IconButton(onClick = { sortOpen = true }) {
+                        Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.music_sort))
                     }
                     IconButton(onClick = { styleOpen = true }) {
                         Icon(Icons.Default.Palette, contentDescription = stringResource(R.string.metro_style))
@@ -280,27 +334,67 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
             val c = controller
             when {
                 panelShown && c != null -> MusicPlayerPanel(c, now) { playerOpen = false }
-                signIn != SidecarSignInState.SIGNED_IN -> MusicMessage(
-                    text = stringResource(
-                        if (signIn == SidecarSignInState.ATTENTION) R.string.sidecar_session_ended else R.string.sidecar_sign_in_why,
-                    ),
-                    action = stringResource(R.string.sidecar_sign_in),
-                    onAction = { accountOpen = true },
-                )
-                space == null -> MusicMessage(text = stringResource(R.string.sidecar_no_spaces))
                 else -> {
                     MusicTabStrip(
                         tabs = tabs,
                         selected = tab,
                         label = { t ->
                             when (t) {
-                                MusicTab.All -> stringResource(R.string.music_tab_all)
+                                MusicTab.Local -> stringResource(R.string.music_tab_local)
+                                // The sidecar's own name for its songs (02.11): «OURPLACE».
+                                MusicTab.All -> space?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.music_tab_all)
                                 MusicTab.ByArtist -> stringResource(R.string.music_tab_artist)
                                 is MusicTab.Member -> namesById[t.userId] ?: "?"
                             }
                         },
                         onSelect = { t -> onPrefs { it.copy(tab = musicTabKey(t)) } },
                     )
+                    if (tab == MusicTab.Local) {
+                        // The phone's own (02.11): the permission, then the folders, then the list.
+                        when {
+                            !phoneScan.scanned -> Unit
+                            !phoneScan.permitted -> MusicMessage(
+                                text = stringResource(R.string.music_phone_permission_why),
+                                action = stringResource(R.string.music_phone_allow),
+                                onAction = { askPhone.launch(MusicPhone.permission()) },
+                            )
+                            phoneChoices.folders.isEmpty() -> MusicMessage(
+                                text = stringResource(R.string.music_phone_folders_why),
+                                action = stringResource(R.string.music_phone_folders),
+                                onAction = { foldersOpen = true },
+                            )
+                            else -> {
+                                MetroTextButton(onClick = { foldersOpen = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                                    Text(stringResource(R.string.music_phone_folders_count, phoneChoices.folders.size))
+                                }
+                                if (shown.isEmpty()) MusicMessage(text = stringResource(R.string.music_phone_empty))
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    contentPadding = PaddingValues(bottom = 16.dp),
+                                ) {
+                                    items(shown, key = { it.id }) { track ->
+                                        MusicTrackRow(
+                                            track = track,
+                                            addedBy = null,
+                                            size = track.audioSize?.let { Formatter.formatShortFileSize(context, it) },
+                                            current = track.id == now.trackId,
+                                            kept = false,
+                                            saving = false,
+                                            playable = true,
+                                            local = null,
+                                            localMissing = false,
+                                            onPlay = { play(track) },
+                                            onSave = {},
+                                            onRemove = {},
+                                            onMore = { phoneActions = track.id },
+                                            phone = true,
+                                        )
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                    }
+                                }
+                            }
+                        }
+                    } else {
                     if (tab == MusicTab.ByArtist) {
                         MetroTextButton(onClick = { artistOpen = true }, enabled = artists.isNotEmpty(), modifier = Modifier.padding(horizontal = 8.dp)) {
                             Text(artist ?: stringResource(R.string.music_no_artists), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -361,6 +455,7 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                             )
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         }
+                    }
                     }
                 }
             }
@@ -436,9 +531,85 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                             Text(stringResource(R.string.music_clear))
                         }
                     }
+                    // The phone's own (02.11): its folders, and the tracks hidden from it.
+                    MetroTextButton(onClick = {
+                        setupOpen = false
+                        foldersOpen = true
+                    }) { Text(stringResource(R.string.music_phone_folders)) }
+                    val hiddenNow = phoneTracksHidden(phoneScan.tracks, phoneChoices.hidden)
+                    MetroTextButton(onClick = {
+                        setupOpen = false
+                        hiddenOpen = true
+                    }, enabled = hiddenNow.isNotEmpty()) { Text(stringResource(R.string.music_phone_hidden, hiddenNow.size)) }
                 }
             },
             confirmButton = { MetroTextButton(onClick = { setupOpen = false }) { Text(stringResource(R.string.ok)) } },
+        )
+    }
+
+    if (foldersOpen) {
+        val folders = phoneFolders(phoneScan.tracks)
+        MetroDialog(
+            onDismissRequest = { foldersOpen = false },
+            title = { Text(stringResource(R.string.music_phone_folders)) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    if (folders.isEmpty()) Text(stringResource(R.string.music_phone_no_folders), style = MaterialTheme.typography.bodyMedium)
+                    folders.forEach { f ->
+                        // A folder inside a chosen one comes with it, ticked, and is let go with it.
+                        val chosen = f.path in phoneChoices.folders
+                        val within = !chosen && phoneFolderChosen(f.path, phoneChoices.folders)
+                        MetroMapTick(
+                            stringResource(R.string.music_phone_folder_line, f.path.trimEnd('/'), f.tracks),
+                            chosen || within,
+                            Modifier.fillMaxWidth().alpha(if (within) 0.6f else 1f),
+                        ) { on ->
+                            if (!within) phonePrefs.setFolders(if (on) phoneChoices.folders + f.path else phoneChoices.folders - f.path)
+                        }
+                    }
+                }
+            },
+            confirmButton = { MetroTextButton(onClick = { foldersOpen = false }) { Text(stringResource(R.string.ok)) } },
+        )
+    }
+
+    if (hiddenOpen) {
+        val hiddenNow = phoneTracksHidden(phoneScan.tracks, phoneChoices.hidden)
+        MetroDialog(
+            onDismissRequest = { hiddenOpen = false },
+            title = { Text(stringResource(R.string.music_phone_hidden_title)) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    hiddenNow.forEach { h ->
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(h.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(h.folder + h.fileName, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            MetroTextButton(onClick = { phonePrefs.unhide(h.key) }) { Text(stringResource(R.string.music_phone_unhide)) }
+                        }
+                    }
+                }
+            },
+            confirmButton = { MetroTextButton(onClick = { hiddenOpen = false }) { Text(stringResource(R.string.ok)) } },
+        )
+    }
+
+    phoneById[phoneActions]?.let { pt ->
+        MetroDialog(
+            onDismissRequest = { phoneActions = null },
+            title = { Text(pt.title) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(pt.folder + pt.fileName, style = MaterialTheme.typography.bodySmall)
+                    MetroTextButton(onClick = {
+                        phonePrefs.hide(pt.key)
+                        phoneActions = null
+                    }) { Text(stringResource(R.string.music_phone_hide)) }
+                    Text(stringResource(R.string.music_phone_hide_hint), style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = { MetroTextButton(onClick = { phoneActions = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -625,6 +796,8 @@ private fun MusicTrackRow(
     onSave: () -> Unit,
     onRemove: () -> Unit,
     onMore: () -> Unit,
+    // The phone's own (02.11): nothing to keep a copy of; ⋮ opens its actions.
+    phone: Boolean = false,
 ) {
     val colors = MaterialTheme.colorScheme
     Row(
@@ -676,7 +849,9 @@ private fun MusicTrackRow(
         }
         // Kept on the phone or not (16.10): a tap keeps it; a kept one, a tap asks to take it off.
         // One played from a file of the phone's needs no copy.
-        if (track.hasAudio && (local == null || localMissing)) {
+        if (phone) {
+            MusicControl(Icons.Default.MoreVert, "...", stringResource(R.string.music_track_more), onMore, lit = false)
+        } else if (track.hasAudio && (local == null || localMissing)) {
             when {
                 saving -> if (musicStyled()) {
                     Text("...", style = MaterialTheme.typography.labelLarge, color = colors.primary, modifier = Modifier.padding(horizontal = 12.dp))

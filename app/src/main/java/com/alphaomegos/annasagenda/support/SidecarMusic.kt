@@ -210,8 +210,16 @@ fun musicMemberName(member: SidecarMember): String =
 fun musicTabs(members: List<SidecarMember>, byArtist: Boolean = true): List<MusicTab> =
     listOf(MusicTab.All) + (if (byArtist) listOf(MusicTab.ByArtist) else emptyList()) + members.map { MusicTab.Member(it.id) }
 
+/**
+ * Every list the section shows (02.11): the phone's own first, always; the sidecar's after
+ * it only signed in to one.
+ */
+fun musicAllTabs(signedIn: Boolean, members: List<SidecarMember>, byArtist: Boolean = true): List<MusicTab> =
+    listOf(MusicTab.Local) + if (signedIn) musicTabs(members, byArtist) else emptyList()
+
 /** How a list is remembered. */
 fun musicTabKey(tab: MusicTab): String = when (tab) {
+    MusicTab.Local -> "local"
     MusicTab.All -> "all"
     MusicTab.ByArtist -> "artist"
     is MusicTab.Member -> "member:${tab.userId}"
@@ -219,13 +227,21 @@ fun musicTabKey(tab: MusicTab): String = when (tab) {
 
 /** A remembered list read back; all songs for anything this build does not know. */
 fun parseMusicTab(raw: String?): MusicTab = when {
+    raw == "local" -> MusicTab.Local
     raw == "artist" -> MusicTab.ByArtist
     raw != null && raw.startsWith("member:") && raw.length > "member:".length -> MusicTab.Member(raw.substring("member:".length))
     else -> MusicTab.All
 }
 
-/** The list to show when [chosen] was picked: it, while the sidecar still has it; all songs when not. */
-fun musicTabShown(chosen: MusicTab, tabs: List<MusicTab>): MusicTab = if (chosen in tabs) chosen else MusicTab.All
+/**
+ * The list to show when [chosen] was picked: it, while it is still there; all songs when
+ * not; the first there is (the phone's own) when there are no sidecar's lists at all.
+ */
+fun musicTabShown(chosen: MusicTab, tabs: List<MusicTab>): MusicTab = when {
+    chosen in tabs -> chosen
+    MusicTab.All in tabs -> MusicTab.All
+    else -> tabs.firstOrNull() ?: MusicTab.Local
+}
 
 fun parseMusicSort(raw: String?): MusicSort = MusicSort.entries.firstOrNull { it.name == raw } ?: MusicSort.NEWEST
 
@@ -249,6 +265,8 @@ fun musicArtistShown(chosen: String?, artists: List<String>): String? =
 
 /** The tracks of [tab]: all the approved, one [artist]'s approved, or all one person added. */
 fun musicTracksOf(tracks: List<SidecarTrack>, tab: MusicTab, artist: String?): List<SidecarTrack> = when (tab) {
+    // The phone's own come from the phone (PhoneMusic.kt), not from the sidecar's list.
+    MusicTab.Local -> emptyList()
     MusicTab.All -> tracks.filter { it.approvedAt != null }
     MusicTab.ByArtist -> if (artist == null) emptyList() else tracks.filter { it.approvedAt != null && it.artist?.trim() == artist }
     is MusicTab.Member -> tracks.filter { it.createdByUserId == tab.userId }

@@ -128,4 +128,23 @@ class MusicPlaybackManifestTest {
         assertTrue(phone.hasCode("Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE"))
         assertTrue(phone.hasCode("registerContentObserver(collection, true, observer)"))
     }
+
+    /**
+     * Music without oursidecar (0372): the tile is open signed in or not; the screen has no
+     * sign-in wall, the phone's own list first, the sidecar's picture in the bar and no title;
+     * the phone's rows have ⋮; the settings reach the folders and the hidden tracks.
+     */
+    @Test
+    fun musicOpensWithoutTheSidecar() {
+        val files = mainSourceFiles().associateBy { it.name }
+        assertTrue(files.getValue("MainMenuScreen.kt").readText().hasCode("musicOpen = true,"))
+        val screen = files.getValue("MusicScreen.kt").readText()
+        assertTrue("no wall before the music", !screen.contains("R.string.sidecar_sign_in_why"))
+        assertTrue(screen.hasCode("val tabs = musicAllTabs(sidecarIn, lib.members, prefs.artistTab)"))
+        assertTrue(screen.hasCode("title = \"\",") && screen.hasCode("SidecarAccountIcon("))
+        assertTrue(screen.hasCode("MusicTab.All -> space?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.music_tab_all)"))
+        assertTrue(screen.hasCode("phone = true,") && screen.hasCode("MusicControl(Icons.Default.MoreVert"))
+        assertTrue(screen.hasCode("phonePrefs.hide(pt.key)") && screen.hasCode("phonePrefs.unhide(h.key)"))
+        assertTrue(screen.hasCode("askPhone.launch(MusicPhone.permission())"))
+    }
 }

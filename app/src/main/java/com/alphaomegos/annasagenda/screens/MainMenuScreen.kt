@@ -265,8 +265,8 @@ fun MainMenuScreen(
         onMediaLibrary = onMediaLibrary,
         onMetro = onMetro,
         onTravel = onTravel,
-        // Music opens only signed in to oursidecar (16.10); grey before, and a tap asks to sign in.
-        musicOpen = sidecarStatus.signIn(System.currentTimeMillis()) == SidecarSignInState.SIGNED_IN,
+        // Music opens signed in or not (02.11): the phone's own music needs no oursidecar.
+        musicOpen = true,
         onMusic = onMusic,
         onMusicClosed = openSidecar,
     )
