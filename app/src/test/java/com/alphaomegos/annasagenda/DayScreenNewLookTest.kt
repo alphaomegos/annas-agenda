@@ -134,7 +134,14 @@ class DayScreenNewLookTest {
         val body = mainSourceFiles().single { it.name == "CalorimeterNewDay.kt" }.readText()
         assertTrue("no cards (the diet card is passed in)", !Regex("""\bCard\(""").containsMatchIn(body) && !body.contains("CircleShape"))
         assertTrue(body.hasCode("color = MaterialTheme.colorScheme.surfaceContainerLow,") && body.hasCode("HorizontalDivider(thickness = 0.5.dp"))
-        assertTrue(body.hasCode("R.string.calorimeter_spent") && body.hasCode("R.string.calorimeter_no_records") && body.hasCode("onProfile"))
+        assertTrue(body.hasCode("R.string.calorimeter_spent") && body.hasCode("R.string.calorimeter_no_records"))
+        // One row on top (0370): ‹ the date › — a tap brings today back, the year only away
+        // from this one — and «+ Eaten»; no «Today»; the profile is the picture in the bar.
+        assertTrue(body.hasCode("onClickLabel = stringResource(R.string.calorimeter_to_today),") && body.hasCode("if (view.date.year != view.currentYear) {"))
+        assertTrue(!body.contains("R.string.today)") && !body.contains("day_screen_subtitle") && !body.contains("onProfile") && !body.contains("profileSummary"))
+        assertTrue(screen.hasCode("if (state.newLook) ProfileAvatarButton { profileOpen = true }"))
+        val avatar = mainSourceFiles().single { it.name == "ProfileAvatarButton.kt" }.readText()
+        assertTrue(avatar.hasCode("val avatar = rememberSidecarAvatar(status)") && avatar.hasCode("Icon(AppIcons.profile, contentDescription = name)"))
         assertTrue(body.hasCode("NumberFormat.getIntegerInstance(locale)"))
     }
 

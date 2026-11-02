@@ -127,6 +127,8 @@
     <string name="calorimeter_spent_parts_own">sopstvena norma %1$s · koraci %2$s · trčanje %3$s</string>
     <string name="calorimeter_spent_needs">Potrošnja dana se prikazuje kad je profil popunjen i postoji bar jedno merenje težine</string>
     <string name="calorimeter_no_records">Za ovaj dan ništa nije zapisano: prognoza težine ga ne računa</string>
+    <string name="calorimeter_to_today">Nazad na danas</string>
+    <string name="date_year_line">%1$d.</string>
     <string name="calorimeter_week_goal">Nedeljna norma</string>
     <string name="calorimeter_week_balance">Bilans (poslednjih 7 dana)</string>
     <string name="calorimeter_month_projection">Potencijalna promena (30 dana)</string>

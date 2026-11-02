@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.SystemUpdateAlt
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.BreakfastDining
 import androidx.compose.material.icons.filled.Cake
@@ -43,6 +44,9 @@ internal object AppIcons {
      * of steps and weight; ImportIconButton names it on a long press.
      */
     val importData: ImageVector = Icons.Filled.SystemUpdateAlt
+
+    /** The profile when oursidecar has no picture of the person (02.11): a silhouette in a circle. */
+    val profile: ImageVector = Icons.Filled.AccountCircle
 
     /** The Steps chart drawn as bars, or as a line (19.10). */
     val stepsChartBars: ImageVector = Icons.Filled.BarChart

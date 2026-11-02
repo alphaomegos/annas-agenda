@@ -25,7 +25,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -34,6 +33,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import com.alphaomegos.annasagenda.components.FittingText
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.model.FoodEntry
 import com.alphaomegos.annasagenda.support.DayEnergy
@@ -48,13 +51,14 @@ import java.util.Locale
 internal class CalorimeterDayView(
     val date: LocalDate,
     val isToday: Boolean,
+    // The year under the date only away from this one (02.11).
+    val currentYear: Int,
     val goalKcal: Int,
     val showGoal: Boolean,
     val eatenKcal: Int,
     val eaten: List<FoodEntry>,
     val hasRecords: Boolean,
     val energy: DayEnergy?,
-    val profile: String?,
     val dietDishes: List<DietDishOnDay>,
     val showWeek: Boolean,
     val weekGoalKcal: Int,
@@ -64,12 +68,13 @@ internal class CalorimeterDayView(
 )
 
 /**
- * The calorimeter in the new look (01.11), in the day screen's language: the date big,
- * one light row of ‹ Today › and «+ Eaten»; then everything on grounded surfaces with
- * hairlines between the rows, no floating cards. The day's summary carries the goal, what
- * was eaten and the balance with a bar, and — new — the day's spending as the weight
- * forecast counts it (the norm, the steps, the runs) with the profile it comes from, and
- * a word when the day has no records (the forecast leaves such days out).
+ * The calorimeter in the new look (01.11), in the day screen's language; one row on top
+ * (02.11, Eduard): ‹ the date › — a tap on it brings today back; the year under it only
+ * away from this year — and «+ Eaten» at the right. Then everything on grounded surfaces
+ * with hairlines between the rows, no floating cards: the goal, what was eaten, the
+ * balance with a bar, the day's spending as the weight forecast counts it (the norm, the
+ * steps, the runs), and a word when the day has no records (the forecast leaves such days
+ * out). The profile is the picture in the top bar, not a row here.
  */
 @Composable
 internal fun CalorimeterNewDay(
@@ -82,7 +87,6 @@ internal fun CalorimeterNewDay(
     onAdd: () -> Unit,
     onEditGoal: () -> Unit,
     onDelete: (Long) -> Unit,
-    onProfile: () -> Unit,
     dietCard: @Composable () -> Unit,
 ) {
     val numbers = remember(locale) { NumberFormat.getIntegerInstance(locale) }
@@ -90,32 +94,41 @@ internal fun CalorimeterNewDay(
     fun k(v: Int) = numbers.format(v) + " " + kcal
     val negative = MaterialTheme.colorScheme.error
     val month = monthAfterDay(stringResource(R.string.months_after_day), view.date)
-    val weekday = remember(view.date, locale) { view.date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, locale) }
+    val title = stringResource(R.string.day_screen_title, view.date.dayOfMonth, month)
+    val typography = MaterialTheme.typography
 
-    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            stringResource(R.string.day_screen_title, view.date.dayOfMonth, month),
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            stringResource(R.string.day_screen_subtitle, weekday, view.date.dayOfMonth, month, view.date.year),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-    }
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onPrev) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.prev_day))
         }
-        TextButton(onClick = onToday, enabled = !view.isToday, contentPadding = PaddingValues(horizontal = 10.dp)) {
-            Text(stringResource(R.string.today))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(
+                    enabled = !view.isToday,
+                    onClickLabel = stringResource(R.string.calorimeter_to_today),
+                    role = Role.Button,
+                    onClick = onToday,
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            FittingText(
+                choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (view.date.year != view.currentYear) {
+                Text(
+                    stringResource(R.string.date_year_line, view.date.year),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
         IconButton(onClick = onNext) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.next_day))
         }
-        Spacer(modifier = Modifier.weight(1f))
         FilledTonalButton(
             onClick = onAdd,
             contentPadding = PaddingValues(start = 10.dp, end = 14.dp),
@@ -176,20 +189,8 @@ internal fun CalorimeterNewDay(
                 stringResource(R.string.calorimeter_spent_needs),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                view.profile ?: stringResource(R.string.profile_title),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(onClick = onProfile) { Text(stringResource(R.string.profile_title)) }
         }
         if (!view.hasRecords) {
             Hairline()

@@ -4,7 +4,7 @@ import com.alphaomegos.annasagenda.components.TopBarBack
 import com.alphaomegos.annasagenda.support.runningPlanRunsDone
 import com.alphaomegos.annasagenda.support.dayEnergy
 import com.alphaomegos.annasagenda.model.ProfileSex
-import com.alphaomegos.annasagenda.components.profileSummary
+import com.alphaomegos.annasagenda.components.ProfileAvatarButton
 import com.alphaomegos.annasagenda.components.ProfileDialog
 import android.media.AudioAttributes
 import android.media.SoundPool
@@ -233,7 +233,6 @@ private fun CalorimeterContent(
 
     // The new look's day spending and profile (01.11).
     var profileOpen by rememberSaveable { mutableStateOf(false) }
-    val profileText = profileSummary(state.profileSex, state.heightCm, state.profileBirthYear)
     val energy = remember(state, selectedDate, today) {
         dayEnergy(
             date = selectedDate,
@@ -275,6 +274,8 @@ private fun CalorimeterContent(
                     TopBarBack(onBack)
                 },
                 actions = {
+                    // The profile as the person's picture, left of ⚙ (02.11, Eduard).
+                    if (state.newLook) ProfileAvatarButton { profileOpen = true }
                     IconButton(onClick = { showDisplaySettings.value = true }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -299,13 +300,13 @@ private fun CalorimeterContent(
                 view = CalorimeterDayView(
                     date = selectedDate,
                     isToday = isToday,
+                    currentYear = today.year,
                     goalKcal = goalSelected,
                     showGoal = state.calorimeterShowDailyGoal,
                     eatenKcal = eatenSelectedSum,
                     eaten = eatenSelected,
                     hasRecords = state.foodLog.any { it.date == selectedDate },
                     energy = energy,
-                    profile = profileText,
                     dietDishes = dietDishes,
                     showWeek = state.calorimeterShowWeeklyGoal,
                     weekGoalKcal = weekGoal,
@@ -330,7 +331,6 @@ private fun CalorimeterContent(
                     showGoalDialog.value = true
                 },
                 onDelete = onDeleteFood,
-                onProfile = { profileOpen = true },
                 dietCard = {
                     DietDayCard(
                         dishes = dietDishes,
