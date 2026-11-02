@@ -267,6 +267,9 @@ fun MainMenuScreen(
         onTravel = onTravel,
         // Music opens signed in or not (02.11): the phone's own music needs no oursidecar.
         musicOpen = true,
+        // The tile's picture tells which music it is (02.11): the two cats with the record
+        // signed in to the sidecar, the DJ cat on his own without it.
+        musicSignedIn = sidecarStatus.signIn(System.currentTimeMillis()) == SidecarSignInState.SIGNED_IN,
         onMusic = onMusic,
         onMusicClosed = openSidecar,
     )
@@ -356,6 +359,7 @@ private fun rememberMainMenuEntries(
     musicOpen: Boolean,
     onMusic: () -> Unit,
     onMusicClosed: () -> Unit,
+    musicSignedIn: Boolean = true,
 ): List<MenuEntry> {
     return remember(
         onCalendar,
@@ -372,6 +376,7 @@ private fun rememberMainMenuEntries(
         musicOpen,
         onMusic,
         onMusicClosed,
+        musicSignedIn,
     ) {
         listOf(
             MenuEntry("calendar", R.drawable.ic_menu_calendar, R.string.calendar, onCalendar),
@@ -385,10 +390,10 @@ private fun rememberMainMenuEntries(
             MenuEntry("reading", R.drawable.ic_menu_reading, R.string.menu_reading, onMediaLibrary),
             MenuEntry("metro", R.drawable.ic_menu_metro, R.string.menu_metro, onMetro),
             MenuEntry("travel", R.drawable.ic_menu_travel, R.string.menu_travel, onTravel),
-            // Eduard's two cats with a record; grey until signed in.
+            // Eduard's two cats with a record signed in to the sidecar; his DJ cat alone without it (02.11).
             MenuEntry(
                 "music",
-                R.drawable.ic_menu_music,
+                if (musicSignedIn) R.drawable.ic_menu_music else R.drawable.ic_menu_music_solo,
                 R.string.menu_music,
                 if (musicOpen) onMusic else onMusicClosed,
                 comingSoon = !musicOpen,

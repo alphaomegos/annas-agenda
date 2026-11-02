@@ -147,4 +147,13 @@ class MusicPlaybackManifestTest {
         assertTrue(screen.hasCode("phonePrefs.hide(pt.key)") && screen.hasCode("phonePrefs.unhide(h.key)"))
         assertTrue(screen.hasCode("askPhone.launch(MusicPhone.permission())"))
     }
+
+    /** The music tile's picture (0373): the two cats signed in, Eduard's DJ cat without the sidecar. */
+    @Test
+    fun theTileShowsWhichMusicItIs() {
+        val menu = mainSourceFiles().single { it.name == "MainMenuScreen.kt" }.readText()
+        assertTrue(menu.hasCode("if (musicSignedIn) R.drawable.ic_menu_music else R.drawable.ic_menu_music_solo,"))
+        assertTrue(menu.hasCode("musicSignedIn = sidecarStatus.signIn(System.currentTimeMillis()) == SidecarSignInState.SIGNED_IN,"))
+        assertTrue(File(mainResRoot(), "drawable/ic_menu_music_solo.webp").isFile)
+    }
 }
