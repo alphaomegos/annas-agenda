@@ -1076,6 +1076,9 @@
     <string name="music_phone_hidden">Skrivene pesme: %1$d</string>
     <string name="music_phone_hidden_title">Skrivene pesme</string>
     <string name="music_phone_unhide">Vrati</string>
+    <string name="music_propose_sending">Slanje u sajdkar</string>
+    <string name="music_propose_sent">Poslato u sajdkar: %1$d</string>
+    <string name="music_propose_channel">Slanje muzike</string>
     <string name="music_refresh">Osveži</string>
     <string name="music_sort">Redosled</string>
     <string name="music_sort_newest">Prvo najnovije</string>

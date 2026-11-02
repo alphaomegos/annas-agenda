@@ -156,4 +156,20 @@ class MusicPlaybackManifestTest {
         assertTrue(menu.hasCode("musicSignedIn = sidecarStatus.signIn(System.currentTimeMillis()) == SidecarSignInState.SIGNED_IN,"))
         assertTrue(File(mainResRoot(), "drawable/ic_menu_music_solo.webp").isFile)
     }
+
+    /**
+     * Proposing to the sidecar (0374): in the background by WorkManager, over Wi-Fi only as
+     * the settings say — the wish kept and sent when the network comes; a sent track plays
+     * from this phone's file; a run going does not drop a new wish.
+     */
+    @Test
+    fun aProposalWaitsForItsNetworkAndThenPlaysFromThePhone() {
+        val worker = mainSourceFiles().single { it.name == "MusicProposeWorker.kt" }.readText()
+        assertTrue(worker.hasCode("setRequiredNetworkType(if (wifiOnly) NetworkType.UNMETERED else NetworkType.CONNECTED)"))
+        assertTrue(worker.hasCode("ExistingWorkPolicy.APPEND_OR_REPLACE"))
+        assertTrue(worker.hasCode("MusicLocalFileStores.of(ctx).set(outcome.trackId, MusicLocalFile(p.uri, p.fileName))"))
+        assertTrue(worker.hasCode("if (later && runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.success()"))
+        val connection = mainSourceFiles().single { it.name == "SidecarConnection.kt" }.readText()
+        assertTrue(connection.hasCode("authorizedSend(\"POST\", sidecarTracksPath(spaceId), body)"))
+    }
 }

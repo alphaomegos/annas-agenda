@@ -145,4 +145,12 @@ internal object MusicPhones {
     fun prefsOf(context: Context): MusicPhonePrefs = prefs ?: synchronized(this) {
         prefs ?: MusicPhonePrefs(File(File(context.applicationContext.noBackupFilesDir, "music"), "phone.json")).also { prefs = it }
     }
+
+    @Volatile
+    private var proposals: MusicProposals? = null
+
+    /** The phone's tracks proposed to the sidecar, waiting or sent (02.11). */
+    fun proposalsOf(context: Context): MusicProposals = proposals ?: synchronized(this) {
+        proposals ?: MusicProposals(File(File(context.applicationContext.noBackupFilesDir, "music"), "proposals.json")).also { proposals = it }
+    }
 }

@@ -1142,6 +1142,9 @@
     <string name="music_phone_hidden">Скрытые треки: %1$d</string>
     <string name="music_phone_hidden_title">Скрытые треки</string>
     <string name="music_phone_unhide">Вернуть</string>
+    <string name="music_propose_sending">Отправка в сайдкар</string>
+    <string name="music_propose_sent">Отправлено в сайдкар: %1$d</string>
+    <string name="music_propose_channel">Отправка музыки</string>
     <string name="music_refresh">Обновить</string>
     <string name="music_sort">Порядок</string>
     <string name="music_sort_newest">Сначала новые</string>

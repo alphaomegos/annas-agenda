@@ -3,6 +3,8 @@ package com.alphaomegos.annasagenda.app
 import com.alphaomegos.annasagenda.data.SidecarAccountReplyDto
 import com.alphaomegos.annasagenda.data.SidecarDeviceDto
 import com.alphaomegos.annasagenda.data.SidecarSpaceReplyDto
+import com.alphaomegos.annasagenda.data.SidecarNewTrackDto
+import com.alphaomegos.annasagenda.data.SidecarTrackReplyDto
 import com.alphaomegos.annasagenda.data.SidecarTracksReplyDto
 import com.alphaomegos.annasagenda.data.sidecarJson
 import com.alphaomegos.annasagenda.data.toDomain
@@ -280,7 +282,9 @@ internal class SidecarConnection(
      * A GET of [path] with the session (16.10). No request at all with no
      * session or one that has run out; a refusal marks it ended.
      */
-    private suspend fun authorizedGet(path: String): SidecarResult<String> {
+    private suspend fun authorizedGet(path: String): SidecarResult<String> = authorizedSend("GET", path, null)
+
+    private suspend fun authorizedSend(method: String, path: String, json: String?): SidecarResult<String> {
         val (t, s) = mutex.withLock { currentToken() to _status.value }
         val ends = s.sessionEndsAtMillis
         if (s.account == null) return SidecarResult.Failed(SidecarFailure.SIGNED_OUT)
@@ -289,7 +293,7 @@ internal class SidecarConnection(
             return SidecarResult.Failed(SidecarFailure.SIGNED_OUT)
         }
         val reply = try {
-            http.send("GET", s.server + path, sidecarCookieHeader(t), null)
+            http.send(method, s.server + path, sidecarCookieHeader(t), json)
         } catch (e: IOException) {
             return SidecarResult.Failed(SidecarFailure.NO_NETWORK)
         }
@@ -344,6 +348,21 @@ internal class SidecarConnection(
             is SidecarResult.Failed -> r
             is SidecarResult.Ok -> parse(SidecarTracksReplyDto.serializer(), r.value)
                 ?.let { answer -> SidecarResult.Ok(answer.tracks.map { it.toDomain() }) }
+                ?: SidecarResult.Failed(SidecarFailure.UNEXPECTED)
+        }
+    }
+
+    /**
+     * Proposes a track to sidecar [spaceId] (02.11), as the web's upload does: the server
+     * makes it waiting for the other person's approval; its file goes after it
+     * ([audioUrl], SidecarAudioUpload).
+     */
+    suspend fun createTrack(spaceId: String, title: String, artist: String?): SidecarResult<SidecarTrack> = withContext(io) {
+        val body = sidecarJson.encodeToString(SidecarNewTrackDto.serializer(), SidecarNewTrackDto(title, artist?.takeIf { it.isNotBlank() }))
+        when (val r = authorizedSend("POST", sidecarTracksPath(spaceId), body)) {
+            is SidecarResult.Failed -> r
+            is SidecarResult.Ok -> parse(SidecarTrackReplyDto.serializer(), r.value)
+                ?.let { SidecarResult.Ok(it.track.toDomain()) }
                 ?: SidecarResult.Failed(SidecarFailure.UNEXPECTED)
         }
     }

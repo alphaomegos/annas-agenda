@@ -220,6 +220,34 @@ internal data class MusicLocalFilesDto(
     val files: List<MusicLocalFileDto> = emptyList(),
 )
 
+/** A track proposed from the phone (02.11): what the server's createTrack takes. */
+@Serializable
+internal data class SidecarNewTrackDto(val title: String, val artist: String? = null)
+
+/** createTrack's answer: the track, waiting for the other person's approval. */
+@Serializable
+internal data class SidecarTrackReplyDto(val track: SidecarTrackDto)
+
+/** One track proposed from the phone, until the sidecar has it (02.11). */
+@Serializable
+internal data class MusicProposalDto(
+    val key: String,
+    val uri: String,
+    val fileName: String,
+    val mimeType: String? = null,
+    val sizeBytes: Long = 0,
+    val title: String,
+    val artist: String? = null,
+    val spaceId: String,
+    // Set once the server has made the track: a retry only sends the file.
+    val trackId: String? = null,
+    val state: String = "waiting",
+    val error: String? = null,
+)
+
+@Serializable
+internal data class MusicProposalsDto(val proposals: List<MusicProposalDto> = emptyList())
+
 /** The phone's music choices (02.11), this phone's own: the folders listed, the tracks hidden (by key). */
 @Serializable
 internal data class MusicPhonePrefsDto(

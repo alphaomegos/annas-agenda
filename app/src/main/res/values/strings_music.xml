@@ -45,6 +45,9 @@
     <string name="music_phone_hidden">Hidden tracks: %1$d</string>
     <string name="music_phone_hidden_title">Hidden tracks</string>
     <string name="music_phone_unhide">Bring back</string>
+    <string name="music_propose_sending">Sending to the sidecar</string>
+    <string name="music_propose_sent">Sent to the sidecar: %1$d</string>
+    <string name="music_propose_channel">Sending music</string>
     <string name="music_refresh">Refresh</string>
     <string name="music_sort">Order</string>
     <string name="music_sort_newest">Newest first</string>
