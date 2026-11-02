@@ -219,3 +219,10 @@ internal data class MusicLocalFileDto(
 internal data class MusicLocalFilesDto(
     val files: List<MusicLocalFileDto> = emptyList(),
 )
+
+/** The phone's music choices (02.11), this phone's own: the folders listed, the tracks hidden (by key). */
+@Serializable
+internal data class MusicPhonePrefsDto(
+    val folders: List<String> = emptyList(),
+    val hidden: List<String> = emptyList(),
+)

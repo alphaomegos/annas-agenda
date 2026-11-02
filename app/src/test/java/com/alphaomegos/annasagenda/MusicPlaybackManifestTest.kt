@@ -116,4 +116,16 @@ class MusicPlaybackManifestTest {
         assertTrue(ribbon.hasCode("GLES20.glDrawArrays(GLES20.GL_POINTS, 0, ribbonDots)") && ribbon.trimEnd().removeSuffix("}").contains("GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)"))
         assertTrue("the buffer is made again with the context", gl.substringAfter("override fun onSurfaceCreated(").substringBefore("override fun onSurfaceChanged(").hasCode("GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER,"))
     }
+
+    /** The phone's own music (0371): «Music and audio» from Android 13, the storage before it — and no more. */
+    @Test
+    fun thePhonesMusicIsAskedForAsMusic() {
+        val manifest = listOf("src/main/AndroidManifest.xml", "app/src/main/AndroidManifest.xml").map { File(it) }.first { it.isFile }.readText()
+        assertTrue(manifest.contains("android.permission.READ_MEDIA_AUDIO"))
+        assertTrue(Regex("""android:name="android.permission.READ_EXTERNAL_STORAGE"\s+android:maxSdkVersion="32"""").containsMatchIn(manifest))
+        assertTrue("no wider storage", !manifest.contains("MANAGE_EXTERNAL_STORAGE") && !manifest.contains("WRITE_EXTERNAL_STORAGE"))
+        val phone = mainSourceFiles().single { it.name == "MusicPhone.kt" }.readText()
+        assertTrue(phone.hasCode("Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE"))
+        assertTrue(phone.hasCode("registerContentObserver(collection, true, observer)"))
+    }
 }
