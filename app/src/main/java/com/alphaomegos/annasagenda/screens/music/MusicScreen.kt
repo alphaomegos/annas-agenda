@@ -101,6 +101,13 @@ import com.alphaomegos.annasagenda.support.musicArtistShown
 import com.alphaomegos.annasagenda.support.musicArtists
 import com.alphaomegos.annasagenda.support.musicMemberName
 import com.alphaomegos.annasagenda.support.musicQueue
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import com.alphaomegos.annasagenda.app.MUSIC_PROPOSAL_MAX_BYTES
+import com.alphaomegos.annasagenda.app.MusicProposeWorker
+import com.alphaomegos.annasagenda.app.MusicProposalState
+import com.alphaomegos.annasagenda.app.MusicProposal
 import androidx.compose.material.icons.filled.MoreVert
 import com.alphaomegos.annasagenda.support.key
 import com.alphaomegos.annasagenda.support.phoneTracksShown
@@ -201,9 +208,26 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     var foldersOpen by rememberSaveable { mutableStateOf(false) }
     var hiddenOpen by rememberSaveable { mutableStateOf(false) }
     var phoneActions by rememberSaveable { mutableStateOf<String?>(null) }
+    // Proposing to the sidecar (02.11): the wishes kept, how the sending goes, the dialog's fields.
+    val proposalStore = remember(context) { MusicPhones.proposalsOf(context) }
+    val proposals by proposalStore.all.collectAsStateWithLifecycle()
+    val proposeProgress by remember(context) { MusicProposeWorker.progress(context) }.collectAsStateWithLifecycle(initialValue = null)
+    var proposing by rememberSaveable { mutableStateOf<String?>(null) }
+    var proposeTitle by rememberSaveable { mutableStateOf("") }
+    var proposeArtist by rememberSaveable { mutableStateOf("") }
     val sidecarAvatar = rememberSidecarAvatar(status)
 
     val sidecarIn = signIn == SidecarSignInState.SIGNED_IN && space != null
+    val spaceName = space?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.music_tab_all)
+    // Wishes made signed out, or left by a run that ended: sent once signed in.
+    LaunchedEffect(sidecarIn) {
+        if (sidecarIn && proposalStore.waiting().isNotEmpty()) MusicProposeWorker.start(context, prefs.downloadOnWifiOnly)
+    }
+    // A track that got there shows in the sidecar's lists at once.
+    val sentCount = proposals.count { it.state == MusicProposalState.SENT }
+    LaunchedEffect(sentCount) {
+        if (sentCount > 0 && sidecarIn) space?.let { s -> library.refresh(s.id) }
+    }
     val tabs = musicAllTabs(sidecarIn, lib.members, prefs.artistTab)
     val tab = musicTabShown(parseMusicTab(prefs.tab), tabs)
     val artists = musicArtists(lib.tracks, locale)
@@ -388,6 +412,15 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                                             onRemove = {},
                                             onMore = { phoneActions = track.id },
                                             phone = true,
+                                            mark = proposals.firstOrNull { phoneTrackId(it.key) == track.id }?.let { pr ->
+                                                when (pr.state) {
+                                                    MusicProposalState.SENT -> stringResource(R.string.music_mark_in, spaceName)
+                                                    MusicProposalState.REFUSED -> stringResource(R.string.music_mark_refused, refusedWhy(pr.error))
+                                                    MusicProposalState.WAITING -> proposeProgress?.takeIf { !it.waiting && it.key == pr.key }
+                                                        ?.let { stringResource(R.string.music_mark_sending, it.percent) }
+                                                        ?: stringResource(if (prefs.downloadOnWifiOnly) R.string.music_mark_waiting_wifi else R.string.music_mark_waiting)
+                                                }
+                                            },
                                         )
                                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                     }
@@ -602,6 +635,19 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(pt.folder + pt.fileName, style = MaterialTheme.typography.bodySmall)
+                    // Propose to the sidecar (02.11): signed in, small enough, not already there or on its way.
+                    val proposal = proposals.firstOrNull { it.key == pt.key }
+                    when {
+                        !sidecarIn -> Text(stringResource(R.string.music_propose_sign_in), style = MaterialTheme.typography.bodySmall)
+                        pt.sizeBytes > MUSIC_PROPOSAL_MAX_BYTES -> Text(stringResource(R.string.music_propose_too_big), style = MaterialTheme.typography.bodySmall)
+                        proposal != null && proposal.state != MusicProposalState.REFUSED -> Unit
+                        else -> MetroTextButton(onClick = {
+                            proposeTitle = pt.title
+                            proposeArtist = pt.artist ?: ""
+                            proposing = pt.key
+                            phoneActions = null
+                        }) { Text(stringResource(R.string.music_propose_to, spaceName)) }
+                    }
                     MetroTextButton(onClick = {
                         phonePrefs.hide(pt.key)
                         phoneActions = null
@@ -610,6 +656,54 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                 }
             },
             confirmButton = { MetroTextButton(onClick = { phoneActions = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+
+    phoneScan.tracks.firstOrNull { it.key == proposing }?.let { pt ->
+        val target = space
+        MetroDialog(
+            onDismissRequest = { proposing = null },
+            title = { Text(stringResource(R.string.music_propose_to, spaceName)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = proposeTitle,
+                        onValueChange = { proposeTitle = it.take(300) },
+                        label = { Text(stringResource(R.string.music_propose_field_title)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = proposeArtist,
+                        onValueChange = { proposeArtist = it.take(300) },
+                        label = { Text(stringResource(R.string.music_propose_field_artist)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(stringResource(R.string.music_propose_note), style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = {
+                MetroTextButton(
+                    enabled = proposeTitle.isNotBlank() && target != null,
+                    onClick = {
+                        if (target != null) {
+                            proposalStore.add(
+                                MusicProposal(
+                                    key = pt.key, uri = pt.uri, fileName = pt.fileName, mimeType = pt.mimeType,
+                                    sizeBytes = pt.sizeBytes, title = proposeTitle.trim(), artist = proposeArtist.trim().ifBlank { null },
+                                    spaceId = target.id,
+                                ),
+                            )
+                            MusicProposeWorker.start(context, prefs.downloadOnWifiOnly)
+                        }
+                        proposing = null
+                    },
+                ) { Text(stringResource(R.string.music_propose_send)) }
+            },
+            dismissButton = { MetroTextButton(onClick = { proposing = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -798,6 +892,8 @@ private fun MusicTrackRow(
     onMore: () -> Unit,
     // The phone's own (02.11): nothing to keep a copy of; ⋮ opens its actions.
     phone: Boolean = false,
+    // Where its proposal to the sidecar is, for a phone's track (02.11).
+    mark: String? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     Row(
@@ -832,6 +928,7 @@ private fun MusicTrackRow(
             ).joinToString(" · ")
             Text(by, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val marks = listOfNotNull(
+                mark,
                 if (track.approvedAt == null) stringResource(R.string.music_waiting) else null,
                 if (!track.hasAudio && local == null) stringResource(R.string.music_no_file) else null,
                 when {
@@ -901,4 +998,13 @@ private fun <T> MusicChoiceDialog(
         },
         confirmButton = { MetroTextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+/** Why the sidecar did not take a proposed track, in words. */
+@Composable
+private fun refusedWhy(error: String?): String = when (error) {
+    "size" -> stringResource(R.string.music_refused_size)
+    "space" -> stringResource(R.string.music_refused_space)
+    "file" -> stringResource(R.string.music_refused_file)
+    else -> error ?: "?"
 }

@@ -1079,6 +1079,21 @@
     <string name="music_propose_sending">Slanje u sajdkar</string>
     <string name="music_propose_sent">Poslato u sajdkar: %1$d</string>
     <string name="music_propose_channel">Slanje muzike</string>
+    <string name="music_propose_to">Predloži u %1$s</string>
+    <string name="music_propose_field_title">Naslov</string>
+    <string name="music_propose_field_artist">Izvođač</string>
+    <string name="music_propose_note">Pesma odlazi u sajdkar i čeka odobrenje drugog člana, kao pri otpremanju sa sajta; ovde i dalje svira iz fajla na telefonu.</string>
+    <string name="music_propose_send">Pošalji</string>
+    <string name="music_propose_sign_in">Prijavite se na oursidecar da biste predlagali pesme.</string>
+    <string name="music_propose_too_big">Fajl je veći od 50 MB — sajt ga neće primiti.</string>
+    <string name="music_mark_in">u %1$s</string>
+    <string name="music_mark_waiting">čeka slanje</string>
+    <string name="music_mark_waiting_wifi">čeka Wi-Fi</string>
+    <string name="music_mark_sending">šalje se: %1$d%%</string>
+    <string name="music_mark_refused">nije primljena: %1$s</string>
+    <string name="music_refused_size">veća od 50 MB</string>
+    <string name="music_refused_space">u sajdkaru nema mesta</string>
+    <string name="music_refused_file">fajla više nema</string>
     <string name="music_refresh">Osveži</string>
     <string name="music_sort">Redosled</string>
     <string name="music_sort_newest">Prvo najnovije</string>
@@ -1126,7 +1141,7 @@
     <string name="music_save_all_wifi">Samo preko Wi-Fi mreže, kako stoji u podešavanjima.</string>
     <string name="music_save_all_going">Čuva se %1$d od %2$d…</string>
     <string name="music_save_all_waiting">Čuvanje čeka mrežu…</string>
-    <string name="music_pref_wifi_only">„Sačuvaj sve“ samo preko Wi-Fi mreže</string>
+    <string name="music_pref_wifi_only">Preuzimanje i slanje samo preko Wi-Fi mreže</string>
     <string name="music_offline_hint">Bez mreže se puštaju pesme sačuvane na telefonu.</string>
     <!-- Fajl sa telefona za pesmu (16.10) -->
     <string name="music_track_more">Radnje sa pesmom</string>

@@ -1145,6 +1145,21 @@
     <string name="music_propose_sending">Отправка в сайдкар</string>
     <string name="music_propose_sent">Отправлено в сайдкар: %1$d</string>
     <string name="music_propose_channel">Отправка музыки</string>
+    <string name="music_propose_to">Предложить в %1$s</string>
+    <string name="music_propose_field_title">Название</string>
+    <string name="music_propose_field_artist">Исполнитель</string>
+    <string name="music_propose_note">Трек уйдёт в сайдкар и будет ждать одобрения второго участника, как при загрузке с сайта; играть он будет из файла на телефоне.</string>
+    <string name="music_propose_send">Отправить</string>
+    <string name="music_propose_sign_in">Войдите в oursidecar, чтобы предлагать треки.</string>
+    <string name="music_propose_too_big">Файл больше 50 МБ — сайт его не примет.</string>
+    <string name="music_mark_in">в %1$s</string>
+    <string name="music_mark_waiting">ждёт отправки</string>
+    <string name="music_mark_waiting_wifi">ждёт Wi-Fi</string>
+    <string name="music_mark_sending">отправляется: %1$d%%</string>
+    <string name="music_mark_refused">не принят: %1$s</string>
+    <string name="music_refused_size">больше 50 МБ</string>
+    <string name="music_refused_space">в сайдкаре нет места</string>
+    <string name="music_refused_file">файла больше нет</string>
     <string name="music_refresh">Обновить</string>
     <string name="music_sort">Порядок</string>
     <string name="music_sort_newest">Сначала новые</string>
@@ -1192,7 +1207,7 @@
     <string name="music_save_all_wifi">Только по Wi-Fi — так в настройках.</string>
     <string name="music_save_all_going">Сохраняется %1$d из %2$d…</string>
     <string name="music_save_all_waiting">Сохранение ждёт сети…</string>
-    <string name="music_pref_wifi_only">«Сохранить все» только по Wi-Fi</string>
+    <string name="music_pref_wifi_only">Скачивать и отправлять только по Wi-Fi</string>
     <string name="music_offline_hint">Без сети играют треки, сохранённые на телефоне.</string>
     <!-- Свой файл для трека (16.10) -->
     <string name="music_track_more">Действия с треком</string>

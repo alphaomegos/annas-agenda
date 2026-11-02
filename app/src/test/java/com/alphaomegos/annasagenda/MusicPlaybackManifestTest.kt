@@ -172,4 +172,18 @@ class MusicPlaybackManifestTest {
         val connection = mainSourceFiles().single { it.name == "SidecarConnection.kt" }.readText()
         assertTrue(connection.hasCode("authorizedSend(\"POST\", sidecarTracksPath(spaceId), body)"))
     }
+
+    /**
+     * Proposing from «Local» (0375): ⋮ offers it signed in, under 50 MB, not already on its
+     * way; the dialog takes the title and the artist and hands the wish to the worker with
+     * the one Wi-Fi setting; the phone's row tells where it is.
+     */
+    @Test
+    fun aPhoneTrackIsProposedFromItsMenu() {
+        val screen = mainSourceFiles().single { it.name == "MusicScreen.kt" }.readText()
+        assertTrue(screen.hasCode("pt.sizeBytes > MUSIC_PROPOSAL_MAX_BYTES ->") && screen.hasCode("!sidecarIn -> Text(stringResource(R.string.music_propose_sign_in)"))
+        assertTrue(screen.hasCode("proposalStore.add(") && screen.hasCode("MusicProposeWorker.start(context, prefs.downloadOnWifiOnly)"))
+        assertTrue(screen.hasCode("MusicProposalState.SENT -> stringResource(R.string.music_mark_in, spaceName)"))
+        assertTrue(screen.hasCode("R.string.music_mark_waiting_wifi"))
+    }
 }

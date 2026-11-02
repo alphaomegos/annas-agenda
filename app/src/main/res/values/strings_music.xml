@@ -48,6 +48,21 @@
     <string name="music_propose_sending">Sending to the sidecar</string>
     <string name="music_propose_sent">Sent to the sidecar: %1$d</string>
     <string name="music_propose_channel">Sending music</string>
+    <string name="music_propose_to">Propose to %1$s</string>
+    <string name="music_propose_field_title">Title</string>
+    <string name="music_propose_field_artist">Artist</string>
+    <string name="music_propose_note">The track goes to the sidecar waiting for the other person\'s approval, as from the site; here it keeps playing from the phone\'s file.</string>
+    <string name="music_propose_send">Send</string>
+    <string name="music_propose_sign_in">Sign in to oursidecar to propose tracks.</string>
+    <string name="music_propose_too_big">The file is over 50 MB: the site will not take it.</string>
+    <string name="music_mark_in">in %1$s</string>
+    <string name="music_mark_waiting">waiting to be sent</string>
+    <string name="music_mark_waiting_wifi">waiting for Wi-Fi</string>
+    <string name="music_mark_sending">sending: %1$d%%</string>
+    <string name="music_mark_refused">not taken: %1$s</string>
+    <string name="music_refused_size">over 50 MB</string>
+    <string name="music_refused_space">no room left in the sidecar</string>
+    <string name="music_refused_file">the file is gone</string>
     <string name="music_refresh">Refresh</string>
     <string name="music_sort">Order</string>
     <string name="music_sort_newest">Newest first</string>
@@ -95,7 +110,7 @@
     <string name="music_save_all_wifi">Only over Wi-Fi, as the settings say.</string>
     <string name="music_save_all_going">Keeping %1$d of %2$d…</string>
     <string name="music_save_all_waiting">Keeping waits for the network…</string>
-    <string name="music_pref_wifi_only">“Keep all” only over Wi-Fi</string>
+    <string name="music_pref_wifi_only">Download and send only over Wi-Fi</string>
     <string name="music_offline_hint">Without the network, the tracks kept on the phone play.</string>
     <!-- A file of the phone's for a track (16.10) -->
     <string name="music_track_more">Actions for the track</string>
