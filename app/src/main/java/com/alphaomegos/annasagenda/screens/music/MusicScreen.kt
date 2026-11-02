@@ -113,6 +113,7 @@ import com.alphaomegos.annasagenda.support.key
 import com.alphaomegos.annasagenda.support.phoneTracksShown
 import com.alphaomegos.annasagenda.support.phoneTracksHidden
 import com.alphaomegos.annasagenda.support.phoneTrackId
+import com.alphaomegos.annasagenda.support.PHONE_TRACK_PREFIX
 import com.alphaomegos.annasagenda.support.phoneFolders
 import com.alphaomegos.annasagenda.support.phoneFolderChosen
 import com.alphaomegos.annasagenda.support.musicAllTabs
@@ -412,7 +413,7 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
                                             onRemove = {},
                                             onMore = { phoneActions = track.id },
                                             phone = true,
-                                            mark = proposals.firstOrNull { phoneTrackId(it.key) == track.id }?.let { pr ->
+                                            mark = proposals.firstOrNull { PHONE_TRACK_PREFIX + it.key == track.id }?.let { pr ->
                                                 when (pr.state) {
                                                     MusicProposalState.SENT -> stringResource(R.string.music_mark_in, spaceName)
                                                     MusicProposalState.REFUSED -> stringResource(R.string.music_mark_refused, refusedWhy(pr.error))

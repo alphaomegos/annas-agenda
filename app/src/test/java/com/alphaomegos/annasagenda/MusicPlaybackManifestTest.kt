@@ -185,5 +185,9 @@ class MusicPlaybackManifestTest {
         assertTrue(screen.hasCode("proposalStore.add(") && screen.hasCode("MusicProposeWorker.start(context, prefs.downloadOnWifiOnly)"))
         assertTrue(screen.hasCode("MusicProposalState.SENT -> stringResource(R.string.music_mark_in, spaceName)"))
         assertTrue(screen.hasCode("R.string.music_mark_waiting_wifi"))
+        // A proposal's key is the phone track's key; its row's id has the «phone:» before it (0376).
+        assertTrue(screen.hasCode("proposals.firstOrNull { PHONE_TRACK_PREFIX + it.key == track.id }"))
+        val worker = mainSourceFiles().single { it.name == "MusicProposeWorker.kt" }.readText()
+        assertTrue(worker.contains("import com.alphaomegos.annasagenda.canPostNotifications") && worker.contains("import com.alphaomegos.annasagenda.model.MusicLocalFile"))
     }
 }
