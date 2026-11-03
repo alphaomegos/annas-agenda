@@ -13,6 +13,9 @@ import com.alphaomegos.annasagenda.support.phoneTitleOf
 import com.alphaomegos.annasagenda.support.phoneTrackId
 import com.alphaomegos.annasagenda.support.phoneTracksHidden
 import com.alphaomegos.annasagenda.support.phoneTracksShown
+import com.alphaomegos.annasagenda.support.musicMatchKey
+import com.alphaomegos.annasagenda.support.phoneMatches
+import com.alphaomegos.annasagenda.model.SidecarTrack
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -84,5 +87,33 @@ class PhoneMusicTest {
         assertEquals("Звезда по имени Солнце", phoneTitleOf(null, "Звезда по имени Солнце.flac"))
         assertEquals("Звезда", phoneTitleOf("Звезда", "x.mp3"))
         assertEquals("README", phoneTitleOf("", "README"))
+    }
+
+    private fun sidecar(id: String, title: String, artist: String?) =
+        SidecarTrack(id = id, title = title, artist = artist, createdByUserId = "u1", createdAt = 0, approvedAt = 0, hasAudio = true)
+
+    /** The sidecar's track the phone has plays from the phone (0378): case, «ё», marks and spaces aside. */
+    @Test
+    fun theSameSongIsFoundWhateverItsSpelling() {
+        assertEquals(musicMatchKey("Звезда по имени Солнце", "Кино"), musicMatchKey("звезда  по имени солнце!", "КИНО"))
+        assertEquals(musicMatchKey("Ёлка", null), musicMatchKey("елка", null))
+        assertTrue(musicMatchKey("Song (Remastered 2011)", "X") != musicMatchKey("Song", "X"))
+        val phone = listOf(
+            track("Music/", "a.mp3", title = "Кукушка").copy(sizeBytes = 4_000_000),
+            track("Music/flac/", "a.flac", title = "Кукушка").copy(sizeBytes = 30_000_000),
+            track("Music/", "b.mp3", title = "Пачка сигарет"),
+        )
+        val tracks = listOf(
+            sidecar("t1", "кукушка", "КИНО"),          // two copies on the phone: the bigger one
+            sidecar("t2", "Пачка сигарет", "Кино"),
+            sidecar("t3", "Пачка сигарет", "Другие"),  // another artist: not this one
+            sidecar("t4", "Группа крови", "Кино"),     // not on the phone
+        )
+        val found = phoneMatches(tracks, phone, own = emptySet())
+        assertEquals(setOf("t1", "t2"), found.keys)
+        assertEquals("a.flac", found.getValue("t1").fileName)
+        // A file the person gave the track stays its own.
+        assertEquals(setOf("t2"), phoneMatches(tracks, phone, own = setOf("t1")).keys)
+        assertTrue(phoneMatches(tracks, emptyList(), emptySet()).isEmpty())
     }
 }

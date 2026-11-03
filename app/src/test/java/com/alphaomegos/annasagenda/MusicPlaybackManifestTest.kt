@@ -190,4 +190,13 @@ class MusicPlaybackManifestTest {
         val worker = mainSourceFiles().single { it.name == "MusicProposeWorker.kt" }.readText()
         assertTrue(worker.contains("import com.alphaomegos.annasagenda.canPostNotifications") && worker.contains("import com.alphaomegos.annasagenda.model.MusicLocalFile"))
     }
+
+    /** The sidecar's tracks the phone has (0378): played from the phone, left out of «Keep all». */
+    @Test
+    fun aTrackThePhoneHasPlaysFromThePhone() {
+        val screen = mainSourceFiles().single { it.name == "MusicScreen.kt" }.readText()
+        assertTrue(screen.hasCode("phoneMatches(lib.tracks, phoneScan.tracks, localFiles.keys)"))
+        assertTrue(screen.hasCode("?: autoFiles[track.id]?.let { MusicLocalFile(it.uri, it.fileName) }"))
+        assertTrue(screen.hasCode("localFiles.keys - unreadable + autoFiles.keys,"))
+    }
 }

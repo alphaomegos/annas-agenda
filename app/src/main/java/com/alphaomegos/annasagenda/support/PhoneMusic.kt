@@ -84,3 +84,32 @@ fun phoneArtist(raw: String?): String? = raw?.trim()?.takeIf { it.isNotEmpty() &
 /** A file name without its extension, for a track the index has no title for. */
 fun phoneTitleOf(rawTitle: String?, fileName: String): String =
     rawTitle?.trim()?.takeIf { it.isNotEmpty() } ?: fileName.substringBeforeLast('.', fileName)
+
+/*
+ * The sidecar's tracks the phone already has (03.11, Eduard): one whose title and
+ * artist match a piece of music on the phone plays from that file — nothing
+ * downloaded, nothing kept twice. Matching ignores case, «ё», punctuation and spacing;
+ * a remaster or a live version (other words in brackets) is another track. A track the
+ * person gave a file of its own keeps it.
+ */
+
+/** A title and an artist as matching compares them. */
+fun musicMatchKey(title: String, artist: String?): String {
+    fun norm(s: String?): String = (s ?: "").lowercase(java.util.Locale.ROOT).replace('ё', 'е')
+        .map { if (it.isLetterOrDigit()) it else ' ' }.joinToString("")
+        .split(' ').filter { it.isNotEmpty() }.joinToString(" ")
+    return norm(artist) + "|" + norm(title)
+}
+
+/**
+ * For each of [tracks] that has no file of its own ([own]), the phone's piece of music with
+ * the same title and artist — of several, the biggest file (the better copy).
+ */
+fun phoneMatches(tracks: List<SidecarTrack>, phone: List<PhoneTrack>, own: Set<String>): Map<String, PhoneTrack> {
+    if (phone.isEmpty()) return emptyMap()
+    val byKey = phone.groupBy { musicMatchKey(it.title, it.artist) }.mapValues { (_, same) -> same.maxBy { it.sizeBytes } }
+    return tracks.asSequence()
+        .filter { it.id !in own && !isPhoneTrackId(it.id) }
+        .mapNotNull { t -> byKey[musicMatchKey(t.title, t.artist)]?.let { t.id to it } }
+        .toMap()
+}

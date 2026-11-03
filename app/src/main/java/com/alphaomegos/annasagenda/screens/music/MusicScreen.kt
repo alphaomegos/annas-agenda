@@ -111,6 +111,7 @@ import com.alphaomegos.annasagenda.app.MusicProposal
 import androidx.compose.material.icons.filled.MoreVert
 import com.alphaomegos.annasagenda.support.key
 import com.alphaomegos.annasagenda.support.phoneTracksShown
+import com.alphaomegos.annasagenda.support.phoneMatches
 import com.alphaomegos.annasagenda.support.phoneTracksHidden
 import com.alphaomegos.annasagenda.support.phoneTrackId
 import com.alphaomegos.annasagenda.support.PHONE_TRACK_PREFIX
@@ -250,6 +251,12 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val unreadable by produceState(emptySet<String>(), localFiles) {
         value = withContext(Dispatchers.IO) { localFiles.filterValues { !musicFileReadable(context, it.uri) }.keys }
     }
+    // The sidecar's tracks the phone already has (03.11): played from the phone's file, never
+    // downloaded — matched by title and artist against all the phone's music, chosen folders
+    // or not; a file given by hand stays the track's own.
+    val autoFiles = remember(lib.tracks, phoneScan, localFiles) {
+        if (phoneScan.permitted) phoneMatches(lib.tracks, phoneScan.tracks, localFiles.keys) else emptyMap()
+    }
     val upstream = remember(context) { musicUpstreamFactory(context, connection) }
     // "Save all" for the list shown (16.10): what it would fetch, and how it is going.
     val saveAll by remember(context) { MusicSaveAllWorker.progress(context) }.collectAsStateWithLifecycle(initialValue = null)
@@ -257,7 +264,7 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
         // The phone's own are on the phone already.
         if (tab == MusicTab.Local) emptyList() else shown,
         shown.filter { it.id in kept }.mapNotNull { musicCacheKey(it) }.toSet(),
-        localFiles.keys - unreadable,
+        localFiles.keys - unreadable + autoFiles.keys,
     )
     // Copies of tracks gone from the sidecar, or replaced on it, go once its list is in.
     LaunchedEffect(lib.loaded, lib.fromPhone, lib.tracks, localFiles, unreadable) {
@@ -269,6 +276,7 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
             phoneById[track.id]?.let { MusicLocalFile(it.uri, it.fileName) }
         } else {
             localFiles[track.id]?.takeIf { track.id !in unreadable }
+                ?: autoFiles[track.id]?.let { MusicLocalFile(it.uri, it.fileName) }
         }
     }
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
