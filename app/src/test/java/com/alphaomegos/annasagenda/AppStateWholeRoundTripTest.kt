@@ -260,6 +260,7 @@ class AppStateWholeRoundTripTest {
         calendarShowSteps = false,
         stepsChartStyle = StepsChartStyle.LINE,
         stepsWidgetLine = StepsWidgetLine.WEEK_AVERAGE,
+        stepsWidgetNumber = StepsWidgetNumber.FOLLOW,
         stepsFriendsBest = false,
         stepsWidgetRecord = false,
         stepsGoal = 8_000,
@@ -488,7 +489,7 @@ class AppStateWholeRoundTripTest {
         listOf(
             "tasks", "subtasks", "suppressedRecurrences", "anthropometry",
             "calorieGoalChanges", "foodLog", "runningPlanEntries", "counters",
-            "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "palette", "backStyle", "mainMenuNarrow", "dayScreenStyle", "idHighWater", "askBeforeDeleting",
+            "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "palette", "backStyle", "mainMenuNarrow", "dayScreenStyle", "idHighWater", "askBeforeDeleting", "stepsWidgetNumber",
             "readingBooks", "readingMovies", "readingSeries", "readingSessions",
             "activeReading", "pendingReadingSession", "autoRecordInterruptedReading",
             "runningMode", "runningWorkouts",

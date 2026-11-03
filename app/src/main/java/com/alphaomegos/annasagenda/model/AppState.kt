@@ -151,6 +151,8 @@ data class AppState(
     val stepsFriendsBest: Boolean = true,
     // The steps widget (25.10): its second line, whether it shows the record, and the day's goal.
     val stepsWidgetLine: StepsWidgetLine = StepsWidgetLine.YESTERDAY,
+    // Where the widget puts today's number (03.11).
+    val stepsWidgetNumber: StepsWidgetNumber = StepsWidgetNumber.LEFT,
     val stepsWidgetRecord: Boolean = true,
     val stepsGoal: Int = 10_000,
 

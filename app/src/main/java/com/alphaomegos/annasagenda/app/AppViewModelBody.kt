@@ -92,9 +92,9 @@ interface BodyActions : AppStateHost {
     }
 
     /** 6.3: which marks the calendar puts on its days. */
-    fun setStepsWidget(line: StepsWidgetLine, showRecord: Boolean, goal: Int) {
+    fun setStepsWidget(line: StepsWidgetLine, showRecord: Boolean, goal: Int, number: StepsWidgetNumber = stateFlow.value.stepsWidgetNumber) {
         stateFlow.update { cur ->
-            cur.copy(stepsWidgetLine = line, stepsWidgetRecord = showRecord, stepsGoal = goal.coerceIn(STEPS_GOAL_RANGE))
+            cur.copy(stepsWidgetLine = line, stepsWidgetRecord = showRecord, stepsGoal = goal.coerceIn(STEPS_GOAL_RANGE), stepsWidgetNumber = number)
         }
     }
 

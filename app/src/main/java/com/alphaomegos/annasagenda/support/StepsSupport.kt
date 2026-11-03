@@ -64,6 +64,13 @@ fun stepRecords(days: List<StepDay>): List<StepDay> =
         .sortedWith(compareByDescending<StepDay> { it.steps }.thenBy { it.date })
         .take(3)
 
+/**
+ * The three best days of the period from [from] to [to] (03.11, Eduard: a week shown wants
+ * the week's record, not one of two years ago; a month the month's, a year the year's).
+ */
+fun stepRecordsIn(days: List<StepDay>, from: LocalDate, to: LocalDate): List<StepDay> =
+    stepRecords(days.filter { !it.date.isBefore(from) && !it.date.isAfter(to) })
+
 /** 1, 2 or 3 for a record day — its medal — and null for any other. */
 fun stepMedal(day: StepDay, records: List<StepDay>): Int? =
     records.indexOfFirst { it.date == day.date }.takeIf { it >= 0 }?.plus(1)
@@ -271,4 +278,18 @@ fun stepsAxisLabels(range: AnthropometryRange, days: List<LocalDate>, locale: ja
         }
         else -> listOf(0 to formatShortDate(days.first(), locale), days.lastIndex to formatShortDate(days.last(), locale)).distinctBy { it.first }
     }
+}
+
+/** About how wide [text] is set at [fontSp] (03.11, the widget cannot measure): digits and spaces of a bold face. */
+fun stepsNumberWidthDp(text: String, fontSp: Float): Float =
+    text.sumOf { c -> if (c.isDigit()) 0.6 else 0.3 }.toFloat() * fontSp
+
+/**
+ * Where the widget's number starts when it goes along with the bar (03.11, Eduard): its
+ * right edge at the bar's tip — at the left until the bar is longer than it, then moving
+ * with it, never past the right edge. In dp from the left of [room].
+ */
+fun stepsNumberStart(room: Float, width: Float, fraction: Float): Float {
+    val max = (room - width).coerceAtLeast(0f)
+    return (room * fraction.coerceIn(0f, 1f) - width).coerceIn(0f, max)
 }

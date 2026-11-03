@@ -1302,6 +1302,11 @@
     <string name="steps_widget_line_week">Prosek za nedelju</string>
     <string name="steps_widget_line_goal">Traka do dnevnog cilja</string>
     <string name="steps_widget_line_none">Ništa</string>
+    <string name="steps_widget_number">Današnji broj</string>
+    <string name="steps_widget_number_left">Levo</string>
+    <string name="steps_widget_number_center">U sredini</string>
+    <string name="steps_widget_number_right">Desno</string>
+    <string name="steps_widget_number_follow">Zajedno sa zelenom trakom</string>
     <string name="steps_widget_goal">Dnevni cilj, koraka</string>
     <string name="steps_widget_show_record">Prikaži rekord</string>
     <string name="steps_widget_week_average">Prosek za nedelju: %1$s</string>

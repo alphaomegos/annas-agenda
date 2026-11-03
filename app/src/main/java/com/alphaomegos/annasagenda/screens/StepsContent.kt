@@ -93,7 +93,7 @@ import com.alphaomegos.annasagenda.support.StepsReadReport
 import com.alphaomegos.annasagenda.support.StepsSourceKind
 import com.alphaomegos.annasagenda.support.stepsSourceKind
 import com.alphaomegos.annasagenda.support.stepMedal
-import com.alphaomegos.annasagenda.support.stepRecords
+import com.alphaomegos.annasagenda.support.stepRecordsIn
 import com.alphaomegos.annasagenda.support.stepsDistanceKm
 import com.alphaomegos.annasagenda.support.stepsKcal
 import com.alphaomegos.annasagenda.support.stepsListDays
@@ -149,7 +149,8 @@ internal fun StepsContent(
     val canBack = canPageStepsBack(state.stepsRange, window, state.stepDays)
     val canForward = canPageStepsForward(state.stepsRange, page)
     val byDate = remember(state.stepDays) { state.stepDays.associateBy { it.date } }
-    val records = remember(state.stepDays) { stepRecords(state.stepDays) }
+    // The records of the period shown (03.11, Eduard): the week's, the month's, the year's — all of them for «all».
+    val records = remember(state.stepDays, window) { stepRecordsIn(state.stepDays, window.from, window.to) }
 
     val locale = LocalConfiguration.current.locales[0]
     val count = remember(locale) { NumberFormat.getIntegerInstance(locale) }
@@ -277,8 +278,8 @@ internal fun StepsContent(
                     else stringResource(R.string.steps_height_unset)
                 )
             }
-            // The best day of all (19.10), up here beside the height: the gold
-            // medal's day, whatever range is shown.
+            // The best day of the period shown (03.11), up here beside the height: the gold
+            // medal's day of the week, the month, the year on the chart.
             records.firstOrNull()?.let { best ->
                 val dates = remember(locale) { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale) }
                 Text(

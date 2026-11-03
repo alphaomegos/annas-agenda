@@ -107,6 +107,8 @@ internal data class AppStateDto(
     val stepsChartStyle: String = "BARS",
     val stepsFriendsBest: Boolean = true,
     val stepsWidgetLine: String = "YESTERDAY",
+    // StepsWidgetNumber by name (03.11); a setting with a default, no version step.
+    val stepsWidgetNumber: String = "LEFT",
     val stepsWidgetRecord: Boolean = true,
     val stepsGoal: Int = 10_000,
     val anthropometryCustomFromEpochDay: Long? = null,

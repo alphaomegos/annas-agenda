@@ -29,6 +29,9 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.text.TextAlign
+import androidx.glance.appwidget.SizeMode
+import androidx.glance.LocalSize
 import com.alphaomegos.annasagenda.model.*
 import com.alphaomegos.annasagenda.support.*
 import java.text.NumberFormat
@@ -43,6 +46,9 @@ private data class StepsWidgetData(
     val progress: Float?,
     val record: String?,
     val style: WidgetStyle,
+    // Where the number stands, and how far towards the goal today is (for «along with the bar»).
+    val number: StepsWidgetNumber = StepsWidgetNumber.LEFT,
+    val goalFraction: Float = 0f,
 )
 
 private suspend fun loadStepsWidget(context: Context): StepsWidgetData {
@@ -65,6 +71,8 @@ private suspend fun loadStepsWidget(context: Context): StepsWidgetData {
         progress = if (line == StepsWidgetLine.GOAL_BAR) stepsGoalProgress(todaySteps, state?.stepsGoal ?: 10_000) else null,
         record = if (state?.stepsWidgetRecord != false) best?.let { words.getString(R.string.steps_widget_record, count.format(it.steps)) } else null,
         style = state?.widgetStyle ?: WidgetStyle(),
+        number = state?.stepsWidgetNumber ?: StepsWidgetNumber.LEFT,
+        goalFraction = stepsGoalProgress(todaySteps, state?.stepsGoal ?: 10_000),
     )
 }
 
@@ -75,6 +83,9 @@ private suspend fun loadStepsWidget(context: Context): StepsWidgetData {
  * A tap opens the app. Redrawn with the tasks widget and every half hour.
  */
 class StepsWidget : GlanceAppWidget() {
+    // The widget's own size, for the number that goes along with the bar (03.11).
+    override val sizeMode: SizeMode = SizeMode.Exact
+
     override fun onCompositionError(context: Context, glanceId: GlanceId, appWidgetId: Int, throwable: Throwable) =
         showWidgetError(context, appWidgetId, throwable, R.string.widget_error_steps)
 
@@ -97,8 +108,19 @@ class StepsWidget : GlanceAppWidget() {
                         .padding(12.dp)
                         .clickable(actionStartActivity(open)),
                 ) {
-                    // No title and no figure (25.10, Eduard): the number alone, large.
-                    Text(text = data.today, style = TextStyle(color = text, fontSize = 30.sp, fontWeight = FontWeight.Bold))
+                    // No title and no figure (25.10, Eduard): the number alone, large — at the
+                    // left, in the middle, at the right, or along with the bar (03.11).
+                    val big = TextStyle(color = text, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                    when (data.number) {
+                        StepsWidgetNumber.LEFT -> Text(text = data.today, style = big)
+                        StepsWidgetNumber.CENTER -> Text(text = data.today, style = big.copy(textAlign = TextAlign.Center), modifier = GlanceModifier.fillMaxWidth())
+                        StepsWidgetNumber.RIGHT -> Text(text = data.today, style = big.copy(textAlign = TextAlign.End), modifier = GlanceModifier.fillMaxWidth())
+                        StepsWidgetNumber.FOLLOW -> {
+                            val room = (LocalSize.current.width.value - 24f).coerceAtLeast(0f)
+                            val start = stepsNumberStart(room, stepsNumberWidthDp(data.today, 30f), data.goalFraction)
+                            Text(text = data.today, style = big, modifier = GlanceModifier.padding(start = start.dp))
+                        }
+                    }
                     data.line?.let { Text(text = it, style = TextStyle(color = text, fontSize = 12.sp)) }
                     data.progress?.let { p ->
                         LinearProgressIndicator(

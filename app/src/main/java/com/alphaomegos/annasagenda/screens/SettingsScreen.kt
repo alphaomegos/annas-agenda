@@ -262,8 +262,9 @@ fun SettingsScreen(
             line = state.stepsWidgetLine,
             showRecord = state.stepsWidgetRecord,
             goal = state.stepsGoal,
-            onSave = { line, record, goal ->
-                vm.setStepsWidget(line, record, goal)
+            number = state.stepsWidgetNumber,
+            onSave = { line, record, goal, number ->
+                vm.setStepsWidget(line, record, goal, number)
                 close()
             },
             onDismiss = close,

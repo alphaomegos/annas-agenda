@@ -1368,6 +1368,11 @@
     <string name="steps_widget_line_week">Среднее за неделю</string>
     <string name="steps_widget_line_goal">Полоса до цели на день</string>
     <string name="steps_widget_line_none">Ничего</string>
+    <string name="steps_widget_number">Число за сегодня</string>
+    <string name="steps_widget_number_left">Слева</string>
+    <string name="steps_widget_number_center">По центру</string>
+    <string name="steps_widget_number_right">Справа</string>
+    <string name="steps_widget_number_follow">Вместе с зелёной полоской</string>
     <string name="steps_widget_goal">Цель на день, шагов</string>
     <string name="steps_widget_show_record">Показывать рекорд</string>
     <string name="steps_widget_week_average">Среднее за неделю: %1$s</string>

@@ -63,6 +63,13 @@ data class StepSharing(
 enum class StepsWidgetLine { YESTERDAY, WEEK_AVERAGE, GOAL_BAR, NONE }
 
 /**
+ * Where the steps widget puts today's number (03.11, Eduard): at the left, in the middle,
+ * at the right — or going along with the green bar towards the goal, left to right, until
+ * it reaches the right edge. Kept by name.
+ */
+enum class StepsWidgetNumber { LEFT, CENTER, RIGHT, FOLLOW }
+
+/**
  * The user's sex, as the energy formulas ask (28.10, the profile): one of the
  * two the Mifflin–St Jeor equation knows; unset until the user says.
  */

@@ -86,4 +86,15 @@ class StepsWidgetTest {
         val main = mainSourceFiles().single { it.name == "MainActivity.kt" }.readText()
         assertTrue(main.hasCode("EXTRA_OPEN_STEPS") && main.hasCode("RunningMode.STEPS"))
     }
+
+    /** The widget's number where it is wanted (0382): left, middle, right, or along with the bar — by the widget's own size. */
+    @Test
+    fun theNumberStandsWhereItIsWanted() {
+        val widget = mainSourceFiles().single { it.name == "StepsWidget.kt" }.readText()
+        assertTrue(widget.hasCode("override val sizeMode: SizeMode = SizeMode.Exact"))
+        assertTrue(widget.hasCode("StepsWidgetNumber.FOLLOW -> {") && widget.hasCode("stepsNumberStart(room, stepsNumberWidthDp(data.today, 30f), data.goalFraction)"))
+        assertTrue(widget.hasCode("big.copy(textAlign = TextAlign.Center)") && widget.hasCode("big.copy(textAlign = TextAlign.End)"))
+        val steps = mainSourceFiles().single { it.name == "StepsContent.kt" }.readText()
+        assertTrue("the period's own records", steps.hasCode("stepRecordsIn(state.stepDays, window.from, window.to)"))
+    }
 }

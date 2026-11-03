@@ -319,7 +319,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
                     // an episode ticked off does not move the alarm.
                     val seasons = seriesRemindingOfSeasons(s.readingSeries).map { Triple(it.id, it.title, it.nextSeasonDate) }
                     // And what the steps widget shows (25.10): the last days, the record, its options.
-                    val steps = listOf(s.stepDays.takeLast(8), s.stepDays.maxOfOrNull { it.steps }, s.stepsWidgetLine, s.stepsWidgetRecord, s.stepsGoal)
+                    val steps = listOf(s.stepDays.takeLast(8), s.stepDays.maxOfOrNull { it.steps }, s.stepsWidgetLine, s.stepsWidgetRecord, s.stepsGoal, s.stepsWidgetNumber)
                     listOf(s.tasks, s.subtasks, s.suppressedRecurrences, s.notifications, s.undoneHorizonDays, s.widgetStyle, seasons, steps)
                 }
                 .distinctUntilChanged()

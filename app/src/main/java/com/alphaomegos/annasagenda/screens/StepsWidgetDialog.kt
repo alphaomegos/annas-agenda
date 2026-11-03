@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
+import androidx.compose.material3.MaterialTheme
+import com.alphaomegos.annasagenda.model.StepsWidgetNumber
 import com.alphaomegos.annasagenda.model.StepsWidgetLine
 import com.alphaomegos.annasagenda.support.STEPS_GOAL_RANGE
 
@@ -39,10 +41,12 @@ internal fun StepsWidgetDialog(
     line: StepsWidgetLine,
     showRecord: Boolean,
     goal: Int,
-    onSave: (StepsWidgetLine, Boolean, Int) -> Unit,
+    number: StepsWidgetNumber = StepsWidgetNumber.LEFT,
+    onSave: (StepsWidgetLine, Boolean, Int, StepsWidgetNumber) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var picked by rememberSaveable { mutableStateOf(line) }
+    var place by rememberSaveable { mutableStateOf(number) }
     var record by rememberSaveable { mutableStateOf(showRecord) }
     var goalText by rememberSaveable { mutableStateOf(goal.toString()) }
     val goalValue = goalText.toIntOrNull()
@@ -84,6 +88,30 @@ internal fun StepsWidgetDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     )
                 }
+                // Where today's number stands (03.11, Eduard).
+                Text(stringResource(R.string.steps_widget_number), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                StepsWidgetNumber.entries.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(selected = place == option, role = Role.RadioButton) { place = option }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = place == option, onClick = null)
+                        Text(
+                            stringResource(
+                                when (option) {
+                                    StepsWidgetNumber.LEFT -> R.string.steps_widget_number_left
+                                    StepsWidgetNumber.CENTER -> R.string.steps_widget_number_center
+                                    StepsWidgetNumber.RIGHT -> R.string.steps_widget_number_right
+                                    StepsWidgetNumber.FOLLOW -> R.string.steps_widget_number_follow
+                                }
+                            ),
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
+                    }
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -99,7 +127,7 @@ internal fun StepsWidgetDialog(
         confirmButton = {
             TextButton(
                 enabled = picked != StepsWidgetLine.GOAL_BAR || goalValid,
-                onClick = { onSave(picked, record, goalValue?.takeIf { goalValid } ?: goal) },
+                onClick = { onSave(picked, record, goalValue?.takeIf { goalValid } ?: goal, place) },
             ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
