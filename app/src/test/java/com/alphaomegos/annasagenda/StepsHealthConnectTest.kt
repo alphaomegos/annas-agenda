@@ -33,12 +33,16 @@ class StepsHealthConnectTest {
         assertTrue("Health Connect as an app must be visible to ask about it", manifest.hasCode("com.google.android.apps.healthdata"))
     }
 
-    /** Health Connect's own total, day by day — never records added up, which counts the phone and the watch twice. */
+    /** Each step once (0377): the records read and each minute counted once; Health Connect's total only as the fallback. */
     @Test
-    fun theReaderTakesHealthConnectsTotal() {
-        assertTrue(reader.contains("aggregateGroupByPeriod("))
-        assertTrue(reader.contains("StepsRecord.COUNT_TOTAL"))
-        assertFalse("records summed by hand count twice", reader.contains("readRecords("))
+    fun theReaderCountsEachStepOnce() {
+        // 0377: Health Connect's total counted the phone and the watch of one walk twice; the
+        // records are read and each minute counted once — never simply summed.
+        assertTrue(reader.contains("readRecords("))
+        assertTrue(reader.contains("stepsByDayOnce(chunks, zone)"))
+        assertFalse("records summed by hand count twice", reader.contains("sumOf { it.count }"))
+        // The daily total stays as the fallback.
+        assertTrue(reader.contains("aggregateGroupByPeriod(") && reader.contains("StepsRecord.COUNT_TOTAL"))
     }
 
     /** The library wants Android 8 and the app runs from 7: nothing may reach it before the check. */

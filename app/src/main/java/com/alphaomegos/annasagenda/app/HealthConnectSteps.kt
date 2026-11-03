@@ -8,6 +8,10 @@ import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateGroupByPeriodRequest
+import java.time.ZoneId
+import com.alphaomegos.annasagenda.support.stepsByDayOnce
+import com.alphaomegos.annasagenda.support.StepChunk
+import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.LocalDate
 import java.time.Period
@@ -31,10 +35,13 @@ enum class StepsAvailability {
  *
  * Samsung Health puts there what the phone and the Galaxy Watch counted (the
  * watch reaching the phone in its own time); from Android 14 the phone also
- * counts its own steps into it once any app may read them. Health Connect
- * adds them all up into one total a day, by the order of sources the user set
- * there — so the app asks for that total, day by day, and never sums records
- * itself: steps counted by both the phone and the watch would count twice.
+ * counts its own steps into it once any app may read them.
+ *
+ * Health Connect's daily total proved to count a walk twice (03.11, Eduard: 18 963
+ * against Samsung Health's 11 104): it deduplicates between apps, not between the
+ * devices one app wrote for. So the records are read and each minute counted once
+ * — the busiest device within an app, the busiest app within a day
+ * (support/StepsMerge.kt). The daily total stays as the fallback.
  *
  * Nothing here is touched below Android 9, where Health Connect does not
  * exist: its library wants Android 8 and the app starts at 7 (the manifest
@@ -78,6 +85,15 @@ internal object HealthConnectSteps {
      */
     suspend fun readDays(context: Context, today: LocalDate, days: Int): StepsRead {
         val from = today.minusDays(days - 1L)
+        val zone = ZoneId.systemDefault()
+        val once = runCatching { readOnce(context, from, today, zone) }.getOrNull()
+        if (once != null) {
+            val counts = (0 until days).associate { i ->
+                val day = from.plusDays(i.toLong())
+                day to (once.first[day] ?: 0)
+            }
+            return StepsRead(counts, once.second)
+        }
         val rows = HealthConnectClient.getOrCreate(context).aggregateGroupByPeriod(
             AggregateGroupByPeriodRequest(
                 metrics = setOf(StepsRecord.COUNT_TOTAL),
@@ -92,5 +108,23 @@ internal object HealthConnectSteps {
         }
         val sources = rows.flatMap { row -> row.result.dataOrigins.map { it.packageName } }.toSet()
         return StepsRead(counts, sources)
+    }
+
+    // The records from the first day to today, page by page, each step once; and the apps.
+    private suspend fun readOnce(context: Context, from: LocalDate, today: LocalDate, zone: ZoneId): Pair<Map<LocalDate, Int>, Set<String>> {
+        val client = HealthConnectClient.getOrCreate(context)
+        val range = TimeRangeFilter.between(from.atStartOfDay(zone).toInstant(), today.plusDays(1).atStartOfDay(zone).toInstant())
+        val chunks = ArrayList<StepChunk>()
+        var page: String? = null
+        do {
+            val answer = client.readRecords(ReadRecordsRequest(StepsRecord::class, range, pageSize = 5000, pageToken = page))
+            for (r in answer.records) {
+                val device = r.metadata.device?.let { "${it.type}/${it.manufacturer.orEmpty()}/${it.model.orEmpty()}" }.orEmpty()
+                chunks += StepChunk(r.metadata.dataOrigin.packageName, device, r.startTime.epochSecond, r.endTime.epochSecond, r.count)
+            }
+            page = answer.pageToken
+        } while (page != null)
+        val byDay = stepsByDayOnce(chunks, zone).filterKeys { !it.isBefore(from) && !it.isAfter(today) }
+        return byDay to chunks.map { it.app }.toSet()
     }
 }
