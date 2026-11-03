@@ -199,4 +199,14 @@ class MusicPlaybackManifestTest {
         assertTrue(screen.hasCode("?: autoFiles[track.id]?.let { MusicLocalFile(it.uri, it.fileName) }"))
         assertTrue(screen.hasCode("localFiles.keys - unreadable + autoFiles.keys,"))
     }
+
+    /** The player remembers the phone's own music too (0379), and finds it again signed in or not. */
+    @Test
+    fun thePhonesOwnMusicIsRememberedToo() {
+        val service = mainSourceFiles().single { it.name == "MusicPlaybackService.kt" }.readText()
+        assertTrue(service.hasCode("val spaceId = musicMemorySpace(queueIds, SidecarConnections.of(this).status.value.space?.id) ?: return"))
+        val screen = mainSourceFiles().single { it.name == "MusicScreen.kt" }.readText()
+        assertTrue(screen.hasCode("LaunchedEffect(controller, lib.loaded, space?.id, phoneScan.scanned) {"))
+        assertTrue(screen.hasCode("val tracks = if (musicMemoryIsPhones(memory)) {"))
+    }
 }

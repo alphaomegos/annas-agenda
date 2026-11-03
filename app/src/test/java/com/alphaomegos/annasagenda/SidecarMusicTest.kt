@@ -330,6 +330,32 @@ class SidecarMusicTest {
         assertEquals(0L, resumed?.positionMillis)
     }
 
+    /** The phone's own music comes back signed in or not, under any sidecar (0379). */
+    @Test
+    fun thePhonesOwnQueueComesBackWhoeverIsSignedIn() {
+        val tracks = listOf(track("phone:Music/a.mp3"), track("phone:Music/b.mp3"))
+        val mem = memory("phone:Music/a.mp3", "phone:Music/b.mp3", current = "phone:Music/b.mp3", space = "")
+        assertTrue(musicMemoryIsPhones(mem))
+        listOf(null, "s1", "s2").forEach { signedInTo ->
+            val resumed = musicResumed(mem, signedInTo, tracks) { true }
+            assertEquals(1, resumed?.queue?.startIndex)
+            assertEquals(61_000L, resumed?.positionMillis)
+        }
+        // A sidecar's queue still needs its sidecar.
+        assertNull(musicResumed(memory("1", current = "1"), null, listOf(track("1"))) { true })
+        assertFalse(musicMemoryIsPhones(memory("1", "phone:Music/a.mp3", current = "1")))
+    }
+
+    /** Whose a queue is, to remember it (0379): the phone's own nobody's; the sidecar's, the sidecar's or not at all. */
+    @Test
+    fun aQueueIsRememberedUnderWhoseItIs() {
+        assertEquals("", musicMemorySpace(listOf("phone:Music/a.mp3"), null))
+        assertEquals("", musicMemorySpace(listOf("phone:Music/a.mp3"), "s1"))
+        assertEquals("s1", musicMemorySpace(listOf("t1", "t2"), "s1"))
+        assertNull(musicMemorySpace(listOf("t1"), null))
+        assertNull(musicMemorySpace(emptyList(), null))
+    }
+
     @Test
     fun anotherSidecarsMemoryOrNothingLeftIsNoQueue() {
         val tracks = listOf(track("1"))

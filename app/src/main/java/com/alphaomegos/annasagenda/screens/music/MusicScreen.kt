@@ -112,6 +112,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import com.alphaomegos.annasagenda.support.key
 import com.alphaomegos.annasagenda.support.phoneTracksShown
 import com.alphaomegos.annasagenda.support.phoneMatches
+import com.alphaomegos.annasagenda.support.musicMemoryIsPhones
 import com.alphaomegos.annasagenda.support.phoneTracksHidden
 import com.alphaomegos.annasagenda.support.phoneTrackId
 import com.alphaomegos.annasagenda.support.PHONE_TRACK_PREFIX
@@ -302,12 +303,19 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     }
 
     // The app opened again with the player empty — Android let the service go — finds it where it was, paused.
-    LaunchedEffect(controller, lib.loaded, space?.id) {
+    // The phone's own music (03.11) comes back too, signed in or not, once the phone's music is read.
+    LaunchedEffect(controller, lib.loaded, space?.id, phoneScan.scanned) {
         val c = controller ?: return@LaunchedEffect
-        val spaceId = space?.id ?: return@LaunchedEffect
-        if (!lib.loaded || c.mediaItemCount > 0) return@LaunchedEffect
+        if (c.mediaItemCount > 0) return@LaunchedEffect
         val memory = withContext(Dispatchers.IO) { memoryFile.read() } ?: return@LaunchedEffect
-        val resumed = musicResumed(memory, spaceId, lib.tracks, playable) ?: return@LaunchedEffect
+        val tracks = if (musicMemoryIsPhones(memory)) {
+            if (!phoneScan.scanned) return@LaunchedEffect
+            phoneScan.tracks.filter { it.key !in phoneChoices.hidden }.map { it.asTrack() }
+        } else {
+            if (space == null || !lib.loaded) return@LaunchedEffect
+            lib.tracks
+        }
+        val resumed = musicResumed(memory, space?.id, tracks, playable) ?: return@LaunchedEffect
         if (c.mediaItemCount == 0) c.resumeMusic(resumed, memory.shuffle, memory.repeat, mediaItemOf)
     }
 

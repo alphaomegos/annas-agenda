@@ -316,8 +316,9 @@ data class MusicResumed(val queue: MusicQueue, val positionMillis: Long)
  * was playing goes on where it was, or — gone — the next one still there
  * from its start. Null for another sidecar's memory or nothing left to play.
  */
-fun musicResumed(memory: MusicPlayerMemory, spaceId: String, tracks: List<SidecarTrack>, playable: (SidecarTrack) -> Boolean): MusicResumed? {
-    if (memory.spaceId != spaceId) return null
+fun musicResumed(memory: MusicPlayerMemory, spaceId: String?, tracks: List<SidecarTrack>, playable: (SidecarTrack) -> Boolean): MusicResumed? {
+    // The phone's own music (03.11) belongs to no sidecar: it comes back signed in or not.
+    if (!musicMemoryIsPhones(memory) && memory.spaceId != spaceId) return null
     val byId = tracks.associateBy { it.id }
     val queue = memory.queueIds.distinct().mapNotNull { byId[it] }.filter(playable)
     if (queue.isEmpty()) return null
@@ -328,6 +329,18 @@ fun musicResumed(memory: MusicPlayerMemory, spaceId: String, tracks: List<Sideca
     val next = if (was < 0) null else memory.queueIds.drop(was + 1).firstNotNullOfOrNull { id -> queue.indexOfFirst { it.id == id }.takeIf { it >= 0 } }
     return MusicResumed(MusicQueue(queue, next ?: 0), 0L)
 }
+
+/** Whether [memory] is a queue of the phone's own music only (03.11). */
+fun musicMemoryIsPhones(memory: MusicPlayerMemory): Boolean =
+    memory.queueIds.isNotEmpty() && memory.queueIds.all { it.startsWith(PHONE_TRACK_PREFIX) }
+
+/**
+ * Whose a queue of [queueIds] is, to remember it under (03.11): the phone's own music is
+ * nobody's (""), signed in or not; the sidecar's, the sidecar's [spaceId] — null, not to be
+ * remembered, when there is none.
+ */
+fun musicMemorySpace(queueIds: List<String>, spaceId: String?): String? =
+    if (queueIds.isNotEmpty() && queueIds.all { it.startsWith(PHONE_TRACK_PREFIX) }) "" else spaceId
 
 /** The next way of going on, as the button steps through them: round the queue, the one again, stop at the end. */
 fun musicRepeatNext(repeat: MusicRepeat): MusicRepeat = when (repeat) {

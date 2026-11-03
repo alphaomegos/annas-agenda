@@ -28,6 +28,7 @@ import com.alphaomegos.annasagenda.app.musicPlayerMemoryFile
 import com.alphaomegos.annasagenda.app.musicRepeatOf
 import com.alphaomegos.annasagenda.model.MusicPlayerMemory
 import com.alphaomegos.annasagenda.support.MusicHeardPosition
+import com.alphaomegos.annasagenda.support.musicMemorySpace
 import com.alphaomegos.annasagenda.support.sidecarIsServerUrl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -184,14 +185,18 @@ class MusicPlaybackService : MediaSessionService() {
         super.onDestroy()
     }
 
-    /** The queue, the track and how far in, for the sidecar whose music it is. An empty player keeps what was. */
+    /**
+     * The queue, the track and how far in, for the sidecar whose music it is — or for nobody,
+     * the phone's own music (03.11), which comes back signed in or not. An empty player keeps what was.
+     */
     private fun remember(player: Player) {
         if (player.mediaItemCount == 0) return
-        val spaceId = SidecarConnections.of(this).status.value.space?.id ?: return
+        val queueIds = (0 until player.mediaItemCount).map { player.getMediaItemAt(it).mediaId }
+        val spaceId = musicMemorySpace(queueIds, SidecarConnections.of(this).status.value.space?.id) ?: return
         musicPlayerMemoryFile(this).write(
             MusicPlayerMemory(
                 spaceId = spaceId,
-                queueIds = (0 until player.mediaItemCount).map { player.getMediaItemAt(it).mediaId },
+                queueIds = queueIds,
                 currentId = player.currentMediaItem?.mediaId,
                 positionMillis = player.currentPosition.coerceAtLeast(0L),
                 shuffle = player.shuffleModeEnabled,
