@@ -5,6 +5,15 @@ import com.alphaomegos.annasagenda.support.dayTimerValue
 import androidx.compose.foundation.layout.width
 import com.alphaomegos.annasagenda.model.DayTimerCounter
 import com.alphaomegos.annasagenda.components.TopBarBack
+import java.text.NumberFormat
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.alphaomegos.annasagenda.util.appLocale
+import com.alphaomegos.annasagenda.model.Counter
+import com.alphaomegos.annasagenda.components.WayHomeButton
+import com.alphaomegos.annasagenda.components.FittingText
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -73,7 +82,22 @@ fun CountersScreen(
         .filterIsInstance<DateRangeCounter>()
         .firstOrNull { it.id == editDateRangeId.value }
 
-    Scaffold(
+    if (state.newLook) {
+        CountersNewLook(
+            counters = state.counters,
+            onBack = onBack,
+            onAdd = { showAddTypeDialog.value = true },
+            onOpen = { c ->
+                when (c) {
+                    is ManualCounter -> editManualId.value = c.id
+                    is DateRangeCounter -> editDateRangeId.value = c.id
+                    is DayTimerCounter -> editTimerId.value = c.id
+                }
+            },
+            onAdjust = { id, delta -> vm.adjustDayTimer(id, delta) },
+            onDelete = { id -> pendingDeleteId.value = id },
+        )
+    } else Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.counters_title)) },
@@ -447,6 +471,165 @@ private fun DateRangeCounterCard(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = stringResource(R.string.delete)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The counters in the new look (03.11, Eduard), in the day screen's language: Back, the
+ * title, «+ Counter» and the house in one row — no floating button; every counter on one
+ * grounded surface with hairlines between, no cards; the number large at the right; the
+ * bin moved into ⋮, away from the tap that opens the counter.
+ */
+@Composable
+private fun CountersNewLook(
+    counters: List<Counter>,
+    onBack: () -> Unit,
+    onAdd: () -> Unit,
+    onOpen: (Counter) -> Unit,
+    onAdjust: (Long, Int) -> Unit,
+    onDelete: (Long) -> Unit,
+) {
+    val today = LocalDate.now()
+    val locale = appLocale()
+    val numbers = remember(locale) { NumberFormat.getIntegerInstance(locale) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        val title = stringResource(R.string.counters_title)
+        val typography = MaterialTheme.typography
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TopBarBack(onBack)
+            FittingText(
+                choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium, title to typography.titleSmall),
+                modifier = Modifier.weight(1f),
+            )
+            FilledTonalButton(
+                onClick = onAdd,
+                contentPadding = PaddingValues(start = 10.dp, end = 14.dp),
+                modifier = Modifier.height(36.dp),
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(stringResource(R.string.counters_add))
+            }
+            WayHomeButton()
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        if (counters.isEmpty()) {
+            Text(
+                stringResource(R.string.no_counters_yet),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                textAlign = TextAlign.Center,
+            )
+        } else {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+            ) {
+                LazyColumn {
+                    itemsIndexed(counters, key = { _, c -> c.id }) { i, c ->
+                        if (i > 0) HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                        when (c) {
+                            is ManualCounter -> NewCounterRow(
+                                title = c.title,
+                                number = numbers.format(c.balance),
+                                detail = null,
+                                progress = null,
+                                onClick = { onOpen(c) },
+                                onDelete = { onDelete(c.id) },
+                            )
+                            is DateRangeCounter -> {
+                                val left = remainingFractionOf(c.startDate, c.endDate, today)
+                                NewCounterRow(
+                                    title = c.title,
+                                    number = stringResource(R.string.progress_percent, (left * 100.0).roundToInt()),
+                                    detail = remainingText(remainingUntil(today, c.endDate)),
+                                    progress = left.toFloat(),
+                                    onClick = { onOpen(c) },
+                                    onDelete = { onDelete(c.id) },
+                                )
+                            }
+                            is DayTimerCounter -> {
+                                val parts = dayTimerElapsedParts(c.startDate, today)
+                                val elapsed = if (parts.isEmpty()) stringResource(R.string.day_timer_first_day)
+                                else stringResource(R.string.day_timer_elapsed, remainingText(parts))
+                                val correction = if (c.correction == 0) "" else " " + stringResource(
+                                    R.string.day_timer_correction, (if (c.correction > 0) "+" else "") + c.correction,
+                                )
+                                NewCounterRow(
+                                    title = c.title,
+                                    number = numbers.format(dayTimerValue(c, today)),
+                                    detail = elapsed + correction,
+                                    progress = null,
+                                    onClick = { onOpen(c) },
+                                    onDelete = { onDelete(c.id) },
+                                ) {
+                                    IconButton(onClick = { onAdjust(c.id, -1) }) { Text("−", style = MaterialTheme.typography.titleLarge) }
+                                    IconButton(onClick = { onAdjust(c.id, 1) }) { Text("+", style = MaterialTheme.typography.titleLarge) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// One counter on the surface: its title and what it says under it, its number, its own
+// buttons, and ⋮ with «Delete».
+@Composable
+private fun NewCounterRow(
+    title: String,
+    number: String,
+    detail: String?,
+    progress: Float?,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    buttons: @Composable RowScope.() -> Unit = {},
+) {
+    var menu by rememberSaveable { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            if (detail != null) {
+                Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (progress != null) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                )
+            }
+        }
+        Text(number, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 8.dp))
+        buttons()
+        Box {
+            IconButton(onClick = { menu = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.task_more_actions))
+            }
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.delete)) },
+                    onClick = {
+                        menu = false
+                        onDelete()
+                    },
                 )
             }
         }

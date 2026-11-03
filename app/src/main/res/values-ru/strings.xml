@@ -223,6 +223,7 @@
     <string name="attach_counter">Прикрепить счётчик</string>
     <string name="no_counter">Нет счётчика</string>
     <string name="no_counters_yet">Счётчиков пока нет</string>
+    <string name="counters_add">Счётчик</string>
     <string name="add_counter">Добавить счётчик</string>
     <string name="counter_type_date_range">Дата-счётчик</string>
     <string name="counter_type_manual">Ручной счётчик</string>

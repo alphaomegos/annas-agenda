@@ -100,6 +100,13 @@ class StateSlicesTest {
         assertNotEquals(base, calorimeterSliceOf(populated.copy(stepDays = emptyList<com.alphaomegos.annasagenda.model.StepDay>() + populated.stepDays.drop(1) + listOf(com.alphaomegos.annasagenda.model.StepDay(java.time.LocalDate.of(2020, 1, 1), 5, com.alphaomegos.annasagenda.model.StepSource.HEALTH_CONNECT)))))
     }
 
+    /** The counters' slice carries the look (0381). */
+    @Test
+    fun countersSliceCarriesTheLook() {
+        assertEquals(true, countersSliceOf(populated.copy(dayScreenStyle = DayScreenStyle.NEW)).newLook)
+        assertEquals(false, countersSliceOf(populated.copy(dayScreenStyle = DayScreenStyle.SUMMER_2025)).newLook)
+    }
+
     @Test
     fun undoneSliceReactsToWhatDateTasksBlockReads() {
         assertNotEquals(

@@ -83,6 +83,8 @@ data class AnthropometrySlice(
  */
 data class CountersSlice(
     val counters: List<Counter> = emptyList(),
+    // The new look (03.11): the counters on a grounded surface, «+ Counter» in the title row.
+    val newLook: Boolean = true,
 )
 
 /**
@@ -172,6 +174,7 @@ fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySli
 
 fun countersSliceOf(state: AppState): CountersSlice = CountersSlice(
     counters = state.counters,
+    newLook = state.dayScreenStyle == DayScreenStyle.NEW,
 )
 
 fun undoneSliceOf(state: AppState): UndoneSlice = UndoneSlice(

@@ -145,6 +145,21 @@ class DayScreenNewLookTest {
         assertTrue(body.hasCode("NumberFormat.getIntegerInstance(locale)"))
     }
 
+    /**
+     * The counters follow the look (0381): Back, the title, «+ Counter» and the house in one row,
+     * no floating button; one grounded surface with hairlines, no cards; the bin in ⋮.
+     */
+    @Test
+    fun theCountersFollowTheLook() {
+        val screen = mainSourceFiles().single { it.name == "CountersScreen.kt" }.readText()
+        assertTrue(screen.hasCode("if (state.newLook) {\n CountersNewLook("))
+        val body = screen.substringAfter("private fun CountersNewLook(").substringBefore("/**\n * The countdown as a phrase")
+        assertTrue(body.hasCode("TopBarBack(onBack)") && body.hasCode("Text(stringResource(R.string.counters_add))") && body.hasCode("WayHomeButton()"))
+        assertTrue(!body.contains("FloatingActionButton") && !Regex("""\bCard\(""").containsMatchIn(body))
+        assertTrue(body.hasCode("color = MaterialTheme.colorScheme.surfaceContainerLow,") && body.hasCode("HorizontalDivider(thickness = 0.5.dp"))
+        assertTrue(body.hasCode("DropdownMenuItem(") && body.hasCode("Icons.Default.MoreVert") && !body.contains("Icons.Default.Delete"))
+    }
+
     /** «Someday» follows the day screen's look (0326): Back and the house on top, the rows in the surface. */
     @Test
     fun somedayFollowsTheLook() {

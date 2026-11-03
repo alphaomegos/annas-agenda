@@ -157,6 +157,7 @@
     <string name="attach_counter">Priključi brojač</string>
     <string name="no_counter">Nema brojača</string>
     <string name="no_counters_yet">Još nema brojača</string>
+    <string name="counters_add">Brojač</string>
     <string name="add_counter">Dodaj brojač</string>
     <string name="counter_type_date_range">Datumski brojač</string>
     <string name="counter_type_manual">Ručni brojač</string>

@@ -4,6 +4,7 @@
     <string name="attach_counter">Attach counter</string>
     <string name="no_counter">No counter</string>
     <string name="no_counters_yet">No counters yet</string>
+    <string name="counters_add">Counter</string>
     <string name="add_counter">Add counter</string>
     <string name="counter_type_date_range">Date counter</string>
     <string name="counter_type_manual">Manual counter</string>
