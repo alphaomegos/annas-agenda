@@ -48,6 +48,10 @@
     <string name="music_propose_sending">Sending to the sidecar</string>
     <string name="music_propose_sent">Sent to the sidecar: %1$d</string>
     <string name="music_propose_channel">Sending music</string>
+    <string name="progress_percent">%1$d%%</string>
+    <string name="backup_channel">Backups</string>
+    <string name="backup_sending">Backup to oursidecar</string>
+    <string name="backup_sent">The backup is in oursidecar</string>
     <string name="music_propose_to">Propose to %1$s</string>
     <string name="music_propose_field_title">Title</string>
     <string name="music_propose_field_artist">Artist</string>

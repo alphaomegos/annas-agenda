@@ -188,7 +188,10 @@ class MusicPlaybackManifestTest {
         // A proposal's key is the phone track's key; its row's id has the «phone:» before it (0376).
         assertTrue(screen.hasCode("proposals.firstOrNull { PHONE_TRACK_PREFIX + it.key == track.id }"))
         val worker = mainSourceFiles().single { it.name == "MusicProposeWorker.kt" }.readText()
-        assertTrue(worker.contains("import com.alphaomegos.annasagenda.canPostNotifications") && worker.contains("import com.alphaomegos.annasagenda.model.MusicLocalFile"))
+        assertTrue(worker.contains("import com.alphaomegos.annasagenda.model.MusicLocalFile"))
+        // The notification moved to ProgressNotices (0380), and with it the permission's check.
+        val notices = mainSourceFiles().single { it.name == "ProgressNotices.kt" }.readText()
+        assertTrue(notices.contains("import com.alphaomegos.annasagenda.canPostNotifications"))
     }
 
     /** The sidecar's tracks the phone has (0378): played from the phone, left out of «Keep all». */
@@ -208,5 +211,17 @@ class MusicPlaybackManifestTest {
         val screen = mainSourceFiles().single { it.name == "MusicScreen.kt" }.readText()
         assertTrue(screen.hasCode("LaunchedEffect(controller, lib.loaded, space?.id, phoneScan.scanned) {"))
         assertTrue(screen.hasCode("val tracks = if (musicMemoryIsPhones(memory)) {"))
+    }
+
+    /** The backup's and a track's going up shown in percent (0380), one notice for both, quiet. */
+    @Test
+    fun sendingsShowTheirPercent() {
+        val files = mainSourceFiles().associateBy { it.name }
+        val notices = files.getValue("ProgressNotices.kt").readText()
+        assertTrue(notices.hasCode("context.getString(R.string.progress_percent, percent)") && notices.hasCode(".setSilent(true)"))
+        val backup = files.getValue("SidecarBackupWorker.kt").readText()
+        assertTrue(backup.hasCode("ProgressNotices.show(ctx, CHANNEL_BACKUP,") && backup.hasCode("ProgressNotices.finished(ctx, CHANNEL_BACKUP,"))
+        val music = files.getValue("MusicProposeWorker.kt").readText()
+        assertTrue(music.hasCode("ProgressNotices.show(ctx, CHANNEL_MUSIC_SEND,") && music.hasCode("progressWorthTelling(percent, shown)"))
     }
 }

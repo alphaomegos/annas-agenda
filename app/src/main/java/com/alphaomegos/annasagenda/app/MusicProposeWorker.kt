@@ -1,13 +1,7 @@
 package com.alphaomegos.annasagenda.app
 
-import android.annotation.SuppressLint
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.net.Uri
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
@@ -18,7 +12,8 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.alphaomegos.annasagenda.R
-import com.alphaomegos.annasagenda.canPostNotifications
+import com.alphaomegos.annasagenda.support.progressPercent
+import com.alphaomegos.annasagenda.support.progressWorthTelling
 import com.alphaomegos.annasagenda.model.MusicLocalFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -47,8 +42,8 @@ internal class MusicProposeWorker(context: Context, params: WorkerParameters) : 
         var sent = 0
         for (p in proposals.waiting()) {
             if (isStopped) return@withContext Result.retry()
-            var shown = -1
-            show(ctx, p.title, 0)
+            var shown = 0
+            show(ctx, p.title, 0L, p.sizeBytes)
             setProgress(workDataOf(KEY_KEY to p.key, KEY_PERCENT to 0))
             val outcome = sendMusicProposal(
                 p = p,
@@ -59,10 +54,10 @@ internal class MusicProposeWorker(context: Context, params: WorkerParameters) : 
                 open = { ctx.contentResolver.openInputStream(Uri.parse(p.uri)) },
                 onTrack = { id -> proposals.update(p.key) { it.copy(trackId = id) } },
                 onSent = { bytes ->
-                    val percent = ((bytes * 100) / p.sizeBytes.coerceAtLeast(1)).toInt().coerceIn(0, 100)
-                    if (percent >= shown + 5) {
+                    val percent = progressPercent(bytes, p.sizeBytes)
+                    if (progressWorthTelling(percent, shown)) {
                         shown = percent
-                        show(ctx, p.title, percent)
+                        show(ctx, p.title, bytes, p.sizeBytes)
                     }
                 },
             )
@@ -81,43 +76,12 @@ internal class MusicProposeWorker(context: Context, params: WorkerParameters) : 
         if (later && runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.success()
     }
 
-    @SuppressLint("MissingPermission") // checked by canPostNotifications
-    private fun show(ctx: Context, title: String, percent: Int) {
-        if (!canPostNotifications(ctx)) return
-        channel(ctx)
-        val n = NotificationCompat.Builder(ctx, CHANNEL_MUSIC_SEND)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(ctx.getString(R.string.music_propose_sending))
-            .setContentText(title)
-            .setProgress(100, percent, false)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .build()
-        NotificationManagerCompat.from(ctx).notify(NOTIFICATION_ID, n)
-    }
+    // «Sending to the sidecar», the track and how far, in percent (03.11).
+    private fun show(ctx: Context, title: String, sent: Long, size: Long) =
+        ProgressNotices.show(ctx, CHANNEL_MUSIC_SEND, R.string.music_propose_channel, NOTIFICATION_ID, ctx.getString(R.string.music_propose_sending), title, sent, size)
 
-    @SuppressLint("MissingPermission") // checked by canPostNotifications
-    private fun done(ctx: Context, sent: Int) {
-        val nm = NotificationManagerCompat.from(ctx)
-        if (sent == 0 || !canPostNotifications(ctx)) {
-            nm.cancel(NOTIFICATION_ID)
-            return
-        }
-        channel(ctx)
-        val n = NotificationCompat.Builder(ctx, CHANNEL_MUSIC_SEND)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(ctx.getString(R.string.music_propose_sent, sent))
-            .setAutoCancel(true)
-            .build()
-        nm.notify(NOTIFICATION_ID, n)
-    }
-
-    private fun channel(ctx: Context) {
-        if (Build.VERSION.SDK_INT < 26) return
-        ctx.getSystemService(NotificationManager::class.java)?.createNotificationChannel(
-            NotificationChannel(CHANNEL_MUSIC_SEND, ctx.getString(R.string.music_propose_channel), NotificationManager.IMPORTANCE_LOW),
-        )
-    }
+    private fun done(ctx: Context, sent: Int) =
+        ProgressNotices.finished(ctx, CHANNEL_MUSIC_SEND, R.string.music_propose_channel, NOTIFICATION_ID, if (sent > 0) ctx.getString(R.string.music_propose_sent, sent) else null)
 
     companion object {
         private const val WORK = "music-propose"

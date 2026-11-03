@@ -1145,6 +1145,10 @@
     <string name="music_propose_sending">Отправка в сайдкар</string>
     <string name="music_propose_sent">Отправлено в сайдкар: %1$d</string>
     <string name="music_propose_channel">Отправка музыки</string>
+    <string name="progress_percent">%1$d %%</string>
+    <string name="backup_channel">Резервные копии</string>
+    <string name="backup_sending">Резервная копия в oursidecar</string>
+    <string name="backup_sent">Резервная копия сохранена в oursidecar</string>
     <string name="music_propose_to">Предложить в %1$s</string>
     <string name="music_propose_field_title">Название</string>
     <string name="music_propose_field_artist">Исполнитель</string>

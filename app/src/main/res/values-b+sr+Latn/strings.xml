@@ -1079,6 +1079,10 @@
     <string name="music_propose_sending">Slanje u sajdkar</string>
     <string name="music_propose_sent">Poslato u sajdkar: %1$d</string>
     <string name="music_propose_channel">Slanje muzike</string>
+    <string name="progress_percent">%1$d %%</string>
+    <string name="backup_channel">Rezervne kopije</string>
+    <string name="backup_sending">Rezervna kopija na oursidecar</string>
+    <string name="backup_sent">Rezervna kopija je sačuvana na oursidecar</string>
     <string name="music_propose_to">Predloži u %1$s</string>
     <string name="music_propose_field_title">Naslov</string>
     <string name="music_propose_field_artist">Izvođač</string>

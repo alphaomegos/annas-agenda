@@ -12,11 +12,14 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.data.AppStateLoadResult
 import com.alphaomegos.annasagenda.data.AppStateStore
 import com.alphaomegos.annasagenda.model.SidecarBackupSlot
 import com.alphaomegos.annasagenda.support.SidecarBackupFailure
 import com.alphaomegos.annasagenda.support.nextIdFor
+import com.alphaomegos.annasagenda.support.progressPercent
+import com.alphaomegos.annasagenda.support.progressWorthTelling
 import com.alphaomegos.annasagenda.support.stateWithIdHighWaterAtLeast
 import com.alphaomegos.annasagenda.util.resolveStoredCoverFiles
 import com.alphaomegos.annasagenda.util.writeBackupZipFile
@@ -55,9 +58,20 @@ internal class SidecarBackupWorker(context: Context, params: WorkerParameters) :
             uploader.discard(slot)
         }
         val request = SidecarBackupRequest(slot, inputData.getString(KEY_NOTE), inputData.getString(KEY_REPLACE))
-        val result = uploader.run(request, { file -> writeArchive(applicationContext, file) }) { sent, of ->
+        val ctx = applicationContext
+        // The parts sent of all, in percent, in a quiet notification while it goes (03.11, Eduard).
+        var shown = 0
+        val result = uploader.run(request, { file -> writeArchive(ctx, file) }) { sent, of ->
             setProgress(workDataOf(KEY_SENT to sent, KEY_OF to of))
+            val percent = progressPercent(sent.toLong(), of.toLong())
+            if (sent == 0 || progressWorthTelling(percent, shown)) {
+                shown = percent
+                ProgressNotices.show(ctx, CHANNEL_BACKUP, R.string.backup_channel, BACKUP_NOTICE_ID, ctx.getString(R.string.backup_sending), null, sent.toLong(), of.toLong())
+            }
         }
+        // Done by hand: said once. Done by itself, or not done (the screen says why): nothing left.
+        val said = if (result is SidecarBackupResult.Ok && slot == SidecarBackupSlot.MANUAL) ctx.getString(R.string.backup_sent) else null
+        ProgressNotices.finished(ctx, CHANNEL_BACKUP, R.string.backup_channel, BACKUP_NOTICE_ID, said)
         return when (result) {
             is SidecarBackupResult.Ok -> Result.success(workDataOf(KEY_BACKUP to result.value.id))
             is SidecarBackupResult.Failed -> when (result.failure) {
@@ -84,6 +98,8 @@ internal class SidecarBackupWorker(context: Context, params: WorkerParameters) :
         private const val KEY_BACKUP = "backup"
         private const val KEY_FAILURE = "failure"
         private const val MAX_ATTEMPTS = 8
+        private const val CHANNEL_BACKUP = "backup_send"
+        private const val BACKUP_NOTICE_ID = 7302
 
         /** The state as saved, written as the manual export's archive into [file]; false when there is none to write. */
         private suspend fun writeArchive(context: Context, file: File): Boolean {
