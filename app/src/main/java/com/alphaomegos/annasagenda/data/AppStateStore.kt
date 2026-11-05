@@ -257,8 +257,19 @@ class AppStateStore internal constructor(
      * The state held in memory is untouched, so nothing on screen moves and
      * ids stay put for as long as the app is running.
      */
+    // The state's size goes to the log once a start (05.11), with the first save.
+    @Volatile
+    private var sizeReported = false
+
     suspend fun save(state: AppState) = withContext(Dispatchers.IO) {
+        val started = System.nanoTime()
         val raw = encodeToJson(stateWithDerivableOccurrencesDropped(state))
+        if (!sizeReported) {
+            sizeReported = true
+            val encodedMs = (System.nanoTime() - started) / 1_000_000
+            // Sizes only, never content: «adb logcat -s AnnaState».
+            runCatchingCancellable { android.util.Log.i("AnnaState", stateSizeOf(raw).logLine() + "; encoded in $encodedMs ms") }
+        }
         dataStore.edit { prefs ->
             prefs[key] = raw
         }
