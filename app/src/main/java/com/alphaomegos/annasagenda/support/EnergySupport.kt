@@ -3,6 +3,7 @@ package com.alphaomegos.annasagenda.support
 import com.alphaomegos.annasagenda.model.AnthropometryEntry
 import com.alphaomegos.annasagenda.model.ProfileSex
 import com.alphaomegos.annasagenda.model.RunningWorkout
+import com.alphaomegos.annasagenda.model.SportWorkout
 import com.alphaomegos.annasagenda.model.StepDay
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -43,9 +44,10 @@ val DAILY_NORM_RANGE = 800..6000
  * norm — the user's own, or rest × 1.2 from the profile and the last weight — and the
  * day's walking and running on top. Null when there is no own norm and the profile or
  * a weight is missing; steps and runs count only where height and weight are known.
+ * Other sports' workouts (05.11) add the kilocalories written down with them.
  */
-data class DayEnergy(val normKcal: Int, val ownNorm: Boolean, val stepsKcal: Int, val runKcal: Int) {
-    val totalKcal: Int get() = normKcal + stepsKcal + runKcal
+data class DayEnergy(val normKcal: Int, val ownNorm: Boolean, val stepsKcal: Int, val runKcal: Int, val sportKcal: Int = 0) {
+    val totalKcal: Int get() = normKcal + stepsKcal + runKcal + sportKcal
 }
 
 fun dayEnergy(
@@ -58,6 +60,8 @@ fun dayEnergy(
     workouts: List<RunningWorkout>,
     planRuns: List<Pair<LocalDate, Double>> = emptyList(),
     ownNormKcal: Int? = null,
+    // Other sports' workouts (05.11): their kilocalories, as written down.
+    sport: List<SportWorkout> = emptyList(),
 ): DayEnergy? {
     val weight = weightOn(date, anthropometry)
     val norm = ownNormKcal?.toDouble()
@@ -70,5 +74,5 @@ fun dayEnergy(
     val walk = if (heightCm != null && weight != null) stepsKcal(steps, heightCm, weight) else 0.0
     val km = workouts.filter { it.date == date }.sumOf { it.distanceKm } + planRuns.filter { it.first == date }.sumOf { it.second }
     val run = if (weight != null) KCAL_PER_KG_PER_KM * weight * km else 0.0
-    return DayEnergy(norm.roundToInt(), ownNormKcal != null, walk.roundToInt(), run.roundToInt())
+    return DayEnergy(norm.roundToInt(), ownNormKcal != null, walk.roundToInt(), run.roundToInt(), sportKcalOn(sport, date))
 }

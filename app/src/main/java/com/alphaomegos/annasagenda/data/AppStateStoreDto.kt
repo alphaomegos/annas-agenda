@@ -150,6 +150,9 @@ internal data class AppStateDto(
     val metroRecent: List<MetroRecentRouteDto> = emptyList(),
     // The music section's settings (16.10).
     val musicPrefs: MusicPrefsDto = MusicPrefsDto(),
+    // Schema 16 (05.11): the workouts of other sports — data nothing else holds, so
+    // the version moved: a build that did not know them would drop them on its next save.
+    val sportWorkouts: List<SportWorkoutDto> = emptyList(),
 )
 
 /** A flight; times are the airports' local clocks as "2024-02-24T14:05". */
@@ -464,6 +467,16 @@ internal data class RunningWorkoutDto(
     val distanceKm: Double = 0.0,
     val durationMinutes: Int = 0,
     val note: String = "",
+)
+
+/** A workout of another sport (05.11): a standard kind's key or the user's words; each number optional. */
+@Serializable
+internal data class SportWorkoutDto(
+    val id: Long,
+    val dateEpochDay: Long,
+    val kind: String,
+    val durationMinutes: Int? = null,
+    val kcal: Int? = null,
 )
 
 @Serializable

@@ -705,6 +705,34 @@ class AppStateStoreMigrationTest {
         assertEquals(MetroTileSource.CARTO_LIGHT, scheme.underlaySource)
     }
 
+    /** Version 16 (05.11): a payload from before it has no workouts of other sports, and keeps its runs. */
+    @Test
+    fun version15_readsWithNoSportWorkouts() {
+        val state = decoded(
+            """{ "v": 15,
+                "runningMode": "BETWEEN",
+                "runningWorkouts": [ { "id": 3, "dateEpochDay": 20000, "distanceKm": 5.0, "durationMinutes": 30 } ] }""",
+        )
+        assertTrue(state.sportWorkouts.isEmpty())
+        assertEquals(5.0, state.runningWorkouts.single().distanceKm, 0.0)
+        assertEquals(RunningMode.BETWEEN, state.runningMode)
+    }
+
+    /** A workout with no kind is no workout; a nought, or less, is a number nobody wrote down. */
+    @Test
+    fun aSportWorkoutWithoutAKindIsDropped() {
+        val state = decoded(
+            """{ "v": 16,
+                "sportWorkouts": [
+                  { "id": 5, "dateEpochDay": 20000, "kind": "  ", "kcal": 300 },
+                  { "id": 6, "dateEpochDay": 20001, "kind": "std:zumba", "durationMinutes": 0, "kcal": 450 } ] }""",
+        )
+        val w = state.sportWorkouts.single()
+        assertEquals("std:zumba", w.kind)
+        assertEquals(null, w.durationMinutes)
+        assertEquals(450, w.kcal)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

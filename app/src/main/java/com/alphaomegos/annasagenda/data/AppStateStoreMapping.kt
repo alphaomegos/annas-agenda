@@ -24,6 +24,7 @@ internal fun AppState.toDto(): AppStateDto = AppStateDto(
     runningPlanEntries = runningPlanEntries.map { it.toDto() },
     runningMode = runningMode.name,
     runningWorkouts = runningWorkouts.map { it.toDto() },
+    sportWorkouts = sportWorkouts.map { it.toDto() },
     counters = counters.map { it.toDto() },
     mainMenuOrder = mainMenuOrder,
     mainMenuHiddenIds = mainMenuHiddenIds.toList(),
@@ -159,6 +160,8 @@ internal fun AppStateDto.toDomain(): AppState {
         // one tap rather than any data.
         runningMode = runningModeFromName(runningMode),
         runningWorkouts = runningWorkouts.map { it.toDomain() },
+        // No kind, no workout; a number below one is no number (05.11).
+        sportWorkouts = sportWorkouts.mapNotNull { it.toDomainOrNull() },
         counters = counters.mapNotNull { it.toDomainOrNull() },
         // Normalised on the way in like the other preferences here: the
         // setter normalises, but a payload does not have to have come from it.
@@ -499,6 +502,26 @@ internal fun RunningWorkoutDto.toDomain(): RunningWorkout = RunningWorkout(
     durationMinutes = durationMinutes,
     note = note,
 )
+
+internal fun SportWorkout.toDto(): SportWorkoutDto = SportWorkoutDto(
+    id = id,
+    dateEpochDay = date.toEpochDay(),
+    kind = kind,
+    durationMinutes = durationMinutes,
+    kcal = kcal,
+)
+
+/** Null without a kind; a number below one reads as none. */
+internal fun SportWorkoutDto.toDomainOrNull(): SportWorkout? {
+    val k = kind.trim().takeIf { it.isNotEmpty() } ?: return null
+    return SportWorkout(
+        id = id,
+        date = LocalDate.ofEpochDay(dateEpochDay),
+        kind = k,
+        durationMinutes = durationMinutes?.takeIf { it > 0 },
+        kcal = kcal?.takeIf { it > 0 },
+    )
+}
 
 internal fun RunningPlanEntry.toDto(): RunningPlanEntryDto = RunningPlanEntryDto(
     dateEpochDay = date.toEpochDay(),

@@ -132,6 +132,11 @@ class AppStateWholeRoundTripTest {
         runningWorkouts = listOf(
             RunningWorkout(id = 80L, date = day, distanceKm = 8.25, durationMinutes = 47, note = "в парке"),
         ),
+        // Other sports (0384): a standard kind and one's own words, a number missing.
+        sportWorkouts = listOf(
+            SportWorkout(id = 81L, date = day, kind = "std:snowboard", durationMinutes = 180, kcal = 900),
+            SportWorkout(id = 82L, date = day, kind = "Скалолазание", kcal = 450),
+        ),
         counters = listOf(
             ManualCounter(id = 60L, title = "push-ups", balance = 40),
             DateRangeCounter(
@@ -468,6 +473,7 @@ class AppStateWholeRoundTripTest {
         assertTrue(whole.activeReading != null)
         assertTrue(whole.pendingReadingSession != null)
         assertTrue(whole.runningWorkouts.isNotEmpty())
+        assertTrue(whole.sportWorkouts.size == 2 && whole.sportWorkouts.any { it.durationMinutes == null })
         assertTrue(whole.dietPlan.isNotEmpty())
         assertTrue(whole.foodLog.any { it.dietItemId != null })
         assertTrue(whole.foodLibraryUserItems.isNotEmpty())
@@ -492,7 +498,7 @@ class AppStateWholeRoundTripTest {
             "mainMenuOrder", "mainMenuHiddenIds", "themeMode", "palette", "backStyle", "mainMenuNarrow", "dayScreenStyle", "idHighWater", "askBeforeDeleting", "stepsWidgetNumber",
             "readingBooks", "readingMovies", "readingSeries", "readingSessions",
             "activeReading", "pendingReadingSession", "autoRecordInterruptedReading",
-            "runningMode", "runningWorkouts",
+            "runningMode", "runningWorkouts", "sportWorkouts", "kind",
             "anthropometryShowForecast", "anthropometryShowEntries", "anthropometryRange",
             "stepDays", "stepsHeightCm", "profileSex", "profileBirthYear", "weightForecastMethod", "dailyNormKcal", "anthropometryCarryLast", "stepsRange", "stepsCustomFromEpochDay", "calendarShowSteps", "stepsChartStyle", "stepsWidgetLine", "stepsFriendsBest", "stepsWidgetRecord", "stepsGoal",
             "calorimeterShowDailyGoal", "calendarBadges", "foodLibraryVisible",

@@ -33,6 +33,8 @@ fun highestIdIn(state: AppState): Long =
         state.travelCountries.mapNotNull { it.countryId.removePrefix(TRAVEL_USER_COUNTRY_PREFIX).toLongOrNull() }.maxOrNull(),
         // Flights (06.10).
         state.flights.maxOfOrNull { it.id },
+        // Other sports' workouts (05.11).
+        state.sportWorkouts.maxOfOrNull { it.id },
     ).filterNotNull().maxOrNull() ?: 0L
 
 /**

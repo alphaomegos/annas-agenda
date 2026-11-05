@@ -100,6 +100,16 @@ class StateSlicesTest {
         assertNotEquals(base, calorimeterSliceOf(populated.copy(stepDays = emptyList<com.alphaomegos.annasagenda.model.StepDay>() + populated.stepDays.drop(1) + listOf(com.alphaomegos.annasagenda.model.StepDay(java.time.LocalDate.of(2020, 1, 1), 5, com.alphaomegos.annasagenda.model.StepSource.HEALTH_CONNECT)))))
     }
 
+    /** Other sports (0384): both slices that count a day's spending move with the workouts. */
+    @Test
+    fun theSpendingSlicesCarryOtherSports() {
+        val more = populated.copy(
+            sportWorkouts = listOf(com.alphaomegos.annasagenda.model.SportWorkout(id = 9, date = today, kind = "std:zumba", kcal = 300)),
+        )
+        assertNotEquals(calorimeterSliceOf(populated), calorimeterSliceOf(more))
+        assertNotEquals(anthropometrySliceOf(populated), anthropometrySliceOf(more))
+    }
+
     /** The counters' slice carries the look (0381). */
     @Test
     fun countersSliceCarriesTheLook() {

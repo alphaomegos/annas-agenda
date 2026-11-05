@@ -4,6 +4,7 @@ import com.alphaomegos.annasagenda.model.AnthropometryEntry
 import com.alphaomegos.annasagenda.model.FoodEntry
 import com.alphaomegos.annasagenda.model.ProfileSex
 import com.alphaomegos.annasagenda.model.RunningWorkout
+import com.alphaomegos.annasagenda.model.SportWorkout
 import com.alphaomegos.annasagenda.model.StepDay
 import java.time.LocalDate
 
@@ -16,6 +17,8 @@ import java.time.LocalDate
  * walking and running included — eaten to the day's whole spending (28.10;
  * counting its walking had a year of steps make 20 kg the scales never saw).
  * The sum over 7 700 kcal a kilogram.
+ * Other sports' workouts (05.11) count like the runs: their kilocalories as
+ * written down, on the days that count.
  * «Summer 2026» — the calorimeter's goals less what was eaten, last 30 days,
  * over 7 800 — stays a choice.
  */
@@ -46,9 +49,12 @@ data class WeightForecast(
     val changeKg: Double,
     // The change the scales said over the same period, if weighed twice in it.
     val measuredKg: Double?,
+    // Other sports' kilocalories on the counted days (05.11), as written down.
+    val sportKcal: Double = 0.0,
 ) {
     val stepsKg: Double get() = stepsKcal / KCAL_PER_KG_BODY
     val runKg: Double get() = runKcal / KCAL_PER_KG_BODY
+    val sportKg: Double get() = sportKcal / KCAL_PER_KG_BODY
     /** The scales less the energy: how far the forecast was off. */
     val discrepancyKg: Double? get() = measuredKg?.let { it - changeKg }
 }
@@ -74,6 +80,8 @@ fun newWeightForecast(
     planRuns: List<Pair<LocalDate, Double>> = emptyList(),
     // The user's own daily norm, instead of the formula's, when set.
     normKcal: Int? = null,
+    // Other sports' workouts (05.11).
+    sport: List<SportWorkout> = emptyList(),
 ): WeightForecast? {
     if (sex == null || heightCm == null || birthYear == null) return null
     if (anthropometry.none { it.weightKg != null }) return null
@@ -85,6 +93,9 @@ fun newWeightForecast(
         .filter { (date, _) -> !date.isBefore(from) && !date.isAfter(last) }
         .groupBy({ it.first }, { it.second })
         .mapValues { (_, kms) -> kms.sum() }
+    val sportBy = sport.filter { !it.date.isBefore(from) && !it.date.isAfter(last) }
+        .groupBy { it.date }
+        .mapValues { (_, ws) -> ws.sumOf { it.kcal ?: 0 } }
     var days = 0
     var logged = 0
     var runKm = 0.0
@@ -93,6 +104,7 @@ fun newWeightForecast(
     var steps = 0L
     var stepsKcal = 0.0
     var runKcal = 0.0
+    var sportKcal = 0.0
     var balance = 0.0
     var d = from
     while (!d.isAfter(last)) {
@@ -110,18 +122,20 @@ fun newWeightForecast(
         val walk = stepsKcal(s, heightCm, weight)
         val km = runKmBy[d] ?: 0.0
         val run = KCAL_PER_KG_PER_KM * weight * km
+        val other = (sportBy[d] ?: 0).toDouble()
         logged++
         eaten += ate
         steps += s
         stepsKcal += walk
         runKm += km
         runKcal += run
-        balance += baseline + walk + run - ate
+        sportKcal += other
+        balance += baseline + walk + run + other - ate
         d = d.plusDays(1)
     }
     val weighed = anthropometry.filter { it.weightKg != null && !it.date.isBefore(from) && !it.date.isAfter(last) }.sortedBy { it.date }
     val measured = if (weighed.size >= 2) weighed.last().weightKg!! - weighed.first().weightKg!! else null
-    return WeightForecast(days, logged, eaten, normDays, runKm, steps, stepsKcal, runKcal, balance, -balance / KCAL_PER_KG_BODY, measured)
+    return WeightForecast(days, logged, eaten, normDays, runKm, steps, stepsKcal, runKcal, balance, -balance / KCAL_PER_KG_BODY, measured, sportKcal = sportKcal)
 }
 
 /**

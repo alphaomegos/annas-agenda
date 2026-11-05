@@ -49,6 +49,8 @@ data class AppState(
     val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
     val runningMode: RunningMode = RunningMode.PLAN,
     val runningWorkouts: List<RunningWorkout> = emptyList(),
+    // Other sports' workouts (05.11, schema 16): the «Other» tab.
+    val sportWorkouts: List<SportWorkout> = emptyList(),
 
     // Counters
     override val counters: List<Counter> = emptyList(),

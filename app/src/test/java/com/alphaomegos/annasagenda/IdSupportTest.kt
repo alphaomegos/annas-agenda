@@ -61,6 +61,10 @@ class IdSupportTest {
             "runningWorkouts" to AppState(
                 runningWorkouts = listOf(RunningWorkout(id = 40L, date = day, distanceKm = 5.0, durationMinutes = 30))
             ),
+            // Other sports (0384).
+            "sportWorkouts" to AppState(
+                sportWorkouts = listOf(SportWorkout(id = 40L, date = day, kind = "std:yoga", kcal = 200))
+            ),
             "dietPlan" to AppState(
                 dietPlan = mapOf(java.time.DayOfWeek.MONDAY to listOf(DietItem(id = 40L, title = "Творог", kcal = 120)))
             ),

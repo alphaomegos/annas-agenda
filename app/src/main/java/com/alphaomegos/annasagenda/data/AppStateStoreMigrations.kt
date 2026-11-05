@@ -64,6 +64,7 @@ internal fun migrateAppStateRawJson(
             12 -> migrateAppState12To13(cur)
             13 -> migrateAppState13To14(cur)
             14 -> migrateAppState14To15(cur)
+            15 -> migrateAppState15To16(cur)
             else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
@@ -246,6 +247,17 @@ private fun migrateAppState13To14(obj: JsonObject): JsonObject {
 private fun migrateAppState14To15(obj: JsonObject): JsonObject {
     val m = obj.toMutableMap()
     m["v"] = JsonPrimitive(15)
+    return JsonObject(m)
+}
+
+/**
+ * A stamp. Version 16 (05.11) adds the workouts of other sports — the «Other»
+ * tab of «Sport» — data nothing else holds. None is what every payload before
+ * it means.
+ */
+private fun migrateAppState15To16(obj: JsonObject): JsonObject {
+    val m = obj.toMutableMap()
+    m["v"] = JsonPrimitive(16)
     return JsonObject(m)
 }
 

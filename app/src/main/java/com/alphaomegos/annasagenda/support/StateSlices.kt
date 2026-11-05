@@ -44,6 +44,8 @@ data class CalorimeterSlice(
     val anthropometry: List<AnthropometryEntry> = emptyList(),
     val stepDays: List<StepDay> = emptyList(),
     val runningWorkouts: List<RunningWorkout> = emptyList(),
+    // Other sports (05.11): the day's spending counts their kilocalories.
+    val sportWorkouts: List<SportWorkout> = emptyList(),
     val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
     val runningDoneTaskIds: Set<Long> = emptySet(),
 )
@@ -57,6 +59,8 @@ data class AnthropometrySlice(
     // run has to move that number, and a slice that did not carry them would
     // not emit when one was written down.
     val runningWorkouts: List<RunningWorkout> = emptyList(),
+    // Other sports (05.11): the forecast counts them like the runs.
+    val sportWorkouts: List<SportWorkout> = emptyList(),
     // What the screen shows and the range it last showed (schema 6).
     val anthropometryShowForecast: Boolean = true,
     val anthropometryShowEntries: Boolean = false,
@@ -144,6 +148,7 @@ fun calorimeterSliceOf(state: AppState): CalorimeterSlice = CalorimeterSlice(
     anthropometry = state.anthropometry,
     stepDays = state.stepDays,
     runningWorkouts = state.runningWorkouts,
+    sportWorkouts = state.sportWorkouts,
     runningPlanEntries = state.runningPlanEntries,
     runningDoneTaskIds = state.runningPlanEntries.mapNotNull { it.taskId }.toSet()
         .let { linked -> state.tasks.filter { it.isDone && it.id in linked }.map { it.id }.toSet() },
@@ -155,6 +160,7 @@ fun anthropometrySliceOf(state: AppState): AnthropometrySlice = AnthropometrySli
     calorieGoalChanges = state.calorieGoalChanges,
     foodLog = state.foodLog,
     runningWorkouts = state.runningWorkouts,
+    sportWorkouts = state.sportWorkouts,
     anthropometryShowForecast = state.anthropometryShowForecast,
     anthropometryShowEntries = state.anthropometryShowEntries,
     anthropometryRange = state.anthropometryRange,
