@@ -52,6 +52,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import android.widget.Toast
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.ui.platform.LocalContext
+import com.alphaomegos.annasagenda.components.rememberToday
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,7 +91,7 @@ fun RunningPlanScreen(
 
     // A year of dates, built once rather than on every keystroke in the
     // distance field. Keyed on today as well, so it still moves at midnight.
-    val today = LocalDate.now()
+    val today = rememberToday()
     var stepsImportAsked by rememberSaveable { mutableStateOf(false) }
     var stepsInfoOpen by rememberSaveable { mutableStateOf(false) }
     var workoutAddRequest by rememberSaveable { mutableStateOf(0) }

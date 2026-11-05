@@ -112,6 +112,7 @@ import com.alphaomegos.annasagenda.support.KCAL_PER_KG_FAT
 import com.alphaomegos.annasagenda.support.calorieDeficitInRange
 import com.alphaomegos.annasagenda.model.AnthropometryFieldIds
 import com.alphaomegos.annasagenda.model.defaultAnthropometryFieldIds
+import com.alphaomegos.annasagenda.components.rememberToday
 
 enum class AnthropometryAxis { CM, KG }
 
@@ -205,7 +206,7 @@ fun AnthropometryScreen(
 ) {
     val ctx = LocalContext.current
     val state by vm.anthropometry.collectAsState()
-    val today = remember { LocalDate.now() }
+    val today = rememberToday()
 
     val deficit30 = remember(state) {
         val start30 = today.minusDays(29)

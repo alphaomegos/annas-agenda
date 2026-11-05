@@ -38,6 +38,7 @@ import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.PickDateDialog
 import com.alphaomegos.annasagenda.support.formatShortDate
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.components.rememberToday
 
 private val rangeLabels = listOf(
     AnthropometryRange.WEEK to R.string.anthro_range_week,
@@ -152,7 +153,7 @@ private fun CustomRangeDialog(
     onDismiss: () -> Unit,
     onPicked: (DateWindow) -> Unit,
 ) {
-    val today = remember { LocalDate.now() }
+    val today = rememberToday()
     val locale = appLocale()
 
     // Kept as epoch days: LocalDate does not go into a Bundle, and a plain

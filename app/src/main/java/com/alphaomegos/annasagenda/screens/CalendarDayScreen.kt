@@ -62,6 +62,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.DateTasksBlock
 import com.alphaomegos.annasagenda.components.WayHomeFootButton
+import com.alphaomegos.annasagenda.components.rememberToday
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,7 +105,7 @@ private fun CalendarDayContent(
     onSaveAnthro: (LocalDate, Map<String, Double?>) -> Unit,
     tasksContent: @Composable (LocalDate) -> Unit,
 ) {
-    val today = remember { LocalDate.now() }
+    val today = rememberToday()
     var selectedEpochDay by rememberSaveable(initialEpochDay) { mutableLongStateOf(initialEpochDay) }
     val selectedDate = remember(selectedEpochDay) { LocalDate.ofEpochDay(selectedEpochDay) }
 

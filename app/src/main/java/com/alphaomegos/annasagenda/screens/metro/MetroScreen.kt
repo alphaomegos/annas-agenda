@@ -118,6 +118,7 @@ import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.alphaomegos.annasagenda.components.rememberToday
 
 /**
  * The metro (04.10): "from" and "to", and the way between them on the scheme
@@ -171,7 +172,7 @@ fun MetroScreen(
     // The "to" field, for the keyboard's "next" in "from" (16.10).
     val toFocus = remember { FocusRequester() }
 
-    val today = remember { LocalDate.now() }
+    val today = rememberToday()
 
     // The picture (05.10): laid out off the main thread, again after every edit.
     val layout by produceState<Map<Long, MetroPoint>?>(null, scheme) {

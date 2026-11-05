@@ -93,6 +93,7 @@ import com.alphaomegos.annasagenda.util.formatTwoDecimals
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import com.alphaomegos.annasagenda.components.rememberToday
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,7 +150,7 @@ private fun CalorimeterContent(
     val showDisplaySettings = rememberSaveable { mutableStateOf(false) }
     val locale = appLocale()
 
-    val today = LocalDate.now()
+    val today = rememberToday()
     var selectedEpochDay by rememberSaveable { mutableLongStateOf(today.toEpochDay()) }
     val selectedDate = remember(selectedEpochDay) { LocalDate.ofEpochDay(selectedEpochDay) }
     val isToday = selectedDate == today

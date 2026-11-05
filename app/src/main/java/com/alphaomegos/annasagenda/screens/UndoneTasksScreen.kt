@@ -51,6 +51,7 @@ import com.alphaomegos.annasagenda.util.appLocale
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import com.alphaomegos.annasagenda.components.rememberToday
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +63,7 @@ fun UndoneTasksScreen(
     val look by vm.dayScreenStyle.collectAsState()
     val locale = appLocale()
 
-    val today = remember { LocalDate.now() }
+    val today = rememberToday()
 
     // Generation has to happen before the debt is read, and it mutates state,
     // so it belongs in an effect rather than in composition. The result is

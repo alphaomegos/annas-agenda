@@ -68,6 +68,7 @@ import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.max
+import com.alphaomegos.annasagenda.components.rememberToday
 
 @Composable
 fun CalendarMonthRoute(
@@ -103,7 +104,7 @@ private fun CalendarMonthContent(
     onOpenDay: (Long) -> Unit,
     onOpenSomeday: () -> Unit,
 ) {
-    val today = LocalDate.now()
+    val today = rememberToday()
 
     val baseIndex = today.year * 12 + (today.monthValue - 1)
     var monthIndex by rememberSaveable { mutableIntStateOf(baseIndex) }

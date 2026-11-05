@@ -65,6 +65,7 @@ import com.alphaomegos.annasagenda.data.NewTaskDraft
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.collectAsState
+import com.alphaomegos.annasagenda.components.rememberToday
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -184,7 +185,7 @@ fun NewTaskScreen(
         )
     }
 
-    val today = remember { LocalDate.now() }
+    val today = rememberToday()
     val tomorrow = today.plusDays(1)
     val locale = appLocale()
     val canSave = description.trim().isNotBlank()

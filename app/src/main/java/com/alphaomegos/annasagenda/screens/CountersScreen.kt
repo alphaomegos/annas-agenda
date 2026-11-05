@@ -45,6 +45,7 @@ import com.alphaomegos.annasagenda.support.RemainingPart
 import com.alphaomegos.annasagenda.support.RemainingUnit
 import com.alphaomegos.annasagenda.support.remainingFractionOf
 import com.alphaomegos.annasagenda.support.remainingUntil
+import com.alphaomegos.annasagenda.components.rememberToday
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -435,7 +436,7 @@ private fun DateRangeCounterCard(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val today = LocalDate.now()
+    val today = rememberToday()
 
     val percentRemaining = remainingFractionOf(counter.startDate, counter.endDate, today)
     val percentInt = (percentRemaining * 100.0).roundToInt()
@@ -492,7 +493,7 @@ private fun CountersNewLook(
     onAdjust: (Long, Int) -> Unit,
     onDelete: (Long) -> Unit,
 ) {
-    val today = LocalDate.now()
+    val today = rememberToday()
     val locale = appLocale()
     val numbers = remember(locale) { NumberFormat.getIntegerInstance(locale) }
     Column(

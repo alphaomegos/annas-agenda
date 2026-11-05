@@ -112,6 +112,7 @@ import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.support.SidecarSignInState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.alphaomegos.annasagenda.support.runCatchingCancellable
+import com.alphaomegos.annasagenda.components.rememberToday
 
 internal const val MENU_REORDER_HOLD_MS = 3000L
 
@@ -208,7 +209,7 @@ fun MainMenuScreen(
     // Read once. If the app is left open across midnight on the 28th the card
     // appears when the menu is next rebuilt rather than at the stroke of
     // twelve, which for a card that lives one day a year is fine.
-    val today = remember { LocalDate.now() }
+    val today = rememberToday()
 
     val locale = appLocale()
     val langTag = remember(locale) {

@@ -54,6 +54,7 @@ import java.time.format.TextStyle
 import kotlin.collections.orEmpty
 import androidx.compose.runtime.getValue
 import androidx.compose.foundation.lazy.items
+import com.alphaomegos.annasagenda.components.rememberToday
 
 
 @Composable
@@ -64,7 +65,7 @@ fun RecurringTasksScreen(
     val state by vm.state.collectAsState()
     val newLook = state.dayScreenStyle == DayScreenStyle.NEW
     val locale = appLocale()
-    val today = remember { LocalDate.now() }
+    val today = rememberToday()
 
     val tasksById = remember(state.tasks) { state.tasks.associateBy { it.id } }
 
