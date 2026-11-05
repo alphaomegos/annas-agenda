@@ -79,19 +79,17 @@
                         android:id="@+id/music_widget_time_ghost"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
+                        android:fontFamily="@font/dseg7_classic_bold"
                         android:textColor="@color/music_widget_lcd_ghost"
-                        android:textSize="30sp"
-                        android:textStyle="bold" />
+                        android:textSize="28sp" />
 
                     <Chronometer
                         android:id="@+id/music_widget_time"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
+                        android:fontFamily="@font/dseg7_classic_bold"
                         android:textColor="@color/music_widget_lcd"
-                        android:textSize="30sp"
-                        android:textStyle="bold" />
+                        android:textSize="28sp" />
                 </FrameLayout>
             </LinearLayout>
         </LinearLayout>

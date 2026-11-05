@@ -39,6 +39,20 @@ class MusicWidgetFilesTest {
         assertTrue(service.hasCode("musicServiceAlive = true") && service.hasCode("musicServiceAlive = false"))
     }
 
+    /** Eduard (05.11): real LCD figures — DSEG7, under the OFL like the app's other fonts, its licence shipped with it. */
+    @Test
+    fun theTimeIsInSevenSegments() {
+        val font = File(res, "font/dseg7_classic_bold.ttf").readBytes()
+        assertTrue("not a TrueType file", font.size > 1000 && font.take(4) == listOf<Byte>(0, 1, 0, 0))
+        val layout = File(res, "layout/music_widget.xml").readText()
+        listOf("music_widget_time_ghost", "music_widget_time").forEach { id ->
+            val view = layout.substringAfter("android:id=\"@+id/$id\"").substringBefore("/>")
+            assertTrue("$id is not in seven segments", view.contains("android:fontFamily=\"@font/dseg7_classic_bold\""))
+        }
+        val licence = File(res.parentFile, "assets/licenses/OFL-DSEG.txt").readText()
+        assertTrue(licence.contains("SIL Open Font License, Version 1.1") && licence.contains("Reserved Font Name \"DSEG\""))
+    }
+
     /** Eduard: neither the name nor the logo of the player it recalls. */
     @Test
     fun nobodysPlayerIsNamed() {
