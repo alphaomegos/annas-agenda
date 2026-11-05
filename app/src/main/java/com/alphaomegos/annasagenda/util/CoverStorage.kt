@@ -16,6 +16,7 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.max
 import kotlin.math.min
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 const val MEDIA_COVER_MAX_SIDE_PX: Int = 800
 const val MEDIA_COVER_JPEG_QUALITY: Int = 84
@@ -39,7 +40,7 @@ suspend fun importCoverIntoInternalStorage(
     mediaKind: String,
     itemId: Long,
 ): String? = withContext(Dispatchers.IO) {
-    val bitmap = runCatching {
+    val bitmap = runCatchingCancellable {
         decodeScaledBitmapFromUri(
             context = context,
             uri = sourceUri,
@@ -103,11 +104,11 @@ suspend fun loadCoverBitmapForUi(
 
     cachedCoverBitmap(ref, targetMaxSidePx)?.let { return@withContext it }
 
-    runCatching {
+    runCatchingCancellable {
         val bitmap = if (isInternalCoverRef(ref)) {
             val file = internalCoverFileForRef(context, ref)
                 ?.takeIf { it.isFile }
-                ?: return@runCatching null
+                ?: return@runCatchingCancellable null
 
             decodeScaledBitmapFromFile(
                 file = file,
@@ -171,7 +172,7 @@ suspend fun writeInternalCoverBytes(
     val targetFile = internalCoverFileForRef(context, coverRef) ?: return@withContext false
     val tempFile = File(targetFile.parentFile, "${targetFile.name}.tmp")
 
-    runCatching {
+    runCatchingCancellable {
         targetFile.parentFile?.mkdirs()
         tempFile.writeBytes(bytes)
 

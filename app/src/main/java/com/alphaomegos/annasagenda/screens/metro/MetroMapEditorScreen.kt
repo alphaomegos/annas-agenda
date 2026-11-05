@@ -149,6 +149,7 @@ import com.alphaomegos.annasagenda.support.metroStationsShifted
 import androidx.compose.foundation.horizontalScroll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 /**
  * Putting the picture right by hand (05.10): the map as laid out, a station
@@ -184,7 +185,7 @@ fun MetroMapEditorScreen(
             return@rememberLauncherForActivityResult
         }
         scope.launch {
-            val saved = runCatching {
+            val saved = runCatchingCancellable {
                 val layer = currentLayer ?: error("no picture recorded")
                 val bitmap = layer.toImageBitmap().asAndroidBitmap()
                 withContext(Dispatchers.IO) {
@@ -267,7 +268,7 @@ fun MetroMapEditorScreen(
     var foundKey by rememberSaveable { mutableStateOf(0) }
     // Keys (14.10), for a keyboard on the Fold or at the emulator, as in drawing programs.
     val keys = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { keys.requestFocus() } }
+    LaunchedEffect(Unit) { runCatchingCancellable { keys.requestFocus() } }
     fun onKey(e: KeyEvent): Boolean {
         if (e.type != KeyEventType.KeyDown || scheme == null) return false
         val ctrl = e.isCtrlPressed || e.isMetaPressed

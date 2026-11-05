@@ -15,6 +15,7 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.LocalDate
 import java.time.Period
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 /** What one read from Health Connect brought: each day's total, and the apps it came from. */
 internal data class StepsRead(val days: Map<LocalDate, Int>, val sources: Set<String>)
@@ -86,7 +87,7 @@ internal object HealthConnectSteps {
     suspend fun readDays(context: Context, today: LocalDate, days: Int): StepsRead {
         val from = today.minusDays(days - 1L)
         val zone = ZoneId.systemDefault()
-        val once = runCatching { readOnce(context, from, today, zone) }.getOrNull()
+        val once = runCatchingCancellable { readOnce(context, from, today, zone) }.getOrNull()
         if (once != null) {
             val counts = (0 until days).associate { i ->
                 val day = from.plusDays(i.toLong())

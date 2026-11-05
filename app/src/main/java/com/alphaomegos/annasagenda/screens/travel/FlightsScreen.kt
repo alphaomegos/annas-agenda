@@ -97,6 +97,7 @@ import com.alphaomegos.annasagenda.components.WayHomeButton
 import androidx.compose.foundation.layout.PaddingValues
 import com.alphaomegos.annasagenda.model.DayScreenStyle
 import com.alphaomegos.annasagenda.components.NewLookScreen
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 /**
  * Flights (06.10), from the travel screen: the world map with every route
@@ -150,7 +151,7 @@ fun FlightsScreen(
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             val text = withContext(Dispatchers.IO) {
-                runCatching { context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } }
+                runCatchingCancellable { context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } }
                     .getOrNull()
             }
             val ok = text != null && withContext(Dispatchers.Default) { vm.stageFlightImport(text) }

@@ -73,7 +73,7 @@ internal class StatePersistence(private val context: Context) {
      */
     fun writeAutoBackupInBackground(json: String) {
         appBackgroundScope.launch {
-            runCatching {
+            runCatchingCancellable {
                 writeBackupToDocuments(
                     context = context,
                     json = json,

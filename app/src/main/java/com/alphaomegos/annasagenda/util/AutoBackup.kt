@@ -20,6 +20,7 @@ import java.io.OutputStream
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 const val BACKUP_APP_STATE_ENTRY_NAME = "app_state.json"
 const val BACKUP_META_ENTRY_NAME = "backup_meta.json"
@@ -201,7 +202,7 @@ suspend fun writeBackupZipFile(
     json: String,
     coverFiles: List<StoredCoverFile>,
 ): Boolean = withContext(Dispatchers.IO) {
-    val ok = runCatching {
+    val ok = runCatchingCancellable {
         file.parentFile?.mkdirs()
         FileOutputStream(file).use { writeBackupZip(BufferedOutputStream(it), json, coverFiles) }
     }.isSuccess

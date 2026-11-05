@@ -52,7 +52,7 @@ private data class StepsWidgetData(
 )
 
 private suspend fun loadStepsWidget(context: Context): StepsWidgetData {
-    val state = runCatching { currentStateFor(context) }.getOrNull()
+    val state = runCatchingCancellable { currentStateFor(context) }.getOrNull()
     val words = inAppLanguage(context)
     val locale = words.resources.configuration.locales[0]
     val count = NumberFormat.getIntegerInstance(locale)

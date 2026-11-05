@@ -50,7 +50,7 @@ class NewTaskDraftStore(private val context: Context) {
 
     suspend fun load(): NewTaskDraft? = withContext(Dispatchers.IO) {
         val raw = context.newTaskDraftDataStore.data.first()[key] ?: return@withContext null
-        runCatching { json.decodeFromString<NewTaskDraft>(raw) }.getOrNull()
+        runCatchingCancellable { json.decodeFromString<NewTaskDraft>(raw) }.getOrNull()
     }
 
     suspend fun save(draft: NewTaskDraft) = withContext(Dispatchers.IO) {

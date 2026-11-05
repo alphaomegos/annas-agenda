@@ -70,6 +70,7 @@ import com.alphaomegos.annasagenda.components.WayHomeButton
 import androidx.compose.foundation.layout.PaddingValues
 import com.alphaomegos.annasagenda.model.DayScreenStyle
 import com.alphaomegos.annasagenda.components.NewLookScreen
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 private val AchievementGold = Color(0xFFF2A900)
 
@@ -239,10 +240,10 @@ private fun AchievementPicture(id: String, taken: Boolean, modifier: Modifier) {
     val context = LocalContext.current
     val picture by produceState<ImageBitmap?>(null, id) {
         value = withContext(Dispatchers.IO) {
-            runCatching {
+            runCatchingCancellable {
                 // WebP as shipped, PNG as a picture arrives from the generator.
                 listOf("webp", "png").firstNotNullOfOrNull { ext ->
-                    runCatching {
+                    runCatchingCancellable {
                         context.assets.open("achievements/$id.$ext").use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
                     }.getOrNull()
                 }

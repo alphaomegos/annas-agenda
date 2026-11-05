@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 /** What the phone's media index gave, and whether the app may read it. */
 internal data class MusicPhoneScan(val permitted: Boolean = false, val scanned: Boolean = false, val tracks: List<PhoneTrack> = emptyList())
@@ -68,10 +69,10 @@ internal class MusicPhone(private val context: Context) {
             return
         }
         if (!watching) {
-            runCatching { context.contentResolver.registerContentObserver(collection, true, observer) }
+            runCatchingCancellable { context.contentResolver.registerContentObserver(collection, true, observer) }
             watching = true
         }
-        val tracks = withContext(Dispatchers.IO) { runCatching { query() }.getOrDefault(emptyList()) }
+        val tracks = withContext(Dispatchers.IO) { runCatchingCancellable { query() }.getOrDefault(emptyList()) }
         _scan.value = MusicPhoneScan(permitted = true, scanned = true, tracks = tracks)
     }
 

@@ -202,7 +202,7 @@ private const val WORK_STEPS_TOGETHER = "steps-together"
 /** The background half of [StepsTogether.sync]. */
 internal class StepsTogetherWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        runCatching { StepsTogether.sync(applicationContext) }
+        runCatchingCancellable { StepsTogether.sync(applicationContext) }
         return Result.success()
     }
 }

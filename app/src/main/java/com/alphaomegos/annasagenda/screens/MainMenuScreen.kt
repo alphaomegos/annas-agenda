@@ -111,6 +111,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import com.alphaomegos.annasagenda.app.SidecarConnections
 import com.alphaomegos.annasagenda.support.SidecarSignInState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 internal const val MENU_REORDER_HOLD_MS = 3000L
 
@@ -297,7 +298,7 @@ fun MainMenuScreen(
                 val ok = if (Build.VERSION.SDK_INT < 29) {
                     false
                 } else {
-                    runCatching {
+                    runCatchingCancellable {
                         vm.exportBackupToDocuments()
                     }.isSuccess
                 }

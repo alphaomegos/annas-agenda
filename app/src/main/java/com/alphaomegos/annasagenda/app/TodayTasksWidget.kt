@@ -100,7 +100,7 @@ private data class WidgetContentData(
 
 private suspend fun loadWidgetContent(context: Context): WidgetContentData {
     val today = LocalDate.now()
-    val state = runCatching { currentStateFor(context) }.getOrNull()
+    val state = runCatchingCancellable { currentStateFor(context) }.getOrNull()
     val words = inAppLanguage(context)
     val locale = words.resources.configuration.locales[0]
     return WidgetContentData(
@@ -272,11 +272,11 @@ internal suspend fun refreshTodayWidgets(context: Context) {
 
 /** Every widget placed through [receiver], redrawn by [widget] — by id, not by class name. */
 private suspend fun redrawWidgetsOf(context: Context, receiver: Class<*>, widget: GlanceAppWidget) {
-    val ids = runCatching {
+    val ids = runCatchingCancellable {
         android.appwidget.AppWidgetManager.getInstance(context).getAppWidgetIds(android.content.ComponentName(context, receiver))
     }.getOrNull() ?: return
     val glance = androidx.glance.appwidget.GlanceAppWidgetManager(context)
-    ids.forEach { id -> runCatching { widget.update(context, glance.getGlanceIdBy(id)) } }
+    ids.forEach { id -> runCatchingCancellable { widget.update(context, glance.getGlanceIdBy(id)) } }
 }
 
 /** A widget's own error face: what failed, and a tap that opens the app (which redraws the widgets). */

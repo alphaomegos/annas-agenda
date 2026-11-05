@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 /** The most of a picture fetched: the server takes uploads of up to five megabytes. */
 internal const val SIDECAR_AVATAR_MAX_BYTES = 6 * 1024 * 1024
@@ -75,11 +76,11 @@ internal class SidecarAvatars(
 
     private suspend fun bytesNow(avatarId: String): ByteArray? {
         val file = File(dir, sidecarAvatarFileName(avatarId))
-        if (file.isFile) runCatching { file.readBytes() }.getOrNull()?.let { return it }
+        if (file.isFile) runCatchingCancellable { file.readBytes() }.getOrNull()?.let { return it }
         val path = sidecarAvatarPath(avatarId) ?: return null
         val cookie = if (sidecarAvatarNeedsSession(path)) connection.cookieHeader() ?: return null else null
         val got = fetch.bytes(connection.status.value.server + path, cookie, SIDECAR_AVATAR_MAX_BYTES) ?: return null
-        runCatching {
+        runCatchingCancellable {
             dir.mkdirs()
             dir.listFiles()?.forEach { it.delete() }
             file.writeBytes(got)

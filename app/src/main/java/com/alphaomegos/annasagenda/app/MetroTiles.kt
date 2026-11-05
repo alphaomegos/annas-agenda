@@ -28,6 +28,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 /*
  * The city map's network side (16.10): the only place the app goes online.
@@ -84,7 +85,7 @@ internal class MetroTileLoader(context: Context, private val scope: CoroutineSco
     init {
         // CARTO's tiles kept before the key are placeholders asking for it (17.10).
         scope.launch(Dispatchers.IO) {
-            METRO_TILE_FOLDERS_GONE.forEach { runCatching { File(dir, it).deleteRecursively() } }
+            METRO_TILE_FOLDERS_GONE.forEach { runCatchingCancellable { File(dir, it).deleteRecursively() } }
         }
     }
 
@@ -114,7 +115,7 @@ internal class MetroTileLoader(context: Context, private val scope: CoroutineSco
                 gate.withPermit {
                     // Out of sight by now: left for when it is in sight again.
                     stale = askedIn[key] != view.get()
-                    if (stale) null else runCatching { load(source, t) }.getOrNull()
+                    if (stale) null else runCatchingCancellable { load(source, t) }.getOrNull()
                 }
             }
             pending -= key
@@ -174,9 +175,9 @@ internal fun metroHttpGet(url: String): ByteArray? {
  * found or the phone is offline.
  */
 internal suspend fun metroGeocode(query: String): Pair<Double, Double>? = withContext(Dispatchers.IO) {
-    runCatching {
+    runCatchingCancellable {
         val url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + URLEncoder.encode(query.trim(), "UTF-8")
-        val bytes = metroHttpGet(url) ?: return@runCatching null
+        val bytes = metroHttpGet(url) ?: return@runCatchingCancellable null
         val found = JSONArray(String(bytes, Charsets.UTF_8))
         if (found.length() == 0) {
             null

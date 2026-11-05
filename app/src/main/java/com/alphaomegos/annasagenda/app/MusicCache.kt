@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 /**
  * The sidecar's music kept on the phone (16.10, Eduard: "you can play
@@ -117,7 +118,7 @@ internal object MusicCache {
             try {
                 val source = CacheDataSource.Factory().setCache(of(context)).setUpstreamDataSourceFactory(upstream).createDataSource()
                 val spec = DataSpec.Builder().setUri(url).setKey(key).build()
-                runCatching { CacheWriter(source, spec, null, null).cache() }
+                runCatchingCancellable { CacheWriter(source, spec, null, null).cache() }
             } finally {
                 _saving.update { it - track.id }
                 changed()
@@ -138,7 +139,7 @@ internal object MusicCache {
     fun remove(context: Context, track: SidecarTrack) {
         val key = musicCacheKey(track) ?: return
         scope.launch {
-            runCatching { of(context).removeResource(key) }
+            runCatchingCancellable { of(context).removeResource(key) }
             changed()
         }
     }
@@ -146,7 +147,7 @@ internal object MusicCache {
     /** Every copy taken off the phone. */
     fun clear(context: Context) {
         scope.launch {
-            runCatching {
+            runCatchingCancellable {
                 val store = of(context)
                 store.keys.toList().forEach { store.removeResource(it) }
             }
@@ -162,7 +163,7 @@ internal object MusicCache {
      */
     fun dropStale(context: Context, tracks: List<SidecarTrack>, notKept: Set<String>) {
         scope.launch {
-            runCatching {
+            runCatchingCancellable {
                 val store = of(context)
                 val stale = musicCacheKeysStale(store.keys.toSet(), tracks, notKept)
                 stale.forEach { store.removeResource(it) }

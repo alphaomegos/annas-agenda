@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import java.io.BufferedInputStream
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipInputStream
+import com.alphaomegos.annasagenda.support.runCatchingCancellable
 
 sealed interface BackupImportPayload {
     data class ZipPackage(
@@ -30,7 +31,7 @@ suspend fun readZipBackupPackage(
     context: Context,
     uri: Uri,
 ): BackupImportPayload.ZipPackage? = withContext(Dispatchers.IO) {
-    runCatching {
+    runCatchingCancellable {
         context.contentResolver.openInputStream(uri)?.use { rawInput ->
             ZipInputStream(BufferedInputStream(rawInput)).use { zip ->
                 var appStateJson: String? = null
@@ -81,7 +82,7 @@ suspend fun readLegacyJsonBackup(
     context: Context,
     uri: Uri,
 ): BackupImportPayload.LegacyJson? = withContext(Dispatchers.IO) {
-    runCatching {
+    runCatchingCancellable {
         context.contentResolver.openInputStream(uri)?.use { input ->
             val json = input.bufferedReader(StandardCharsets.UTF_8).readText()
             val clean = json.trim()
