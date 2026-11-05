@@ -61,6 +61,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import kotlinx.coroutines.flow.MutableStateFlow
+import androidx.compose.runtime.collectAsState
 
 /** What each picture is called. */
 private val VisualizerPreset.label: Int
@@ -136,6 +138,14 @@ internal fun MusicVisualizer(preset: VisualizerPreset, modifier: Modifier = Modi
 internal fun MusicVisualizerPanel(controller: MediaController) {
     var preset by rememberSaveable { mutableStateOf(VisualizerPreset.CRIMSON_VORTEX) }
     var full by rememberSaveable { mutableStateOf(false) }
+    // Asked from the player widget: full screen at once, and the ask taken.
+    val asked by MusicVisualizerAsk.asked.collectAsState()
+    LaunchedEffect(asked) {
+        if (asked) {
+            full = true
+            MusicVisualizerAsk.asked.value = false
+        }
+    }
     val half = (LocalConfiguration.current.screenHeightDp / 2).dp
     Box(modifier = Modifier.fillMaxWidth().height(half).background(Color.Black)) {
         if (!full) MusicVisualizer(preset, Modifier.fillMaxSize())
@@ -266,4 +276,14 @@ private fun MusicVisualizerFull(
             }
         }
     }
+}
+
+/**
+ * The player widget's visualizer key (05.11, Eduard: no picture moves in a
+ * widget, so a key that opens the real one): the music opened with its
+ * player and the visualizer full screen at once. Asked by MainActivity,
+ * taken by the visualizer; let go by the music when nothing is in the player.
+ */
+internal object MusicVisualizerAsk {
+    val asked = MutableStateFlow(false)
 }

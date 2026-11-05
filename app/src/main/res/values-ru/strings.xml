@@ -1519,4 +1519,5 @@
     <string name="music_widget_page_down">Страница вниз</string>
     <string name="music_widget_no_lists">Списки появятся, когда музыку откроют в приложении</string>
     <string name="music_widget_list_empty">Здесь нечего играть</string>
+    <string name="music_widget_visualizer">Визуализатор во весь экран</string>
 </resources>

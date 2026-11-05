@@ -23,6 +23,7 @@ import com.alphaomegos.annasagenda.model.*
 import com.alphaomegos.annasagenda.support.*
 import com.alphaomegos.annasagenda.data.*
 import com.alphaomegos.annasagenda.app.*
+import com.alphaomegos.annasagenda.screens.music.MusicVisualizerAsk
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,6 +44,12 @@ class MainActivity : AppCompatActivity() {
         if (intent?.getBooleanExtra(EXTRA_OPEN_MUSIC, false) == true) {
             openMusicRequest.value = true
             intent.removeExtra(EXTRA_OPEN_MUSIC)
+        }
+        // The widget's visualizer key (05.11): the music, its visualizer full screen.
+        if (intent?.getBooleanExtra(EXTRA_OPEN_VISUALIZER, false) == true) {
+            MusicVisualizerAsk.asked.value = true
+            openMusicRequest.value = true
+            intent.removeExtra(EXTRA_OPEN_VISUALIZER)
         }
         val day = intent?.getLongExtra(EXTRA_OPEN_EPOCH_DAY, Long.MIN_VALUE) ?: return
         if (day != Long.MIN_VALUE) {

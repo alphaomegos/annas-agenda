@@ -39,6 +39,9 @@ import java.text.NumberFormat
 /** The extra that asks MainActivity to open the music (05.11, the player widget). */
 internal const val EXTRA_OPEN_MUSIC = "com.alphaomegos.annasagenda.OPEN_MUSIC"
 
+/** And the music on its visualizer, full screen (05.11, step three: the widget's own picture cannot move). */
+internal const val EXTRA_OPEN_VISUALIZER = "com.alphaomegos.annasagenda.OPEN_VISUALIZER"
+
 /** The playback service is up in this process: a widget drawn without it has nothing playing. */
 @Volatile
 internal var musicServiceAlive: Boolean = false
@@ -210,6 +213,7 @@ internal fun musicWidgetViews(context: Context, state: MusicWidgetState, id: Int
         views.setOnClickPendingIntent(keyView(key), target)
     }
     views.setOnClickPendingIntent(R.id.music_widget_display, openMusic(context))
+    views.setOnClickPendingIntent(R.id.music_widget_visualizer, openVisualizer(context))
 
     // The list window (step two): on a wide widget only, opened and closed by its own key.
     val wide = (options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 0) >= MUSIC_WIDGET_WIDE_DP
@@ -314,6 +318,17 @@ private fun openMusic(context: Context): PendingIntent =
         MUSIC_WIDGET_REQUEST + 20,
         Intent(context, MainActivity::class.java)
             .putExtra(EXTRA_OPEN_MUSIC, true)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+/** The app on its music's visualizer, full screen. */
+private fun openVisualizer(context: Context): PendingIntent =
+    PendingIntent.getActivity(
+        context,
+        MUSIC_WIDGET_REQUEST + 21,
+        Intent(context, MainActivity::class.java)
+            .putExtra(EXTRA_OPEN_VISUALIZER, true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )

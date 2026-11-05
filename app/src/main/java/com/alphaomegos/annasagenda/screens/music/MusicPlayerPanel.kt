@@ -54,6 +54,7 @@ import com.alphaomegos.annasagenda.screens.metro.LocalMetroStyle
 import com.alphaomegos.annasagenda.support.musicRepeatNext
 import com.alphaomegos.annasagenda.support.musicTimeLabel
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.collectAsState
 
 /**
  * The player opened from the bar at the bottom (16.10): what plays, how far
@@ -80,6 +81,9 @@ internal fun ColumnScope.MusicPlayerPanel(controller: MediaController, now: Musi
 
     // The visualizer (29.10): opened under the controls, half the screen high.
     var vizOpen by rememberSaveable { mutableStateOf(false) }
+    // The widget's visualizer key (05.11): the visualizer opened, and it goes full screen itself.
+    val vizAsked by MusicVisualizerAsk.asked.collectAsState()
+    LaunchedEffect(vizAsked) { if (vizAsked) vizOpen = true }
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         MusicControl(Icons.Default.KeyboardArrowDown, "v", stringResource(R.string.music_player_close), onClose)
         Spacer(modifier = Modifier.weight(1f))

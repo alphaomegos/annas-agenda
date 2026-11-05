@@ -68,6 +68,19 @@ class MusicWidgetFilesTest {
         assertTrue(receiver.hasCode("override fun onAppWidgetOptionsChanged(") && receiver.hasCode("musicWidgetPlayRow(it, list, trackId)"))
     }
 
+    /** Step three (0389): the visualizer's key opens the app on it, full screen, through the music and its player. */
+    @Test
+    fun theVisualizersKeyOpensItFullScreen() {
+        assertTrue(File(res, "layout/music_widget.xml").readText().contains("android:id=\"@+id/music_widget_visualizer\""))
+        val src = File(mainSourceRoot(), "com/alphaomegos/annasagenda")
+        assertTrue(File(src, "app/MusicWidgetViews.kt").readText().hasCode("views.setOnClickPendingIntent(R.id.music_widget_visualizer, openVisualizer(context))"))
+        assertTrue(File(src, "app/MainActivity.kt").readText().hasCode("MusicVisualizerAsk.asked.value = true"))
+        listOf("MusicScreen.kt", "MusicPlayerPanel.kt").forEach { name ->
+            assertTrue("$name does not hear the ask", File(src, "screens/music/$name").readText().hasCode("val vizAsked by MusicVisualizerAsk.asked.collectAsState()"))
+        }
+        assertTrue(File(src, "screens/music/MusicVisualizer.kt").readText().hasCode("full = true"))
+    }
+
     /** Eduard: neither the name nor the logo of the player it recalls. */
     @Test
     fun nobodysPlayerIsNamed() {

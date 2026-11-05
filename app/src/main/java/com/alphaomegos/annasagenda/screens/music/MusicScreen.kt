@@ -143,6 +143,7 @@ import com.alphaomegos.annasagenda.musicWidgetRefresh
 import com.alphaomegos.annasagenda.support.MusicWidgetList
 import com.alphaomegos.annasagenda.support.MusicWidgetTrack
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.collectAsState
 
 /**
  * The music of oursidecar (16.10, Eduard): its lists as the web shows them —
@@ -179,6 +180,18 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     var playerOpen by rememberSaveable { mutableStateOf(false) }
     val controller = rememberMusicController()
     val now = rememberMusicNowPlaying(controller)
+    // The widget's visualizer key (05.11): the player opened once a track is in it — the queue comes back
+    // a moment after the screen does — or, still none by then, the ask let go.
+    val vizAsked by MusicVisualizerAsk.asked.collectAsState()
+    LaunchedEffect(vizAsked, now.trackId) {
+        if (!vizAsked) return@LaunchedEffect
+        if (now.trackId != null) {
+            playerOpen = true
+        } else {
+            delay(3_000)
+            MusicVisualizerAsk.asked.value = false
+        }
+    }
     val unknownArtist = stringResource(R.string.music_unknown_artist)
     val memoryFile = remember(context) { musicPlayerMemoryFile(context) }
     var removing by rememberSaveable { mutableStateOf<String?>(null) }
