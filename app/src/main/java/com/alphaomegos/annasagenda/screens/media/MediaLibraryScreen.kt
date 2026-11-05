@@ -35,6 +35,24 @@ import com.alphaomegos.annasagenda.model.ReadingMediaType
 import com.alphaomegos.annasagenda.model.ReadingShelf
 import com.alphaomegos.annasagenda.model.ReadingSortField
 import com.alphaomegos.annasagenda.model.ReadingViewMode
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import com.alphaomegos.annasagenda.components.FittingText
+import com.alphaomegos.annasagenda.components.WayHomeButton
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,28 +142,10 @@ fun MediaLibraryScreen(
 
     val showMediaTypeLabel = isSearching || enabledTypeCount > 1
 
-    Scaffold(
-        topBar = {
-            MediaLibraryTopBar(
-                onBack = onBack,
-                onAdd = { addDialogOpen.value = true },
-                mediaFilter = mediaFilter,
-                searchEnabled = searchEnabled && prefs.viewMode != ReadingViewMode.WALL,
-                onSearchEnabledChange = { searchEnabled = it },
-                onShowBooksChange = { vm.setReadingMediaFilter(showBooks = it) },
-                onShowMoviesChange = { vm.setReadingMediaFilter(showMovies = it) },
-                onShowSeriesChange = { vm.setReadingMediaFilter(showSeries = it) },
-                onToggleView = {
-                    vm.setReadingViewMode(shelf, nextMediaLibraryViewMode(prefs.viewMode))
-                },
-                onOpenSort = { sortDialogOpen.value = true }
-            )
-        }
-    ) { padding ->
+    // The library's content, the same in either look (05.11).
+    val content: @Composable (Modifier) -> Unit = { modifier ->
         MediaLibraryScreenContent(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
+            modifier = modifier,
             selectedTab = selectedTab,
             onSelectTab = { selectedTab = it },
             searchEnabled = searchEnabled,
@@ -182,6 +182,86 @@ fun MediaLibraryScreen(
                 )
             },
             onDeleteItem = { item -> pendingDelete = item }
+        )
+    }
+
+    if (st.dayScreenStyle == DayScreenStyle.NEW) {
+        // The new look (05.11): Back, the title, «+ Add» and home in one row; the kinds, the search,
+        // the view and the order under it, as the bar held them; the cards flat.
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TopBarBack(onBack = onBack)
+                val title = stringResource(R.string.menu_reading)
+                val typography = MaterialTheme.typography
+                FittingText(
+                    choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium, title to typography.titleSmall),
+                    modifier = Modifier.weight(1f),
+                )
+                FilledTonalButton(
+                    onClick = { addDialogOpen.value = true },
+                    contentPadding = PaddingValues(start = 10.dp, end = 14.dp),
+                    modifier = Modifier.height(36.dp),
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.reading_add_item_title))
+                }
+                WayHomeButton()
+            }
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                MediaLibraryTopBarFilters(
+                    mediaFilter = mediaFilter,
+                    searchEnabled = searchEnabled && prefs.viewMode != ReadingViewMode.WALL,
+                    onSearchEnabledChange = { searchEnabled = it },
+                    onShowBooksChange = { vm.setReadingMediaFilter(showBooks = it) },
+                    onShowMoviesChange = { vm.setReadingMediaFilter(showMovies = it) },
+                    onShowSeriesChange = { vm.setReadingMediaFilter(showSeries = it) },
+                    onToggleView = {
+                        vm.setReadingViewMode(shelf, nextMediaLibraryViewMode(prefs.viewMode))
+                    },
+                    onOpenSort = { sortDialogOpen.value = true },
+                )
+            }
+            CompositionLocalProvider(LocalMediaFlat provides true) {
+                content(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
+            }
+        }
+    } else Scaffold(
+        topBar = {
+            MediaLibraryTopBar(
+                onBack = onBack,
+                onAdd = { addDialogOpen.value = true },
+                mediaFilter = mediaFilter,
+                searchEnabled = searchEnabled && prefs.viewMode != ReadingViewMode.WALL,
+                onSearchEnabledChange = { searchEnabled = it },
+                onShowBooksChange = { vm.setReadingMediaFilter(showBooks = it) },
+                onShowMoviesChange = { vm.setReadingMediaFilter(showMovies = it) },
+                onShowSeriesChange = { vm.setReadingMediaFilter(showSeries = it) },
+                onToggleView = {
+                    vm.setReadingViewMode(shelf, nextMediaLibraryViewMode(prefs.viewMode))
+                },
+                onOpenSort = { sortDialogOpen.value = true }
+            )
+        }
+    ) { padding ->
+        content(
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
         )
     }
 

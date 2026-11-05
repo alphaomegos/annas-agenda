@@ -66,6 +66,10 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.random.Random
+import androidx.compose.runtime.staticCompositionLocalOf
+
+/** The library's cards flat — the surfaces' colour, no shadow — in the new look (05.11). */
+internal val LocalMediaFlat = staticCompositionLocalOf { false }
 
 /**
  * How many wall covers are kept decoded at once.
@@ -438,9 +442,12 @@ private fun ReadingItemRowCard(
 
     val shape = RoundedCornerShape(22.dp)
 
+    val flat = LocalMediaFlat.current
     ElevatedCard(
         shape = shape,
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        // Flat in the new look (05.11): the surfaces' colour, no shadow.
+        colors = CardDefaults.elevatedCardColors(containerColor = if (flat) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface),
+        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -563,9 +570,12 @@ private fun ReadingItemGridCard(
 
     val shape = RoundedCornerShape(22.dp)
 
+    val flat = LocalMediaFlat.current
     ElevatedCard(
         shape = shape,
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        // Flat in the new look (05.11): the surfaces' colour, no shadow.
+        colors = CardDefaults.elevatedCardColors(containerColor = if (flat) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface),
+        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
         modifier = modifier
     ) {
         Column(
