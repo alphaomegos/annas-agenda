@@ -3,4 +3,7 @@
     <color name="music_widget_lcd">#FF4CEB4C</color>
     <color name="music_widget_lcd_ghost">#FF13281A</color>
     <color name="music_widget_off">#FF7D8189</color>
+    <!-- The playing track in the list window: white on a lit green. -->
+    <color name="music_widget_current">#FFFFFFFF</color>
+    <color name="music_widget_current_ground">#FF1D3A1D</color>
 </resources>

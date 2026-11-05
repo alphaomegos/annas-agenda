@@ -138,6 +138,11 @@ import com.alphaomegos.annasagenda.support.musicTracksOf
 import com.alphaomegos.annasagenda.support.parseMusicTab
 import com.alphaomegos.annasagenda.util.appLocale
 import kotlinx.coroutines.launch
+import com.alphaomegos.annasagenda.musicWidgetCatalogWrite
+import com.alphaomegos.annasagenda.musicWidgetRefresh
+import com.alphaomegos.annasagenda.support.MusicWidgetList
+import com.alphaomegos.annasagenda.support.MusicWidgetTrack
+import kotlinx.coroutines.delay
 
 /**
  * The music of oursidecar (16.10, Eduard): its lists as the web shows them —
@@ -297,6 +302,38 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     // Without the network (16.10), only what is kept on the phone plays.
     val offline = lib.failure == SidecarFailure.NO_NETWORK
     val playable: (SidecarTrack) -> Boolean = { localOf(it) != null || (it.hasAudio && (!offline || it.id in kept)) }
+    // The player widget's lists (05.11): every tab as this screen orders it, its tracks that can play,
+    // left in a file for the widget to show and play from — this phone's own, never in a backup.
+    val widgetLocalName = stringResource(R.string.music_tab_local)
+    LaunchedEffect(tabs, lib.tracks, phoneShown, prefs.sort, localFiles, kept, spaceName, namesById, unknownArtist, status) {
+        delay(300)
+        val lists = withContext(Dispatchers.Default) {
+            tabs.filter { it != MusicTab.ByArtist }.map { t ->
+                val label = when (t) {
+                    MusicTab.Local -> widgetLocalName
+                    MusicTab.All, MusicTab.ByArtist -> spaceName
+                    is MusicTab.Member -> namesById[t.userId] ?: "?"
+                }
+                val tracks = musicSorted(if (t == MusicTab.Local) phoneShown else musicTracksOf(lib.tracks, t, null), prefs.sort, locale)
+                MusicWidgetList(
+                    key = musicTabKey(t),
+                    label = label,
+                    tracks = tracks.filter(playable).map { track ->
+                        val local = localOf(track)
+                        MusicWidgetTrack(
+                            id = track.id,
+                            title = track.title,
+                            artist = track.artist?.takeIf { it.isNotBlank() } ?: unknownArtist,
+                            uri = local?.uri ?: connection.audioUrl(track.id),
+                            cacheKey = if (local != null) null else musicCacheKey(track),
+                        )
+                    },
+                )
+            }
+        }
+        withContext(Dispatchers.IO) { musicWidgetCatalogWrite(context, lists) }
+        musicWidgetRefresh(context)
+    }
     val play: (SidecarTrack) -> Unit = { start ->
         val queue = musicQueue(shown, start, playable)
         if (controller != null && queue != null) controller.playMusic(queue, mediaItemOf)

@@ -1512,4 +1512,11 @@
     <string name="music_widget_next">Следующий трек</string>
     <string name="music_widget_shuffle">Перемешать</string>
     <string name="music_widget_repeat">Повтор</string>
+    <string name="music_widget_list">Плейлист</string>
+    <string name="music_widget_list_previous">Предыдущий список</string>
+    <string name="music_widget_list_next">Следующий список</string>
+    <string name="music_widget_page_up">Страница вверх</string>
+    <string name="music_widget_page_down">Страница вниз</string>
+    <string name="music_widget_no_lists">Списки появятся, когда музыку откроют в приложении</string>
+    <string name="music_widget_list_empty">Здесь нечего играть</string>
 </resources>

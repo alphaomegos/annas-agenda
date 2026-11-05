@@ -1444,4 +1444,11 @@
     <string name="music_widget_next">Sledeća numera</string>
     <string name="music_widget_shuffle">Nasumično</string>
     <string name="music_widget_repeat">Ponavljanje</string>
+    <string name="music_widget_list">Plejlista</string>
+    <string name="music_widget_list_previous">Prethodna lista</string>
+    <string name="music_widget_list_next">Sledeća lista</string>
+    <string name="music_widget_page_up">Strana gore</string>
+    <string name="music_widget_page_down">Strana dole</string>
+    <string name="music_widget_no_lists">Liste se pojavljuju kada se muzika otvori u aplikaciji</string>
+    <string name="music_widget_list_empty">Ovde nema šta da se pusti</string>
 </resources>

@@ -53,6 +53,21 @@ class MusicWidgetFilesTest {
         assertTrue(licence.contains("SIL Open Font License, Version 1.1") && licence.contains("Reserved Font Name \"DSEG\""))
     }
 
+    /** Step two (0388): the list window beside the main one, rows a widget may hold, and the lists the music screen leaves it. */
+    @Test
+    fun theListWindowIsThereAndFed() {
+        val layout = File(res, "layout/music_widget.xml").readText()
+        listOf("music_widget_list", "music_widget_rows", "music_widget_list_key", "music_widget_list_previous", "music_widget_list_next", "music_widget_page_up", "music_widget_page_down")
+            .forEach { assertTrue("no $it", layout.contains("android:id=\"@+id/$it\"")) }
+        val row = File(res, "layout/music_widget_row.xml").readText()
+        val tags = Regex("""<([A-Za-z][A-Za-z.]*)""").findAll(row).map { it.groupValues[1] }.toSet()
+        assertTrue("a row is one TextView, not $tags", tags == setOf("TextView"))
+        val screen = File(mainSourceRoot(), "com/alphaomegos/annasagenda/screens/music/MusicScreen.kt").readText()
+        assertTrue(screen.hasCode("withContext(Dispatchers.IO) { musicWidgetCatalogWrite(context, lists) }"))
+        val receiver = File(mainSourceRoot(), "com/alphaomegos/annasagenda/app/MusicWidget.kt").readText()
+        assertTrue(receiver.hasCode("override fun onAppWidgetOptionsChanged(") && receiver.hasCode("musicWidgetPlayRow(it, list, trackId)"))
+    }
+
     /** Eduard: neither the name nor the logo of the player it recalls. */
     @Test
     fun nobodysPlayerIsNamed() {

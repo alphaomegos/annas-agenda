@@ -11,4 +11,11 @@
     <string name="music_widget_next">Next track</string>
     <string name="music_widget_shuffle">Shuffle</string>
     <string name="music_widget_repeat">Repeat</string>
+    <string name="music_widget_list">Playlist</string>
+    <string name="music_widget_list_previous">Previous list</string>
+    <string name="music_widget_list_next">Next list</string>
+    <string name="music_widget_page_up">Page up</string>
+    <string name="music_widget_page_down">Page down</string>
+    <string name="music_widget_no_lists">The lists appear once the music has been opened in the app</string>
+    <string name="music_widget_list_empty">Nothing to play here</string>
 </resources>
