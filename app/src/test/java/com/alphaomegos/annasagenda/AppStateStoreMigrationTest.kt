@@ -739,6 +739,14 @@ class AppStateStoreMigrationTest {
         assertEquals(RunningMode.OTHER, decoded("""{ "v": 16, "runningMode": "OTHER" }""").runningMode)
     }
 
+    /** Every version from 4 on comes up to the current one (0400: the steps that only stamp are a list now). */
+    @Test
+    fun everyVersionFromFourComesUp() {
+        for (v in 4 until CURRENT_SCHEMA_VERSION) {
+            assertTrue("version $v", decoded("""{ "v": $v }""").sportWorkouts.isEmpty())
+        }
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

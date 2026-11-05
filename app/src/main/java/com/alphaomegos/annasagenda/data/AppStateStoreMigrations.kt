@@ -53,19 +53,8 @@ internal fun migrateAppStateRawJson(
             1 -> migrateAppState1To2(cur)
             2 -> migrateAppState2To3(cur)
             3 -> migrateAppState3To4(cur, weekStartForLegacyRules)
-            4 -> migrateAppState4To5(cur)
-            5 -> migrateAppState5To6(cur)
-            6 -> migrateAppState6To7(cur)
-            7 -> migrateAppState7To8(cur)
-            8 -> migrateAppState8To9(cur)
-            9 -> migrateAppState9To10(cur)
-            10 -> migrateAppState10To11(cur)
-            11 -> migrateAppState11To12(cur)
-            12 -> migrateAppState12To13(cur)
-            13 -> migrateAppState13To14(cur)
-            14 -> migrateAppState14To15(cur)
-            15 -> migrateAppState15To16(cur)
-            else -> throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
+            // The rest only stamp the version (MIGRATION_STAMPS).
+            else -> if (v + 1 in MIGRATION_STAMPS) stamped(cur, v + 1) else throw MissingMigrationException(from, CURRENT_SCHEMA_VERSION)
         }
 
         // Every step has to say what it turned the payload into, and it has to
@@ -100,164 +89,77 @@ internal class MissingMigrationException(
 )
 
 /**
- * Nothing to convert, and that is the point.
- *
- * Version 5 adds the log of runs that actually happened. Every field added
- * before this one was additive-with-a-default, so an older build reading a
- * newer payload lost nothing it could not reconstruct, and the version stayed
- * where it was. This one is different: those runs are data nothing else holds,
- * and a build that did not know the key would drop the whole list on its next
- * save without saying anything.
- *
- * Raising the version makes such a build refuse the payload outright — the
- * unreadable-state screen, with the file left exactly as it is. That is worth
- * saying out loud because it has a cost: a rollback to an older APK can no
- * longer read data written after this, and the way back is to restore a backup
- * made before it.
- *
- * Stamping the version is therefore the entire migration. The list defaults to
- * empty and the mode defaults to the plan, which is what every user had.
+ * The steps that only stamp the version (05.11, the internals review). Each
+ * added data the payloads before it simply did not have — data nothing else
+ * holds, which is why the number went up: a build that knew only the version
+ * before would read the payload and drop the new data on its next save; with
+ * the number up, it refuses the payload instead. None of the new data is what
+ * every payload before it means, so there is nothing to convert, only the
+ * version to write. A new step of the kind is a line here.
  */
-private fun migrateAppState4To5(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(5)
-    return JsonObject(m)
-}
+private val MIGRATION_STAMPS: Set<Int> = setOf(
+    // 5: Nothing to convert, and that is the point. Version 5 adds the log of runs that actually
+    // happened. Every field added before this one was additive-with-a-default, so an older build
+    // reading a newer payload lost nothing it could not reconstruct, and the version stayed where it
+    // was. This one is different: those runs are data nothing else holds, and a build that did not
+    // know the key would drop the whole list on its next save without saying anything. Raising the
+    // version makes such a build refuse the payload outright — the unreadable-state screen, with the
+    // file left exactly as it is. That is worth saying out loud because it has a cost: a rollback to
+    // an older APK can no longer read data written after this, and the way back is to restore a backup
+    // made before it. Stamping the version is therefore the entire migration. The list defaults to
+    // empty and the mode defaults to the plan, which is what every user had.
+    5,
+    // 6: Nothing to convert, for the same reason as version 5. Version 6 adds the display settings
+    // that piled up at once (forecast and measurements list in anthropometry, the last chart range,
+    // three switches in the calorimeter, the calendar marks, the food library) and the diet. The
+    // settings alone would have been additive-with-a-default; the diet is data nothing else holds,
+    // which is what moves the number. They were added together on purpose, so that the way back to an
+    // older APK is cut once rather than six times. Every new field defaults to what the app did before
+    // it existed.
+    6,
+    // 7: A stamp again. Version 7 adds the foods the user puts on the library shelves (data nothing
+    // else holds — the reason for the number), the "past days show unticked dishes" switch of the
+    // diet, and the notification settings. Every default is what the app did before: no foods,
+    // unticked dishes shown, and no notifications at all.
+    7,
+    // 8: A stamp. Version 8 (04.10) adds the metro schemes the user writes down — data nothing else
+    // holds, which is why the number goes up: a build that knows only 7 would read a payload with
+    // schemes, drop them, and save it back without them. The default is no scheme and nothing chosen,
+    // which is what every payload before it means.
+    8,
+    // 9: A stamp. Version 9 (05.10) adds travel — the trips and the user's own countries, data nothing
+    // else holds. No trips and the view by years is what every payload before it means.
+    9,
+    // 10: A stamp. Version 10 (06.10) adds flights — the log, the user's own names for cities and
+    // airlines, their home cities — data nothing else holds. No flights is what every payload before
+    // it means.
+    10,
+    // 11: A stamp. Version 11 (08.10) adds bent track to the metro schemes — points the user drew,
+    // data nothing else holds. No bends is what every payload before it means.
+    11,
+    // 12: A stamp. Version 12 (08.10) adds where each station's name is written on the metro picture —
+    // set by hand, data nothing else holds. None is what every payload before it means: chosen by
+    // itself.
+    12,
+    // 13: A stamp. Version 13 (15.10) adds series waiting for their next season — a shelf of their
+    // own, the day it is expected, whether to be told — data nothing else holds. None waiting is what
+    // every payload before it means.
+    13,
+    // 14: A stamp. Version 14 (15.10) adds the metro routes looked up lately, some pinned — data
+    // nothing else holds. None looked up is what every payload before it means.
+    14,
+    // 15: A stamp. Version 15 (16.10) adds a city map under a metro scheme's picture — where the user
+    // laid it — data nothing else holds. No map is what every payload before it means.
+    15,
+    // 16: A stamp. Version 16 (05.11) adds the workouts of other sports — the «Other» tab of «Sport» —
+    // data nothing else holds. None is what every payload before it means.
+    16,
+)
 
-/**
- * Nothing to convert, for the same reason as version 5.
- *
- * Version 6 adds the display settings that piled up at once (forecast and
- * measurements list in anthropometry, the last chart range, three switches
- * in the calorimeter, the calendar marks, the food library) and the diet.
- * The settings alone would have been additive-with-a-default; the diet is
- * data nothing else holds, which is what moves the number. They were added
- * together on purpose, so that the way back to an older APK is cut once
- * rather than six times.
- *
- * Every new field defaults to what the app did before it existed.
- */
-private fun migrateAppState5To6(obj: JsonObject): JsonObject {
+/** [obj] as of [version], unchanged otherwise. */
+private fun stamped(obj: JsonObject, version: Int): JsonObject {
     val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(6)
-    return JsonObject(m)
-}
-
-/**
- * A stamp again.
- *
- * Version 7 adds the foods the user puts on the library shelves (data
- * nothing else holds — the reason for the number), the "past days show
- * unticked dishes" switch of the diet, and the notification settings.
- * Every default is what the app did before: no foods, unticked dishes
- * shown, and no notifications at all.
- */
-private fun migrateAppState6To7(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(7)
-    return JsonObject(m)
-}
-
-/**
- * A stamp.
- *
- * Version 8 (04.10) adds the metro schemes the user writes down — data
- * nothing else holds, which is why the number goes up: a build that knows
- * only 7 would read a payload with schemes, drop them, and save it back
- * without them. The default is no scheme and nothing chosen, which is what
- * every payload before it means.
- */
-private fun migrateAppState7To8(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(8)
-    return JsonObject(m)
-}
-
-/**
- * A stamp. Version 9 (05.10) adds travel — the trips and the user's own
- * countries, data nothing else holds. No trips and the view by years is what
- * every payload before it means.
- */
-private fun migrateAppState8To9(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(9)
-    return JsonObject(m)
-}
-
-/**
- * A stamp. Version 10 (06.10) adds flights — the log, the user's own names
- * for cities and airlines, their home cities — data nothing else holds. No
- * flights is what every payload before it means.
- */
-private fun migrateAppState9To10(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(10)
-    return JsonObject(m)
-}
-
-/**
- * A stamp. Version 11 (08.10) adds bent track to the metro schemes — points
- * the user drew, data nothing else holds. No bends is what every payload
- * before it means.
- */
-private fun migrateAppState10To11(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(11)
-    return JsonObject(m)
-}
-
-/**
- * A stamp. Version 12 (08.10) adds where each station's name is written on
- * the metro picture — set by hand, data nothing else holds. None is what
- * every payload before it means: chosen by itself.
- */
-private fun migrateAppState11To12(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(12)
-    return JsonObject(m)
-}
-
-/**
- * A stamp. Version 13 (15.10) adds series waiting for their next season —
- * a shelf of their own, the day it is expected, whether to be told — data
- * nothing else holds. None waiting is what every payload before it means.
- */
-private fun migrateAppState12To13(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(13)
-    return JsonObject(m)
-}
-
-/**
- * A stamp. Version 14 (15.10) adds the metro routes looked up lately, some
- * pinned — data nothing else holds. None looked up is what every payload
- * before it means.
- */
-private fun migrateAppState13To14(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(14)
-    return JsonObject(m)
-}
-
-/**
- * A stamp. Version 15 (16.10) adds a city map under a metro scheme's
- * picture — where the user laid it — data nothing else holds. No map is
- * what every payload before it means.
- */
-private fun migrateAppState14To15(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(15)
-    return JsonObject(m)
-}
-
-/**
- * A stamp. Version 16 (05.11) adds the workouts of other sports — the «Other»
- * tab of «Sport» — data nothing else holds. None is what every payload before
- * it means.
- */
-private fun migrateAppState15To16(obj: JsonObject): JsonObject {
-    val m = obj.toMutableMap()
-    m["v"] = JsonPrimitive(16)
+    m["v"] = JsonPrimitive(version)
     return JsonObject(m)
 }
 
