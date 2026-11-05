@@ -7,6 +7,7 @@ import com.alphaomegos.annasagenda.model.MusicSort
 import com.alphaomegos.annasagenda.model.MusicTab
 import com.alphaomegos.annasagenda.model.SidecarMember
 import com.alphaomegos.annasagenda.model.SidecarTrack
+import java.text.CollationKey
 import java.text.Collator
 import java.util.Locale
 
@@ -251,11 +252,15 @@ private fun musicCollator(locale: Locale): Collator = Collator.getInstance(local
 /** The artists of the approved tracks, each once, in the order of [locale]. */
 fun musicArtists(tracks: List<SidecarTrack>, locale: Locale): List<String> {
     val collator = musicCollator(locale)
+    // Each name's collation key made once (05.11): two keys compare cheaply, two names through
+    // the collator do not, and a sort makes n·log n comparisons.
     return tracks.asSequence()
         .filter { it.approvedAt != null }
         .mapNotNull { it.artist?.trim()?.takeIf { name -> name.isNotEmpty() } }
         .distinct()
-        .sortedWith { a, b -> collator.compare(a, b) }
+        .map { collator.getCollationKey(it) }
+        .sorted()
+        .map { it.sourceString }
         .toList()
 }
 
@@ -280,9 +285,12 @@ fun musicSorted(tracks: List<SidecarTrack>, sort: MusicSort, locale: Locale): Li
     MusicSort.NEWEST -> tracks.sortedByDescending { it.createdAt }
     MusicSort.OLDEST -> tracks.sortedBy { it.createdAt }
     MusicSort.AZ, MusicSort.ZA -> {
+        // Each name's collation key made once (05.11), as for the artists; the sort stays stable.
         val collator = musicCollator(locale)
-        val byName = Comparator<SidecarTrack> { a, b -> collator.compare(musicNameKey(a), musicNameKey(b)) }
-        tracks.sortedWith(if (sort == MusicSort.AZ) byName else byName.reversed())
+        val byName = Comparator<Pair<SidecarTrack, CollationKey>> { a, b -> a.second.compareTo(b.second) }
+        tracks.map { it to collator.getCollationKey(musicNameKey(it)) }
+            .sortedWith(if (sort == MusicSort.AZ) byName else byName.reversed())
+            .map { it.first }
     }
 }
 

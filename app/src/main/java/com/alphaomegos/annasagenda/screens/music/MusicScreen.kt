@@ -249,12 +249,16 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     LaunchedEffect(sentCount) {
         if (sentCount > 0 && sidecarIn) space?.let { s -> library.refresh(s.id) }
     }
-    val tabs = musicAllTabs(sidecarIn, lib.members, prefs.artistTab)
+    // Worked out again only when what they come from changes (05.11): the screen is drawn again at
+    // every turn of the player and every step of a download, and the lists can be thousands long.
+    val tabs = remember(sidecarIn, lib.members, prefs.artistTab) { musicAllTabs(sidecarIn, lib.members, prefs.artistTab) }
     val tab = musicTabShown(parseMusicTab(prefs.tab), tabs)
-    val artists = musicArtists(lib.tracks, locale)
+    val artists = remember(lib.tracks, locale) { musicArtists(lib.tracks, locale) }
     val artist = musicArtistShown(prefs.artist, artists)
-    val shown = musicSorted(if (tab == MusicTab.Local) phoneShown else musicTracksOf(lib.tracks, tab, artist), prefs.sort, locale)
-    val namesById = lib.members.associate { it.id to musicMemberName(it) }
+    val shown = remember(tab, phoneShown, lib.tracks, artist, prefs.sort, locale) {
+        musicSorted(if (tab == MusicTab.Local) phoneShown else musicTracksOf(lib.tracks, tab, artist), prefs.sort, locale)
+    }
+    val namesById = remember(lib.members) { lib.members.associate { it.id to musicMemberName(it) } }
 
     // What is kept on the phone (16.10): looked at again whenever it may have changed.
     LaunchedEffect(prefs.cacheWhilePlaying) { MusicCache.keepWhilePlaying = prefs.cacheWhilePlaying }
@@ -279,12 +283,14 @@ private fun MusicScreenContent(prefs: MusicPrefs, onPrefs: ((MusicPrefs) -> Musi
     val upstream = remember(context) { musicUpstreamFactory(context, connection) }
     // "Save all" for the list shown (16.10): what it would fetch, and how it is going.
     val saveAll by remember(context) { MusicSaveAllWorker.progress(context) }.collectAsStateWithLifecycle(initialValue = null)
-    val savePlan = musicDownloadPlan(
-        // The phone's own are on the phone already.
-        if (tab == MusicTab.Local) emptyList() else shown,
-        shown.filter { it.id in kept }.mapNotNull { musicCacheKey(it) }.toSet(),
-        localFiles.keys - unreadable + autoFiles.keys,
-    )
+    val savePlan = remember(tab, shown, kept, localFiles, unreadable, autoFiles) {
+        musicDownloadPlan(
+            // The phone's own are on the phone already.
+            if (tab == MusicTab.Local) emptyList() else shown,
+            shown.filter { it.id in kept }.mapNotNull { musicCacheKey(it) }.toSet(),
+            localFiles.keys - unreadable + autoFiles.keys,
+        )
+    }
     // Copies of tracks gone from the sidecar, or replaced on it, go once its list is in.
     LaunchedEffect(lib.loaded, lib.fromPhone, lib.tracks, localFiles, unreadable) {
         if (lib.loaded && !lib.fromPhone) MusicCache.dropStale(context, lib.tracks, localFiles.keys - unreadable)

@@ -140,7 +140,8 @@ class MusicPlaybackManifestTest {
         assertTrue(files.getValue("MainMenuScreen.kt").readText().hasCode("musicOpen = true,"))
         val screen = files.getValue("MusicScreen.kt").readText()
         assertTrue("no wall before the music", !screen.contains("R.string.sidecar_sign_in_why"))
-        assertTrue(screen.hasCode("val tabs = musicAllTabs(sidecarIn, lib.members, prefs.artistTab)"))
+        // The tabs, signed in or not (remembered since 0396).
+        assertTrue(screen.hasCode("{ musicAllTabs(sidecarIn, lib.members, prefs.artistTab) }"))
         assertTrue(screen.hasCode("title = \"\",") && screen.hasCode("SidecarAccountIcon("))
         assertTrue(screen.hasCode("MusicTab.All -> space?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.music_tab_all)"))
         assertTrue(screen.hasCode("phone = true,") && screen.hasCode("MusicControl(Icons.Default.MoreVert"))
