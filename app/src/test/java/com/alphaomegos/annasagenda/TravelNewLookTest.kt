@@ -27,6 +27,8 @@ class TravelNewLookTest {
             assertTrue("$name has no new look", screen.hasCode("if (state.dayScreenStyle == DayScreenStyle.NEW) {") && screen.hasCode("NewLookScreen("))
             assertTrue("$name does not share its content", screen.hasCode("body(PaddingValues(0.dp))") && screen.hasCode("body(inner)"))
             assertTrue("$name lost the summer look's bar", screen.hasCode("CenterAlignedTopAppBar("))
+            // 0403: content moved out of the Scaffold cannot return from it any more.
+            assertTrue("$name returns from a Scaffold it is no longer in", !screen.contains("return@Scaffold"))
         }
     }
 }

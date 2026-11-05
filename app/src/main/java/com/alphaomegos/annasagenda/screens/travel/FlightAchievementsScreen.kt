@@ -97,8 +97,9 @@ fun FlightAchievementsScreen(vm: AppViewModel, onBack: () -> Unit) {
     var opened by rememberSaveable { mutableStateOf<String?>(null) }
 
     // The screen, the same in either look (05.11).
-    val body: @Composable (PaddingValues) -> Unit = { inner ->
-        val s = stats ?: return@Scaffold
+    // Named, so that its early return has a lambda to return from now that it is not the Scaffold's.
+    val body: @Composable (PaddingValues) -> Unit = body@{ inner ->
+        val s = stats ?: return@body
         val achievements = flightAchievements(s)
         val milestones = achievements.filter { keep(filter, it.taken) }
         achievements.firstOrNull { it.id == opened }?.let { a -> AchievementDialog(a, userLocale) { opened = null } }
