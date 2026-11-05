@@ -35,6 +35,23 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.R
 import com.alphaomegos.annasagenda.model.ReadingMediaType
 import com.alphaomegos.annasagenda.model.ReadingShelf
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Alignment
+import com.alphaomegos.annasagenda.components.FittingText
+import com.alphaomegos.annasagenda.components.TopBarBack
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.runtime.CompositionLocalProvider
 
 /**
  * Everything the three details screens say about themselves.
@@ -120,6 +137,8 @@ internal fun MediaDetailsForm(
     onShelfChange: (ReadingShelf) -> Unit,
     yearText: String,
     onYearTextChange: (String) -> Unit,
+    // The new look (05.11): Back, the title, «Save» and ⋮ in one row; the cards flat.
+    newLook: Boolean = false,
     extraFields: @Composable ColumnScope.() -> Unit,
 ) {
     val ctx = LocalContext.current
@@ -127,6 +146,7 @@ internal fun MediaDetailsForm(
 
     val confirmDelete = rememberSaveable { mutableStateOf(false) }
     var shelfMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
 
     val coverBitmap = rememberMediaDetailsCoverBitmap(coverUri)
 
@@ -134,31 +154,10 @@ internal fun MediaDetailsForm(
         Toast.makeText(ctx, ctx.getString(messageRes), Toast.LENGTH_SHORT).show()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(strings.screenTitleRes)) },
-                navigationIcon = {},
-                actions = {
-                    TextButton(onClick = { confirmDelete.value = true }) {
-                        Text(stringResource(R.string.delete))
-                    }
-
-                    TextButton(
-                        onClick = {
-                            if (onSave()) toast(R.string.saved) else toast(strings.invalidInputRes)
-                        }
-                    ) {
-                        Text(stringResource(R.string.save))
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    // The form, the same in either look (05.11).
+    val body: @Composable (Modifier) -> Unit = { modifier ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier = modifier
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -170,8 +169,10 @@ internal fun MediaDetailsForm(
                 onRemoveCover = onRemoveCover
             )
 
+            val flat = LocalMediaFlat.current
             ElevatedCard(
-                colors = CardDefaults.elevatedCardColors(),
+                colors = if (flat) CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) else CardDefaults.elevatedCardColors(),
+                elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -222,6 +223,84 @@ internal fun MediaDetailsForm(
                 Text(stringResource(strings.doneButtonRes))
             }
         }
+    }
+
+    if (newLook) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TopBarBack(onBack = onBack)
+                val heading = stringResource(strings.screenTitleRes)
+                val typography = MaterialTheme.typography
+                FittingText(
+                    choices = listOf(heading to typography.headlineSmall, heading to typography.titleLarge, heading to typography.titleMedium, heading to typography.titleSmall),
+                    modifier = Modifier.weight(1f),
+                )
+                FilledTonalButton(
+                    onClick = { if (onSave()) toast(R.string.saved) else toast(strings.invalidInputRes) },
+                    modifier = Modifier.height(36.dp),
+                ) {
+                    Text(stringResource(R.string.save))
+                }
+                // Deleting is in ⋮, as the counters have it: not a key beside «Save».
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.task_more_actions))
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete)) },
+                            onClick = {
+                                menuOpen = false
+                                confirmDelete.value = true
+                            },
+                        )
+                    }
+                }
+            }
+            CompositionLocalProvider(LocalMediaFlat provides true) {
+                body(
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                )
+            }
+        }
+    } else Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(strings.screenTitleRes)) },
+                navigationIcon = {},
+                actions = {
+                    TextButton(onClick = { confirmDelete.value = true }) {
+                        Text(stringResource(R.string.delete))
+                    }
+
+                    TextButton(
+                        onClick = {
+                            if (onSave()) toast(R.string.saved) else toast(strings.invalidInputRes)
+                        }
+                    ) {
+                        Text(stringResource(R.string.save))
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        body(
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
+        )
     }
 
     MediaDetailsDeleteDialog(

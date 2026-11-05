@@ -112,10 +112,12 @@ fun MediaDetailsCoverCard(
     onChooseCover: () -> Unit,
     onRemoveCover: () -> Unit,
 ) {
+    val flat = LocalMediaFlat.current
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (flat) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface
         ),
+        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(

@@ -18,6 +18,7 @@ import com.alphaomegos.annasagenda.support.ShelfYears
 import com.alphaomegos.annasagenda.support.shelfYearText
 import com.alphaomegos.annasagenda.support.shelfYearsFromText
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 
 @Composable
 fun BookDetailsScreen(
@@ -108,6 +109,7 @@ fun BookDetailsScreen(
         },
         yearText = yearText,
         onYearTextChange = { yearText = it },
+        newLook = st.dayScreenStyle == DayScreenStyle.NEW,
     ) {
         MediaDetailsTextField(
             value = author,

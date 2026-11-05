@@ -19,6 +19,7 @@ import com.alphaomegos.annasagenda.support.isPossibleReleaseYear
 import com.alphaomegos.annasagenda.support.shelfYearText
 import com.alphaomegos.annasagenda.support.shelfYearsFromText
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 
 @Composable
 fun MovieDetailsScreen(
@@ -111,6 +112,7 @@ fun MovieDetailsScreen(
         },
         yearText = yearText,
         onYearTextChange = { yearText = it },
+        newLook = st.dayScreenStyle == DayScreenStyle.NEW,
     ) {
         MediaDetailsNumberField(
             value = releaseYearText,

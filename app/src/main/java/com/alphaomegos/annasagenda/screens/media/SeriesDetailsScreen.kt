@@ -35,6 +35,7 @@ import com.alphaomegos.annasagenda.util.appLocale
 import android.os.Build
 import androidx.compose.ui.platform.LocalContext
 import com.alphaomegos.annasagenda.canPostNotifications
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 
 @Composable
 fun SeriesDetailsScreen(
@@ -154,6 +155,7 @@ fun SeriesDetailsScreen(
         },
         yearText = yearText,
         onYearTextChange = { yearText = it },
+        newLook = st.dayScreenStyle == DayScreenStyle.NEW,
     ) {
         MediaDetailsNumberField(
             value = totalSeasonsText,

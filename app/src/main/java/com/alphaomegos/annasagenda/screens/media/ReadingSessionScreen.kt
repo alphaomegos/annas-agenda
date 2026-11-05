@@ -44,6 +44,12 @@ import com.alphaomegos.annasagenda.R
 import kotlinx.coroutines.delay
 import java.util.Locale
 import kotlin.math.max
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import com.alphaomegos.annasagenda.components.FittingText
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,20 +87,10 @@ fun ReadingSessionScreen(
         onBack()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.reading_session_title)) },
-                navigationIcon = {
-                    TopBarBack(onBack = { goBackCancel() })
-                }
-            )
-        }
-    ) { padding ->
+    // The session, the same in either look (05.11).
+    val body: @Composable (Modifier) -> Unit = { modifier ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
+            modifier = modifier,
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -139,6 +135,51 @@ fun ReadingSessionScreen(
                 }
             }
         }
+    }
+
+    if (st.dayScreenStyle == DayScreenStyle.NEW) {
+        // The new look (05.11): Back and the title in one row; Back still ends the session unsaved.
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TopBarBack(onBack = { goBackCancel() })
+                val heading = stringResource(R.string.reading_session_title)
+                val typography = MaterialTheme.typography
+                FittingText(
+                    choices = listOf(heading to typography.headlineSmall, heading to typography.titleLarge, heading to typography.titleMedium, heading to typography.titleSmall),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            body(
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
+        }
+    } else Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.reading_session_title)) },
+                navigationIcon = {
+                    TopBarBack(onBack = { goBackCancel() })
+                }
+            )
+        }
+    ) { padding ->
+        body(
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
+        )
     }
 
     if (showFinishDialog.value) {
