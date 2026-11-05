@@ -47,6 +47,8 @@ fun AnnaAgendaTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     palette: AppPalette = AppPalette.GREEN,
     backStyle: BackStyle = BackStyle.ARROW,
+    // The new look or «Summer 2026» (05.11), for the frames shared across screens.
+    newLook: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val dark = isDarkTheme(themeMode, isSystemInDarkTheme())
@@ -67,6 +69,7 @@ fun AnnaAgendaTheme(
         LocalAppExtraColors provides extraColorsFor(dark),
         LocalAppDarkTheme provides dark,
         LocalBackStyle provides backStyle,
+        LocalNewLook provides newLook,
     ) {
         MaterialTheme(
             colorScheme = colors,
@@ -97,3 +100,11 @@ val appIsDarkTheme: Boolean
 
 /** How Back looks in top bars, the user's choice (Settings → Back); read by TopBarBack. */
 val LocalBackStyle = staticCompositionLocalOf { BackStyle.ARROW }
+
+/**
+ * The app's look (05.11): the new one, or «Summer 2026» — the user's choice in
+ * Appearance. Read by the frames shared across screens that have no state of
+ * their own to ask, the metro's and the music's bar; true, the app's default,
+ * is also what a screen shown alone, in a test, gets.
+ */
+val LocalNewLook = staticCompositionLocalOf { true }

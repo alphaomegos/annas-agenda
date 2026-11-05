@@ -24,6 +24,9 @@ import com.alphaomegos.annasagenda.support.*
 import com.alphaomegos.annasagenda.data.*
 import com.alphaomegos.annasagenda.app.*
 import com.alphaomegos.annasagenda.screens.music.MusicVisualizerAsk
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 class MainActivity : AppCompatActivity() {
 
@@ -75,13 +78,15 @@ class MainActivity : AppCompatActivity() {
             val themeMode by vm.themeMode.collectAsState()
             val palette by vm.palette.collectAsState()
             val backStyle by vm.backStyle.collectAsState()
+            // The look, for the frames shared across screens (05.11): drawn again only when it changes.
+            val newLook by remember { vm.state.map { it.dayScreenStyle == DayScreenStyle.NEW }.distinctUntilChanged() }.collectAsState(initial = true)
 
             // The first read of steps waits for the saved days to be loaded.
             LaunchedEffect(loaded) { if (loaded) vm.refreshSteps() }
             // Steps together (25.10): the background round every six hours.
             LaunchedEffect(Unit) { com.alphaomegos.annasagenda.app.StepsTogether.plan(applicationContext) }
 
-            AnnaAgendaTheme(themeMode = themeMode, palette = palette, backStyle = backStyle) {
+            AnnaAgendaTheme(themeMode = themeMode, palette = palette, backStyle = backStyle, newLook = newLook) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val failure = storageFailure
                     when {
