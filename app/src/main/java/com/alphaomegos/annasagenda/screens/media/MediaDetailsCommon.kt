@@ -41,6 +41,7 @@ import com.alphaomegos.annasagenda.components.ConfirmDialog
 import com.alphaomegos.annasagenda.model.ReadingShelf
 import com.alphaomegos.annasagenda.util.loadCoverBitmapForUi
 import com.alphaomegos.annasagenda.components.WayHomeButton
+import com.alphaomegos.annasagenda.components.flatCardElevation
 
 @Composable
 fun mediaDetailsShelfLabel(shelf: ReadingShelf): String {
@@ -117,7 +118,7 @@ fun MediaDetailsCoverCard(
         colors = CardDefaults.elevatedCardColors(
             containerColor = if (flat) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface
         ),
-        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
+        elevation = if (flat) flatCardElevation() else CardDefaults.elevatedCardElevation(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(

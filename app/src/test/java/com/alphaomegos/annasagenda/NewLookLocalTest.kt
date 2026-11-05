@@ -18,7 +18,7 @@ class NewLookLocalTest {
         assertTrue(theme.hasCode("val LocalNewLook = staticCompositionLocalOf { true }") && theme.hasCode("LocalNewLook provides newLook,"))
         assertTrue(File(root, "app/MainActivity.kt").readText().hasCode("backStyle = backStyle, newLook = newLook) {"))
         val metro = File(root, "screens/metro/MetroStyle.kt").readText()
-        assertTrue(metro.hasCode("if (LocalNewLook.current) {") && metro.hasCode("WayHomeButton()"))
+        assertTrue(metro.hasCode("if (LocalNewLook.current) {") && metro.hasCode("NewLookTopRow(title = title, onBack = onBack, modifier = Modifier.statusBarsPadding(), actions = actions)"))
         // The other styles are the section's own and keep their bars.
         assertTrue(metro.hasCode("if (style == MetroStyle.MODERN) {"))
     }
@@ -29,5 +29,13 @@ class NewLookLocalTest {
         val screen = File(root, "screens/backups/SidecarBackupsScreen.kt").readText()
         assertTrue(screen.hasCode("if (LocalNewLook.current) {") && screen.hasCode("NewLookScreen(title = stringResource(R.string.sidecar_backups_title), onBack = onBack) {"))
         assertTrue(screen.hasCode("body(PaddingValues(0.dp))") && screen.hasCode("body(inner)") && screen.hasCode("CenterAlignedTopAppBar("))
+    }
+
+    /** The flat card is written once (0399): its colour and its no-shadow in components, nowhere else. */
+    @Test
+    fun theFlatCardIsWrittenOnce() {
+        mainSourceFiles().filter { it.extension == "kt" && it.name != "FlatCard.kt" }.forEach { file ->
+            assertTrue("${file.name} writes the flat card out", !file.readText().contains("elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp)"))
+        }
     }
 }

@@ -49,6 +49,8 @@ import com.alphaomegos.annasagenda.support.runningWorkoutTotals
 import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.util.formatOneDecimal
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.components.flatCardElevation
+import com.alphaomegos.annasagenda.components.flatCardColors
 
 /**
  * Between races: nothing planned, runs written down after they happen.
@@ -161,8 +163,8 @@ private fun RunningWorkoutRow(
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         // Flat in the new look: the day screen's surface colour, no shadow.
-        colors = if (flat) CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) else CardDefaults.elevatedCardColors(),
-        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
+        colors = if (flat) flatCardColors() else CardDefaults.elevatedCardColors(),
+        elevation = if (flat) flatCardElevation() else CardDefaults.elevatedCardElevation(),
     ) {
         Row(
             modifier = Modifier

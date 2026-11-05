@@ -154,7 +154,7 @@ class DayScreenNewLookTest {
         val screen = mainSourceFiles().single { it.name == "CountersScreen.kt" }.readText()
         assertTrue(screen.hasCode("if (state.newLook) {\n CountersNewLook("))
         val body = screen.substringAfter("private fun CountersNewLook(").substringBefore("/**\n * The countdown as a phrase")
-        assertTrue(body.hasCode("TopBarBack(onBack)") && body.hasCode("Text(stringResource(R.string.counters_add))") && body.hasCode("WayHomeButton()"))
+        assertTrue(body.hasCode("NewLookScreen(") && body.hasCode("Text(stringResource(R.string.counters_add))"))
         assertTrue(!body.contains("FloatingActionButton") && !Regex("""\bCard\(""").containsMatchIn(body))
         assertTrue(body.hasCode("color = MaterialTheme.colorScheme.surfaceContainerLow,") && body.hasCode("HorizontalDivider(thickness = 0.5.dp"))
         assertTrue(body.hasCode("DropdownMenuItem(") && body.hasCode("Icons.Default.MoreVert") && !body.contains("Icons.Default.Delete"))

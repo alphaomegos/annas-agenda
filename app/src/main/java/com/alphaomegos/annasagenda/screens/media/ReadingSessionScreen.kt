@@ -50,6 +50,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import com.alphaomegos.annasagenda.components.FittingText
 import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,26 +140,11 @@ fun ReadingSessionScreen(
 
     if (st.dayScreenStyle == DayScreenStyle.NEW) {
         // The new look (05.11): Back and the title in one row; Back still ends the session unsaved.
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
+        NewLookScreen(
+            title = stringResource(R.string.reading_session_title),
+            onBack = { goBackCancel() },
+            home = false,
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TopBarBack(onBack = { goBackCancel() })
-                val heading = stringResource(R.string.reading_session_title)
-                val typography = MaterialTheme.typography
-                FittingText(
-                    choices = listOf(heading to typography.headlineSmall, heading to typography.titleLarge, heading to typography.titleMedium, heading to typography.titleSmall),
-                    modifier = Modifier.weight(1f),
-                )
-            }
             body(
                 Modifier
                     .fillMaxWidth()

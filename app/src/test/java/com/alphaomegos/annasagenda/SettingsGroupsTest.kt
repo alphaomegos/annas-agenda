@@ -42,7 +42,7 @@ class SettingsGroupsTest {
     @Test
     fun theNewLookPutsEachGroupOnItsSurface() {
         assertTrue(screen.hasCode("if (state.dayScreenStyle == DayScreenStyle.NEW) {") && screen.hasCode("SettingsNewLook(groups, onBack)"))
-        assertTrue(screen.hasCode("TopBarBack(onBack)") && screen.hasCode("WayHomeButton()"))
+        assertTrue(screen.hasCode("NewLookScreen(title = stringResource(R.string.settings_title), onBack = onBack) {"))
         assertTrue(screen.hasCode("color = MaterialTheme.colorScheme.surfaceContainerLow,"))
         assertTrue(screen.hasCode("if (i > 0) HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)"))
         assertTrue("the summer look keeps its bar", screen.hasCode("CenterAlignedTopAppBar("))

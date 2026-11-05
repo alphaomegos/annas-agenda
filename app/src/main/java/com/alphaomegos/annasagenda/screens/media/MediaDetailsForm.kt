@@ -52,6 +52,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.CompositionLocalProvider
+import com.alphaomegos.annasagenda.components.flatCardElevation
+import com.alphaomegos.annasagenda.components.flatCardColors
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 /**
  * Everything the three details screens say about themselves.
@@ -171,8 +174,8 @@ internal fun MediaDetailsForm(
 
             val flat = LocalMediaFlat.current
             ElevatedCard(
-                colors = if (flat) CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) else CardDefaults.elevatedCardColors(),
-                elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
+                colors = if (flat) flatCardColors() else CardDefaults.elevatedCardColors(),
+                elevation = if (flat) flatCardElevation() else CardDefaults.elevatedCardElevation(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -226,25 +229,11 @@ internal fun MediaDetailsForm(
     }
 
     if (newLook) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TopBarBack(onBack = onBack)
-                val heading = stringResource(strings.screenTitleRes)
-                val typography = MaterialTheme.typography
-                FittingText(
-                    choices = listOf(heading to typography.headlineSmall, heading to typography.titleLarge, heading to typography.titleMedium, heading to typography.titleSmall),
-                    modifier = Modifier.weight(1f),
-                )
+        NewLookScreen(
+            title = stringResource(strings.screenTitleRes),
+            onBack = onBack,
+            home = false,
+            actions = {
                 FilledTonalButton(
                     onClick = { if (onSave()) toast(R.string.saved) else toast(strings.invalidInputRes) },
                     modifier = Modifier.height(36.dp),
@@ -266,7 +255,8 @@ internal fun MediaDetailsForm(
                         )
                     }
                 }
-            }
+            },
+        ) {
             CompositionLocalProvider(LocalMediaFlat provides true) {
                 body(
                     Modifier

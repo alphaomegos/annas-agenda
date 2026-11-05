@@ -69,6 +69,8 @@ import com.alphaomegos.annasagenda.support.sportWorkoutsShown
 import com.alphaomegos.annasagenda.util.appLocale
 import java.text.NumberFormat
 import java.time.LocalDate
+import com.alphaomegos.annasagenda.components.flatCardElevation
+import com.alphaomegos.annasagenda.components.flatCardColors
 
 /** Each standard kind's name (05.11): a key without one here would show as the key. */
 private val SPORT_KIND_NAMES: Map<String, Int> = mapOf(
@@ -408,8 +410,8 @@ private fun SportWorkoutRow(
             .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick),
         // Flat in the new look: the day screen's surface colour, no shadow.
-        colors = if (flat) CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) else CardDefaults.elevatedCardColors(),
-        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
+        colors = if (flat) flatCardColors() else CardDefaults.elevatedCardColors(),
+        elevation = if (flat) flatCardElevation() else CardDefaults.elevatedCardElevation(),
     ) {
         Row(
             modifier = Modifier

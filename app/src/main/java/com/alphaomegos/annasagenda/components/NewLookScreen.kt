@@ -35,21 +35,37 @@ internal fun NewLookScreen(
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TopBarBack(onBack)
-            val typography = MaterialTheme.typography
-            FittingText(
-                choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium, title to typography.titleSmall),
-                modifier = Modifier.weight(1f),
-            )
-            actions()
-            if (home) WayHomeButton()
-        }
+        NewLookTopRow(title = title, onBack = onBack, home = home, actions = actions)
         content()
+    }
+}
+
+/**
+ * The frame's row alone (05.11): Back, the title fitted to the room, the
+ * screen's keys, home — for a bar that stands in a Scaffold's top, the
+ * metro's and the music's.
+ */
+@Composable
+internal fun NewLookTopRow(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    home: Boolean = true,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TopBarBack(onBack)
+        val typography = MaterialTheme.typography
+        FittingText(
+            choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium, title to typography.titleSmall),
+            modifier = Modifier.weight(1f),
+        )
+        actions()
+        if (home) WayHomeButton()
     }
 }

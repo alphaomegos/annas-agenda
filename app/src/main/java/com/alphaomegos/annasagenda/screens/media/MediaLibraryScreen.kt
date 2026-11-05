@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import com.alphaomegos.annasagenda.components.FittingText
 import com.alphaomegos.annasagenda.components.WayHomeButton
 import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -188,25 +189,10 @@ fun MediaLibraryScreen(
     if (st.dayScreenStyle == DayScreenStyle.NEW) {
         // The new look (05.11): Back, the title, «+ Add» and home in one row; the kinds, the search,
         // the view and the order under it, as the bar held them; the cards flat.
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TopBarBack(onBack = onBack)
-                val title = stringResource(R.string.menu_reading)
-                val typography = MaterialTheme.typography
-                FittingText(
-                    choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium, title to typography.titleSmall),
-                    modifier = Modifier.weight(1f),
-                )
+        NewLookScreen(
+            title = stringResource(R.string.menu_reading),
+            onBack = onBack,
+            actions = {
                 FilledTonalButton(
                     onClick = { addDialogOpen.value = true },
                     contentPadding = PaddingValues(start = 10.dp, end = 14.dp),
@@ -216,8 +202,8 @@ fun MediaLibraryScreen(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(stringResource(R.string.reading_add_item_title))
                 }
-                WayHomeButton()
-            }
+            },
+        ) {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 MediaLibraryTopBarFilters(
                     mediaFilter = mediaFilter,

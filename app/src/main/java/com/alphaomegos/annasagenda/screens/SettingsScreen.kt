@@ -67,6 +67,7 @@ import androidx.compose.material3.Surface
 import com.alphaomegos.annasagenda.components.FittingText
 import com.alphaomegos.annasagenda.components.WayHomeButton
 import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 /**
  * Every setting in one place (04.10).
@@ -452,29 +453,13 @@ private const val SETTINGS_METRO_NEW = "metro_new"
  */
 @Composable
 private fun SettingsNewLook(groups: List<Pair<String?, List<@Composable () -> Unit>>>, onBack: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        val title = stringResource(R.string.settings_title)
-        val typography = MaterialTheme.typography
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TopBarBack(onBack)
-            FittingText(
-                choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium, title to typography.titleSmall),
-                modifier = Modifier.weight(1f),
-            )
-            WayHomeButton()
-        }
-        Spacer(modifier = Modifier.height(8.dp))
+    NewLookScreen(title = stringResource(R.string.settings_title), onBack = onBack) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
-            contentPadding = PaddingValues(bottom = 16.dp),
+                .weight(1f)
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(bottom = 24.dp),
         ) {
             groups.forEach { (heading, rows) ->
                 if (heading != null) item { SettingsSection(heading) }

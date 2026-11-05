@@ -67,6 +67,7 @@ import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.random.Random
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.alphaomegos.annasagenda.components.flatCardElevation
 
 /** The library's cards flat — the surfaces' colour, no shadow — in the new look (05.11). */
 internal val LocalMediaFlat = staticCompositionLocalOf { false }
@@ -447,7 +448,7 @@ private fun ReadingItemRowCard(
         shape = shape,
         // Flat in the new look (05.11): the surfaces' colour, no shadow.
         colors = CardDefaults.elevatedCardColors(containerColor = if (flat) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface),
-        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
+        elevation = if (flat) flatCardElevation() else CardDefaults.elevatedCardElevation(),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -575,7 +576,7 @@ private fun ReadingItemGridCard(
         shape = shape,
         // Flat in the new look (05.11): the surfaces' colour, no shadow.
         colors = CardDefaults.elevatedCardColors(containerColor = if (flat) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface),
-        elevation = if (flat) CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp) else CardDefaults.elevatedCardElevation(),
+        elevation = if (flat) flatCardElevation() else CardDefaults.elevatedCardElevation(),
         modifier = modifier
     ) {
         Column(

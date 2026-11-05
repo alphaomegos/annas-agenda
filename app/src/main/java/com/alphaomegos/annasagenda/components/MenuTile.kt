@@ -156,7 +156,7 @@ internal fun MenuTile(
         disabledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
     )
     val elevation = if (titled) CardDefaults.elevatedCardElevation()
-    else CardDefaults.elevatedCardElevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp, 0.dp)
+    else flatCardElevation()
     when {
         enabled && click != null && longClick != null -> ElevatedCard(
             // Taps through a gesture detector carry no semantics; name the two

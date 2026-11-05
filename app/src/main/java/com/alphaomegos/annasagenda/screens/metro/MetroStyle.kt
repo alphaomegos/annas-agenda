@@ -88,6 +88,7 @@ import com.alphaomegos.annasagenda.components.WayHomeButton
 import com.alphaomegos.annasagenda.app.LocalNewLook
 import androidx.compose.foundation.layout.statusBarsPadding
 import com.alphaomegos.annasagenda.components.FittingText
+import com.alphaomegos.annasagenda.components.NewLookTopRow
 
 /**
  * The metro section after an old program (15.10, Eduard: "an extra version
@@ -198,22 +199,7 @@ internal fun MetroTopBar(
     if (style == MetroStyle.MODERN) {
         // The new look (05.11): one row, as the app's other screens have it; the bar in the summer look.
         if (LocalNewLook.current) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TopBarBack(onBack)
-                val typography = MaterialTheme.typography
-                FittingText(
-                    choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium, title to typography.titleSmall),
-                    modifier = Modifier.weight(1f),
-                )
-                actions()
-                WayHomeButton()
-            }
+            NewLookTopRow(title = title, onBack = onBack, modifier = Modifier.statusBarsPadding(), actions = actions)
             return
         }
         val back: @Composable () -> Unit = {
