@@ -58,6 +58,10 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.alphaomegos.annasagenda.components.WayHomeButton
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 /** "2 764 400": a big number with the language's grouping. */
 internal fun flightNumber(n: Long, userLocale: Locale): String = String.format(userLocale, "%,d", n)
@@ -84,19 +88,8 @@ fun FlightProfileScreen(
     val names = rememberTravelNames(vm.travelBase, state.travelCountries)
     val userLocale = appLocale()
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.flights_profile)) },
-                navigationIcon = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TopBarBack(onBack)
-                        WayHomeButton()
-                    }
-                },
-            )
-        },
-    ) { inner ->
+    // The screen, the same in either look (05.11).
+    val body: @Composable (PaddingValues) -> Unit = { inner ->
         val s = stats
         Column(
             modifier = Modifier
@@ -188,6 +181,36 @@ fun FlightProfileScreen(
                 }
             }
         }
+    }
+
+    if (state.dayScreenStyle == DayScreenStyle.NEW) {
+        NewLookScreen(
+            title = stringResource(R.string.flights_profile),
+            onBack = onBack,
+            home = true,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                body(PaddingValues(0.dp))
+            }
+        }
+    } else Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.flights_profile)) },
+                navigationIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TopBarBack(onBack)
+                        WayHomeButton()
+                    }
+                },
+            )
+        },
+    ) { inner ->
+        body(inner)
     }
 }
 

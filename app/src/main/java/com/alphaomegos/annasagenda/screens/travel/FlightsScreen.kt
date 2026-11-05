@@ -94,6 +94,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.alphaomegos.annasagenda.components.WayHomeButton
+import androidx.compose.foundation.layout.PaddingValues
+import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 /**
  * Flights (06.10), from the travel screen: the world map with every route
@@ -155,7 +158,116 @@ fun FlightsScreen(
         }
     }
 
-    Scaffold(
+    // The screen, the same in either look (05.11).
+    val body: @Composable (PaddingValues) -> Unit = { inner ->
+        Column(modifier = Modifier.fillMaxSize().padding(inner).consumeWindowInsets(inner)) {
+            val m = map
+            if (prefs.showMap && m != null) {
+                val lit = remember(openJourney, journeys) {
+                    journeys.firstOrNull { it.first.id == openJourney }?.flights?.map { it.id }?.toSet().orEmpty()
+                }
+                Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.97f).heightIn(max = 320.dp)) {
+                    TravelMapView(
+                        map = m,
+                        visited = emptySet(),
+                        userDots = emptyList(),
+                        routes = routes,
+                        litFlights = lit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+            TabRow(selectedTabIndex = tab) {
+                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.flights_upcoming)) })
+                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.flights_past)) })
+            }
+            val shown = if (tab == 0) upcoming else past
+            if (state.flights.isEmpty()) {
+                Text(
+                    stringResource(R.string.flights_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                items(shown, key = { it.first.id }) { journey ->
+                    JourneyCard(
+                        journey = journey,
+                        base = base,
+                        cityNames = state.flightCityNames,
+                        turnaround = journey.flights.size == 1 && journey.first.id in turnarounds,
+                        modifier = Modifier.widthIn(max = 560.dp).padding(horizontal = 16.dp, vertical = 6.dp),
+                    ) { openJourney = journey.first.id }
+                }
+            }
+        }
+    }
+
+    if (state.dayScreenStyle == DayScreenStyle.NEW) {
+        NewLookScreen(
+            title = stringResource(R.string.flights_title),
+            onBack = onBack,
+            home = true,
+            actions = {
+                // Signed in to oursidecar, the person's own picture from it (16.10); else the silhouette.
+                IconButton(onClick = onProfile) {
+                    if (avatar != null) {
+                        Image(
+                            avatar,
+                            contentDescription = stringResource(R.string.flights_profile),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(30.dp).clip(CircleShape),
+                        )
+                    } else {
+                        Icon(Icons.Default.Person, contentDescription = stringResource(R.string.flights_profile))
+                    }
+                }
+                IconButton(onClick = { vm.setFlightPrefs(prefs.copy(showMap = !prefs.showMap)) }) {
+                    Icon(
+                        Icons.Default.Map,
+                        contentDescription = stringResource(if (prefs.showMap) R.string.flights_hide_map else R.string.flights_show_map),
+                    )
+                }
+                IconButton(onClick = onAdd) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.flights_add))
+                }
+                Box {
+                    IconButton(onClick = { menu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.flights_more))
+                    }
+                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.flights_import)) },
+                            onClick = {
+                                menu = false
+                                importLauncher.launch(arrayOf("text/*", "application/octet-stream", "*/*"))
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.flights_group)) },
+                            trailingIcon = { Checkbox(checked = prefs.groupJourneys, onCheckedChange = null) },
+                            onClick = {
+                                menu = false
+                                groupingTo = !prefs.groupJourneys
+                            },
+                        )
+                    }
+                }
+            },
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                body(PaddingValues(0.dp))
+            }
+        }
+    } else Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.flights_title)) },
@@ -214,51 +326,7 @@ fun FlightsScreen(
             )
         },
     ) { inner ->
-        Column(modifier = Modifier.fillMaxSize().padding(inner).consumeWindowInsets(inner)) {
-            val m = map
-            if (prefs.showMap && m != null) {
-                val lit = remember(openJourney, journeys) {
-                    journeys.firstOrNull { it.first.id == openJourney }?.flights?.map { it.id }?.toSet().orEmpty()
-                }
-                Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.97f).heightIn(max = 320.dp)) {
-                    TravelMapView(
-                        map = m,
-                        visited = emptySet(),
-                        userDots = emptyList(),
-                        routes = routes,
-                        litFlights = lit,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            }
-            TabRow(selectedTabIndex = tab) {
-                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.flights_upcoming)) })
-                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.flights_past)) })
-            }
-            val shown = if (tab == 0) upcoming else past
-            if (state.flights.isEmpty()) {
-                Text(
-                    stringResource(R.string.flights_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp),
-                )
-            }
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                items(shown, key = { it.first.id }) { journey ->
-                    JourneyCard(
-                        journey = journey,
-                        base = base,
-                        cityNames = state.flightCityNames,
-                        turnaround = journey.flights.size == 1 && journey.first.id in turnarounds,
-                        modifier = Modifier.widthIn(max = 560.dp).padding(horizontal = 16.dp, vertical = 6.dp),
-                    ) { openJourney = journey.first.id }
-                }
-            }
-        }
+        body(inner)
     }
 
     val opened = journeys.firstOrNull { it.first.id == openJourney }

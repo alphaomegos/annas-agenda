@@ -49,6 +49,10 @@ import com.alphaomegos.annasagenda.support.flightFlag
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 /**
  * A flight, new ([flightId] < 0) or kept (06.10): where from and to — typed
@@ -136,15 +140,8 @@ fun FlightEditScreen(
         onBack()
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(if (flight == null) R.string.flights_add else R.string.flights_edit)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.cancel)) } },
-                actions = { TextButton(onClick = { save() }) { Text(stringResource(R.string.save)) } },
-            )
-        },
-    ) { inner ->
+    // The screen, the same in either look (05.11).
+    val body: @Composable (PaddingValues) -> Unit = { inner ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -202,6 +199,35 @@ fun FlightEditScreen(
                 }
             }
         }
+    }
+
+    if (state.dayScreenStyle == DayScreenStyle.NEW) {
+        NewLookScreen(
+            title = stringResource(if (flight == null) R.string.flights_add else R.string.flights_edit),
+            onBack = onBack,
+            home = false,
+            actions = {
+                TextButton(onClick = { save() }) { Text(stringResource(R.string.save)) }
+            },
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                body(PaddingValues(0.dp))
+            }
+        }
+    } else Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(if (flight == null) R.string.flights_add else R.string.flights_edit)) },
+                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.cancel)) } },
+                actions = { TextButton(onClick = { save() }) { Text(stringResource(R.string.save)) } },
+            )
+        },
+    ) { inner ->
+        body(inner)
     }
 
     when (val p = picking) {

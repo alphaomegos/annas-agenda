@@ -67,6 +67,9 @@ import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.alphaomegos.annasagenda.components.WayHomeButton
+import androidx.compose.foundation.layout.PaddingValues
+import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 private val AchievementGold = Color(0xFFF2A900)
 
@@ -92,19 +95,8 @@ fun FlightAchievementsScreen(vm: AppViewModel, onBack: () -> Unit) {
     // The achievement opened in its dialog.
     var opened by rememberSaveable { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.flights_achievements)) },
-                navigationIcon = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TopBarBack(onBack)
-                        WayHomeButton()
-                    }
-                },
-            )
-        },
-    ) { inner ->
+    // The screen, the same in either look (05.11).
+    val body: @Composable (PaddingValues) -> Unit = { inner ->
         val s = stats ?: return@Scaffold
         val achievements = flightAchievements(s)
         val milestones = achievements.filter { keep(filter, it.taken) }
@@ -136,6 +128,36 @@ fun FlightAchievementsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 items(countries, key = { "c:$it" }) { code -> CountryBadge(flightFlag(code), names.nameOf(code), code in flown) }
             }
         }
+    }
+
+    if (state.dayScreenStyle == DayScreenStyle.NEW) {
+        NewLookScreen(
+            title = stringResource(R.string.flights_achievements),
+            onBack = onBack,
+            home = true,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                body(PaddingValues(0.dp))
+            }
+        }
+    } else Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.flights_achievements)) },
+                navigationIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TopBarBack(onBack)
+                        WayHomeButton()
+                    }
+                },
+            )
+        },
+    ) { inner ->
+        body(inner)
     }
 }
 

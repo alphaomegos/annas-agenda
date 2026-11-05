@@ -77,6 +77,9 @@ import com.alphaomegos.annasagenda.support.travelVisited
 import com.alphaomegos.annasagenda.util.appLocale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.layout.PaddingValues
+import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 /**
  * Travel (05.10): the world map with the visited countries green, and under
@@ -124,22 +127,8 @@ fun TravelScreen(
     // A country of the user's own waiting for its place on the map: "CONTINENT|name".
     var placing by rememberSaveable { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.menu_travel)) },
-                navigationIcon = { TopBarBack(onBack) },
-                actions = {
-                    IconButton(onClick = onOpenFlights) {
-                        Icon(Icons.Default.Flight, contentDescription = stringResource(R.string.flights_open))
-                    }
-                    IconButton(onClick = { creating = true }) {
-                        Icon(Icons.Default.AddLocationAlt, contentDescription = stringResource(R.string.travel_terra_incognito))
-                    }
-                },
-            )
-        },
-    ) { inner ->
+    // The screen, the same in either look (05.11).
+    val body: @Composable (PaddingValues) -> Unit = { inner ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -341,6 +330,47 @@ fun TravelScreen(
                 }
             }
         }
+    }
+
+    if (state.dayScreenStyle == DayScreenStyle.NEW) {
+        NewLookScreen(
+            title = stringResource(R.string.menu_travel),
+            onBack = onBack,
+            home = true,
+            actions = {
+                IconButton(onClick = onOpenFlights) {
+                    Icon(Icons.Default.Flight, contentDescription = stringResource(R.string.flights_open))
+                }
+                IconButton(onClick = { creating = true }) {
+                    Icon(Icons.Default.AddLocationAlt, contentDescription = stringResource(R.string.travel_terra_incognito))
+                }
+            },
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                body(PaddingValues(0.dp))
+            }
+        }
+    } else Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.menu_travel)) },
+                navigationIcon = { TopBarBack(onBack) },
+                actions = {
+                    IconButton(onClick = onOpenFlights) {
+                        Icon(Icons.Default.Flight, contentDescription = stringResource(R.string.flights_open))
+                    }
+                    IconButton(onClick = { creating = true }) {
+                        Icon(Icons.Default.AddLocationAlt, contentDescription = stringResource(R.string.travel_terra_incognito))
+                    }
+                },
+            )
+        },
+    ) { inner ->
+        body(inner)
     }
 
     if (creating) {

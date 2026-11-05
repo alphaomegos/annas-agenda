@@ -49,6 +49,10 @@ import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
 import com.alphaomegos.annasagenda.components.WayHomeButton
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import com.alphaomegos.annasagenda.model.DayScreenStyle
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 /**
  * A country's card (05.10): the piece of the map around it, its outline
@@ -85,19 +89,8 @@ fun TravelCountryScreen(
         return
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(names.nameOf(countryId)) },
-                navigationIcon = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TopBarBack(onBack)
-                        WayHomeButton()
-                    }
-                },
-            )
-        },
-    ) { inner ->
+    // The screen, the same in either look (05.11).
+    val body: @Composable (PaddingValues) -> Unit = { inner ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -147,6 +140,36 @@ fun TravelCountryScreen(
                 }
             }
         }
+    }
+
+    if (state.dayScreenStyle == DayScreenStyle.NEW) {
+        NewLookScreen(
+            title = names.nameOf(countryId),
+            onBack = onBack,
+            home = true,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                body(PaddingValues(0.dp))
+            }
+        }
+    } else Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(names.nameOf(countryId)) },
+                navigationIcon = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TopBarBack(onBack)
+                        WayHomeButton()
+                    }
+                },
+            )
+        },
+    ) { inner ->
+        body(inner)
     }
 
     val d = dialog ?: return
