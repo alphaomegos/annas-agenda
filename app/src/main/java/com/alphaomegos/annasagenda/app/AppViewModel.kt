@@ -564,6 +564,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
     val anthropometry: StateFlow<AnthropometrySlice> = stateSlice(::anthropometrySliceOf)
     val counters: StateFlow<CountersSlice> = stateSlice(::countersSliceOf)
     val undoneTasks: StateFlow<UndoneSlice> = stateSlice(::undoneSliceOf)
+    // The menu, the month and the day (05.11): drawn again only when what they show changes.
+    val mainMenuSlice: StateFlow<MainMenuSlice> = stateSlice(::mainMenuSliceOf)
+    val monthSlice: StateFlow<MonthSlice> = stateSlice(::monthSliceOf)
+    val daySlice: StateFlow<DaySlice> = stateSlice(::daySliceOf)
 
     /**
      * The session in progress, read straight out of the saved state.

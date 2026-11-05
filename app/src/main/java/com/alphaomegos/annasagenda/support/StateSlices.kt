@@ -194,3 +194,82 @@ fun undoneSliceOf(state: AppState): UndoneSlice = UndoneSlice(
     doneSubtasksLast = state.doneSubtasksLast,
     askBeforeDeleting = state.askBeforeDeleting,
 )
+
+/*
+ * The menu, the month and the day read slices of their own (05.11, the internals review): with the
+ * whole state each was drawn again at every change anywhere — the steps coming in, a meal written
+ * down, a track played. A slice holds what its screen reads, under the same names, so the screen
+ * reads it as it read the state.
+ */
+
+/** What the main menu reads: its order, what is hidden, the narrow style, the undone lamp's settings. */
+data class MainMenuSlice(
+    val mainMenuHiddenIds: Set<String> = emptySet(),
+    val mainMenuNarrow: MainMenuNarrowStyle = MainMenuNarrowStyle.LIST,
+    val mainMenuOrder: List<String> = emptyList(),
+    val undoneHorizonDays: Int = DEFAULT_UNDONE_HORIZON_DAYS,
+    val undoneLampMuted: Boolean = false,
+)
+
+/** What the month reads: the tasks for its dots, the badges and what they are made of, the look. */
+data class MonthSlice(
+    val tasks: List<Task> = emptyList(),
+    val subtasks: List<Subtask> = emptyList(),
+    val suppressedRecurrences: Set<String> = emptySet(),
+    val anthropometry: List<AnthropometryEntry> = emptyList(),
+    val foodLog: List<FoodEntry> = emptyList(),
+    val stepDays: List<StepDay> = emptyList(),
+    val calendarBadges: Set<CalendarBadge> = setOf(CalendarBadge.ANTHROPOMETRY),
+    val calendarShowSteps: Boolean = true,
+    val dayScreenStyle: DayScreenStyle = DayScreenStyle.NEW,
+)
+
+/**
+ * What the day reads: the tasks as the shared DateTasksBlock takes them — so it is [DateTasksData],
+ * as the undone tasks' slice is — the measurements the day shows, the look.
+ */
+data class DaySlice(
+    override val tasks: List<Task> = emptyList(),
+    override val subtasks: List<Subtask> = emptyList(),
+    override val suppressedRecurrences: Set<String> = emptySet(),
+    override val counters: List<Counter> = emptyList(),
+    override val doneTasksLast: Boolean = false,
+    override val doneSubtasksLast: Boolean = false,
+    override val askBeforeDeleting: Boolean = true,
+    val anthropometry: List<AnthropometryEntry> = emptyList(),
+    val anthropometryEnabledFieldIds: Set<String> = defaultAnthropometryFieldIds(),
+    val dayScreenStyle: DayScreenStyle = DayScreenStyle.NEW,
+) : DateTasksData
+
+fun mainMenuSliceOf(state: AppState): MainMenuSlice = MainMenuSlice(
+    mainMenuHiddenIds = state.mainMenuHiddenIds,
+    mainMenuNarrow = state.mainMenuNarrow,
+    mainMenuOrder = state.mainMenuOrder,
+    undoneHorizonDays = state.undoneHorizonDays,
+    undoneLampMuted = state.undoneLampMuted,
+)
+
+fun monthSliceOf(state: AppState): MonthSlice = MonthSlice(
+    tasks = state.tasks,
+    subtasks = state.subtasks,
+    suppressedRecurrences = state.suppressedRecurrences,
+    anthropometry = state.anthropometry,
+    foodLog = state.foodLog,
+    stepDays = state.stepDays,
+    calendarBadges = state.calendarBadges,
+    calendarShowSteps = state.calendarShowSteps,
+    dayScreenStyle = state.dayScreenStyle,
+)
+
+fun daySliceOf(state: AppState): DaySlice = DaySlice(
+    tasks = state.tasks,
+    subtasks = state.subtasks,
+    suppressedRecurrences = state.suppressedRecurrences,
+    counters = state.counters,
+    doneTasksLast = state.doneTasksLast,
+    doneSubtasksLast = state.doneSubtasksLast,
+    askBeforeDeleting = state.askBeforeDeleting,
+    anthropometry = state.anthropometry,
+    anthropometryEnabledFieldIds = state.anthropometryEnabledFieldIds,
+    dayScreenStyle = state.dayScreenStyle,
+)

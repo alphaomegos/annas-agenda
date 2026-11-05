@@ -63,6 +63,7 @@ import com.alphaomegos.annasagenda.util.appLocale
 import com.alphaomegos.annasagenda.components.DateTasksBlock
 import com.alphaomegos.annasagenda.components.WayHomeFootButton
 import com.alphaomegos.annasagenda.components.rememberToday
+import com.alphaomegos.annasagenda.support.DaySlice
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +73,7 @@ fun CalendarDayRoute(
     initialEpochDay: Long,
     onAddTask: (Long) -> Unit,
 ) {
-    val state by vm.state.collectAsStateWithLifecycle()
+    val state by vm.daySlice.collectAsStateWithLifecycle()
     val locale = appLocale()
 
     CalendarDayContent(
@@ -96,7 +97,7 @@ fun CalendarDayRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CalendarDayContent(
-    state: AppState,
+    state: DaySlice,
     locale: Locale,
     initialEpochDay: Long,
     onBack: () -> Unit,

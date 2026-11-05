@@ -110,6 +110,24 @@ class StateSlicesTest {
         assertNotEquals(anthropometrySliceOf(populated), anthropometrySliceOf(more))
     }
 
+    /** The menu, the month and the day read their own slices (0401): a change elsewhere leaves each as it was. */
+    @Test
+    fun theMenuTheMonthAndTheDayHaveTheirSlices() {
+        val elsewhere = populated.copy(
+            sportWorkouts = listOf(com.alphaomegos.annasagenda.model.SportWorkout(id = 9, date = today, kind = "std:yoga", kcal = 100)),
+        )
+        assertEquals(mainMenuSliceOf(populated), mainMenuSliceOf(elsewhere))
+        assertEquals(monthSliceOf(populated), monthSliceOf(elsewhere))
+        assertEquals(daySliceOf(populated), daySliceOf(elsewhere))
+        assertNotEquals(mainMenuSliceOf(populated), mainMenuSliceOf(populated.copy(mainMenuOrder = listOf("music", "day"))))
+        val meal = populated.copy(foodLog = populated.foodLog + com.alphaomegos.annasagenda.model.FoodEntry(id = 99, date = today, title = "обед", kcal = 500))
+        assertNotEquals(monthSliceOf(populated), monthSliceOf(meal))
+        assertEquals("the day shows no meals", daySliceOf(populated), daySliceOf(meal))
+        val weighed = populated.copy(anthropometry = populated.anthropometry + com.alphaomegos.annasagenda.model.AnthropometryEntry(date = today, weightKg = 61.0))
+        assertNotEquals(daySliceOf(populated), daySliceOf(weighed))
+        assertNotEquals(monthSliceOf(populated), monthSliceOf(weighed))
+    }
+
     /** The counters' slice carries the look (0381). */
     @Test
     fun countersSliceCarriesTheLook() {

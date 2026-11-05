@@ -229,7 +229,7 @@ fun MainMenuScreen(
         }
     }
 
-    val state by vm.state.collectAsState()
+    val state by vm.mainMenuSlice.collectAsState()
 
     // The oursidecar sign-in (16.10): one for the process, kept by the connection.
     val sidecar = remember(context) { SidecarConnections.of(context) }

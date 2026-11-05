@@ -69,6 +69,7 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlin.math.max
 import com.alphaomegos.annasagenda.components.rememberToday
+import com.alphaomegos.annasagenda.support.MonthSlice
 
 @Composable
 fun CalendarMonthRoute(
@@ -77,7 +78,7 @@ fun CalendarMonthRoute(
     onOpenDay: (Long) -> Unit,
     onOpenSomeday: () -> Unit,
 ) {
-    val state by vm.state.collectAsStateWithLifecycle()
+    val state by vm.monthSlice.collectAsStateWithLifecycle()
     val locale = appLocale()
 
     CalendarMonthContent(
@@ -95,7 +96,7 @@ fun CalendarMonthRoute(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CalendarMonthContent(
-    state: AppState,
+    state: MonthSlice,
     locale: Locale,
     ensureGeneratedInRange: (LocalDate, LocalDate) -> Unit,
     onSetBadges: (Set<CalendarBadge>) -> Unit,
