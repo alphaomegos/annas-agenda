@@ -328,6 +328,7 @@ fun AnthropometryScreen(
             workouts = state.runningWorkouts,
             planRuns = runningPlanRunsDone(state.runningPlanEntries, state.runningDoneTaskIds, today),
             normKcal = state.dailyNormKcal,
+            sport = state.sportWorkouts,
         )
     }
     // The day's norm as it stands today (28.10): the user's own, or the formula's for the last weight.

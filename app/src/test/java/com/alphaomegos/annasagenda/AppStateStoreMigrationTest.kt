@@ -733,6 +733,12 @@ class AppStateStoreMigrationTest {
         assertEquals(450, w.kcal)
     }
 
+    /** The «Other» tab (05.11) is remembered by name, like the rest. */
+    @Test
+    fun theOtherTabIsRemembered() {
+        assertEquals(RunningMode.OTHER, decoded("""{ "v": 16, "runningMode": "OTHER" }""").runningMode)
+    }
+
     /** Migrates and decodes, failing with the reason when the payload does not survive. */
     private fun decoded(raw: String): AppState {
         val result = decodeAppStateJsonOrFailure(raw)

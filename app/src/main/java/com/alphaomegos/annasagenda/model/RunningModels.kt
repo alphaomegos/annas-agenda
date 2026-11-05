@@ -32,6 +32,9 @@ enum class RunningMode {
 
     /** Every day's steps (19.10): from Health Connect, or typed in. */
     STEPS,
+
+    /** Other sports' workouts (05.11): any kind, written down after, minutes and kilocalories as typed. */
+    OTHER,
 }
 
 /**

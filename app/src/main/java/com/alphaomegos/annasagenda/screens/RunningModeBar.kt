@@ -48,5 +48,10 @@ internal fun RunningModeBar(
             onClick = { onSelect(RunningMode.STEPS) },
             label = { Text(stringResource(R.string.running_mode_steps)) },
         )
+        FilterChip(
+            selected = selected == RunningMode.OTHER,
+            onClick = { onSelect(RunningMode.OTHER) },
+            label = { Text(stringResource(R.string.running_mode_other)) },
+        )
     }
 }

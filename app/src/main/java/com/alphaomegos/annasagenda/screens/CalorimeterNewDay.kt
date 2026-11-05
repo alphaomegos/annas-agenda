@@ -176,10 +176,19 @@ internal fun CalorimeterNewDay(
         if (energy != null) {
             SummaryRow(stringResource(R.string.calorimeter_spent), k(energy.totalKcal))
             Text(
-                stringResource(
-                    if (energy.ownNorm) R.string.calorimeter_spent_parts_own else R.string.calorimeter_spent_parts,
-                    numbers.format(energy.normKcal), numbers.format(energy.stepsKcal), numbers.format(energy.runKcal),
-                ),
+                // Other sports (05.11): a fourth part, on the days that have them.
+                if (energy.sportKcal > 0) {
+                    stringResource(
+                        if (energy.ownNorm) R.string.calorimeter_spent_parts_own_sport else R.string.calorimeter_spent_parts_sport,
+                        numbers.format(energy.normKcal), numbers.format(energy.stepsKcal), numbers.format(energy.runKcal),
+                        numbers.format(energy.sportKcal),
+                    )
+                } else {
+                    stringResource(
+                        if (energy.ownNorm) R.string.calorimeter_spent_parts_own else R.string.calorimeter_spent_parts,
+                        numbers.format(energy.normKcal), numbers.format(energy.stepsKcal), numbers.format(energy.runKcal),
+                    )
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),

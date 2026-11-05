@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sport: other workouts (05.11) -->
+    <string name="running_mode_other">Other</string>
+    <string name="sport_add">Add a workout</string>
+    <string name="sport_dialog_title">Workout</string>
+    <string name="sport_date">Date</string>
+    <string name="sport_kind">Kind of workout</string>
+    <string name="sport_kind_list">All kinds of workout</string>
+    <string name="sport_kind_all">All kinds</string>
+    <string name="sport_duration">Duration, h:mm</string>
+    <string name="sport_kcal">Calories, kcal</string>
+    <string name="sport_kcal_value">%1$s kcal</string>
+    <string name="sport_needs">Choose a kind and enter a duration, calories or both</string>
+    <string name="sport_kcal_invalid">Calories: a whole number up to %1$s</string>
+    <string name="sport_empty">No workouts written down yet</string>
+    <string name="sport_empty_filtered">Nothing fits the filter</string>
+    <string name="sport_period_all">All time</string>
+    <string name="sport_period_7">7 days</string>
+    <string name="sport_period_30">30 days</string>
+    <string name="sport_period_year">Year</string>
+    <string name="sport_period_custom">Own dates…</string>
+    <string name="sport_sort_date">By date</string>
+    <string name="sport_sort_kcal">By calories</string>
+    <string name="sport_sort_duration">By duration</string>
+    <string name="sport_sort_kind">By kind</string>
+    <plurals name="sport_workout_count">
+        <item quantity="one">%d workout</item>
+        <item quantity="other">%d workouts</item>
+    </plurals>
+    <string name="sport_kind_snowboard">Snowboard</string>
+    <string name="sport_kind_alpine_skiing">Alpine skiing</string>
+    <string name="sport_kind_cross_country_skiing">Cross-country skiing</string>
+    <string name="sport_kind_skating">Skating</string>
+    <string name="sport_kind_zumba">Zumba</string>
+    <string name="sport_kind_dance">Dance</string>
+    <string name="sport_kind_strength">Strength training</string>
+    <string name="sport_kind_crossfit">CrossFit</string>
+    <string name="sport_kind_yoga">Yoga</string>
+    <string name="sport_kind_pilates">Pilates</string>
+    <string name="sport_kind_swimming">Swimming</string>
+    <string name="sport_kind_cycling">Cycling</string>
+    <string name="sport_kind_nordic_walking">Nordic walking</string>
+    <string name="sport_kind_tennis">Tennis</string>
+    <string name="sport_kind_football">Football</string>
+    <string name="sport_kind_martial_arts">Martial arts</string>
+    <string name="sport_kind_climbing">Climbing</string>
+    <string name="sport_kind_rowing">Rowing</string>
+    <!-- The calorimeter and the forecast count them (05.11) -->
+    <string name="calorimeter_spent_parts_sport">norm %1$s · steps %2$s · running %3$s · workouts %4$s</string>
+    <string name="calorimeter_spent_parts_own_sport">own norm %1$s · steps %2$s · running %3$s · workouts %4$s</string>
+    <string name="forecast_breakdown_sport">workouts %1$s kcal (%2$s kg)</string>
+</resources>

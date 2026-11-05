@@ -200,6 +200,25 @@ interface RunningActions : AppStateHost {
         }
     }
 
+    /**
+     * Other sports (05.11): a new workout when [id] is null, or that one changed.
+     * False when the fields hold no workout — no kind, or neither number — and the
+     * dialog says so rather than closing on nothing. The id is minted before the
+     * update, which can run more than once.
+     */
+    fun saveSportWorkout(id: Long?, date: LocalDate, kind: String?, durationText: String, kcalText: String): Boolean {
+        val workout = sportWorkoutFromInput(id ?: nextFreshId(), date, kind, durationText, kcalText) ?: return false
+        stateFlow.update { cur -> cur.copy(sportWorkouts = sportWorkoutsAfterSaving(cur.sportWorkouts, workout)) }
+        return true
+    }
+
+    fun deleteSportWorkout(id: Long) {
+        stateFlow.update { cur ->
+            val after = sportWorkoutsAfterDeleting(cur.sportWorkouts, id) ?: return@update cur
+            cur.copy(sportWorkouts = after)
+        }
+    }
+
     fun resetRunningPlan() {
         val ids = stateFlow.value.runningPlanEntries.mapNotNull { it.taskId }
         ids.forEach { runningDeleteTask(it) }

@@ -94,6 +94,7 @@ fun RunningPlanScreen(
     var stepsImportAsked by rememberSaveable { mutableStateOf(false) }
     var stepsInfoOpen by rememberSaveable { mutableStateOf(false) }
     var workoutAddRequest by rememberSaveable { mutableStateOf(0) }
+    var sportAddRequest by rememberSaveable { mutableStateOf(0) }
     val stepsReport by vm.stepsReport.collectAsState()
     if (stepsInfoOpen) {
         AlertDialog(
@@ -140,6 +141,12 @@ fun RunningPlanScreen(
                     if (state.runningMode == RunningMode.BETWEEN && state.dayScreenStyle == DayScreenStyle.NEW) {
                         IconButton(onClick = { workoutAddRequest += 1 }) {
                             Icon(Icons.Default.Add, contentDescription = stringResource(R.string.running_workout_add))
+                        }
+                    }
+                    // Other sports (05.11): a workout is added from here, in either look.
+                    if (state.runningMode == RunningMode.OTHER) {
+                        IconButton(onClick = { sportAddRequest += 1 }) {
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.sport_add))
                         }
                     }
 
@@ -193,6 +200,16 @@ fun RunningPlanScreen(
                     importAsked = stepsImportAsked,
                     onImportAskDone = { stepsImportAsked = false },
                     modifier = Modifier.fillMaxSize(),
+                )
+            } else if (state.runningMode == RunningMode.OTHER) {
+                SportWorkoutsContent(
+                    workouts = state.sportWorkouts,
+                    today = today,
+                    onSave = vm::saveSportWorkout,
+                    onDelete = vm::deleteSportWorkout,
+                    modifier = Modifier.fillMaxSize(),
+                    newLook = state.dayScreenStyle == DayScreenStyle.NEW,
+                    addRequest = sportAddRequest,
                 )
             } else if (state.runningMode == RunningMode.BETWEEN) {
                 RunningWorkoutsContent(

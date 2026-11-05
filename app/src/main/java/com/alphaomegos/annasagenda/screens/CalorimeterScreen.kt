@@ -244,6 +244,7 @@ private fun CalorimeterContent(
             workouts = state.runningWorkouts,
             planRuns = runningPlanRunsDone(state.runningPlanEntries, state.runningDoneTaskIds, today),
             ownNormKcal = state.dailyNormKcal,
+            sport = state.sportWorkouts,
         )
     }
 

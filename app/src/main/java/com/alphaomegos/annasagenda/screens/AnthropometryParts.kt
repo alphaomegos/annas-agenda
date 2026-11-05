@@ -608,7 +608,12 @@ internal fun NewForecastBlock(forecast: WeightForecast?, normKcal: Int?, ownNorm
             count.format(forecast.eatenKcal),
             count.format(forecast.steps), formatTwoDecimals(forecast.stepsKg),
             formatOneDecimal(forecast.runKm), formatTwoDecimals(forecast.runKg),
-        ),
+        ) + if (forecast.sportKcal > 0.0) {
+            // Other sports (05.11), on the days that count.
+            " · " + stringResource(R.string.forecast_breakdown_sport, count.format(Math.round(forecast.sportKcal)), formatTwoDecimals(forecast.sportKg))
+        } else {
+            ""
+        },
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
