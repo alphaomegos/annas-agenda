@@ -1,2 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>    <!-- The player widget (05.11): an LCD's green, its unlit figures, a key that is off. -->
+    <color name="music_widget_lcd">#FF4CEB4C</color>
+    <color name="music_widget_lcd_ghost">#FF13281A</color>
+    <color name="music_widget_off">#FF7D8189</color>
+</resources>

@@ -1501,4 +1501,15 @@
     <string name="calorimeter_spent_parts_sport">норма %1$s · шаги %2$s · бег %3$s · тренировки %4$s</string>
     <string name="calorimeter_spent_parts_own_sport">своя норма %1$s · шаги %2$s · бег %3$s · тренировки %4$s</string>
     <string name="forecast_breakdown_sport">тренировки %1$s ккал (%2$s кг)</string>
+    <!-- Виджет плеера (05.11) -->
+    <string name="music_widget_name">Плеер</string>
+    <string name="music_widget_description">Плеер: трек, время и кнопки</string>
+    <string name="music_widget_nothing">Ничего не играет</string>
+    <string name="music_widget_previous">Предыдущий трек</string>
+    <string name="music_widget_play">Играть</string>
+    <string name="music_widget_pause">Пауза</string>
+    <string name="music_widget_stop">Стоп</string>
+    <string name="music_widget_next">Следующий трек</string>
+    <string name="music_widget_shuffle">Перемешать</string>
+    <string name="music_widget_repeat">Повтор</string>
 </resources>

@@ -94,6 +94,7 @@ class MusicPlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        musicServiceAlive = true
         MusicTap.wake = { handler.post(positionTick) }
         val connection = SidecarConnections.of(this)
         // The pulse listens to the sound on its way out (29.10): the visualizer draws from it.
@@ -121,6 +122,19 @@ class MusicPlaybackService : MediaSessionService() {
                     )
                 ) {
                     remember(player)
+                }
+                // The player widget (05.11): drawn again at every change it shows.
+                if (events.containsAny(
+                        Player.EVENT_TIMELINE_CHANGED,
+                        Player.EVENT_MEDIA_ITEM_TRANSITION,
+                        Player.EVENT_MEDIA_METADATA_CHANGED,
+                        Player.EVENT_IS_PLAYING_CHANGED,
+                        Player.EVENT_REPEAT_MODE_CHANGED,
+                        Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED,
+                        Player.EVENT_POSITION_DISCONTINUITY,
+                    )
+                ) {
+                    musicWidgetShow(this@MusicPlaybackService, musicWidgetStateOf(player))
                 }
                 // A track played and kept on the way: the lists may show it kept now.
                 if (MusicCache.keepWhilePlaying && events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_IS_PLAYING_CHANGED)) {
@@ -173,6 +187,9 @@ class MusicPlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         scope.cancel()
+        musicServiceAlive = false
+        // The widget: the track that was, stopped; ⏯ opens the app, where the queue comes back.
+        musicWidgetShow(this, musicWidgetSaved(this).copy(playing = false, hasQueue = false))
         handler.removeCallbacks(rememberTick)
         handler.removeCallbacks(positionTick)
         MusicTap.wake = null

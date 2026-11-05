@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The player widget (05.11): repeat one track. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFDCDEE2"
+        android:fillType="evenOdd"
+        android:pathData="M5,11V7H16V4.5L20,8L16,11.5V9H7V11ZM19,13V17H8V19.5L4,16L8,12.5V15H17V13ZM11,10H13V14H11Z" />
+</vector>

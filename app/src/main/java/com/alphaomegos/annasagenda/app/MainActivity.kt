@@ -32,11 +32,17 @@ class MainActivity : AppCompatActivity() {
     private val openDayRequest = MutableStateFlow<Long?>(null)
     // The steps widget asked for the Steps tab (28.10), until it is open.
     private val openStepsRequest = MutableStateFlow(false)
+    // The player widget asked for the music (05.11), until it is open.
+    private val openMusicRequest = MutableStateFlow(false)
 
     private fun takeOpenDayRequest(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_OPEN_STEPS, false) == true) {
             openStepsRequest.value = true
             intent.removeExtra(EXTRA_OPEN_STEPS)
+        }
+        if (intent?.getBooleanExtra(EXTRA_OPEN_MUSIC, false) == true) {
+            openMusicRequest.value = true
+            intent.removeExtra(EXTRA_OPEN_MUSIC)
         }
         val day = intent?.getLongExtra(EXTRA_OPEN_EPOCH_DAY, Long.MIN_VALUE) ?: return
         if (day != Long.MIN_VALUE) {
@@ -87,6 +93,7 @@ class MainActivity : AppCompatActivity() {
                         else -> {
                             val openDay by openDayRequest.collectAsState()
                             val openSteps by openStepsRequest.collectAsState()
+                            val openMusic by openMusicRequest.collectAsState()
                             AppNav(
                                 vm = vm,
                                 openDayRequest = openDay,
@@ -96,6 +103,8 @@ class MainActivity : AppCompatActivity() {
                                     vm.setRunningMode(com.alphaomegos.annasagenda.model.RunningMode.STEPS)
                                     openStepsRequest.value = false
                                 },
+                                openMusicRequest = openMusic,
+                                onOpenMusicHandled = { openMusicRequest.value = false },
                             )
                         }
                     }

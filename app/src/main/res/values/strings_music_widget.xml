@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The player widget (05.11) -->
+    <string name="music_widget_name">Player</string>
+    <string name="music_widget_description">The music player: the track, the time and the keys</string>
+    <string name="music_widget_nothing">Nothing is playing</string>
+    <string name="music_widget_previous">Previous track</string>
+    <string name="music_widget_play">Play</string>
+    <string name="music_widget_pause">Pause</string>
+    <string name="music_widget_stop">Stop</string>
+    <string name="music_widget_next">Next track</string>
+    <string name="music_widget_shuffle">Shuffle</string>
+    <string name="music_widget_repeat">Repeat</string>
+</resources>

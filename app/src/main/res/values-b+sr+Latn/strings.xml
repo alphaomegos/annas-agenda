@@ -1433,4 +1433,15 @@
     <string name="calorimeter_spent_parts_sport">norma %1$s · koraci %2$s · trčanje %3$s · treninzi %4$s</string>
     <string name="calorimeter_spent_parts_own_sport">sopstvena norma %1$s · koraci %2$s · trčanje %3$s · treninzi %4$s</string>
     <string name="forecast_breakdown_sport">treninzi %1$s kcal (%2$s kg)</string>
+    <!-- Vidžet plejera (05.11) -->
+    <string name="music_widget_name">Plejer</string>
+    <string name="music_widget_description">Plejer: numera, vreme i dugmad</string>
+    <string name="music_widget_nothing">Ništa ne svira</string>
+    <string name="music_widget_previous">Prethodna numera</string>
+    <string name="music_widget_play">Pusti</string>
+    <string name="music_widget_pause">Pauza</string>
+    <string name="music_widget_stop">Stop</string>
+    <string name="music_widget_next">Sledeća numera</string>
+    <string name="music_widget_shuffle">Nasumično</string>
+    <string name="music_widget_repeat">Ponavljanje</string>
 </resources>

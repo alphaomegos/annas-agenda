@@ -143,6 +143,8 @@ fun AppNav(
     onOpenDayHandled: () -> Unit = {},
     openStepsRequest: Boolean = false,
     onOpenStepsHandled: () -> Unit = {},
+    openMusicRequest: Boolean = false,
+    onOpenMusicHandled: () -> Unit = {},
 ) {
     val nav = rememberNavController()
 
@@ -510,5 +512,11 @@ fun AppNav(
         if (!openStepsRequest) return@LaunchedEffect
         onOpenStepsHandled()
         nav.navigate(Route.RUNNING) { launchSingleTop = true }
+    }
+    // The player widget's display (05.11): the music, over the menu.
+    LaunchedEffect(openMusicRequest) {
+        if (!openMusicRequest) return@LaunchedEffect
+        onOpenMusicHandled()
+        nav.navigate(Route.MUSIC) { launchSingleTop = true }
     }
 }
