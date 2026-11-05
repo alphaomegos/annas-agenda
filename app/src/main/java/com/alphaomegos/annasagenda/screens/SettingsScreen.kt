@@ -57,6 +57,16 @@ import com.alphaomegos.annasagenda.components.ThemeModeDialog
 import com.alphaomegos.annasagenda.components.paletteLabelRes
 import com.alphaomegos.annasagenda.components.WidgetStyleDialog
 import com.alphaomegos.annasagenda.components.themeModeLabelRes
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import com.alphaomegos.annasagenda.components.FittingText
+import com.alphaomegos.annasagenda.components.WayHomeButton
+import com.alphaomegos.annasagenda.model.DayScreenStyle
 
 /**
  * Every setting in one place (04.10).
@@ -85,7 +95,151 @@ fun SettingsScreen(
         ActivityResultContracts.RequestPermission()
     ) { }
 
-    Scaffold(
+    // The rows, in their groups (05.11): one list for both looks — the summer look lays them out as it
+    // did, a heading and a row an item; the new look puts each group on its own surface.
+    val groups: List<Pair<String?, List<@Composable () -> Unit>>> = listOf(
+        null to listOf(
+            // Three groups, by what a setting is about (19.10): how the app
+            // looks, how tasks behave, and each section's own. A choice
+            // between several opens its dialog and shows what it is now; one
+            // that is only on or off is a switch, and the row is the switch.
+            // The profile (28.10): one set for the whole app — steps, the forecast.
+            {
+                SettingsRow(
+                    stringResource(R.string.profile_title),
+                    profileSummary(state.profileSex, state.stepsHeightCm, state.profileBirthYear),
+                ) { open = SETTINGS_PROFILE }
+            },
+        ),
+        stringResource(R.string.settings_section_appearance) to listOf(
+            { SettingsRow(stringResource(R.string.choose_language), null, onLanguage) },
+            {
+                SettingsRow(
+                    stringResource(R.string.theme_mode_menu),
+                    stringResource(themeModeLabelRes(state.themeMode)),
+                ) { open = SETTINGS_THEME }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.palette_menu),
+                    stringResource(paletteLabelRes(state.palette)),
+                ) { open = SETTINGS_PALETTE }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.back_style_menu),
+                    stringResource(backStyleLabelRes(state.backStyle)),
+                ) { open = SETTINGS_BACK }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.main_menu_narrow_menu),
+                    stringResource(mainMenuNarrowLabelRes(state.mainMenuNarrow)),
+                ) { open = SETTINGS_MENU_NARROW }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.day_screen_menu),
+                    stringResource(dayScreenStyleLabelRes(state.dayScreenStyle)),
+                ) { open = SETTINGS_DAY_SCREEN }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.widget_style_menu),
+                    stringResource(R.string.widget_style_background, state.widgetStyle.backgroundPercent),
+                ) { open = SETTINGS_WIDGET }
+            },
+            {
+                SettingsRow(stringResource(R.string.steps_widget_menu), null) { open = SETTINGS_STEPS_WIDGET }
+            },
+        ),
+        stringResource(R.string.settings_section_tasks) to listOf(
+            // Done tasks at the bottom of their day (06.10), done subtasks at
+            // the bottom of their task (16.10): each a setting of its own.
+            {
+                SettingsSwitchRow(
+                    stringResource(R.string.settings_done_tasks_last),
+                    checked = state.doneTasksLast,
+                    onChange = vm::setDoneTasksLast,
+                )
+            },
+            {
+                SettingsSwitchRow(
+                    stringResource(R.string.settings_done_subtasks_last),
+                    checked = state.doneSubtasksLast,
+                    onChange = vm::setDoneSubtasksLast,
+                )
+            },
+            // Deleting asks first unless this is off (30.10). Repeats' series ask always.
+            {
+                SettingsSwitchRow(
+                    stringResource(R.string.settings_ask_before_deleting),
+                    checked = state.askBeforeDeleting,
+                    onChange = vm::setAskBeforeDeleting,
+                )
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.undone_title),
+                    undoneHorizonLabel(state.undoneHorizonDays),
+                ) { open = SETTINGS_UNDONE }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.notif_settings_menu),
+                    stringResource(
+                        if (state.notifications.summaryMinutes.isEmpty() &&
+                            state.notifications.reminderLeadMinutes == null
+                        ) R.string.settings_off else R.string.settings_on
+                    ),
+                ) { open = SETTINGS_NOTIFICATIONS }
+            },
+        ),
+        stringResource(R.string.settings_section_screens) to listOf(
+            // Steps together (25.10): sharing steps with friends through oursidecar.
+            {
+                val sharing = together.sharing
+                SettingsRow(
+                    stringResource(R.string.steps_together_menu),
+                    when {
+                        sharing == null -> null
+                        sharing.enabled -> stringResource(R.string.steps_together_summary_on, together.friends.size)
+                        else -> stringResource(R.string.steps_together_summary_off)
+                    },
+                ) { open = SETTINGS_STEPS_TOGETHER }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.calendar_title),
+                    stringResource(R.string.calendar_badges_title),
+                ) { open = SETTINGS_CALENDAR }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.calorimeter_title),
+                    stringResource(R.string.settings_calorimeter_hint),
+                ) { open = SETTINGS_CALORIMETER }
+            },
+            {
+                SettingsRow(
+                    stringResource(R.string.anthropometry_title),
+                    stringResource(R.string.settings_anthropometry_hint),
+                ) { open = SETTINGS_ANTHROPOMETRY }
+            },
+            // The metro's city (04.10), and where another city's map is started (05.10).
+            {
+                SettingsRow(
+                    stringResource(R.string.metro_settings_scheme),
+                    metroShown(state.metroSchemes, state.metroSelection, vm.metroLibrary)?.scheme?.city
+                        ?: stringResource(R.string.metro_settings_none),
+                ) { open = SETTINGS_METRO }
+            },
+        ),
+    )
+
+    if (state.dayScreenStyle == DayScreenStyle.NEW) {
+        SettingsNewLook(groups, onBack)
+    } else Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
@@ -100,139 +254,9 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(inner),
         ) {
-            // Three groups, by what a setting is about (19.10): how the app
-            // looks, how tasks behave, and each section's own. A choice
-            // between several opens its dialog and shows what it is now; one
-            // that is only on or off is a switch, and the row is the switch.
-            // The profile (28.10): one set for the whole app — steps, the forecast.
-            item {
-                SettingsRow(
-                    stringResource(R.string.profile_title),
-                    profileSummary(state.profileSex, state.stepsHeightCm, state.profileBirthYear),
-                ) { open = SETTINGS_PROFILE }
-            }
-            item { SettingsSection(stringResource(R.string.settings_section_appearance)) }
-            item { SettingsRow(stringResource(R.string.choose_language), null, onLanguage) }
-            item {
-                SettingsRow(
-                    stringResource(R.string.theme_mode_menu),
-                    stringResource(themeModeLabelRes(state.themeMode)),
-                ) { open = SETTINGS_THEME }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.palette_menu),
-                    stringResource(paletteLabelRes(state.palette)),
-                ) { open = SETTINGS_PALETTE }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.back_style_menu),
-                    stringResource(backStyleLabelRes(state.backStyle)),
-                ) { open = SETTINGS_BACK }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.main_menu_narrow_menu),
-                    stringResource(mainMenuNarrowLabelRes(state.mainMenuNarrow)),
-                ) { open = SETTINGS_MENU_NARROW }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.day_screen_menu),
-                    stringResource(dayScreenStyleLabelRes(state.dayScreenStyle)),
-                ) { open = SETTINGS_DAY_SCREEN }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.widget_style_menu),
-                    stringResource(R.string.widget_style_background, state.widgetStyle.backgroundPercent),
-                ) { open = SETTINGS_WIDGET }
-            }
-            item {
-                SettingsRow(stringResource(R.string.steps_widget_menu), null) { open = SETTINGS_STEPS_WIDGET }
-            }
-
-            item { SettingsSection(stringResource(R.string.settings_section_tasks)) }
-            // Done tasks at the bottom of their day (06.10), done subtasks at
-            // the bottom of their task (16.10): each a setting of its own.
-            item {
-                SettingsSwitchRow(
-                    stringResource(R.string.settings_done_tasks_last),
-                    checked = state.doneTasksLast,
-                    onChange = vm::setDoneTasksLast,
-                )
-            }
-            item {
-                SettingsSwitchRow(
-                    stringResource(R.string.settings_done_subtasks_last),
-                    checked = state.doneSubtasksLast,
-                    onChange = vm::setDoneSubtasksLast,
-                )
-            }
-            // Deleting asks first unless this is off (30.10). Repeats' series ask always.
-            item {
-                SettingsSwitchRow(
-                    stringResource(R.string.settings_ask_before_deleting),
-                    checked = state.askBeforeDeleting,
-                    onChange = vm::setAskBeforeDeleting,
-                )
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.undone_title),
-                    undoneHorizonLabel(state.undoneHorizonDays),
-                ) { open = SETTINGS_UNDONE }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.notif_settings_menu),
-                    stringResource(
-                        if (state.notifications.summaryMinutes.isEmpty() &&
-                            state.notifications.reminderLeadMinutes == null
-                        ) R.string.settings_off else R.string.settings_on
-                    ),
-                ) { open = SETTINGS_NOTIFICATIONS }
-            }
-
-            item { SettingsSection(stringResource(R.string.settings_section_screens)) }
-            // Steps together (25.10): sharing steps with friends through oursidecar.
-            item {
-                val sharing = together.sharing
-                SettingsRow(
-                    stringResource(R.string.steps_together_menu),
-                    when {
-                        sharing == null -> null
-                        sharing.enabled -> stringResource(R.string.steps_together_summary_on, together.friends.size)
-                        else -> stringResource(R.string.steps_together_summary_off)
-                    },
-                ) { open = SETTINGS_STEPS_TOGETHER }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.calendar_title),
-                    stringResource(R.string.calendar_badges_title),
-                ) { open = SETTINGS_CALENDAR }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.calorimeter_title),
-                    stringResource(R.string.settings_calorimeter_hint),
-                ) { open = SETTINGS_CALORIMETER }
-            }
-            item {
-                SettingsRow(
-                    stringResource(R.string.anthropometry_title),
-                    stringResource(R.string.settings_anthropometry_hint),
-                ) { open = SETTINGS_ANTHROPOMETRY }
-            }
-            // The metro's city (04.10), and where another city's map is started (05.10).
-            item {
-                SettingsRow(
-                    stringResource(R.string.metro_settings_scheme),
-                    metroShown(state.metroSchemes, state.metroSelection, vm.metroLibrary)?.scheme?.city
-                        ?: stringResource(R.string.metro_settings_none),
-                ) { open = SETTINGS_METRO }
+            groups.forEach { (heading, rows) ->
+                if (heading != null) item { SettingsSection(heading) }
+                rows.forEach { row -> item { row() } }
             }
         }
     }
@@ -420,6 +444,58 @@ private const val SETTINGS_ANTHROPOMETRY = "anthropometry"
 private const val SETTINGS_UNDONE = "undone"
 private const val SETTINGS_METRO = "metro"
 private const val SETTINGS_METRO_NEW = "metro_new"
+
+/**
+ * Settings in the new look (05.11): Back, the title and home in one row; each
+ * group on its own surface, its rows between thin lines, its heading over it —
+ * as the counters have it. The summer look stays as it was.
+ */
+@Composable
+private fun SettingsNewLook(groups: List<Pair<String?, List<@Composable () -> Unit>>>, onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        val title = stringResource(R.string.settings_title)
+        val typography = MaterialTheme.typography
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            TopBarBack(onBack)
+            FittingText(
+                choices = listOf(title to typography.headlineSmall, title to typography.titleLarge, title to typography.titleMedium, title to typography.titleSmall),
+                modifier = Modifier.weight(1f),
+            )
+            WayHomeButton()
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentPadding = PaddingValues(bottom = 16.dp),
+        ) {
+            groups.forEach { (heading, rows) ->
+                if (heading != null) item { SettingsSection(heading) }
+                item {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column {
+                            rows.forEachIndexed { i, row ->
+                                if (i > 0) HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                row()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun SettingsSection(title: String) {

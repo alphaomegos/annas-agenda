@@ -37,4 +37,14 @@ class SettingsGroupsTest {
         assertTrue(Regex("""SettingsSwitchRow\(\s*stringResource\(R\.string\.settings_ask_before_deleting\)""").containsMatchIn(screen))
         assertTrue("a switch row must be a switch to TalkBack", screen.contains("role = Role.Switch"))
     }
+
+    /** The new look (0390): one row on top, each group on its own surface between thin lines; the summer look as it was. */
+    @Test
+    fun theNewLookPutsEachGroupOnItsSurface() {
+        assertTrue(screen.hasCode("if (state.dayScreenStyle == DayScreenStyle.NEW) {") && screen.hasCode("SettingsNewLook(groups, onBack)"))
+        assertTrue(screen.hasCode("TopBarBack(onBack)") && screen.hasCode("WayHomeButton()"))
+        assertTrue(screen.hasCode("color = MaterialTheme.colorScheme.surfaceContainerLow,"))
+        assertTrue(screen.hasCode("if (i > 0) HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)"))
+        assertTrue("the summer look keeps its bar", screen.hasCode("CenterAlignedTopAppBar("))
+    }
 }
