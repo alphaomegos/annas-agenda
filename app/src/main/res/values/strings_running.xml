@@ -22,9 +22,9 @@
     <string name="running_add_bonus">Add bonus workout</string>
     <string name="running_bonus_exists">A workout row for this date already exists</string>
 
-    <!-- Between marathons -->
+    <!-- Running: the runs written down after («Between marathons» until 05.11) -->
     <string name="running_mode_plan">Marathon plan</string>
-    <string name="running_mode_between">Between marathons</string>
+    <string name="running_mode_between">Running</string>
     <string name="running_workouts_empty">No runs written down yet</string>
     <string name="running_workout_add">Add a run</string>
     <string name="running_workout_add_title">A run that happened</string>

@@ -44,7 +44,7 @@ data class AppState(
     val calorieGoalChanges: List<CalorieGoalChange> = emptyList(),
     val foodLog: List<FoodEntry> = emptyList(),
 
-    // Running plan ("On the run")
+    // Sport («On the run» until 05.11): the running plan, the runs, the steps tab
     val runningPlanApproved: Boolean = false,
     val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
     val runningMode: RunningMode = RunningMode.PLAN,

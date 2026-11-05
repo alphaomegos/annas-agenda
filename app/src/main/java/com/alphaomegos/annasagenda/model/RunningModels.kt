@@ -27,7 +27,7 @@ enum class RunningMode {
     /** Building up to a race: days are planned ahead and become tasks. */
     PLAN,
 
-    /** Between races: nothing is planned, runs are written down after. */
+    /** Between races: nothing is planned, runs are written down after (the tab is «Running» since 05.11). */
     BETWEEN,
 
     /** Every day's steps (19.10): from Health Connect, or typed in. */

@@ -134,7 +134,7 @@
     <string name="calorimeter_month_projection">Potencijalna promena (30 dana)</string>
     <string name="calorimeter_no_eaten_today">Još ništa</string>
     <string name="calorimeter_show_all_n">Prikaži sve (%1$d)</string>
-    <string name="running_title">U trku</string>
+    <string name="running_title">Sport</string>
     <string name="running_col_date">Datum</string>
     <string name="running_col_distance">Daljina</string>
     <string name="running_col_time">Vreme</string>
@@ -664,7 +664,7 @@
     <string name="running_add_bonus">Dodaj trening</string>
     <string name="running_bonus_exists">Za ovaj dan već postoji trening</string>
     <string name="running_mode_plan">Plan za maraton</string>
-    <string name="running_mode_between">Između maratona</string>
+    <string name="running_mode_between">Trčanje</string>
     <string name="running_workouts_empty">Još nema zapisanih trčanja</string>
     <string name="running_workout_add">Dodaj trčanje</string>
     <string name="running_workout_add_title">Trčanje koje je bilo</string>
