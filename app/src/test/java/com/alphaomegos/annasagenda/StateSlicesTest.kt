@@ -128,6 +128,15 @@ class StateSlicesTest {
         assertNotEquals(monthSliceOf(populated), monthSliceOf(weighed))
     }
 
+    /** «Sport» reads its own slice (0402): a meal leaves it as it was, a workout moves it. */
+    @Test
+    fun theSportHasItsSlice() {
+        val meal = populated.copy(foodLog = populated.foodLog + com.alphaomegos.annasagenda.model.FoodEntry(id = 98, date = today, title = "ужин", kcal = 400))
+        assertEquals(sportSliceOf(populated), sportSliceOf(meal))
+        val workout = populated.copy(sportWorkouts = listOf(com.alphaomegos.annasagenda.model.SportWorkout(id = 8, date = today, kind = "std:zumba", kcal = 300)))
+        assertNotEquals(sportSliceOf(populated), sportSliceOf(workout))
+    }
+
     /** The counters' slice carries the look (0381). */
     @Test
     fun countersSliceCarriesTheLook() {

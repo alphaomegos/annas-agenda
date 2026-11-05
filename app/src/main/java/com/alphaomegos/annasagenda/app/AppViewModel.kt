@@ -568,6 +568,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app), PlacesAndFoodActio
     val mainMenuSlice: StateFlow<MainMenuSlice> = stateSlice(::mainMenuSliceOf)
     val monthSlice: StateFlow<MonthSlice> = stateSlice(::monthSliceOf)
     val daySlice: StateFlow<DaySlice> = stateSlice(::daySliceOf)
+    val sportSlice: StateFlow<SportSlice> = stateSlice(::sportSliceOf)
 
     /**
      * The session in progress, read straight out of the saved state.

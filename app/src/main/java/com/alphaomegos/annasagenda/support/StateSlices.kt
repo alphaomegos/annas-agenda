@@ -273,3 +273,40 @@ fun daySliceOf(state: AppState): DaySlice = DaySlice(
     anthropometryEnabledFieldIds = state.anthropometryEnabledFieldIds,
     dayScreenStyle = state.dayScreenStyle,
 )
+
+/**
+ * What «Sport» reads (05.11, the internals review): its tab and the plan, the runs and the other
+ * workouts, and what the steps tab draws — the step days, the measurements its kilometres take the
+ * height from, its range and chart. The steps come in from Health Connect while the tab is open.
+ */
+data class SportSlice(
+    val dayScreenStyle: DayScreenStyle = DayScreenStyle.NEW,
+    val runningMode: RunningMode = RunningMode.PLAN,
+    val runningPlanApproved: Boolean = false,
+    val runningPlanEntries: List<RunningPlanEntry> = emptyList(),
+    val runningWorkouts: List<RunningWorkout> = emptyList(),
+    val sportWorkouts: List<SportWorkout> = emptyList(),
+    val anthropometry: List<AnthropometryEntry> = emptyList(),
+    val stepDays: List<StepDay> = emptyList(),
+    val stepsChartStyle: StepsChartStyle = StepsChartStyle.BARS,
+    val stepsCustomRange: DateWindow? = null,
+    val stepsFriendsBest: Boolean = true,
+    val stepsHeightCm: Int? = null,
+    val stepsRange: AnthropometryRange = AnthropometryRange.MONTH,
+)
+
+fun sportSliceOf(state: AppState): SportSlice = SportSlice(
+    dayScreenStyle = state.dayScreenStyle,
+    runningMode = state.runningMode,
+    runningPlanApproved = state.runningPlanApproved,
+    runningPlanEntries = state.runningPlanEntries,
+    runningWorkouts = state.runningWorkouts,
+    sportWorkouts = state.sportWorkouts,
+    anthropometry = state.anthropometry,
+    stepDays = state.stepDays,
+    stepsChartStyle = state.stepsChartStyle,
+    stepsCustomRange = state.stepsCustomRange,
+    stepsFriendsBest = state.stepsFriendsBest,
+    stepsHeightCm = state.stepsHeightCm,
+    stepsRange = state.stepsRange,
+)

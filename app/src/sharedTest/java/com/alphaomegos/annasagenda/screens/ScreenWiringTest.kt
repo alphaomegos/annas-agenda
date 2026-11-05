@@ -360,7 +360,7 @@ class ScreenWiringTest {
     fun aDayOfSteps_isTypedInFromTheStepsTab() {
         val today = java.time.LocalDate.now()
         composeRule.setContent {
-            MaterialTheme { StepsContent(vm = vm, state = vm.state.value, today = today) }
+            MaterialTheme { StepsContent(vm = vm, state = vm.sportSlice.value, today = today) }
         }
         val locale = composeRule.activity.resources.configuration.locales[0]
         val todayText = java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM", locale).format(today)

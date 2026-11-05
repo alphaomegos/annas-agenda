@@ -117,7 +117,7 @@ import kotlin.math.roundToInt
 @Composable
 internal fun StepsContent(
     vm: AppViewModel,
-    state: AppState,
+    state: SportSlice,
     today: LocalDate,
     importAsked: Boolean = false,
     onImportAskDone: () -> Unit = {},

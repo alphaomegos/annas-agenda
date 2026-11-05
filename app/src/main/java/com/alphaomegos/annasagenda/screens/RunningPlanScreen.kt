@@ -61,7 +61,7 @@ fun RunningPlanScreen(
     vm: AppViewModel,
     onBack: () -> Unit,
 ) {
-    val state by vm.state.collectAsState()
+    val state by vm.sportSlice.collectAsState()
 
     val context = LocalContext.current
 
