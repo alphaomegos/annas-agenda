@@ -72,6 +72,10 @@ import java.time.ZoneId
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import com.alphaomegos.annasagenda.app.LocalNewLook
+import com.alphaomegos.annasagenda.components.NewLookScreen
 
 /**
  * This app's backups in the oursidecar account (16.10, Eduard): from the
@@ -192,16 +196,8 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.sidecar_backups_title)) },
-                navigationIcon = {
-                    TopBarBack(onBack)
-                },
-            )
-        },
-    ) { inner ->
+    // The screen, the same in either look (05.11).
+    val body: @Composable (PaddingValues) -> Unit = { inner ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(inner),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -397,6 +393,29 @@ fun SidecarBackupsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (LocalNewLook.current) {
+        NewLookScreen(title = stringResource(R.string.sidecar_backups_title), onBack = onBack) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                body(PaddingValues(0.dp))
+            }
+        }
+    } else Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(stringResource(R.string.sidecar_backups_title)) },
+                navigationIcon = {
+                    TopBarBack(onBack)
+                },
+            )
+        },
+    ) { inner ->
+        body(inner)
     }
 
     if (accountOpen) {

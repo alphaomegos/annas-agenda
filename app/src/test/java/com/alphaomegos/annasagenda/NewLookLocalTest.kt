@@ -22,4 +22,12 @@ class NewLookLocalTest {
         // The other styles are the section's own and keep their bars.
         assertTrue(metro.hasCode("if (style == MetroStyle.MODERN) {"))
     }
+
+    /** The backups (0395): the shared frame in the new look, asked of the local — the screen has no state of its own to ask. */
+    @Test
+    fun theBackupsHaveTheNewLook() {
+        val screen = File(root, "screens/backups/SidecarBackupsScreen.kt").readText()
+        assertTrue(screen.hasCode("if (LocalNewLook.current) {") && screen.hasCode("NewLookScreen(title = stringResource(R.string.sidecar_backups_title), onBack = onBack) {"))
+        assertTrue(screen.hasCode("body(PaddingValues(0.dp))") && screen.hasCode("body(inner)") && screen.hasCode("CenterAlignedTopAppBar("))
+    }
 }
